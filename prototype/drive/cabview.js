@@ -54,7 +54,7 @@
     M.forEach((m, i) => { const d = m.s - T.x; if (d < -700 || d > 3600) return; const key = W.lineId + ':' + m.i + ':' + W.dir; const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, m.i)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i), isT: i === tIdx }); });
     for (const q of sts) if (q.stopHere) { const w = LAY.spread(T.x, q.m.s); if (w > 0) c.lane = q.st.ours.x * w; }
     const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * LAY.spread(T.x + z, q.m.s); return x; };   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
-    const inStationZone = (za, zb) => sts.find(q => zb > q.d - 1200 && za < q.d + 650);
+    const inStationZone = (za, zb) => { const qs = sts.filter(q => zb > q.d - 1200 && za < q.d + 650); return qs.length ? { st: { extent: [Math.min(...qs.map(q => q.st.extent[0])), Math.max(...qs.map(q => q.st.extent[1]))] } } : null; };   // hợp các ga trong tầm (ga vừa qua và ga sắp tới)
 
     const inTun = S.inTunnel(W, T.x);
     ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
@@ -188,7 +188,7 @@
         const z = ci * step - T.x; if (z < za * 0.9) continue; const bio = biomeAt(z);
         for (const side of [-1, 1]) { const o = cellObject(ci + bi * 100000, bio, side); if (!o) continue; const zz = z + (hash(ci * 3 + side) - 0.5) * step * 0.6; if (zz < 6) continue;
           const half = o.w / 2, qz = inStationZone(zz, zz + (o.d || 0)), ext = qz ? qz.st.extent : [Math.min(ADJ, oppAt(zz)), 0];
-          const margin = qz ? (o.kind === 'building' ? 8 : 5) : (o.kind === 'building' ? 12 : o.kind === 'field' ? 5 : 6), off = half + o.lat * 0.5, X = side > 0 ? Math.max(ext[1], 0) + margin + off : Math.min(ext[0], ADJ) - margin - off;
+          const margin = qz ? (o.kind === 'building' ? 14 : 8) : (o.kind === 'building' ? 12 : o.kind === 'field' ? 5 : 6), off = half + o.lat * 0.5, X = side > 0 ? Math.max(ext[1], 0) + margin + off : Math.min(ext[0], ADJ) - margin - off;
           items.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) }); } }
     }
     // ---- biển chạy chậm, công nhân, hươu, dây điện hỏng
