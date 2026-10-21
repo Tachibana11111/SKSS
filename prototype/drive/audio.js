@@ -204,6 +204,12 @@
     return root.Sim.inTunnel(W, T.x);
   };
   // ---- lời phát thanh ----
+  // bên cửa mở ở ga j: theo sân ga kề đường dừng của ta (bên trái/phải theo chiều đi); không có sân ga (dừng đường chính) thì không thông báo
+  GameAudio.prototype.doorSide = function (W, T, j) {
+    const m = T.M[j], Ly = root.Layout, ls = W.line.stations[m.i]; if (!Ly || !ls || !ls.lay || m.mainStop) return null;
+    const st = Ly.station(ls.lay, W.dir, m.i); if (!st.plat) return null;
+    return st.platSign > 0 ? { ja: '左側', en: 'left', vi: 'trái' } : { ja: '右側', en: 'right', vi: 'phải' };
+  };
   GameAudio.prototype.announce = function (W, T, p) {
     if (this.annMode === 'off') return;
     const M = T.M, A = this.ann;
@@ -223,9 +229,14 @@
       if (delay > 120) this.say(W, { ja: `お急ぎのところ、列車が約${Math.round(delay / 60)}分遅れております。お詫び申し上げます。`, en: `We apologize for the delay of about ${Math.round(delay / 60)} minutes.`, vi: `Tàu đang trễ khoảng ${Math.round(delay / 60)} phút, xin lỗi quý khách.` }, false, false);
       A.apr = -1;
     }
-    // sắp tới ga
+    // sắp tới ga: tên ga, các tuyến đổi tàu và bên cửa sẽ mở
     if (T.phase === 'run') { const d = M[j].s - T.x; if (d < 3500 && A.apr !== j && T.v > 15) { A.apr = j;
-      this.say(W, { ja: `まもなく、${nameJ(j)}、${nameJ(j)}です。`, en: `We will soon be arriving at ${nxt.name}.`, vi: `Sắp tới ga ${nxt.name}.` }, false, true); } }
+      this.say(W, { ja: `まもなく、${nameJ(j)}、${nameJ(j)}です。`, en: `We will soon be arriving at ${nxt.name}.`, vi: `Sắp tới ga ${nxt.name}.` }, false, true);
+      const tr = (root.TRANSFERS || {})[M[j].jp] || [], rail = tr.filter(x => x !== '路線バス');
+      if (rail.length) this.say(W, { ja: `${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, en: `You can change here to other railway lines: ${rail.length} connections.`, vi: `Quý khách có thể đổi tàu tại ${nxt.name}: ${rail.join(', ')}.` }, false, false);
+      else if (tr.length) this.say(W, { ja: `${nameJ(j)}では、路線バスはお乗り換えです。`, en: 'Bus connections are available here.', vi: `Tại ga ${nxt.name} có xe buýt kết nối.` }, false, false);
+      const sd = this.doorSide(W, T, j);
+      if (sd) this.say(W, { ja: `${nameJ(j)}では、${sd.ja}のドアが開きます。`, en: `The doors on the ${sd.en} side will open at ${nxt.name}.`, vi: `Tại ga ${nxt.name}, cửa mở ở bên ${sd.vi}.` }, false, true); } }
     // tới ga
     if (T.results.length > (A.res || 0)) { A.res = T.results.length; const r = T.results[T.results.length - 1];
       if (!r.overrun) { if (T.phase === 'end') this.say(W, { ja: `終点、${nameJ(last)}、${nameJ(last)}です。ご乗車ありがとうございました。`, en: `This is ${dest}, the last stop. Thank you for riding.`, vi: `Ga cuối ${dest}. Cảm ơn quý khách.` }, false, true);

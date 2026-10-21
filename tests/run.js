@@ -242,4 +242,15 @@ section('13. Công tắc ATC (bật / cắt)');
   ok(on.hit, 'ATC bật: phanh khi vượt tốc độ cho phép'); ok(!off.hit && off.v > on.v + 20, 'ATC cắt: không phanh tự động, tàu vượt giới hạn', off.v + ' vs ' + on.v); ok(off.bad > 5, 'ATC cắt và chạy > 30 km/h: tích lũy lỗi', off.bad);
 }
 
+section('14. Phát thanh: bên cửa mở và đổi tàu');
+{
+  global.document = global.document || {}; require(path.join(DRIVE, 'transfers.js')); const GA = require(path.join(DRIVE, 'audio.js')), G = global.GameAudio || (GA && GA.GameAudio);
+  const rec = find('tsk', 'Kodama', 'down', 0, 12), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, ds = nm => G.prototype.doorSide.call({}, W, T, T.M.findIndex(m => m.name === nm));
+  const sd = ds('Odawara'); ok(sd && sd.ja === '左側' && sd.vi === 'trái', 'Odawara (2-2-1, đường dừng bên trái đường thông qua): cửa mở bên trái', JSON.stringify(sd));
+  const mi = ds('Mishima'); ok(mi && mi.ja === '右側', 'Mishima (sân đảo bên phải đường dừng): cửa mở bên phải', JSON.stringify(mi));
+  T.M[T.M.findIndex(m => m.name === 'Odawara')].mainStop = true; ok(ds('Odawara') === null, 'dừng ở đường chính: không có bên cửa mở');
+  ok(Object.keys(window.TRANSFERS).length >= 60 && window.TRANSFERS['東京'].includes('山手線') && window.TRANSFERS['大宮'].includes('上越新幹線'), 'bảng đổi tàu: đủ ga, có Yamanote ở Tokyo và Joetsu ở Omiya');
+  const missing = [...Sim.lineOf('tsk').stations, ...Sim.lineOf('toh').stations].filter(s => !window.TRANSFERS[s.jp]); ok(missing.length === 0, 'mọi ga có mục đổi tàu', missing.map(s => s.jp).join(','));
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

@@ -128,3 +128,6 @@ Màn hình rộng chia ba cột trên một canvas 1780×900: **trái** điện 
 
 ## Góc nhìn từ trên cao (22/10/2026)
 Khung thứ ba cạnh khung buồng lái và khung 2D (`prototype/drive/topview.js`): sơ đồ nhìn thẳng xuống, **tàu của ta ở giữa khung, hướng lên trên, ±750 m (tổng 1,5 km)**. Tỉ lệ ngang phóng đại (khoảng cách giữa các đường nhìn rõ) còn độ cong vẽ gần đúng tỉ lệ thật, nên đây là sơ đồ chứ không đúng tỉ lệ hình học. Hiện: đường ray, sân ga (kể cả mép vàng, vạch dừng, tên ga), ghi và ghi chữ X, đoạn giới hạn qua ghi (80 km/h), kết cấu (cầu cạn sáng, cầu có nước, hầm tối), tàu phía trước, tàu ngược chiều, tàu vượt.
+
+## Phát thanh: bên cửa mở và đổi tàu (22/10/2026)
+Khi sắp tới ga, ngoài tên ga còn có hai câu: **các tuyến đổi tàu tại ga** (bảng `transfers.js`, **[K] kiến thức nền, chưa kiểm chứng từng ga**, chỉ liệt kê tuyến chính; ga chỉ có xe buýt thì nói "kết nối xe buýt") và **cửa mở bên trái hay bên phải** (theo sân ga kề đường dừng của ta trong bố trí ga; dừng ở đường chính do quá muộn để rẽ ghi thì không thông báo vì không có sân ga). Có tiếng Nhật, tiếng Anh (giọng đọc) và phụ đề tiếng Việt.
