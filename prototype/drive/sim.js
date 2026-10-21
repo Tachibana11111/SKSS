@@ -118,7 +118,7 @@
       for (const rec of catalog) {
         if (rec === trip.rec) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
         const t = timeAt(L, rec, m.i); if (t == null) continue;
-        if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: rec.t + ' ' + rec.n, t: t - trip.t0 });
+        if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: rec.t + ' ' + rec.n, t: t - trip.t0, v: rec.v });
       }
     });
     return out;
