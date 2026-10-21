@@ -54,11 +54,21 @@
     for (const [za, zb, k] of runs) if (k === 't') { const y0 = Y(zb), y1 = Y(za); ctx.fillStyle = 'rgba(0,0,0,.62)'; ctx.fillRect(px, y0, pw, y1 - y0); ctx.fillStyle = 'rgba(160,170,180,.55)'; ctx.font = '10px system-ui'; ctx.textAlign = 'left'; if (y1 - y0 > 20) ctx.fillText('HẦM', px + 6, clamp((y0 + y1) / 2, py + 12, py + ph - 6)); }
     // tàu phía trước, tàu ngược chiều, tàu vượt
     const trainRect = (xm, zFront, ln, col, label) => { const x = cx - ((xm - lane) * kx + off(Math.max(0, zFront)) * kc), w = Math.max(6, kx * 3), yT = Y(zFront), yB = Y(zFront - ln); ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(x - w / 2, yT, w, Math.max(4, yB - yT), 2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(x - w / 2 + 1, yT, w - 2, 3); if (label && yB - yT > 30) { ctx.fillStyle = '#10151c'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center'; ctx.fillText(label, x, yT + 14); } };
-    const Ld = W.lead; if (Ld && Ld.phase !== 'end') { const zf = Ld.x - T.x, qL = Ld.phase === 'dwell' ? sts.find(q => Math.abs(q.m.s - Ld.x) < 60) : null, other = qL && qL.st.tracks.find(t => t.own && !t.thr && t !== qL.st.ours && qL.st.stops.includes(t)); if (zf > zLo && zf - Ld.veh.len < zHi) trainRect(qL ? (other || qL.st.ours).x : 0, zf, Ld.veh.len, '#ffa24a', W.leadLabel); }
-    if (T.v > 20) for (const t0 of W.opposing || []) { const zN = (t0 - W.t) * 200; if (zN < zHi && zN + len > zLo) trainRect(oppAt(Math.max(0, zN)), zN + len, len, '#8aa0b5'); }
-    if (T.phase === 'dwell' && W.passers && W.passers[T.k]) for (const p of W.passers[T.k]) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const pl = (S.VEH[p.v] || S.VEH.N700).len, zf = -pl + u * (pl + 520); trainRect(0, zf, pl, '#b8c4d4', p.label); } }
-    // tàu của ta (giữa khung)
-    { const w = Math.max(7, kx * 3), yT = Y(0), yB = Y(-len); ctx.fillStyle = '#2a8fe6'; ctx.beginPath(); ctx.roundRect(cx - w / 2, yT, w, yB - yT, 3); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(cx, yT - 5); ctx.lineTo(cx - 5, yT + 3); ctx.lineTo(cx + 5, yT + 3); ctx.closePath(); ctx.fill(); }
+    // đoàn tàu gồm nhiều toa: mỗi toa bám theo đường đi tại vị trí của nó (rẽ ghi thì đầu tàu vào đường nhánh trước, thân tàu theo sau), không phải một khối cứng
+    const consist = (pathFn, zFront, veh, col, label, head) => { const n = veh.cars || 8, cl = veh.len / n, w = Math.max(6, kx * 3);
+      for (let i = 0; i < n; i++) { const z1 = zFront - i * cl, z2 = z1 - cl + 1.2; if (z1 < zLo || z2 > zHi) continue; const xa = X(pathFn(z1), z1), xb = X(pathFn(z2), z2), ya = Y(z1), yb = Y(z2);
+        ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(xa - w / 2, ya); ctx.lineTo(xa + w / 2, ya); ctx.lineTo(xb + w / 2, yb); ctx.lineTo(xb - w / 2, yb); ctx.closePath(); ctx.fill(); }
+      const xh = X(pathFn(zFront), zFront), yh = Y(zFront); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(xh - w / 2, yh, w, 2.5);
+      if (head) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(xh, yh - 5); ctx.lineTo(xh - 5, yh + 3); ctx.lineTo(xh + 5, yh + 3); ctx.closePath(); ctx.fill(); }
+      if (label && veh.len * ky > 34) { ctx.fillStyle = '#10151c'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center'; ctx.fillText(label, xh, yh + 14); } };
+    const ourPath = z => { let x = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) x += q.st.ours.x * LAY.spread(T.x + z, q.m.s); return x; };
+    const Ld = W.lead; if (Ld && Ld.phase !== 'end') { const zf = Ld.x - T.x;
+      const leadPath = z => { let x = 0; for (const q of sts) { const stops = Ld.M.some(m => m.i === q.m.i && (m.stop || Ld.phase === 'dwell' && Math.abs(m.s - Ld.x) < 60)); if (!stops) continue; const other = q.st.tracks.find(t => t.own && !t.thr && t !== q.st.ours && q.st.stops.includes(t)); x += (other || q.st.ours).x * LAY.spread(T.x + z, q.m.s); } return x; };
+      if (zf > zLo && zf - Ld.veh.len < zHi) consist(leadPath, zf, Ld.veh, '#ffa24a', W.leadLabel, false); }
+    if (T.v > 20) for (const t0 of W.opposing || []) { const zN = (t0 - W.t) * 200; if (zN < zHi && zN + len > zLo) consist(z => oppAt(Math.max(0, z)), zN + len, T.veh, '#8aa0b5', '', false); }
+    if (T.phase === 'dwell' && W.passers && W.passers[T.k]) for (const p of W.passers[T.k]) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const pl = (S.VEH[p.v] || S.VEH.N700).len, zf = -pl + u * (pl + 520); consist(() => 0, zf, S.VEH[p.v] || S.VEH.N700, '#b8c4d4', p.label, false); } }
+    // tàu của ta (giữa khung): từng toa bám đường đi
+    consist(ourPath, 0, T.veh, '#2a8fe6', '', true);
     // thước: vạch mỗi 250 m
     ctx.font = '9px system-ui'; ctx.textAlign = 'right'; for (let m = -500; m <= 500; m += 250) { const y = Y(m); ctx.fillStyle = 'rgba(200,210,220,.35)'; ctx.fillRect(px + pw - 8, y, 8, 1); if (m !== 0) ctx.fillText((m > 0 ? '+' : '') + m + ' m', px + pw - 10, y + 3); }
     ctx.fillStyle = 'rgba(160,175,190,.7)'; ctx.font = '10px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Sơ đồ nhìn từ trên · ±750 m · ngang phóng đại', px + 8, py + ph - 6);
