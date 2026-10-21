@@ -154,7 +154,7 @@
   }
   // ---- Ghi (đường rẽ vào đường sân ga): giới hạn 80 km/h [I] từ 1.150 m trước vạch tới 630 m sau vạch, chỉ với ga có đường dừng khác đường chính
   function stationDiverts(L, i, dir) { const Ly = root.Layout; if (!Ly || !L.stations[i] || !L.stations[i].lay) return false; return Ly.diverts(L.stations[i].lay, dir, i); }
-  const divertsAt = (T, j) => { const m = T.M[j]; return !!(m && (m.stop || T.forced === j) && !m.mainStop && stationDiverts(T.W.line, m.i, T.W.dir)); };
+  const divertsAt = (T, j) => { const m = T.M[j]; return !!(m && (m.stop || T.forced === j || (j === T.k && T.phase !== 'end')) && !m.mainStop && stationDiverts(T.W.line, m.i, T.W.dir)); };
   function turnoutZones(T) { const out = []; for (let j = 0; j < T.M.length; j++) if (divertsAt(T, j)) out.push({ s0: T.M[j].s - G.turnoutIn, s1: T.M[j].s + G.turnoutOut, v: G.turnoutV, j }); return out; }
   // vị trí các ghi và ghi chéo (chữ X) mà đoàn tàu đi qua quanh một ga: dùng cho âm thanh
   function switchPoints(T) { const pts = []; for (let j = 0; j < T.M.length; j++) { const m = T.M[j], sM = m.s, dv = divertsAt(T, j);

@@ -52,7 +52,8 @@
     const target = S.nextTarget(T), tIdx = T.phase === 'dwell' ? T.k : target;
     const sts = [];
     M.forEach((m, i) => { const d = m.s - T.x; if (d < -1000 || d > 3600) return;      // giữ ga tới 1 km phía sau để ghi chữ X lúc rời ga không biến mất sớm
-       const key = W.lineId + ':' + m.i + ':' + W.dir; const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, m.i)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i), isT: i === tIdx }); });
+       const key = W.lineId + ':' + m.i + ':' + W.dir; const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, m.i)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')),   // ga vừa dừng (kể cả dừng khẩn không có lịch) vẫn giữ đường sân ga cho tới khi tàu rời hẳn
+         isT: i === tIdx }); });
     for (const q of sts) if (q.stopHere && !q.m.mainStop) { const w = LAY.spread(T.x, q.m.s); if (w > 0) c.lane = q.st.ours.x * w; }      // mainStop: dừng khẩn quá gần để rẽ ghi -> ở lại đường chính
     const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * LAY.spread(T.x + z, q.m.s); return x; };   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
     const inStationZone = (za, zb) => { const qs = sts.filter(q => zb > q.d - 1200 && za < q.d + 650); return qs.length ? { st: { extent: [Math.min(...qs.map(q => q.st.extent[0])), Math.max(...qs.map(q => q.st.extent[1]))] } } : null; };   // hợp các ga trong tầm (ga vừa qua và ga sắp tới)

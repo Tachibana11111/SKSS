@@ -447,7 +447,7 @@ function draw() {
 }
 function drawCab(px, py, pw, ph) {
   CabView.draw(ctx, px, py, pw, ph, W, T, { sprites: SPR, fronts: FR, aud: AUD });
-  const j = Sim.nextTarget(T), d = T.M[j].s - T.x; ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
+  const j = T.phase === 'dwell' ? T.k : Sim.nextTarget(T), d = T.M[j].s - T.x; ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
   const lines = T.phase === 'run' ? [(d >= 0 ? 'Còn ' + (d >= 100 ? Math.round(d) : d.toFixed(1)) + ' m tới vạch' : 'Quá vạch ' + (-d).toFixed(1) + ' m')] : T.phase === 'dwell' ? ['Lệch vạch ' + (-d >= 0 ? '+' : '') + (-d).toFixed(2) + ' m'] : [];
   if (lines.length && !tutLessonActive) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(px + 8, py + 8, 190, 26); txt(lines[0], px + 16, py + 26, Math.abs(d) < 60 ? '#fff' : '#c8d4e2', 'bold 14px system-ui'); }
   txt('Nhìn từ buồng lái', px + pw - 12, py + ph - 8, 'rgba(160,175,190,.55)', '10px system-ui', 'right'); ctx.restore();
