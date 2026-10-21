@@ -115,6 +115,24 @@ function iconBtn(x, y, sz, kind, on, key, fn) {
   ctx.lineCap = 'butt'; txt(key, cx, y + sz - 3, on ? '#dbe9ff' : '#7a8ea5', 'bold 9px system-ui', 'center'); btns.push({ x, y, w: sz, h: sz, fn });
 }
 
+// ô nút vuông: biểu tượng vẽ bằng nét, nhãn ngắn, phím tắt; sáng khi đang bật
+function tileBtn(x, y, s, icon, label, key, on, color, fn) {
+  ctx.fillStyle = on ? color : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, s, s, 10); ctx.fill(); ctx.strokeStyle = on ? 'rgba(255,255,255,.65)' : '#3b516a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x, y, s, s, 10); ctx.stroke();
+  const cx = x + s / 2, cy = y + s / 2 - 8, c = on ? '#fff' : '#b6c6d8'; ctx.strokeStyle = c; ctx.fillStyle = c; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const ln = (a, b, d, e) => { ctx.beginPath(); ctx.moveTo(cx + a, cy + b); ctx.lineTo(cx + d, cy + e); ctx.stroke(); };
+  if (icon === 'door') { ctx.beginPath(); ctx.roundRect(cx - 11, cy - 15, 22, 30, 2); ctx.stroke(); ln(-3, -15, -3, 15); ctx.beginPath(); ctx.arc(cx + 5, cy, 1.8, 0, 7); ctx.fill(); }
+  else if (icon === 'cruise') { ctx.beginPath(); ctx.arc(cx, cy + 4, 15, Math.PI * 0.85, Math.PI * 2.15); ctx.stroke(); ln(0, 4, 8, -6); ctx.beginPath(); ctx.arc(cx, cy + 4, 2.4, 0, 7); ctx.fill(); ln(-14, 17, 14, 17); }
+  else if (icon === 'wiper') { ctx.beginPath(); ctx.arc(cx - 2, cy + 14, 26, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); ln(-2, 14, 11, -9); ln(-2, 14, -10, -9); }
+  else if (icon === 'lamp') { ctx.beginPath(); ctx.moveTo(cx - 6, cy - 11); ctx.lineTo(cx + 3, cy - 11); ctx.quadraticCurveTo(cx + 10, cy, cx + 3, cy + 11); ctx.lineTo(cx - 6, cy + 11); ctx.closePath(); ctx.stroke(); for (const dy of [-9, 0, 9]) ln(8, dy, 18, dy * 1.4); }
+  else if (icon === 'ack') { ctx.beginPath(); ctx.roundRect(cx - 15, cy - 13, 30, 22, 5); ctx.stroke(); ln(-6, 9, -9, 16); ln(-8, -2, -2, 3); ln(-2, 3, 8, -7); }
+  else if (icon === 'pa') { ctx.beginPath(); ctx.moveTo(cx - 14, cy - 5); ctx.lineTo(cx - 5, cy - 5); ctx.lineTo(cx + 9, cy - 14); ctx.lineTo(cx + 9, cy + 14); ctx.lineTo(cx - 5, cy + 5); ctx.lineTo(cx - 14, cy + 5); ctx.closePath(); ctx.stroke(); ctx.beginPath(); ctx.arc(cx + 11, cy, 8, -0.9, 0.9); ctx.stroke(); }
+  else if (icon === 'auto') { ctx.beginPath(); ctx.arc(cx, cy, 14, 0.4, Math.PI * 1.4); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, 14, Math.PI * 1.4 + 0.4, Math.PI * 2.4); ctx.stroke(); ln(10, -9, 15, -14); ln(10, -9, 17, -7); ln(-10, 9, -15, 14); ln(-10, 9, -17, 7); }
+  else if (icon === 'eb') { const r = 15; ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; ctx.lineTo(cx + Math.cos(a) * r * 1.08, cy + Math.sin(a) * r * 1.08); } ctx.closePath(); ctx.stroke(); txt('EB', cx, cy + 5, c, 'bold 13px system-ui', 'center'); }
+  else if (icon === 'coast') { ctx.beginPath(); ctx.roundRect(cx - 14, cy - 14, 28, 28, 4); ctx.stroke(); txt('N', cx, cy + 8, c, 'bold 20px system-ui', 'center'); }
+  else if (icon === 'pause') { ctx.fillRect(cx - 11, cy - 13, 8, 26); ctx.fillRect(cx + 3, cy - 13, 8, 26); }
+  ctx.lineCap = 'butt'; txt(label, x + s / 2, y + s - 9, on ? '#fff' : '#9fb4c9', 'bold 10px system-ui', 'center'); txt(key, x + s - 6, y + 12, on ? 'rgba(255,255,255,.8)' : '#6f8399', '9px system-ui', 'right'); btns.push({ x, y, w: s, h: s, fn });
+}
+
 function drawFull() {
   btns = []; curOX = 0; ctx.clearRect(0, 0, FW, FH); ctx.fillStyle = '#0b0f14'; ctx.fillRect(0, 0, FW, FH);
   if (!W) { txt('Chọn chuyến và nhấn "Bắt đầu / chạy lại", hoặc mở tab Hướng dẫn / Điều độ.', FW / 2, FH / 2, '#8aa0b5', '24px system-ui', 'center'); return; }
@@ -142,32 +160,34 @@ function drawFull() {
   const PY = DASH_Y + 14, PH = FH - PY - 14;
   lever(20, PY, 236, PH, 'pw'); lever(1664, PY, 236, PH, 'bk');
   // đồng hồ phụ
-  if (!ui.focus) { panel(268, PY, 360, PH); txt('ĐỒNG HỒ PHỤ', 448, PY + 22, '#fff', 'bold 14px system-ui', 'center');
+  if (!ui.focus) { panel(268, PY, 300, PH); txt('ĐỒNG HỒ PHỤ', 418, PY + 22, '#fff', 'bold 14px system-ui', 'center');
     const Ft = T.f >= 0 ? T.f * Sim.tractiveOf(T, T.v) : 0, amps = T.f >= 0 ? Ft * T.v / 25000 : -(Math.min(1.4, -T.f) / 1.4) * Math.min(500, T.v * 3.6 * 2.2), bar = (T.f < 0 ? Math.min(1.4, -T.f) / 1.4 : 0) * 5;
-    miniGauge(346, PY + 96, 46, amps, -500, 900, 'Dòng kéo', Math.round(amps) + ' A', amps < 0 ? '#4cd68a' : '#4aa3ff', [-500, 0, 400, 900]);
-    miniGauge(346, PY + 208, 46, bar, 0, 5, 'Áp phanh', bar.toFixed(1) + ' bar', bar > 3.5 ? '#ff8a4a' : '#ffc247', [0, 2.5, 5]);
-    miniGauge(346, PY + 320, 46, T.a, -1.2, 0.8, 'Gia tốc', (T.a >= 0 ? '+' : '') + T.a.toFixed(2) + ' m/s²', T.a < -0.05 ? '#ff8a4a' : '#4aa3ff', [-1, -0.5, 0, 0.5]);
-    txt('Dốc ' + (T.grade >= 0 ? '+' : '') + T.grade.toFixed(0) + '‰ (mô phỏng)', 448, PY + PH - 12, Math.abs(T.grade) > 10 ? '#ffc247' : '#7a8ea5', '12px system-ui', 'center'); }
+    miniGauge(326, PY + 96, 46, amps, -500, 900, 'Dòng kéo', Math.round(amps) + ' A', amps < 0 ? '#4cd68a' : '#4aa3ff', [-500, 0, 400, 900]);
+    miniGauge(326, PY + 208, 46, bar, 0, 5, 'Áp phanh', bar.toFixed(1) + ' bar', bar > 3.5 ? '#ff8a4a' : '#ffc247', [0, 2.5, 5]);
+    miniGauge(326, PY + 320, 46, T.a, -1.2, 0.8, 'Gia tốc', (T.a >= 0 ? '+' : '') + T.a.toFixed(2) + ' m/s²', T.a < -0.05 ? '#ff8a4a' : '#4aa3ff', [-1, -0.5, 0, 0.5]);
+    txt('Dốc ' + (T.grade >= 0 ? '+' : '') + T.grade.toFixed(0) + '‰ (mô phỏng)', 418, PY + PH - 12, Math.abs(T.grade) > 10 ? '#ffc247' : '#7a8ea5', '12px system-ui', 'center'); }
   // đồng hồ tốc độ + công tắc ATC + đèn
-  panel(640, PY, 640, PH); bigDial(960, PY + 168, 150, blink);
+  panel(580, PY, 600, PH); bigDial(880, PY + 168, 150, blink);
   { const lampsL = [['ĐÓNG CỬA', T.door === 'closed', '#4cd68a'], ['ATC', T.atc, '#ff5a5a'], ['定速', T.cs, '#3ad6e6'], ['GẠT MƯA', T.wiper, '#4aa3ff'], ['ĐÈN PHA', Sim.lampOn(W, T), '#fff2b0'], ['MƯA', W.rainHere, '#2f6fd6']];
-    lampsL.forEach((l, i) => lamp(668 + i * 102, PY + 300, l[0], l[1], l[2]));
-    const off = T.atcOn === false, arm = !off && W.t - T.atcArm <= 4, hot = (off || arm) && blink, x0 = 700, y0 = PY + 318, w0 = 520, h0 = 40;
+    lampsL.forEach((l, i) => lamp(604 + i * 96, PY + 300, l[0], l[1], l[2]));
+    const off = T.atcOn === false, arm = !off && W.t - T.atcArm <= 4, hot = (off || arm) && blink, x0 = 620, y0 = PY + 318, w0 = 520, h0 = 40;
     ctx.fillStyle = off ? (hot ? '#c0392b' : '#8f2a22') : arm ? '#9a6a12' : '#1f6f4a'; ctx.beginPath(); ctx.roundRect(x0, y0, w0, h0, 8); ctx.fill(); ctx.strokeStyle = off || arm ? (hot ? '#ffd0c8' : '#ff7a6a') : '#6fe0a8'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(x0, y0, w0, h0, 8); ctx.stroke();
     txt(off ? 'ATC: ĐANG CẮT — KHÔNG CÓ BẢO VỆ (A để bật)' : arm ? 'XÁC NHẬN CẮT ATC? bấm lại trong 4 s' : 'ATC: BẬT  (A: cắt, bấm 2 lần)', x0 + w0 / 2, y0 + 26, '#fff', 'bold 15px system-ui', 'center'); btns.push({ x: x0, y: y0, w: w0, h: h0, fn: () => doAct('atcsw') }); }
-  // nút điều khiển + TIMS
-  if (!ui.focus) { panel(1292, PY, 360, PH); txt('NÚT ĐIỀU KHIỂN', 1472, PY + 22, '#fff', 'bold 14px system-ui', 'center');
-    const bl = [['Đóng cửa (Enter)', () => doAct('door'), T.door !== 'open', '#e08a2f'], ['Tốc độ không đổi (C)', () => doAct('cs'), T.cs, '#2a8fa0'], ['Gạt mưa (V)', () => doAct('wiper'), T.wiper, '#2a6fd6'], ['Đèn pha: ' + ({ auto: 'tự động', on: 'bật', off: 'tắt' }[T.lamp]) + ' (L)', () => doAct('lamp'), T.lamp !== 'auto', '#c9a227'],
-      ['Nhắc lệnh (Y)', () => doAct('ack'), pend > 0 && blink, '#c9a227'], ['Phát thanh (M)', () => doAct('pa'), T.anx > 40 && blink, '#2a8fa0'], ['Tự lái (T)', () => doAct('auto'), auto, '#2a6fd6'], ['Phanh khẩn (Q)', () => doAct('eb'), T.bk === 8, '#d64a4a'], ['Về N (Space)', () => doAct('coast'), false, '#2a6fd6']];
-    bl.forEach((b, i) => button(1304 + (i % 2) * 172, PY + 36 + Math.floor(i / 2) * 40, 164, 32, b[0], b[1], b[2], b[3]));
-    // TIMS gọn
-    const ty = PY + 244; ctx.fillStyle = '#243447'; ctx.fillRect(1304, ty - 8, 336, 1); txt('TIMS (trạng thái xe)', 1304, ty + 8, '#8aa0b5', 'bold 11px system-ui');
-    const faultCars = new Set(W.faults.map(f => f.car)), nc = T.veh.cars, cw = Math.min(20, 330 / nc);
-    for (let c = 1; c <= nc; c++) { const x = 1304 + (c - 1) * cw, doorCol = T.phase === 'dwell' ? (T.door === 'open' ? '#ffc247' : T.door === 'closing' ? '#e08a2f' : '#4cd68a') : '#2f7a55'; ctx.fillStyle = faultCars.has(c) ? '#ff5a5a' : doorCol; ctx.fillRect(x, ty + 14, cw - 2, 12); }
+  // nút điều khiển: 10 ô vuông (biểu tượng + nhãn ngắn + phím) + TIMS gọn bên dưới
+  if (!ui.focus) { const PX = 1192, PW = 460; panel(PX, PY, PW, PH); txt('NÚT ĐIỀU KHIỂN', PX + PW / 2, PY + 22, '#fff', 'bold 14px system-ui', 'center');
+    const lampLab = { auto: 'Tự động', on: 'Bật', off: 'Tắt' }[T.lamp], tl = [
+      ['door', 'Đóng cửa', 'Enter', () => doAct('door'), T.door !== 'open', '#e08a2f'], ['cruise', 'Tốc độ đều', 'C', () => doAct('cs'), T.cs, '#2a8fa0'], ['wiper', 'Gạt mưa', 'V', () => doAct('wiper'), T.wiper, '#2a6fd6'],
+      ['lamp', 'Đèn: ' + lampLab, 'L', () => doAct('lamp'), T.lamp !== 'auto', '#c9a227'], ['ack', 'Nhắc lệnh', 'Y', () => doAct('ack'), pend > 0 && blink, '#c9a227'],
+      ['pa', 'Phát thanh', 'M', () => doAct('pa'), T.anx > 40 && blink, '#2a8fa0'], ['auto', 'Tự lái', 'T', () => doAct('auto'), auto, '#2a6fd6'], ['eb', 'Phanh khẩn', 'Q', () => doAct('eb'), T.bk === 8, '#d64a4a'],
+      ['coast', 'Về N', 'Space', () => doAct('coast'), false, '#2a6fd6'], ['pause', paused ? 'Chạy tiếp' : 'Tạm dừng', 'P', () => { paused = !paused; }, paused, '#8a96a6']], TS = 82, TG = 6;
+    tl.forEach((t, i) => tileBtn(PX + 12 + (i % 5) * (TS + TG), PY + 36 + Math.floor(i / 5) * (TS + TG), TS, t[0], t[1], t[2], t[4], t[5], t[3]));
+    const ty = PY + 36 + 2 * (TS + TG) + 10; ctx.fillStyle = '#243447'; ctx.fillRect(PX + 12, ty - 6, PW - 24, 1); txt('TIMS (trạng thái xe)', PX + 12, ty + 12, '#8aa0b5', 'bold 11px system-ui');
+    const faultCars = new Set(W.faults.map(f => f.car)), nc = T.veh.cars, cw = Math.min(26, (PW - 24) / nc);
+    for (let c = 1; c <= nc; c++) { const x = PX + 12 + (c - 1) * cw, doorCol = T.phase === 'dwell' ? (T.door === 'open' ? '#ffc247' : T.door === 'closing' ? '#e08a2f' : '#4cd68a') : '#2f7a55'; ctx.fillStyle = faultCars.has(c) ? '#ff5a5a' : doorCol; ctx.fillRect(x, ty + 20, cw - 3, 13); txt(c, x + (cw - 3) / 2, ty + 46, '#7a8ea5', '8px system-ui', 'center'); }
     const mass = Sim.massOf(T), rows = [['Tải khách', Math.round(T.load * 100) + '% (' + Math.round(mass / 1000) + ' t)'], ['Điện', Math.round(T.kwh) + ' kWh (hoàn ' + Math.round(T.regen) + ')'], ['Độ êm', Math.max(0, Math.round(100 - T.comfort * W.diff.comfortK)) + '/100 · ATC phanh ' + T.atcCount + ' lần']];
-    rows.forEach((r, i) => { txt(r[0], 1304, ty + 44 + i * 16, '#8aa0b5', '11px system-ui'); txt(r[1], 1640, ty + 44 + i * 16, '#c8d4e2', '11px system-ui', 'right'); });
-    const by = ty + 94; txt('Nhiệt má phanh', 1304, by, '#8aa0b5', '10px system-ui'); ctx.fillStyle = '#243447'; ctx.fillRect(1400, by - 8, 240, 7); ctx.fillStyle = T.bt > 0.8 ? '#ff5a5a' : T.bt > 0.5 ? '#ffc247' : '#4cd68a'; ctx.fillRect(1400, by - 8, 240 * Math.min(1, T.bt), 7);
-    txt('Bất an hành khách', 1304, by + 16, '#8aa0b5', '10px system-ui'); ctx.fillStyle = '#243447'; ctx.fillRect(1400, by + 8, 240, 7); ctx.fillStyle = T.anx > 70 ? '#ff5a5a' : T.anx > 40 ? '#ffc247' : '#4cd68a'; ctx.fillRect(1400, by + 8, 240 * Math.min(1, T.anx / 100), 7); }
+    rows.forEach((r, i) => { txt(r[0], PX + 12, ty + 64 + i * 16, '#8aa0b5', '11px system-ui'); txt(r[1], PX + PW - 12, ty + 64 + i * 16, '#c8d4e2', '11px system-ui', 'right'); });
+    const by = ty + 118; txt('Nhiệt má phanh', PX + 12, by, '#8aa0b5', '10px system-ui'); ctx.fillStyle = '#243447'; ctx.fillRect(PX + 130, by - 8, PW - 142, 7); ctx.fillStyle = T.bt > 0.8 ? '#ff5a5a' : T.bt > 0.5 ? '#ffc247' : '#4cd68a'; ctx.fillRect(PX + 130, by - 8, (PW - 142) * Math.min(1, T.bt), 7);
+    txt('Bất an hành khách', PX + 12, by + 16, '#8aa0b5', '10px system-ui'); ctx.fillStyle = '#243447'; ctx.fillRect(PX + 130, by + 8, PW - 142, 7); ctx.fillStyle = T.anx > 70 ? '#ff5a5a' : T.anx > 40 ? '#ffc247' : '#4cd68a'; ctx.fillRect(PX + 130, by + 8, (PW - 142) * Math.min(1, T.anx / 100), 7); }
   // ---- lớp phủ: quyết định điều độ, hướng dẫn, chưa chạy, kết thúc, cảnh báo viền
   if (W.decision) { const dd = W.decision, left = Math.max(0, dd.timeout - (W.t - dd.t0)); ctx.fillStyle = 'rgba(40,30,8,.96)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(560, 210, 800, 70, 10); ctx.fill(); ctx.stroke();
     txt(dd.text, 576, 234, '#ffe9b0', 'bold 14px system-ui'); txt('Còn ' + Math.ceil(left) + ' s', 1340, 234, '#ffc247', 'bold 13px system-ui', 'right'); button(576, 248, 170, 24, dd.a.label, () => doAct('ack'), true, '#2a8f5a'); button(756, 248, 170, 24, dd.b.label, () => doAct('no'), true, '#8f3a3a'); }
