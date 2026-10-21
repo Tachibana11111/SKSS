@@ -20,15 +20,15 @@
         { text: 'Sắp tới Shin-Osaka. Nhìn dòng "Gợi ý" và thanh khoảng cách: về N (Space) rồi bắt đầu phanh dần bằng ↓ (B3–B5) khi tới điểm gợi ý.', hint: '↓', check: (W, T) => T.phase === 'run' && dist(W, T) < 1500 },
         { text: 'Dừng đúng vạch xanh, mục tiêu ±2 m. Ở cuối chỉ dùng nấc thấp (B1–B2). Nếu lệch nhiều, nhấn R để thử lại.', hint: '↓ ↑', check: (W, T) => T.results.length >= 1 && Math.abs(T.results[T.results.length - 1].err) <= 5, note: (W, T) => T.results.length ? (Math.abs(T.results[T.results.length - 1].err) <= 2 ? 'Rất tốt!' : 'Hơi lệch, nhấn R để thử lại cho ±2 m.') : '' }
       ] },
-    { id: 'gear', title: 'Bài 2 · Thiết bị: mưa, còi, nhắc lệnh', line: 'tsk', from: 12, to: 16, diff: 'normal', weather: 'clear', seed: 12,
+    { id: 'gear', title: 'Bài 2 · Thiết bị: mưa, nhắc lệnh, cảnh báo đường', line: 'tsk', from: 12, to: 16, diff: 'normal', weather: 'clear', seed: 12,
       steps: [
         { text: 'Đóng cửa (Enter) rồi khởi hành (W). Chạy tới khoảng 200 km/h.', hint: 'Enter, W', check: (W, T) => T.v * 3.6 >= 200 },
         { text: 'Điều độ báo MƯA. Khi nghe tin, nhấn Y để nhắc lại lệnh (nếu không sẽ bị trừ điểm).', hint: 'Y', onEnter: (W, T) => root.Sim.inject(W, 'rain', { ahead: 9000 }), check: (W, T) => (W.ackCount || 0) >= 1 },
         { text: 'Bật gạt mưa (V) trước khi vào vùng mưa.', hint: 'V', check: (W, T) => T.wiper },
         { text: 'Vào vùng mưa: ATC giảm xuống 70 km/h, hãy giảm tốc kịp (phanh, rồi N). Chạy qua vùng mưa.', hint: '↓ Space', init: st => { st.in = false; }, check: (W, T, st) => { if (W.rainHere) st.in = true; return st.in && !W.rainHere; } },
         { text: 'Ra khỏi vùng mưa: tắt gạt mưa (V), kéo lại tốc độ.', hint: 'V', check: (W, T) => !T.wiper && !W.rainHere },
-        { text: 'Điều độ báo NHÂN VIÊN LÀM VIỆC cạnh đường: chạy ≤ 230 km/h và BẤM CÒI (H) khi tới gần khu đó (xem thanh cam trên bản đồ).', hint: 'H', onEnter: (W, T) => root.Sim.inject(W, 'workers', { ahead: 6000 }), check: (W, T) => W.workers.length && W.workers[0].checked && W.workers[0].hornOK, fail: (W, T) => W.workers.length && W.workers[0].checked && !W.workers[0].hornOK },
-        { text: 'Báo HƯƠU trên đường ray: bấm còi (H) khi còn khoảng 1 km để nó bỏ chạy.', hint: 'H', onEnter: (W, T) => root.Sim.inject(W, 'animal', { ahead: 5000 }), check: (W, T) => W.animals.length && W.animals[0].resolved && W.animals[0].hornOK, fail: (W, T) => W.animals.length && W.animals[0].resolved && !W.animals[0].hornOK },
+        { text: 'Điều độ báo NHÂN VIÊN LÀM VIỆC cạnh đường: giữ tốc độ ≤ 230 km/h khi qua khu đó (xem thanh cam trên bản đồ). Tàu tự bấm còi báo hiệu.', hint: '', onEnter: (W, T) => root.Sim.inject(W, 'workers', { ahead: 6000 }), check: (W, T) => W.workers.length && W.workers[0].checked && W.workers[0].hornOK, fail: (W, T) => W.workers.length && W.workers[0].checked && !W.workers[0].hornOK },
+        { text: 'Báo HƯƠU trên đường ray: tàu tự bấm còi khi còn khoảng 1 km để xua hươu; bạn chỉ cần theo dõi và giữ tốc độ an toàn.', hint: '', onEnter: (W, T) => root.Sim.inject(W, 'animal', { ahead: 5000 }), check: (W, T) => W.animals.length && W.animals[0].resolved && W.animals[0].hornOK, fail: (W, T) => W.animals.length && W.animals[0].resolved && !W.animals[0].hornOK },
         { text: 'Điều độ GIỮ tàu thêm ở ga tới. Nhấn Y xác nhận, dừng đúng vạch và chờ tới khi được thả.', hint: 'Y', onEnter: (W, T) => root.Sim.inject(W, 'hold', { sec: 90 }), check: (W, T) => (W.ackCount || 0) >= 2 },
         { text: 'Chạy tiếp, dừng ở các ga, hoàn thành chuyến.', hint: '', check: (W, T) => T.finished }
       ] },

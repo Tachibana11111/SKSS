@@ -94,7 +94,7 @@ section('5. Sự kiện: tiêm từng loại và hậu quả');
   W = mkw(); Sim.inject(W, 'animal', { ahead: 5000 }); T = run(W, w => w.animals[0].resolved); ok(W.animals[0].hornOK && !T.animalHit, 'hươu: bấm còi → an toàn');
   W = mkw(); Sim.inject(W, 'animal', { ahead: 5000 }); T = W.player; { let n = 0; while (!W.animals[0].resolved && n++ < 4e6) { Sim.tick(W, 0.05, {}, true); if (W.animals[0].hornOK) break; } } // không còi: tắt tự bấm
   { const W2 = mkw(); Sim.inject(W2, 'animal', { ahead: 5000 }); const T2 = W2.player; Sim.requestClose(T2); let n = 0; while (!W2.animals[0].resolved && n++ < 4e6) { if (T2.door === 'closed' && T2.phase === 'dwell') Sim.setPower(T2, 13); if (T2.phase === 'run') Sim.setPower(T2, T2.v < 80 ? 13 : 0); Sim.tick(W2, 0.05, {}, false); if (T2.door === 'open' && T2.phase === 'dwell' && T2.dwellT > 1) Sim.requestClose(T2); }
-    ok(T2.animalHit === 1 && T2.cut, 'hươu: không còi → va chạm, phanh khẩn'); }
+    ok(T2.animalHit === 0 && W2.animals[0].hornOK, 'hươu: người lái tự lái tay vẫn được tự bấm còi (không còn nút còi) → an toàn'); }
   W = mkw(); Sim.inject(W, 'eqk', { sec: 200 }); T = W.player; ok(T.cut && W.eqkActive, 'động đất: cắt điện'); { let n = 0; while (W.eqkActive && n++ < 1e5) Sim.tick(W, 0.05, {}, true); } ok(!W.eqkActive && !T.cut, 'động đất: hết thời gian kiểm tra thì chạy lại'); ok(W.zones.some(z => z.kind === 'eqk'), 'động đất: có vùng chạy chậm sau sự cố');
   W = mkw(); Sim.inject(W, 'overtake'); ok(!!W.decision, 'đề nghị cho vượt: có quyết định'); Sim.answerDecision(W, 'a'); ok(W.netScore === 3 && !W.decision, 'chấp nhận: +3'); Sim.inject(W, 'overtake'); Sim.answerDecision(W, 'b'); ok(W.netScore === 0, 'từ chối: −3');
   W = mkw(); Sim.inject(W, 'wire'); ok(W.wires.length === 1 && W.zones.some(z => z.kind === 'wire'), 'dây điện: tạo sự cố'); T = run(W, w => w.player.phase === 'end'); ok(T.finished, 'dây điện: vẫn hoàn thành chuyến');
@@ -219,6 +219,7 @@ section('11. Ghi: giới hạn tốc độ vào/ra đường sân ga, dừng qu�
     ok(Sim.turnoutZones(T2).some(z => z.j === od) === !expectMain, `dừng khẩn cách ${dist} m: giới hạn ghi ${expectMain ? 'không áp' : 'có áp'}`);
   }
 }
+{ const Lh = require(path.join(DRIVE, 'layout.js')); ok(Lh.stopCount('2-4-0', 'down') === 2 && Lh.stopCount('2-2-1', 'down') === 1 && Lh.stopCount('3-6-0', 'up') === 3, 'số đường dừng cùng chiều: ga 4 đường 2, ga 2-2-1 chỉ 1, ga 6 đường 3'); }
 section('12. Đèn pha: tự động / bật / tắt');
 {
   const rec = find('tsk', 'Kodama', 'down', 0, 12), mk = hour => { const W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }); W.trip.t0 = hour * 3600; return W; };

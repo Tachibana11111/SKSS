@@ -159,6 +159,8 @@
   // vị trí các ghi và ghi chéo (chữ X) mà đoàn tàu đi qua quanh một ga: dùng cho âm thanh
   function switchPoints(T) { const pts = []; for (let j = 0; j < T.M.length; j++) { const m = T.M[j], sM = m.s, dv = divertsAt(T, j);
     pts.push(sM - 1300 + 35, sM - 1300 + 115, sM + 720 + 35, sM + 720 + 115); if (dv) pts.push(sM - G.turnoutIn, sM + G.turnoutOut); } return pts.sort((a, b) => a - b); }
+  // ga có từ 2 đường dừng cùng chiều: hai tàu có thể đỗ cùng lúc (mỗi tàu một đường); chỉ 1 đường: tàu sau phải chờ phía sau
+  function sharesPlatformLane(W, Ld) { const Ly = root.Layout, m = Ld.M[Ld.k], st = m && W.line.stations[m.i]; return !!(Ly && st && st.lay && Ly.stopCount(st.lay, W.dir) >= 2); }
   function allowedSpeed(T) {
     const W = T.W;
     if (T.phase === 'dwell' || T.phase === 'end') { T.why = T.phase === 'end' ? '' : 'ga'; return 0; }
@@ -178,7 +180,7 @@
     const j = nextTarget(T), tgt = T.M[j].s, d = tgt + G.stopTol - x, q = d > 0 ? Math.sqrt(2 * G.aATC * d) : 0;
     if (q < a) { a = q; why = 'stop'; }
     const L = leaderOf(T);
-    if (L && L.phase !== 'end' && !(L.phase === 'dwell' && L.atMark) && !offMain(L)) {
+    if (L && L.phase !== 'end' && !(L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L)) && !offMain(L)) {
       const gap = L.x - L.veh.len - x - G.atcBuf;
       if (gap < 15000) { const qq = gap > 0 ? Math.sqrt(2 * G.aATC * gap) : 0; if (qq < a) { a = qq; why = 'lead'; } }
     }
@@ -278,7 +280,7 @@
       }
       if (T.atc) {
         if (T.v <= T.allowed - 0.8) {
-          T.atcOk += dt; const need = T.isLead || D.confirm === 'auto' ? 0 : D.confirm === 'auto5' ? 5 : 1e9;
+          T.atcOk += dt; const need = 0;          // ATC tự nhả khi tốc độ đã xuống dưới giới hạn (không còn nút xác nhận)
           if (T.confirmed || T.atcOk >= need) { T.atc = false; T.atcOk = 0; T.confirmed = false; T.needConfirm = false; } else T.needConfirm = true;
         } else { T.atcOk = 0; T.needConfirm = false; }
       } else T.needConfirm = false;
@@ -375,6 +377,11 @@
       else if (T.k > 0 && T.dwellT >= 20 && W.t >= Math.max(dep, T.holds[T.k] || 0) - 10) requestClose(T);
     }
   }
+  function autoHorn(T) {       // còi tự động khi tới gần nhân viên làm việc / thú rừng trên đường (không còn nút còi)
+    const W = T.W;
+    for (const z of W.workers || []) if (!z.checked && T.x >= z.s0 - 600 && T.x <= z.s0 + 200) honk(T);
+    for (const an of W.animals || []) if (an.active && !an.resolved && T.x >= an.s - 1200 && T.x <= an.s - 800) honk(T);
+  }
   function autoExtras(T) {
     const W = T.W; T.wiper = !!W.rainHere;
     const p = (W.pending || []).find(m => !m.done); if (p && W.t - p.t > 6) ackOldest(W);
@@ -466,7 +473,7 @@
       const c = autopilot(T);
       if (c !== undefined) { if (c >= 0) { T.pw = Math.round(c * 13); T.bk = 0; } else { T.pw = 0; T.bk = c < -1.05 ? 8 : Math.max(1, Math.round(-c * 7)); } }
       step(T, dt, c === undefined ? {} : { cmd: c });
-    } else step(T, dt, input || {});
+    } else { autoHorn(T); step(T, dt, input || {}); }
     if (W.eqkActive && W.t >= W.eqkRelease) {
       W.eqkActive = false;
       for (const X of allTrains(W)) { X.cut = false; if (X === T) W.zones.push({ s0: X.x - 2000, s1: X.x + 12000, v: (W.recoverV || 70) / 3.6, tA: W.t, tB: W.t + 1500, kind: 'eqk', label: 'chạy kiểm tra sau sự cố' }); }
@@ -679,7 +686,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

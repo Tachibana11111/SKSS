@@ -35,7 +35,7 @@
     // sân ga kề đường dừng của ta
     const plat = plats.find(p => Math.abs(Math.min(Math.abs(p.xa - ours.x), Math.abs(p.xb - ours.x)) - EDGE) < 0.01) || null;
     const platSign = plat ? ((plat.xa + plat.xb) / 2 > ours.x ? 1 : -1) : 1;
-    return { code, dir, tracks, plats, ref, opp: X(opp), ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
+    return { code, dir, tracks, plats, stops, ref, opp: X(opp), ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
   }
   // trọng số "đã chia ra các đường của ga" tại vị trí s (m): 0 ở xa, 1 trong phạm vi sân ga; sM = vị trí vạch dừng
   const spread = (s, sM) => smooth(sM - 1150, sM - 450, s) * (1 - smooth(sM + 30, sM + 630, s));
@@ -64,6 +64,8 @@
   // tàu dừng ở ga này phải rẽ ghi sang đường sân ga (đường dừng khác đường chính)? [I theo bố trí]
   const _div = {};
   function diverts(code, dir, pick) { const k = code + dir + pick; if (_div[k] === undefined) _div[k] = station(code, dir, pick).ours.x !== 0; return _div[k]; }
-  root.Layout = { diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
+  const _sc = {};
+  function stopCount(code, dir) { const k = code + dir; if (_sc[k] === undefined) _sc[k] = station(code, dir, 0).stops.length; return _sc[k]; }
+  root.Layout = { stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);
