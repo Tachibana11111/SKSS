@@ -138,11 +138,14 @@
         strip(() => p.xa, () => p.xb, PH, z0, z1, topc);
         for (const e of [p.xa, p.xb]) { const adj = st.tracks.some(t => Math.abs(Math.abs(t.x - e) - PEDGE) < 0.01); wall(() => e, 0, PH, z0, z1, '#3a4a5c'); if (adj) { const inward = e === p.xa ? 1 : -1; strip(() => e, () => e + inward * 0.55, PH, z0, z1, '#e8c93a'); } }
         // mái ga (nửa trong suốt)
-        // mái ga đặc (vẽ theo từng đoạn 30 m vào danh sách xa → gần để không bị phong cảnh phía sau đè lên): mặt dưới tối, mép dày
-        { const under = mixc([22, 28, 38], [104, 116, 132], day * (1 - wx * 0.3)), edge = mixc([30, 38, 50], [150, 160, 172], day * (1 - wx * 0.3));
+        // mái ga đặc, chừa hở phía trên đường ray (lùi 1,2 m khỏi mép kề đường) và nghiêng: mép kề đường thấp 5,2 m, mép ngoài / đỉnh mái cao 6,2 m (đảo: hai mái dốc về hai phía)
+        // vẽ theo từng đoạn 30 m vào danh sách xa → gần để phong cảnh phía sau không đè lên mái
+        { const under = mixc([22, 28, 38], [104, 116, 132], day * (1 - wx * 0.3)), edge = mixc([30, 38, 50], [150, 160, 172], day * (1 - wx * 0.3)), isAdj = e => st.tracks.some(t => Math.abs(Math.abs(t.x - e) - PEDGE) < 0.01),
+            adjA = isAdj(p.xa), adjB = isAdj(p.xb), ra = p.xa + (adjA ? 1.2 : 0), rb = p.xb - (adjB ? 1.2 : 0), ya = adjA ? 5.2 : 6.2, yb = adjB ? 5.2 : 6.2, rm = (ra + rb) / 2, ym = adjA && adjB ? 6.2 : (ya + yb) / 2,
+            pts = adjA && adjB ? [[ra, ya], [rm, ym], [rb, yb]] : [[ra, ya], [rb, yb]];
           for (let za = Math.max(z0, ZN); za < z1; za += 30) { const zb = Math.min(z1, za + 30);
-            items.push({ z: (za + zb) / 2, fn: () => { const A = P(p.xa, 5.6, za), B = P(p.xb, 5.6, za), C = P(p.xb, 5.6, zb), D = P(p.xa, 5.6, zb); quad(A, B, C, D, under);
-              for (const e of [p.xa, p.xb]) quad(P(e, 5.6, za), P(e, 6.1, za), P(e, 6.1, zb), P(e, 5.6, zb), edge); } }); } }
+            items.push({ z: (za + zb) / 2, fn: () => { for (let k = 0; k + 1 < pts.length; k++) quad(P(pts[k][0], pts[k][1], za), P(pts[k + 1][0], pts[k + 1][1], za), P(pts[k + 1][0], pts[k + 1][1], zb), P(pts[k][0], pts[k][1], zb), under);
+              for (const [x, y] of [pts[0], pts[pts.length - 1]]) quad(P(x, y, za), P(x, y + 0.45, za), P(x, y + 0.45, zb), P(x, y, zb), edge); } }); } }
         // cột mái
         const xc = (p.xa + p.xb) / 2; for (let zz = Math.ceil((z0 - d) / 30) * 30 + d; zz < z1; zz += 30) if (zz >= ZN) items.push({ z: zz, fn: () => { const a = P(xc, PH, zz), b = P(xc, 5.6, zz); ctx.strokeStyle = '#2c3d52'; ctx.lineWidth = Math.max(1, 0.35 * c.f / zz); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } });
         // hành khách trên sân ga (vơi dần khi lên tàu)
