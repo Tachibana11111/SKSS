@@ -232,7 +232,17 @@
     if (Ld && Ld.phase !== 'end') { const tail = Ld.x - Ld.veh.len - T.x, ic = iconFor(Ld.veh.key); if (tail > ZN && tail < 6000) { const qL = Ld.phase === 'dwell' ? sts.find(q => Math.abs(q.m.s - Ld.x) < 60) : null, X = qL ? qL.st.ours.x : 0; items.push({ z: tail, fn: () => { if (ic) drawFront(ic, X, tail, fadeA(tail)); else { const w = 3.4 * c.f / tail, a = P(X, 0.1, tail); ctx.fillStyle = '#d8dee6'; ctx.fillRect(a[0] - w / 2, a[1] - w * 1.1, w, w * 1.1); } if (Ld.phase === 'run') { const a = P(X, 1.1, tail), w = 3.4 * c.f / tail; ctx.fillStyle = 'rgba(255,40,30,.95)'; ctx.beginPath(); ctx.arc(a[0] - w * 0.3, a[1], Math.max(1, w * 0.04), 0, 7); ctx.arc(a[0] + w * 0.3, a[1], Math.max(1, w * 0.04), 0, 7); ctx.fill(); } } }); } }
     const ricon = iconFor(W.lineId === 'toh' ? 'E5' : 'N700');
     // vẽ thân tàu bằng các lát ảnh nhìn ngang chiếu phối cảnh. sign=-1: thân kéo về phía sau mũi (tàu vượt); sign=+1: thân kéo ra xa mũi (tàu ngược chiều)
-    const slices = (sp, lenM, zRef, fxp, sign) => { if (!sp || !sp.ready) return; const m = sp.meta, N = 56; for (let i = 0; i < N; i++) { const t0_ = i / N, t1_ = (i + 1) / N, za0 = zRef + sign * lenM * t0_, zb0 = zRef + sign * lenM * t1_, lo = Math.min(za0, zb0), hi = Math.max(za0, zb0); if (hi < ZN) continue; const a1 = Math.max(lo, ZN), zm = (a1 + hi) / 2, xa = P(fxp, 0, a1)[0], xb = P(fxp, 0, hi)[0], hgt = c.f * 3.7 / zm, a = P(fxp, 0.1, zm), sx = (1 - t1_) * m.width, sw = Math.max(1, m.width / N + 1); ctx.drawImage(sp.img, sx, 0, sw, m.height, Math.min(xa, xb), a[1] - hgt, Math.abs(xb - xa) + 1, hgt); } };
+    const slices = (sp, lenM, zRef, fxp, sign) => {
+      if (!sp || !sp.ready) return; const m = sp.meta, xrel = Math.max(0.5, Math.abs(fxp - c.lane)), lo = sign < 0 ? Math.max(zRef - lenM, ZN) : Math.max(zRef, ZN), hi = sign < 0 ? zRef : zRef + lenM; if (hi <= lo) return;
+      const tOf = z => sign < 0 ? (zRef - z) / lenM : (z - zRef) / lenM;           // 0 ở mũi tàu, 1 ở đuôi
+      let z = lo, n = 0;
+      while (z < hi && n++ < 700) {
+        const dz = clamp(z * z * 3 / (c.f * xrel), 0.04, 8), z2 = Math.min(hi, z + dz), zm = (z + z2) / 2, xa = P(fxp, 0, z)[0], xb = P(fxp, 0, z2)[0];   // lát mảnh ≤ ~3 px nên thân tàu liền một khối, không bậc thang
+        const x0 = Math.min(xa, xb), x1 = Math.max(xa, xb);
+        if (x1 > px - 40 && x0 < px + pw + 40) { const s0 = (1 - tOf(z)) * m.width, s1 = (1 - tOf(z2)) * m.width, sx = Math.min(s0, s1), sw = Math.max(0.5, Math.abs(s1 - s0)), hgt = c.f * 3.7 / zm, a0 = P(fxp, 0.1, zm); ctx.drawImage(sp.img, sx, 0, Math.min(sw, m.width - sx), m.height, x0, a0[1] - hgt, x1 - x0 + 0.8, hgt); }
+        z = z2;
+      }
+    };
     if (T.v > 20) for (const t0 of W.opposing || []) { const VR = 200, zN = (t0 - W.t) * VR, key = W.lineId === 'toh' ? 'E5' : 'N700', veh = S.VEH[key] || S.VEH.N700; if (zN > 900 || zN < -veh.len - 20) continue;
       const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), sp = R.sprites && R.sprites[SMAP[key] || 'n700'];
       items.push({ z: Math.max(zN, ZN + 1), fn: () => { if (zN > ZN && ricon) drawFront(ricon, oppAt(zN), zN, 1); if (zN < 60) slices(sp, veh.len, zN, fxp, 1); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
