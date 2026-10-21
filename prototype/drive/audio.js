@@ -179,22 +179,26 @@
     if (T.animalHit > (p.animalHit || 0)) this.thud();
     if (T.finished && !p.finished) this.finish(true);
     if (W.msgs.length > this.msgCount) { const nm = W.msgs.slice(this.msgCount).filter(m => m.kind !== 'pa'); this.msgCount = W.msgs.length; if (nm.length && !(W.eqkActive && !p.eqk)) this.msg(nm.some(m => m.kind === 'bad') ? 'bad' : nm.some(m => m.kind === 'warn') ? 'warn' : nm[nm.length - 1].kind); }
+    if (W.decision && !p.dec) this.tone(660, 0.12, 'triangle', 0.18) ; p.dec = !!W.decision;
+    if (W.fireActive && !p.fire) { for (let i = 0; i < 8; i++) this.tone(i % 2 ? 1400 : 1100, 0.18, 'square', 0.12, i * 0.2); } p.fire = W.fireActive;
+    if ((W.wires || []).length > (p.wires || 0)) { this.burst(1.2, 0.4, 3000, 0.6, 'bandpass'); this.tone(90, 0.5, 'sawtooth', 0.12); } p.wires = (W.wires || []).length;
+    if (W.paEvent !== undefined && W.paEvent !== p.pa) { this.tone(880, 0.15, 'sine', 0.14); this.tone(1175, 0.35, 'sine', 0.14, 0.18); } p.pa = W.paEvent;
     this.announce(W, T, p);
     this.prev = Object.assign(p, { horn: T.horn, atc: T.atc, door: T.door, phase: T.phase, eqk: W.eqkActive, finished: T.finished, pw: T.pw, bk: T.bk, tun: inTun, animalHit: T.animalHit });
   };
   GameAudio.prototype.inTunnel = function (W, T) {
-    for (const [k0, k1] of root.Sim.TUNNELS) { const a = root.Sim.sOfKm(k0, W.dir), b = root.Sim.sOfKm(k1, W.dir); if (T.x >= Math.min(a, b) && T.x <= Math.max(a, b)) return true; } return false;
+    return root.Sim.inTunnel(W, T.x);
   };
   // ---- lời phát thanh ----
   GameAudio.prototype.announce = function (W, T, p) {
     if (this.annMode === 'off') return;
-    const M = T.M, A = this.ann, id = W.trip.rec[0] + W.trip.rec[1];
-    const nameJ = k => JPN[M[k].i], typeJ = TYPEJ[W.trip.rec[0]] || '', no = W.trip.rec[1];
+    const M = T.M, A = this.ann;
+    const nameJ = k => M[k].jp || M[k].name, typeJ = TYPEJ[W.trip.rec.t] || '', no = W.trip.rec.n;
     const last = M.length - 1, destJ = nameJ(last), dest = M[last].name;
     const j = root.Sim.nextTarget(T), nxt = M[j];
     // lúc bắt đầu chuyến
     if (T.started && !A.start) { A.start = true;
-      this.say(W, { ja: `本日も、東海道新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, en: `Thank you for riding the Tokaido Shinkansen. This is the ${W.trip.rec[0]} number ${no} bound for ${dest}.`, vi: `Cảm ơn quý khách đã đi Tokaido Shinkansen. Đây là ${W.trip.rec[0]} số ${no} đi ${dest}.` }, false, true); }
+      this.say(W, { ja: `本日も、${W.lineId === 'toh' ? '東北' : '東海道・山陽・九州'}新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, en: `Thank you for riding the Shinkansen. This is the ${W.trip.rec.t} number ${no} bound for ${dest}.`, vi: `Cảm ơn quý khách đã đi Shinkansen. Đây là ${W.trip.rec.t} số ${no} đi ${dest}.` }, false, true); }
     // đóng cửa
     if (T.door === 'closing' && p.door !== 'closing' && T.started) this.say(W, { ja: 'ドアが閉まります。ご注意ください。', en: 'The doors are closing. Please stand clear.', vi: 'Cửa sắp đóng, xin quý khách chú ý.' }, false, false);
     // sau khi rời ga: ga dừng kế tiếp, và xin lỗi nếu trễ
