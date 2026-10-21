@@ -138,7 +138,11 @@
         strip(() => p.xa, () => p.xb, PH, z0, z1, topc);
         for (const e of [p.xa, p.xb]) { const adj = st.tracks.some(t => Math.abs(Math.abs(t.x - e) - PEDGE) < 0.01); wall(() => e, 0, PH, z0, z1, '#3a4a5c'); if (adj) { const inward = e === p.xa ? 1 : -1; strip(() => e, () => e + inward * 0.55, PH, z0, z1, '#e8c93a'); } }
         // mái ga (nửa trong suốt)
-        strip(() => p.xa, () => p.xb, 5.6, z0, z1, 'rgba(60,76,98,.35)');
+        // mái ga đặc (vẽ theo từng đoạn 30 m vào danh sách xa → gần để không bị phong cảnh phía sau đè lên): mặt dưới tối, mép dày
+        { const under = mixc([22, 28, 38], [104, 116, 132], day * (1 - wx * 0.3)), edge = mixc([30, 38, 50], [150, 160, 172], day * (1 - wx * 0.3));
+          for (let za = Math.max(z0, ZN); za < z1; za += 30) { const zb = Math.min(z1, za + 30);
+            items.push({ z: (za + zb) / 2, fn: () => { const A = P(p.xa, 5.6, za), B = P(p.xb, 5.6, za), C = P(p.xb, 5.6, zb), D = P(p.xa, 5.6, zb); quad(A, B, C, D, under);
+              for (const e of [p.xa, p.xb]) quad(P(e, 5.6, za), P(e, 6.1, za), P(e, 6.1, zb), P(e, 5.6, zb), edge); } }); } }
         // cột mái
         const xc = (p.xa + p.xb) / 2; for (let zz = Math.ceil((z0 - d) / 30) * 30 + d; zz < z1; zz += 30) if (zz >= ZN) items.push({ z: zz, fn: () => { const a = P(xc, PH, zz), b = P(xc, 5.6, zz); ctx.strokeStyle = '#2c3d52'; ctx.lineWidth = Math.max(1, 0.35 * c.f / zz); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } });
         // hành khách trên sân ga (vơi dần khi lên tàu)
