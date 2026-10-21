@@ -5,7 +5,7 @@
   const VI = { Tokyo: 'Tokyo', Shinagawa: 'Shinagawa' };
   const TYPEJ = { Nozomi: 'のぞみ', Hikari: 'ひかり', Kodama: 'こだま' };
   function GameAudio() {
-    this.ctx = null; this.enabled = true; this.vol = 0.6; this.ready = false; this.annMode = 'ja'; this.pax = true;
+    this.ctx = null; this.enabled = true; this.vol = 0.6; this.ready = false; this.annMode = 'ja';
     this.prev = {}; this.msgCount = 0; this.lastConfirmBeep = 0; this.lastResults = 0; this.q = []; this.ann = {}; this.next = {};
   }
   GameAudio.prototype.unlock = function () {
@@ -25,10 +25,6 @@
     this.squeal = mk(noise(), flt('bandpass', 3200, 12), 0);
     this.hiss = mk(noise(), flt('highpass', 4500), 0);
     this.quake = mk(noise(), flt('lowpass', 70), 0);
-    // tiếng người nói chuyện: nhiễu qua hai bộ lọc dải (formant) và điều biến chậm
-    const pn = noise(), pf1 = flt('bandpass', 450, 1.6), pf2 = flt('bandpass', 1500, 2.2), pg = c.createGain(); pg.gain.value = 0;
-    pn.connect(pf1); pn.connect(pf2); pf1.connect(pg); pf2.connect(pg); pg.connect(this.master); this.murmur = { g: pg, f: pf1, f2: pf2 };
-    const lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = 0.37; lg.gain.value = 0.015; lfo.connect(lg); lg.connect(pg.gain); lfo.start();
     // motor kéo
     this.motorO = c.createOscillator(); this.motorO.type = 'sawtooth'; this.motorO.frequency.value = 120;
     this.motorO2 = c.createOscillator(); this.motorO2.type = 'square'; this.motorO2.frequency.value = 240;
@@ -40,7 +36,7 @@
     // bản ghi thật: Odawara (Internet Archive, public domain): nền ga 10–118 s; tàu qua/rời ga ở các đoạn CLIPS
     try { const mk2 = () => { const e = new Audio('assets/audio/odawara_leaving.mp3'); e.preload = 'auto'; e.volume = 0; return e; }; this.amb = mk2(); this.clipEl = mk2(); this.ambOn = false; this.clipT = 0; } catch (e) { this.amb = null; }
     this.ready = true;
-    this.rt = { comp: 20 + Math.random() * 30, oppose: 90 + Math.random() * 120, thunder: 40 + Math.random() * 50, cough: 25 + Math.random() * 30, baby: 150 + Math.random() * 150, board: 0, last: performance.now() };
+    this.rt = { comp: 20 + Math.random() * 30, oppose: 90 + Math.random() * 120, thunder: 40 + Math.random() * 50, last: performance.now() };
   };
   // tua tới t giây nếu phần đó đã sẵn sàng (máy chủ không hỗ trợ Range thì phải chờ tải xong)
   function seekTo(e, t) { try { if (e.seekable && e.seekable.length && e.seekable.end(e.seekable.length - 1) >= t) { e.currentTime = t; return true; } } catch (x) { } return false; }
@@ -94,10 +90,6 @@
   GameAudio.prototype.eew = function () { for (let i = 0; i < 6; i++) { this.tone(932, 0.16, 'sine', 0.22, i * 0.34); this.tone(698, 0.16, 'sine', 0.22, i * 0.34 + 0.17); } };
   GameAudio.prototype.eb = function () { this.burst(1.2, 0.35, 6000, 0.8, 'highpass'); this.tone(900, 0.2, 'square', 0.12); this.tone(700, 0.2, 'square', 0.12, 0.25); };
   GameAudio.prototype.thud = function () { this.tone(80, 0.35, 'sine', 0.5, 0, 40); this.burst(0.25, 0.4, 500, 1, 'lowpass'); };
-  GameAudio.prototype.cough = function () { this.burst(0.12, 0.09, 700, 1.4, 'bandpass'); this.burst(0.1, 0.07, 650, 1.4, 'bandpass', 0.22); };
-  GameAudio.prototype.baby = function () { for (let i = 0; i < 3; i++) { const t0 = i * 0.9; this.tone(430, 0.7, 'sawtooth', 0.025, t0, 560); this.tone(860, 0.7, 'sine', 0.012, t0, 1100); } };
-  GameAudio.prototype.footstep = function (g) { this.burst(0.07, g, 220, 1, 'lowpass'); };
-  GameAudio.prototype.suitcase = function () { this.burst(0.5, 0.05, 900, 1.2, 'bandpass', 0, 600); };
   GameAudio.prototype.msg = function (kind) {
     if (kind === 'bad') { for (let i = 0; i < 3; i++) this.tone(520, 0.14, 'triangle', 0.2, i * 0.2); }
     else if (kind === 'warn') { this.tone(700, 0.12, 'triangle', 0.16); this.tone(880, 0.16, 'triangle', 0.16, 0.16); }
@@ -159,10 +151,6 @@
     set(this.squeal, frc < -0.15 && v > 0.5 && v < 22 ? 0.06 * Math.min(1, -frc) * (1 - v / 22) : 0, 0.05);
     set(this.hiss, T.prevF !== undefined && T.prevF < -0.3 && frc > T.prevF + 0.01 && v < 40 ? 0.12 : 0, 0.08);
     T.prevF = frc;
-    // hành khách: ồn hơn khi đỗ ga, mở cửa; nhỏ khi chạy; to khi có sự cố
-    const paxLevel = !this.pax ? 0 : (dw && T.door === 'open' ? 0.11 : dw ? 0.07 : 0.045) * (W.eqkActive || T.cut ? 2 : 1) * (inTun ? 0.8 : 1);
-    this.murmur.f.frequency.setTargetAtTime(420 + 80 * Math.sin(now / 3100), t, 0.5); this.murmur.f2.frequency.setTargetAtTime(1400 + 300 * Math.sin(now / 2300), t, 0.5);
-    set(this.murmur, paxLevel, 0.6);
     // trụ điện lướt qua (mỗi 50 m)
     if (active && v > 8) { const idx = Math.floor(T.x / 50); if (this.lastMast !== undefined && idx !== this.lastMast) this.burst(0.09, 0.05 + 0.18 * sp, 700 + 900 * sp, 0.8); this.lastMast = idx; } else this.lastMast = undefined;
     if (!this.enabled || st.paused) { this.ambience(0); return; }
@@ -171,8 +159,6 @@
       R.comp -= dt; if (R.comp < 0) { this.compressor(); R.comp = 35 + Math.random() * 50; }
       if (this.prevWt !== undefined && v > 40) for (const t0 of W.opposing || []) if (this.prevWt < t0 && W.t >= t0) this.playClip(0.35 + 0.4 * sp);
       if (W.weatherKind === 'typhoon' || W.weatherKind === 'rain') { R.thunder -= dt; if (R.thunder < 0) { if (W.weatherKind === 'typhoon' || Math.random() < 0.4) this.thunder(); R.thunder = 35 + Math.random() * 70; } }
-      if (this.pax) { R.cough -= dt; if (R.cough < 0) { this.cough(); R.cough = 20 + Math.random() * 40; } R.baby -= dt; if (R.baby < 0) { this.baby(); R.baby = 200 + Math.random() * 300; } }
-      if (this.pax && dw && T.door === 'open' && T.dwellT < 14) { R.board -= dt; if (R.board < 0) { this.footstep(0.07 + Math.random() * 0.05); if (Math.random() < 0.18) this.suitcase(); R.board = 0.22 + Math.random() * 0.3; } }
     }
     this.ambience(dw && !st.paused && st.scale <= 4 ? (T.door === 'open' ? 0.55 : 0.4) : 0);
     if (dw && W.passers && W.passers[T.k]) for (const pa of W.passers[T.k]) { const u = (W.t - (pa.t - 4.5)) / 9; if (u > 0 && u < 1 && !pa.played) { pa.played = true; this.playClip(0.95, pa.t | 0); } if (u >= 1) pa.played = false; }

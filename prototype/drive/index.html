@@ -66,7 +66,6 @@
   <div class="row">
     <label><input type="checkbox" id="snd" checked> âm thanh</label> <input id="vol" type="range" min="0" max="100" value="60" style="width:90px;vertical-align:middle">
     <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
-    <label><input type="checkbox" id="pax" checked> tiếng hành khách</label>
   </div>
 </header>
 <div id="wrap">
@@ -139,11 +138,11 @@ function setMode(m) {
 }
 $('tabDrive').onclick = () => { tutorialRun = false; setMode('drive'); if (!W) startDrive(); }; $('tabDisp').onclick = () => setMode('dispatch'); $('tabTut').onclick = () => setMode('tutorial'); $('tabProf').onclick = () => setMode('profile');
 // ---- lưu cài đặt
-const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('pax').checked = S.pax; $('diff').value = S.diff || 'normal';
+const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('diff').value = S.diff || 'normal';
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
 $('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
-$('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('pax').onchange = () => { AUD.pax = $('pax').checked; Store.setting('pax', $('pax').checked); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
-AUD.setAnn($('ann').value); AUD.pax = $('pax').checked; AUD.vol = +$('vol').value / 100; AUD.enabled = $('snd').checked;
+$('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
+AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('snd').checked;
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
