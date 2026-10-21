@@ -63,15 +63,20 @@
     const quad = (a, b, d, e, fill) => { ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(d[0], d[1]); ctx.lineTo(e[0], e[1]); ctx.closePath(); ctx.fill(); };
     const zsteps = (z0, z1) => { const a = [z0]; let z = z0; while (z < z1 - 0.01) { z = Math.min(z1, z + (z < 150 ? 12 : z < 600 ? 40 : 120)); a.push(z); } return a; };
     // dải nằm ngang theo chiều dài (bám đường cong): xa(z), xb(z) là X hai mép tại khoảng cách z; Y cố định
-    const strip = (xa, xb, Y, z0, z1, fill) => { const zs = zsteps(Math.max(z0, ZN), Math.min(z1, ZF)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xa(z), Y, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xb(zs[k]), Y, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
+    const strip = (xa, xb, Y, z0, z1, fill) => { const zs = zsteps(Math.max(z0, ZN), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xa(z), Y, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xb(zs[k]), Y, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
     // tường đứng dọc theo chiều dài ở X(z), từ Y0 đến Y1
-    const wall = (xf, Y0, Y1, z0, z1, fill) => { const zs = zsteps(Math.max(z0, ZN), Math.min(z1, ZF)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), Y1, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xf(zs[k]), Y0, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
+    const wall = (xf, Y0, Y1, z0, z1, fill) => { const zs = zsteps(Math.max(z0, ZN), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), Y1, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xf(zs[k]), Y0, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
     const fadeA = Z => clamp(1.15 - Z / fogZ, 0.12, 1);
     const km = z => S.kmOfS(T.x + z, W.dir, L.kmEnd), biomeAt = z => S.biomeAt(L, km(z));
     const rgbOf = s => s.match(/\d+/g).map(Number);
 
-    // ---- bầu trời
+    // trạng thái hầm: zExit = khoảng cách tới cửa ra khi đang ở trong hầm; zLim = chân trời vẽ hiện tại (trong hầm cắt ở cửa ra, phần ngoài hầm vẽ riêng trong khung cửa ra)
+    let zExit = null; for (const [k0, k1] of L.meta.tunnels) { const a = S.sOfKm(k0, W.dir, L.kmEnd), b = S.sOfKm(k1, W.dir, L.kmEnd), lo = Math.min(a, b), hi = Math.max(a, b); if (T.x >= lo && T.x <= hi) zExit = hi - T.x; }
+    let zLim = zExit !== null ? zExit : ZF;
     const top = mixc([6, 12, 24], [92, 160, 224], day), hor = mixc([14, 24, 42], [183, 214, 240], day);
+    const gb = biomeAt(60); const gcol = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
+    // ---- nền: bầu trời, núi, mặt đất, sương mù (dùng cho phong cảnh thường và cho phần nhìn ra ngoài qua cửa hầm)
+    const backdrop = () => {
     const g = ctx.createLinearGradient(0, py - 40, 0, c.hy + 4); g.addColorStop(0, mixc(rgbOf(top), [70, 78, 90], wx)); g.addColorStop(1, mixc(rgbOf(hor), [110, 118, 128], wx));
     ctx.fillStyle = g; ctx.fillRect(px - 60, py - 60, pw + 120, ph + 120);
     if (dusk > 0.05 && wx < 0.3) { ctx.fillStyle = 'rgba(255,140,60,' + Math.min(0.35, dusk * 0.3) + ')'; ctx.fillRect(px - 60, c.hy - 60, pw + 120, 70); }
@@ -86,14 +91,14 @@
       if (sx > px - wF && sx < px + pw + wF) { ctx.fillStyle = mixc([32, 44, 78], [86, 112, 150], day * (1 - wx * 0.6)); ctx.beginPath(); ctx.moveTo(sx - wF, yb); ctx.lineTo(sx - wF * 0.07, yb - hF); ctx.lineTo(sx + wF * 0.07, yb - hF); ctx.lineTo(sx + wF, yb); ctx.closePath(); ctx.fill(); ctx.fillStyle = 'rgba(245,248,255,' + (0.5 + 0.4 * day) + ')'; ctx.beginPath(); ctx.moveTo(sx - wF * 0.3, yb - hF * 0.72); ctx.lineTo(sx - wF * 0.07, yb - hF); ctx.lineTo(sx + wF * 0.07, yb - hF); ctx.lineTo(sx + wF * 0.3, yb - hF * 0.7); ctx.lineTo(sx + wF * 0.16, yb - hF * 0.78); ctx.lineTo(sx + wF * 0.05, yb - hF * 0.68); ctx.lineTo(sx - wF * 0.07, yb - hF * 0.8); ctx.closePath(); ctx.fill(); } } }
 
     // ---- mặt đất
-    const gb = biomeAt(60); const gcol = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
     const gg = ctx.createLinearGradient(0, c.hy, 0, py + ph); gg.addColorStop(0, mixc([14, 20, 27], rgbOf(mixc([gcol[0] * 0.8, gcol[1] * 0.85, gcol[2] * 0.9], gcol, 0)), day * (1 - wx * 0.35)) ); gg.addColorStop(1, mixc([8, 12, 16], gcol, day * (1 - wx * 0.3)));
     ctx.fillStyle = gg; ctx.fillRect(px - 60, c.hy + 3, pw + 120, py + ph - c.hy + 60);
     // sương mù/thời tiết kéo màu đường chân trời xuống mặt đất xa
     const fg = ctx.createLinearGradient(0, c.hy, 0, c.hy + 60); fg.addColorStop(0, mixc(rgbOf(hor), [110, 118, 128], wx)); fg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.globalAlpha = 0.55; ctx.fillStyle = fg; ctx.fillRect(px - 60, c.hy + 2, pw + 120, 60); ctx.globalAlpha = 1;
 
-    // ---- hầm: khi đang ở trong hầm vẽ lòng hầm thay cho phong cảnh
-    let zExit = null; for (const [k0, k1] of L.meta.tunnels) { const a = S.sOfKm(k0, W.dir, L.kmEnd), b = S.sOfKm(k1, W.dir, L.kmEnd), lo = Math.min(a, b), hi = Math.max(a, b); if (T.x >= lo && T.x <= hi) zExit = hi - T.x; }
+    };
+    if (zExit === null) backdrop();
+
     // ---- cầu (sông bên dưới) và cầu cạn: bản mặt cầu bê tông rộng ra theo sân ga, lan can và gờ bệ
     if (zExit === null) {
       const runs = []; let prev = null; for (let z = 0; z <= ZF; z += 20) { const k = S.structAt(L, km(z)); if (k === prev) runs[runs.length - 1][1] = z + 20; else { runs.push([z, z + 20, k]); prev = k; } }
@@ -108,24 +113,36 @@
 
     // ---- đường ray và đá dăm (theo đường cong); các đường của ga toả ra từ đường chính
     const ballast = mixc([20, 24, 28], [88, 88, 84], day * (1 - wx * 0.3));
-    const ballastStrip = (xf, z0, z1, alpha) => { z0 = Math.max(z0, ZN); z1 = Math.min(z1, ZF); if (z1 <= z0) return; strip(z => xf(z) - 2.1, z => xf(z) + 2.1, 0, z0, z1, ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')')); };
+    const ballastStrip = (xf, z0, z1, alpha) => { z0 = Math.max(z0, ZN); z1 = Math.min(z1, zLim); if (z1 <= z0) return; strip(z => xf(z) - 2.1, z => xf(z) + 2.1, 0, z0, z1, ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')')); };
     const railStrip = (xf, z0, z1, sleepers) => {
-      z0 = Math.max(z0, ZN); z1 = Math.min(z1, ZF); if (z1 <= z0) return;
+      z0 = Math.max(z0, ZN); z1 = Math.min(z1, zLim); if (z1 <= z0) return;
       if (sleepers) for (let k = Math.ceil((T.x + z0) / 1.3), z = k * 1.3 - T.x; z < Math.min(z1, 110); k++, z = k * 1.3 - T.x) { const X = xf(z), p = P(X - 1.3, 0, z), q = P(X + 1.3, 0, z), d = P(X + 1.3, 0, z + 0.28), e = P(X - 1.3, 0, z + 0.28); if (d[1] - q[1] < 0.4 && z > 40) continue; quad(p, q, d, e, 'rgba(34,36,40,.85)'); }
       for (const sx of [-GAUGE / 2, GAUGE / 2]) strip(z => xf(z) + sx - 0.075, z => xf(z) + sx + 0.075, 0.15, z0, z1, 'rgba(208,216,226,.9)');
     };
-    const drawTracks = () => {
-      const parts = [[() => 0, ZN, ZF, 1], [oppAt, ZN, ZF, zExit === null ? 0.95 : 1]];
-      for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + 630 < ZN || q.d - 1150 > ZF) continue; parts.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), q.d - 1150, q.d + 630, 0.95]); }
+    const drawTracks = (zFrom) => {
+      const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]];
+      for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + 630 < ZN || q.d - 1150 > ZF) continue; parts.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), Math.max(zf, q.d - 1150), q.d + 630, 0.95]); }
       for (const [xf, z0, z1, a] of parts) ballastStrip(xf, z0, z1, a);       // đá dăm trước: đường nhánh không còn đè lên ray đường chính
       for (const [xf, z0, z1] of parts) railStrip(xf, z0, z1, true);
       // ghi chữ X (hai ghi bắt chéo) nối đường ta và đường ngược chiều ở hai đầu mỗi ga
-      for (const q of sts) for (const zc of [q.d - 1300, q.d + 720]) { if (zc + 150 < ZN || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); };
+      for (const q of sts) for (const zc of [q.d - 1300, q.d + 720]) { if (zc + 150 < zf || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); };
         railStrip(z => lerp(0, oppAt(z), sm((z - zc) / 150)), zc, zc + 150, false); railStrip(z => lerp(oppAt(z), 0, sm((z - zc) / 150)), zc, zc + 150, false); }
     };
-    if (zExit !== null) {   // lòng hầm làm nền; ga ngầm (Tokyo, Ueno của Tohoku) vẫn vẽ sân ga bên trên
-      const tw = ctx.createLinearGradient(0, py, 0, py + ph); tw.addColorStop(0, '#2a3038'); tw.addColorStop(0.5, '#0c0f13'); tw.addColorStop(1, '#1a1f26'); ctx.fillStyle = tw; ctx.fillRect(px - 60, py - 60, pw + 120, ph + 120);
-      for (const sgn of [-1, 1]) for (let k = Math.ceil((T.x + ZN) / 18), z = k * 18 - T.x; z < 420; k++, z = k * 18 - T.x) { const a = P(sgn * 2.9, 6.3, z); const r = Math.max(1.2, 0.18 * c.f / z); const gl = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], r * 4); gl.addColorStop(0, 'rgba(255,236,170,.9)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(a[0] - r * 4, a[1] - r * 4, r * 8, r * 8); }
+    // khung cửa ra hầm: hầm thường là vòm; ga ngầm (Tokyo, Ueno của Tohoku) mở rộng bằng cả bề ngang sân ga
+    const openingPoly = () => { if (zExit === null || zExit <= ZN) return null; const z = zExit, near = sts.filter(q => Math.abs(q.d - z) < 150 && q.st.extent), wide = near.length ? [Math.min(...near.map(q => q.st.extent[0])) - 0.8, Math.max(...near.map(q => q.st.extent[1])) + 0.8] : null, pts = [];
+      if (wide) { const [x0, x1] = wide; for (const [x, y] of [[x1, 0], [x1, 6.2], [x1 - 2.5, 8.0], [x0 + 2.5, 8.0], [x0, 6.2], [x0, 0]]) pts.push(P(x, y, z)); }
+      else { for (let i = 0; i <= 28; i++) { const th = Math.PI * i / 28; pts.push(P(5.0 * Math.cos(th), Math.sin(th) * 7.4 + 0.0, z)); } pts.unshift(P(5.0, 0, z)); pts.push(P(-5.0, 0, z)); }
+      return pts; };
+    const polyPath = pts => { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); };
+    const outItems = [];
+    if (zExit !== null) {
+      const op = openingPoly();
+      if (op) { ctx.save(); polyPath(op); ctx.clip(); backdrop(); zLim = ZF; drawTracks(zExit); outItems.length = 0; zLim = zExit; ctx.restore(); }
+    }
+    if (zExit !== null) {   // lòng hầm: tường tối có khoét lỗ ở cửa ra (nhìn thấy phong cảnh bên ngoài), đèn trần
+      const tw = ctx.createLinearGradient(0, py, 0, py + ph); tw.addColorStop(0, '#2a3038'); tw.addColorStop(0.5, '#0c0f13'); tw.addColorStop(1, '#1a1f26'); ctx.fillStyle = tw;
+      const op = openingPoly(); ctx.beginPath(); ctx.rect(px - 60, py - 60, pw + 120, ph + 120); if (op) op.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.fill('evenodd');
+      for (const sgn of [-1, 1]) for (let k = Math.ceil((T.x + ZN) / 18), z = k * 18 - T.x; z < Math.min(420, zExit); k++, z = k * 18 - T.x) { const a = P(sgn * 2.9, 6.3, z); const r = Math.max(1.2, 0.18 * c.f / z); const gl = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], r * 4); gl.addColorStop(0, 'rgba(255,236,170,.9)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(a[0] - r * 4, a[1] - r * 4, r * 8, r * 8); }
     }
     drawTracks();
     // đèn pha: chỉ bật khi tối, trong hầm, hoặc mưa/tuyết lúc nhá nhem; ban ngày ngoài hầm thì tắt. Chùm sáng bám đường đang chạy (kể cả đường nhánh/đường cong)
@@ -176,20 +193,21 @@
     }
 
     // ---- dây điện trên cao (mỗi đường) và trụ điện giữa hai đường chính
-    const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, ZN), Math.min(z1, ZF)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
+    const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, ZN), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
     ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; wire(() => 0, ZN, ZF); wire(oppAt, ZN, ZF);
     for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; wire(z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), q.d - 1150, q.d + 630); }
-    for (let k = Math.ceil((T.x + ZN) / 50), z = k * 50 - T.x; z < 1600; k++, z = k * 50 - T.x) items.push({ z, fn: () => { const oz = oppAt(z), X = oz / 2, a = P(X, 0, z), b = P(X, 7.0, z), w = Math.max(1, 0.32 * c.f / z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, w * 0.5); for (const XX of [0, oz]) { const e = P(XX, 5.5, z); ctx.beginPath(); ctx.moveTo(b[0], b[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(b[0] - w, b[1] - 1, w * 2, 2); } } });
+    for (let k = Math.ceil((T.x + ZN) / 50), z = k * 50 - T.x; z < Math.min(1600, zLim); k++, z = k * 50 - T.x) items.push({ z, fn: () => { const oz = oppAt(z), X = oz / 2, a = P(X, 0, z), b = P(X, 7.0, z), w = Math.max(1, 0.32 * c.f / z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, w * 0.5); for (const XX of [0, oz]) { const e = P(XX, 5.5, z); ctx.beginPath(); ctx.moveTo(b[0], b[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(b[0] - w, b[1] - 1, w * 2, 2); } } });
 
     // ---- phong cảnh hai bên (không vẽ trong hầm); giữ hành lang đường sắt và sân ga
-    if (zExit === null) {
+    {
+      const zMin = zExit === null ? 6 : zExit + 2, tgt = zExit === null ? items : outItems;
       const bands = [[10, 160, 16, 0], [160, 760, 38, 1], [760, 2400, 120, 2]];
       for (const [za, zb, step, bi] of bands) for (let ci = Math.floor((T.x + za) / step); ci * step - T.x < zb; ci++) {
         const z = ci * step - T.x; if (z < za * 0.9) continue; const bio = biomeAt(z);
-        for (const side of [-1, 1]) { const o = cellObject(ci + bi * 100000, bio, side); if (!o) continue; const zz = z + (hash(ci * 3 + side) - 0.5) * step * 0.6; if (zz < 6) continue; if (S.structAt(L, km(zz)) === 'b' || S.structAt(L, km(zz + (o.d || 0))) === 'b') continue;      // trên sông không có nhà, ruộng, cây
+        for (const side of [-1, 1]) { const o = cellObject(ci + bi * 100000, bio, side); if (!o) continue; const zz = z + (hash(ci * 3 + side) - 0.5) * step * 0.6; if (zz < zMin) continue; if (S.structAt(L, km(zz)) === 'b' || S.structAt(L, km(zz + (o.d || 0))) === 'b') continue;      // trên sông không có nhà, ruộng, cây
           const half = o.w / 2, qz = inStationZone(zz, zz + (o.d || 0)), ext = qz ? qz.st.extent : [Math.min(ADJ, oppAt(zz)), 0];
-          const margin = qz ? (o.kind === 'building' ? 14 : 8) : (o.kind === 'building' ? 12 : o.kind === 'field' ? 5 : 6), off = half + o.lat * 0.5, X = side > 0 ? Math.max(ext[1], 0) + margin + off : Math.min(ext[0], ADJ) - margin - off;
-          items.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) }); } }
+          const margin = qz ? (o.kind === 'building' ? 14 : 12) : (o.kind === 'building' ? 12 : o.kind === 'field' ? 14 : 8), off = half + o.lat * 0.5, X = side > 0 ? Math.max(ext[1], 0) + margin + off : Math.min(ext[0], ADJ) - margin - off;
+          tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) }); } }
     }
     // ---- biển chạy chậm, công nhân, hươu, dây điện hỏng
     for (const zn of W.zones) {
@@ -222,16 +240,12 @@
     if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const key = p.v || (W.lineId === 'toh' ? 'E5' : 'N700'), veh = S.VEH[key] || S.VEH.N700, sp = R.sprites && R.sprites[SMAP[key] || 'n700'], zFront = -veh.len + u * (veh.len + 520), fxp = 0 + (c.lane > 0 ? 1.85 : -1.85);
       items.push({ z: Math.max(zFront, ZN + 2), fn: () => slices(sp, veh.len, zFront, fxp, -1) }); } }
 
+    // phong cảnh bên ngoài hầm, nhìn qua cửa ra (vẽ sau cùng nhưng chỉ trong khung cửa ra, đè lên tường hầm tối)
+    if (zExit !== null && outItems.length) { const op = openingPoly(); if (op) { ctx.save(); polyPath(op); ctx.clip(); outItems.sort((a, b) => b.z - a.z); for (const it of outItems) it.fn(); ctx.restore(); } }
     // ---- vẽ các vật theo thứ tự xa → gần
     items.sort((a, b) => b.z - a.z);
-    for (const it of items) { if (it.z < ZN) continue; it.fn(); }
+    for (const it of items) { if (it.z < ZN || it.z > zLim) continue; it.fn(); }
 
-    // ---- cửa ra của hầm: vòm hầm nhìn ra phong cảnh bên ngoài (màu trời/đất theo giờ), ban đêm không chói
-    if (zExit !== null && zExit > ZN) { const z = zExit, l = P(-5.2, 0, z), r = P(5.2, 0, z), t = P(0, 8.0, z), w = Math.abs(r[0] - l[0]), h = l[1] - t[1];
-      const og = ctx.createLinearGradient(0, t[1], 0, l[1]); og.addColorStop(0, mixc(rgbOf(top), [70, 78, 90], wx)); og.addColorStop(0.55, mixc(rgbOf(hor), [110, 118, 128], wx)); og.addColorStop(0.6, mixc([10, 16, 12], gcol, day * (1 - wx * 0.3))); og.addColorStop(1, mixc([6, 10, 8], gcol.map(v => v * 0.8), day * (1 - wx * 0.3)));
-      ctx.fillStyle = '#0b0e12'; ctx.beginPath(); ctx.ellipse(t[0], l[1], w * 0.56, h * 1.0, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = og; ctx.beginPath(); ctx.ellipse(t[0], l[1], w * 0.5, h * 0.92, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
-      if (day > 0.3) { const bl = ctx.createRadialGradient(t[0], l[1] - h * 0.4, 0, t[0], l[1] - h * 0.4, Math.max(w, h)); bl.addColorStop(0, 'rgba(255,255,255,' + 0.12 * day + ')'); bl.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = bl; ctx.fillRect(t[0] - w * 1.4, t[1] - h * 0.5, w * 2.8, h * 2); } }
     ctx.restore();                                  // hết phần nghiêng theo đường cong
 
     // ---- hiệu ứng thời tiết, ban đêm, tốc độ
