@@ -370,15 +370,18 @@
     const W = T.W, j = nextTarget(T), mk = T.M[j], d = mk.s - T.x, v = T.v;
     const m = (margin === undefined ? (T.isLead ? 4 : (W.diff.atcOver * 3.6 < 1 ? 9 : 4)) : margin) / 3.6;
     let vT = Math.max(0, T.allowed - m);
+    let soft = false;                                                    // giới hạn do kế hoạch đúng giờ (không phải an toàn): chỉ trôi/phanh nhẹ khi vượt đáng kể
     const arr = mk.arr != null ? mk.arr : (mk.pt != null && mk.stop ? mk.pt : null), remT = arr != null ? arr - W.t : 0;
     const ai = T.isLead && W.net, slack = ai ? 50 : 20, fac = ai ? 1.12 : 1.06;
-    if (arr != null && remT > slack && T.forced < 0 && !(ai && W.net.catchUp)) { const vNeed = (d + 600) / Math.max(remT - slack, 1); vT = Math.min(vT, Math.max(vNeed * fac, 15)); }
+    if (arr != null && remT > slack && T.forced < 0 && !(ai && W.net.catchUp)) { const vNeed = (d + 600) / Math.max(remT - slack, 1); const vN = Math.max(vNeed * fac, 15); if (vN < vT) soft = true; vT = Math.min(vT, vN); }
     const lead = Math.max(d - v * 1.6, 0);
-    vT = Math.min(vT, Math.sqrt(2 * 0.55 * lead) + 0.5);
+    const vL = Math.sqrt(2 * 0.55 * lead) + 0.5, curveLim = vL < vT; if (curveLim) soft = true; vT = Math.min(vT, vL);
     if (d < 400 && v * v / (2 * Math.max(d - v * 1.2, 0.3)) > 0.35) { const need = (v * v) / (2 * Math.max(d - v * 1.2, 0.3)); return -Math.min(1, Math.max(0.03, need / T.veh.aB7)); }
     if (d < 60) { if (v < 0.25 && d > 0.8) return 0.04; const need = (v * v) / (2 * Math.max(d, 0.15)); return -Math.min(1, Math.max(v < 0.25 ? 0.01 : 0.05, need / T.veh.aB7)); }
     const err = vT - v;
-    if (err < -0.15) return -Math.min(0.9, (-err) * 0.6 + 0.05);
+    if (curveLim && v > vL - 0.5) return -Math.min(0.9, 0.12 + 0.6 * (v - vL + 0.5));        // bám đường cong phanh về ga: phanh liên tục theo độ lệch, không nhấp nhả
+    if (err < (soft ? -0.8 : -0.15)) { T._apBrk = 1; return -Math.min(0.9, (-err) * 0.6 + 0.05); }
+    if (T._apBrk) { if (err < (soft ? -0.2 : 0.12)) return -0.09; T._apBrk = 0; }          // đã phanh vì quá tốc độ: trôi (N) cho tới khi thấp hơn hẳn mới kéo lại, tránh nhấp nháy B1 ↔ 0
     return Math.max(0, Math.min(1, (resistOf(T, v) + massOf(T) * 9.81 * T.grade / 1000) / tractiveOf(T, v) + 0.6 * err));
   }
 
