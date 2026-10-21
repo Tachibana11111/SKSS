@@ -8,7 +8,7 @@ Mở `prototype/drive/index.html` trực tiếp bằng Chrome/Edge (không cần
 - **Hướng dẫn:** 3 bài từng bước. **Hồ sơ:** thành tích, kết quả tốt nhất, lịch sử, xoá dữ liệu.
 
 ## Tệp
-- `sim.js` lõi mô phỏng · `scene.js` khung cảnh · `audio.js` âm thanh và phát thanh · `dispatch.js` điều độ · `tutorial.js` · `store.js` hồ sơ · `index.html` giao diện.
+- `sim.js` lõi mô phỏng · `scene.js` khung cảnh nhìn ngang · `cabview.js` khung nhìn buồng lái phía trước (giả 3D) · `audio.js` âm thanh và phát thanh · `dispatch.js` điều độ · `tutorial.js` · `store.js` hồ sơ · `index.html` giao diện.
 - `data-lines.js` dữ liệu tuyến + lịch tàu thật (sinh bằng `tools/build_lines.py`; chỉ dùng cá nhân).
 - `assets/`: ảnh tàu N700 (CC BY-NC-ND, không chia sẻ; xem `assets/NGUON.md`, được `.gitignore` bỏ qua), sinh lại bằng `tools/build_n700_sprite.py`.
 

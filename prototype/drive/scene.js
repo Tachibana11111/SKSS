@@ -88,7 +88,7 @@
 
   function draw(ctx, px, py, pw, ph, W, T, R) {
     const now = performance.now();
-    const base = py + 128, fx = px + 350, map = makeMap(fx, px, pw);
+    const base = py + Math.round(ph * 0.72), fx = px + Math.round(pw * 0.6), map = makeMap(fx, px, pw);
     const clock = ((W.trip.t0 + W.t) % 86400 + 86400) % 86400, hour = clock / 3600;
     const day = smooth(5.3, 7.3, hour) * (1 - smooth(16.8, 19.0, hour)), dusk = Math.max(0, 1 - Math.abs(hour - 6.3) / 1.2) + Math.max(0, 1 - Math.abs(hour - 17.8) / 1.3);
     const night = 1 - day;

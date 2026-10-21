@@ -22,5 +22,5 @@
 ## Cập nhật 2026-10-21
 - Dự án đã ở trong **git** (kho cục bộ, không có remote; không đẩy lên mạng). `.gitignore` bỏ qua tài nguyên có giấy phép NC/ND và PDF gốc.
 - Thiết kế game nằm ở `docs/10-thiet-ke-game.md`; prototype ở `prototype/drive/` (xem `prototype/README.md`). **Chạy `node tests/run.js` sau mỗi thay đổi ở `sim.js`.**
-- Không đổi góc nhìn (2D/1st/3rd person) hay engine khi chưa được người dùng quyết định.
+- Góc nhìn đã chốt (2026-10-21): phương án D = giữ 2D nhìn ngang + thêm khung nhìn buồng lái phía trước (cabview.js, giả 3D). Không đổi sang engine 3D thật khi chưa được người dùng quyết định.
 - Ảnh tàu N700 (`prototype/drive/assets/`) chỉ dùng cá nhân: không chia sẻ, không đóng gói.

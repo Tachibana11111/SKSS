@@ -62,7 +62,7 @@
   function skip(W, T) { if (!active()) return; const L = LESSONS[S.lesson]; if (S.step < L.steps.length) { S.step++; S.entered = false; S.passedAt = -1; S.banner = ''; if (S.step >= L.steps.length) S.done[L.id] = true; } }
   function draw(ctx, px, py, pw, W, T) {
     if (!active()) return; const L = LESSONS[S.lesson], n = L.steps.length, done = S.step >= n;
-    const h = 108; ctx.save(); ctx.fillStyle = 'rgba(14,22,34,.94)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(px, py, pw, h, 10); ctx.fill(); ctx.stroke();
+    const h = 92; ctx.save(); ctx.fillStyle = 'rgba(14,22,34,.9)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(px, py, pw, h, 10); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ffc247'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'left'; ctx.fillText(L.title + (done ? '  ·  XONG' : '  ·  bước ' + (S.step + 1) + '/' + n), px + 14, py + 22);
     ctx.fillStyle = '#e8eef5'; ctx.font = '14px system-ui';
     const text = done ? (S.banner || 'Bài đã xong. Chọn bài khác ở thanh trên hoặc nhấn R để làm lại.') : L.steps[S.step].text;

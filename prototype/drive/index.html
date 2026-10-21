@@ -69,7 +69,7 @@
   </div>
 </header>
 <div id="wrap">
-  <canvas id="c" width="1120" height="800"></canvas>
+  <canvas id="c" width="1120" height="900"></canvas>
   <div id="modal"></div>
   <div id="help">
     <b>Lái:</b> <kbd>W</kbd>/<kbd>S</kbd> cần gia tốc · <kbd>↓</kbd>/<kbd>↑</kbd> cần phanh (phải nhả về 0 mới kéo được) · <kbd>Space</kbd> về N · <kbd>Q</kbd> phanh khẩn · <kbd>Enter</kbd> đóng cửa (đèn sáng thì kéo cần để đi) ·
@@ -83,7 +83,9 @@
 <script src="assets/sprites.js"></script>
 <script src="sim.js"></script>
 <script src="store.js"></script>
+<script src="assets/fronts.js"></script>
 <script src="scene.js"></script>
+<script src="cabview.js"></script>
 <script src="audio.js"></script>
 <script src="tutorial.js"></script>
 <script src="dispatch.js"></script>
@@ -93,6 +95,7 @@ const W_ = cv.width, H_ = cv.height, LINES = window.LINES;
 const $ = id => document.getElementById(id);
 const AUD = new GameAudio();
 const SPR = {}; function loadSpr(name, meta) { const img = new Image(), o = { img, meta, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/' + name + '_strip.png'; SPR[name] = o; }
+const FR = {}; for (const k of Object.keys(window.FRONTS || {})) { const img = new Image(), o = { img, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/front_' + k + '.png'; FR[k] = o; }
 if (window.N700_STRIP) loadSpr('n700', window.N700_STRIP); for (const [k, m] of Object.entries(window.SPRITES || {})) loadSpr(k, m);
 let mode = 'drive', W = null, T = null, scale = 1, auto = false, paused = false, lastT = performance.now(), btns = [];
 let tickCount = 0, recActs = [], recipe = null, replaying = null, ptr = 0, finalized = false, endInfo = null, endPage = 0, tutorialRun = false;
@@ -365,23 +368,23 @@ function draw() {
   fl.forEach((f, i) => txt('• ' + f.text, 920, any + 48 + i * 12, f.level === 'bad' ? '#ff7a7a' : '#ffc247', '9px system-ui'));
 
   // ---- Cảnh
-  panel(10, 416, 580, 180); drawView(10, 416, 580, 180);
+  panel(10, 416, 590, 230); drawCab(10, 416, 590, 230); panel(610, 416, 500, 230); drawView(610, 416, 500, 230);
   // ---- Nút và đèn
-  panel(600, 416, 510, 180);
-  const bx = 612, by = 428, bw = 112, bh = 26, gap = 8;
+  panel(10, 656, 1100, 118);
+  const bx = 22, by = 666, bw = 204, bh = 26, gap = 8;
   const bl2 = [
     ['Đóng cửa (Enter)', () => doAct('door'), T.door !== 'open', '#e08a2f'], ['Tốc độ không đổi (C)', () => doAct('cs'), T.cs, '#2a8fa0'], ['Còi (H)', () => doAct('horn'), T.horn > 0, '#c9a227'], ['Gạt mưa (V)', () => doAct('wiper'), T.wiper, '#2a6fd6'],
     ['Nhắc lệnh (Y)', () => doAct('ack'), pend > 0 && blink, '#c9a227'], ['Xác nhận ATC (X)', () => doAct('confirm'), T.needConfirm && blink, '#d64a4a'], ['Phát thanh (M)', () => doAct('pa'), T.anx > 40 && blink, '#2a8fa0'], ['Tự lái (T)', () => doAct('auto'), auto, '#2a6fd6'],
     ['Phanh khẩn (Q)', () => doAct('eb'), T.bk === 8, '#d64a4a'], ['Về N (Space)', () => doAct('coast'), false, '#2a6fd6']];
-  bl2.forEach((b, i) => button(bx + (i % 4) * (bw + gap), by + Math.floor(i / 4) * (bh + 8), bw, bh, b[0], b[1], b[2], b[3]));
-  const ly = 552;
-  lamp(620, ly, 'ĐÓNG CỬA', T.door === 'closed', '#4cd68a'); lamp(740, ly, 'ATC', T.atc, '#ff5a5a'); lamp(810, ly, '定速', T.cs, '#3ad6e6'); lamp(880, ly, 'GẠT MƯA', T.wiper, '#4aa3ff'); lamp(985, ly, 'CÒI', T.horn > 0, '#ffd24a'); lamp(1050, ly, 'MƯA', W.rainHere, '#2f6fd6');
-  txt(T.needConfirm ? 'ATC dừng: nhấn X để xác nhận mới nhả phanh' : (W.rainHere && !T.wiper ? 'Đang có mưa: bật gạt mưa (V)' : ''), 620, 574, T.needConfirm ? '#ff7a7a' : '#ffc247', 'bold 12px system-ui');
-  txt('Xác nhận ATC: ' + ({ auto: 'tự động', auto5: 'tự động sau 5 s', manual: 'bấm X' }[W.diff.confirm]) + ' · cửa kẹt ~' + Math.round(W.diff.reopen * 100) + '% · phối hợp ' + (W.netScore >= 0 ? '+' : '') + W.netScore, 620, 590, '#7a8ea5', '10px system-ui');
+  bl2.forEach((b, i) => button(bx + (i % 5) * (bw + gap), by + Math.floor(i / 5) * (bh + 8), bw, bh, b[0], b[1], b[2], b[3]));
+  const ly = 744;
+  lamp(30, ly, 'ĐÓNG CỬA', T.door === 'closed', '#4cd68a'); lamp(150, ly, 'ATC', T.atc, '#ff5a5a'); lamp(220, ly, '定速', T.cs, '#3ad6e6'); lamp(300, ly, 'GẠT MƯA', T.wiper, '#4aa3ff'); lamp(420, ly, 'CÒI', T.horn > 0, '#ffd24a'); lamp(490, ly, 'MƯA', W.rainHere, '#2f6fd6');
+  txt(T.needConfirm ? 'ATC dừng: nhấn X để xác nhận mới nhả phanh' : (W.rainHere && !T.wiper ? 'Đang có mưa: bật gạt mưa (V)' : ''), 570, 748, T.needConfirm ? '#ff7a7a' : '#ffc247', 'bold 12px system-ui');
+  txt('Xác nhận ATC: ' + ({ auto: 'tự động', auto5: 'tự động sau 5 s', manual: 'bấm X' }[W.diff.confirm]) + ' · cửa kẹt ~' + Math.round(W.diff.reopen * 100) + '% · phối hợp ' + (W.netScore >= 0 ? '+' : '') + W.netScore, 570, 766, '#7a8ea5', '10px system-ui');
 
   // ---- Điện đàm
-  panel(10, 606, W_ - 20, 184); txt('Điện đàm điều độ / thời tiết / TIMS / phát thanh', 24, 626, '#fff', 'bold 13px system-ui');
-  const topLim = tutLessonActive ? 722 : 634; let yy = 784; const msgs = W.msgs.slice(-14);
+  panel(10, 782, W_ - 20, 110); txt('Điện đàm điều độ / thời tiết / TIMS / phát thanh', 24, 800, '#fff', 'bold 13px system-ui');
+  const topLim = 806; let yy = 888; const msgs = W.msgs.slice(-14);
   const C = { info: '#9fc3ff', warn: '#ffc247', bad: '#ff7a7a', stop: '#4cd68a', pa: '#b8c4d4' };
   for (let i = msgs.length - 1; i >= 0; i--) {
     const m = msgs[i]; ctx.font = '12px system-ui';
@@ -392,8 +395,15 @@ function draw() {
   // ---- Quyết định của điều độ
   if (W.decision) { const d = W.decision, left = Math.max(0, d.timeout - (W.t - d.t0)); ctx.fillStyle = 'rgba(40,30,8,.96)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(160, 104, 800, 56, 10); ctx.fill(); ctx.stroke();
     txt(d.text, 176, 126, '#ffe9b0', 'bold 14px system-ui'); txt('Còn ' + Math.ceil(left) + ' s', 940, 126, '#ffc247', 'bold 13px system-ui', 'right'); button(176, 134, 150, 20, d.a.label, () => doAct('ack'), true, '#2a8f5a'); button(336, 134, 150, 20, d.b.label, () => doAct('no'), true, '#8f3a3a'); }
-  if (tutLessonActive) Tutorial.draw(ctx, 10, 606, 1100, W, T);
-  if (T.finished) drawEnd(); else if (!T.started && !tutLessonActive) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(10, 416, 580, 180); txt('Nhấn Enter để đóng cửa, rồi kéo cần gia tốc (W) khi đèn ĐÓNG CỬA sáng', 300, 510, '#fff', 'bold 16px system-ui', 'center'); }
+  if (tutLessonActive) Tutorial.draw(ctx, 20, 424, 570, W, T);
+  if (T.finished) drawEnd(); else if (!T.started && !tutLessonActive) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(10, 416, 590, 230); txt('Nhấn Enter để đóng cửa, rồi kéo cần gia tốc (W) khi đèn ĐÓNG CỬA sáng', 305, 540, '#fff', 'bold 16px system-ui', 'center'); }
+}
+function drawCab(px, py, pw, ph) {
+  CabView.draw(ctx, px, py, pw, ph, W, T, { sprites: SPR, fronts: FR, aud: AUD });
+  const j = Sim.nextTarget(T), d = T.M[j].s - T.x; ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
+  const lines = T.phase === 'run' ? [(d >= 0 ? 'Còn ' + (d >= 100 ? Math.round(d) : d.toFixed(1)) + ' m tới vạch' : 'Quá vạch ' + (-d).toFixed(1) + ' m')] : T.phase === 'dwell' ? ['Lệch vạch ' + (-d >= 0 ? '+' : '') + (-d).toFixed(2) + ' m'] : [];
+  if (lines.length && !tutLessonActive) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(px + 8, py + 8, 190, 26); txt(lines[0], px + 16, py + 26, Math.abs(d) < 60 ? '#fff' : '#c8d4e2', 'bold 14px system-ui'); }
+  txt('Nhìn từ buồng lái', px + pw - 12, py + ph - 8, 'rgba(160,175,190,.55)', '10px system-ui', 'right'); ctx.restore();
 }
 function drawView(px, py, pw, ph) {
   ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
@@ -418,7 +428,7 @@ function drawView(px, py, pw, ph) {
   ctx.restore();
 }
 function drawEnd() {
-  ctx.fillStyle = 'rgba(8,12,18,1)'; ctx.fillRect(10, 106, 1100, 684);
+  ctx.fillStyle = 'rgba(8,12,18,1)'; ctx.fillRect(10, 106, 1100, 788);
   const sc = endInfo ? endInfo.sc : Sim.score(T, W), last = T.M[T.M.length - 1];
   txt((replaying ? 'XEM LẠI · ' : '') + 'Kết thúc chuyến · ' + W.trip.label + ' · ' + Sim.DIFF[W.diffKey].name + ' · seed ' + (recipe ? recipe.seed : ''), 560, 138, '#fff', 'bold 21px system-ui', 'center');
   txt('Thời gian chạy ' + fmt(W.t) + (last.arr != null ? ' (kế hoạch ' + fmt(last.arr) + ')' : '') + ' · miễn trừ do sự kiện ' + Math.round(T.excused) + ' s' + (W.trip.truncated ? ' · chuyến bị cắt ngắn (kế hoạch ngừng chạy)' : ''), 560, 162, '#8aa0b5', '14px system-ui', 'center');

@@ -9,7 +9,7 @@ Game cá nhân (không phân phối) mô phỏng **lái tàu Shinkansen kết h�
 2. **Điều độ:** xem cả mạng nhiều tàu tự chạy theo lịch thật (biểu đồ chạy tàu dạng đồ thị khoảng cách–thời gian); xử lý sự cố bằng lệnh giữ, thông qua, cho vượt.
 3. **Hướng dẫn:** ba bài có chỉ dẫn từng bước, chạy trên mô phỏng thật.
 
-Góc nhìn hiện là **2D nhìn ngang** (cảnh cận cảnh + bảng điều khiển). Việc đổi sang 1st/3rd person hoặc engine khác **được hoãn sau bước hoàn thiện này** theo quyết định của người dùng.
+Góc nhìn đã **chốt phương án D (2026-10-21)**: giữ **2D nhìn ngang** và thêm **khung nhìn buồng lái phía trước** (giả 3D bằng phép chiếu phối cảnh, `cabview.js`: ray hội tụ, sân ga/vạch dừng/biển khoảng cách phóng to khi lại gần, tàu chạy trước, tàu ngược chiều, tàu chạy qua, công nhân, hươu, biển báo, hầm, thời tiết). Tàu khác nhìn từ phía trước dùng hình mặt trước thật cắt từ bản vẽ rail.kychung.com; mọi thứ còn lại **vẽ bằng code** nên đơn giản. Đổi sang engine 3D thật vẫn chưa quyết định.
 
 ## 2. Tuyến và dữ liệu
 | Tuyến | Ga | Chiều dài (km thực) | Chuyến | Nguồn |
@@ -107,7 +107,7 @@ Số sự kiện mỗi chuyến: Dễ 1 · Thường 2–3 · Khó 4–5 · Chuy
 - Độ dốc là giả lập; công suất, sức cản, nấc phanh, mẫu ATC, thời lượng và xác suất sự kiện là **[I]**.
 - Chưa có dữ liệu thật cho: số nút buồng lái N700S, độ dốc/cong theo km, độ trễ chính thức của ATC, lịch Kyushu chiều lên (PDF chưa dùng), lịch ngày nghỉ, Joetsu/Hokuriku/Hokkaido, tàu ghép/tách.
 - **Hình tàu là ảnh của rail.kychung.com (CC BY-NC-ND)**: N700, N700S, E5, 800 series (và N700S-8000 sáu toa, chưa dùng). **N700 8 toa (Sakura/Mizuho) tạm dùng toa N700S** vì chưa có ảnh đúng livery Kyushu. Phong cảnh và người vẽ bằng code. **Âm thanh:** nền ga và tàu qua ga dùng bản ghi thật Odawara (public domain); tiếng còi **đã tắt** vì chưa có bản ghi còi thật của từng dòng tàu; các âm còn lại tổng hợp bằng code [I]. Quy tắc: **không tự vẽ tàu**, chỉ dùng ảnh từ nguồn đã được người dùng cho phép (xem `prototype/drive/assets/NGUON.md`).
-- Chưa quyết định **góc nhìn (2D/1st/3rd person) và engine**: sẽ chọn sau bước hoàn thiện này.
+- Góc nhìn đã chọn D (xem đầu tài liệu). Chưa quyết định có chuyển sang engine 3D thật hay không.
 
 ## 12. Cấu trúc mã
 `sim.js` (lõi: vật lý, ATC, sự kiện, mạng, chấm điểm) · `scene.js` (khung cảnh) · `audio.js` (âm thanh, phát thanh) · `dispatch.js` (điều độ) · `tutorial.js` · `store.js` (hồ sơ) · `data-lines.js` (dữ liệu, sinh tự động) · `index.html` (giao diện, vòng lặp, kết thúc/tổng kết/hồ sơ) · `tests/run.js`.
