@@ -211,6 +211,7 @@ cv.addEventListener('click', e => {
 // ---- vòng lặp
 function frame(now) {
   const rdt = Math.min(0.25, (now - lastT) / 1000); lastT = now;
+  if (mode === 'dispatch' || mode === 'profile') AUD.silence();
   if (mode === 'dispatch') { Dispatch.frame(rdt); Dispatch.draw(ctx, W_, H_); requestAnimationFrame(frame); return; }
   if (W && !paused && mode !== 'profile') {
     let sc = scale;
@@ -414,7 +415,7 @@ function drawView(px, py, pw, ph) {
   if (Sim.inTunnel(W, T.x)) { ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(px, py, pw, ph); txt('ĐƯỜNG HẦM', px + pw - 16, py + 26, '#ffd88a', '11px system-ui', 'right'); }
   if (W.rainHere && !T.wiper) { ctx.fillStyle = 'rgba(160,190,230,.22)'; ctx.fillRect(px, py, pw, ph); txt('Kính mờ - bật gạt mưa (V)', px + pw / 2, py + ph - 34, '#ffc247', 'bold 13px system-ui', 'center'); }
   if (T.wiper) { const a = Math.sin(performance.now() / 250) * 0.9; ctx.strokeStyle = 'rgba(232,238,245,.8)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px + pw - 40, py + ph - 8); ctx.lineTo(px + pw - 40 + Math.sin(a) * 70, py + ph - 8 - Math.cos(a) * 70); ctx.stroke(); }
-  if (T.horn > 0) txt('♪ PÍP – PÍP ♪', px + pw - 20, py + 26, '#ffd24a', 'bold 18px system-ui', 'right');
+  if (T.horn > 0) txt('CÒI', px + pw - 20, py + 26, '#ffd24a', 'bold 16px system-ui', 'right');
   ctx.restore();
 }
 function drawEnd() {

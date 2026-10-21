@@ -37,9 +37,28 @@
     this.motorO.start(); this.motorO2.start();
     // quạt gió/điều hoà: tiếng ù thấp liên tục
     this.hvacO = c.createOscillator(); this.hvacO.type = 'sine'; this.hvacO.frequency.value = 118; const hg = c.createGain(); hg.gain.value = 0; this.hvacO.connect(hg); hg.connect(this.master); this.hvac = { g: hg }; this.hvacO.start();
+    // bản ghi thật: Odawara (Internet Archive, public domain): nền ga 10–118 s; tàu qua/rời ga ở các đoạn CLIPS
+    try { const mk2 = () => { const e = new Audio('assets/audio/odawara_leaving.mp3'); e.preload = 'auto'; e.volume = 0; return e; }; this.amb = mk2(); this.clipEl = mk2(); this.ambOn = false; this.clipT = 0; } catch (e) { this.amb = null; }
     this.ready = true;
     this.rt = { comp: 20 + Math.random() * 30, oppose: 90 + Math.random() * 120, thunder: 40 + Math.random() * 50, cough: 25 + Math.random() * 30, baby: 150 + Math.random() * 150, board: 0, last: performance.now() };
   };
+  // tua tới t giây nếu phần đó đã sẵn sàng (máy chủ không hỗ trợ Range thì phải chờ tải xong)
+  function seekTo(e, t) { try { if (e.seekable && e.seekable.length && e.seekable.end(e.seekable.length - 1) >= t) { e.currentTime = t; return true; } } catch (x) { } return false; }
+  const CLIPS = [[118.6, 127.8], [176.6, 186.0], [266.6, 275.8], [326.6, 337.4]];
+  GameAudio.prototype.playClip = function (gain, i) {
+    const e = this.clipEl; if (!e || !this.enabled) return; const c = CLIPS[(i != null ? i : Math.floor(Math.random() * CLIPS.length)) % CLIPS.length];
+    try { if (!seekTo(e, c[0])) return; e.volume = Math.max(0, Math.min(1, this.vol * (gain || 0.9))); const p = e.play(); if (p && p.catch) p.catch(() => {}); clearTimeout(this.clipT); this.clipT = setTimeout(() => { try { e.pause(); } catch (x) { } }, (c[1] - c[0]) * 1000); } catch (x) { }
+  };
+  // nền ga: lặp đoạn 10–118 s khi tàu đang đỗ ở ga
+  GameAudio.prototype.ambience = function (level) {
+    const e = this.amb; if (!e) return; const target = this.enabled ? Math.max(0, Math.min(1, this.vol * level)) : 0;
+    try {
+      if (target > 0.005) { if (!this.ambOn) { if (seekTo(e, 10 + Math.random() * 60)) { const p = e.play(); if (p && p.catch) p.catch(() => {}); this.ambOn = true; } } else if (e.currentTime > 117.5 || e.currentTime < 9.5) seekTo(e, 10); }
+      else if (this.ambOn && e.volume < 0.01) { e.pause(); this.ambOn = false; }
+      e.volume = e.volume + (target - e.volume) * 0.08;
+    } catch (x) { }
+  };
+  GameAudio.prototype.silence = function () { try { if (this.amb) { this.amb.volume = 0; this.amb.pause(); } if (this.clipEl) this.clipEl.pause(); this.ambOn = false; } catch (x) { } };
   GameAudio.prototype.setVolume = function (v, on) { this.vol = v; this.enabled = on; if (this.master) this.master.gain.setTargetAtTime(on ? v : 0, this.ctx.currentTime, 0.05); if (!on && root.speechSynthesis) root.speechSynthesis.cancel(); };
   GameAudio.prototype.setAnn = function (m) { this.annMode = m; if (m === 'off' || m === 'sub') { this.q = []; if (root.speechSynthesis) root.speechSynthesis.cancel(); } };
   GameAudio.prototype.tone = function (freq, dur, type, gain, delay, freq2) {
@@ -65,7 +84,7 @@
   GameAudio.prototype.tunnelExit = function () { this.burst(0.35, 0.18, 1800, 1, 'bandpass', 0, 5000); this.tone(70, 0.3, 'sine', 0.12); };
   GameAudio.prototype.oppose = function (sp) { const g = 0.15 + 0.3 * sp; this.burst(0.9, g, 500, 0.8, 'bandpass', 0, 3200); this.burst(0.9, g, 3200, 0.8, 'bandpass', 0.55, 400); this.tone(50, 0.3, 'sine', 0.3 * sp, 0.45, 35); };
   GameAudio.prototype.thunder = function () { this.lastThunder = performance.now(); this.burst(2.4, 0.5, 130, 0.7, 'lowpass'); this.burst(1.2, 0.35, 90, 0.7, 'lowpass', 0.8); };
-  GameAudio.prototype.horn = function () { this.tone(415, 1.1, 'sawtooth', 0.14); this.tone(554, 1.1, 'sawtooth', 0.12); this.tone(208, 1.1, 'square', 0.06); };
+  GameAudio.prototype.horn = function () { /* đã tắt tiếng còi theo yêu cầu: chưa có bản ghi còi thật của từng dòng tàu */ };
   GameAudio.prototype.doorChime = function () { this.tone(880, 0.28, 'sine', 0.18); this.tone(659, 0.4, 'sine', 0.18, 0.3); this.tone(880, 0.28, 'sine', 0.18, 0.9); this.tone(659, 0.4, 'sine', 0.18, 1.2); this.airRelease(0.1); };
   GameAudio.prototype.doorClosed = function () { this.burst(0.12, 0.35, 300, 2, 'lowpass'); this.tone(150, 0.12, 'sine', 0.2); this.airRelease(0.14); };
   GameAudio.prototype.doorOpen = function () { this.airRelease(0.16); this.burst(0.15, 0.3, 260, 2, 'lowpass', 0.5); this.tone(95, 1.6, 'sine', 0.05, 0.6); };
@@ -146,15 +165,17 @@
     set(this.murmur, paxLevel, 0.6);
     // trụ điện lướt qua (mỗi 50 m)
     if (active && v > 8) { const idx = Math.floor(T.x / 50); if (this.lastMast !== undefined && idx !== this.lastMast) this.burst(0.09, 0.05 + 0.18 * sp, 700 + 900 * sp, 0.8); this.lastMast = idx; } else this.lastMast = undefined;
-    if (!this.enabled || st.paused) return;
+    if (!this.enabled || st.paused) { this.ambience(0); return; }
     // ---- âm theo thời gian thực: máy nén khí, tàu ngược chiều, sấm, ho, em bé, bước chân ----
     const R = this.rt; if (st.scale <= 1) {
       R.comp -= dt; if (R.comp < 0) { this.compressor(); R.comp = 35 + Math.random() * 50; }
-      if (this.prevWt !== undefined && v > 40) for (const t0 of W.opposing || []) if (this.prevWt < t0 && W.t >= t0) this.oppose(sp);
+      if (this.prevWt !== undefined && v > 40) for (const t0 of W.opposing || []) if (this.prevWt < t0 && W.t >= t0) this.playClip(0.35 + 0.4 * sp);
       if (W.weatherKind === 'typhoon' || W.weatherKind === 'rain') { R.thunder -= dt; if (R.thunder < 0) { if (W.weatherKind === 'typhoon' || Math.random() < 0.4) this.thunder(); R.thunder = 35 + Math.random() * 70; } }
       if (this.pax) { R.cough -= dt; if (R.cough < 0) { this.cough(); R.cough = 20 + Math.random() * 40; } R.baby -= dt; if (R.baby < 0) { this.baby(); R.baby = 200 + Math.random() * 300; } }
       if (this.pax && dw && T.door === 'open' && T.dwellT < 14) { R.board -= dt; if (R.board < 0) { this.footstep(0.07 + Math.random() * 0.05); if (Math.random() < 0.18) this.suitcase(); R.board = 0.22 + Math.random() * 0.3; } }
     }
+    this.ambience(dw && !st.paused && st.scale <= 4 ? (T.door === 'open' ? 0.55 : 0.4) : 0);
+    if (dw && W.passers && W.passers[T.k]) for (const pa of W.passers[T.k]) { const u = (W.t - (pa.t - 4.5)) / 9; if (u > 0 && u < 1 && !pa.played) { pa.played = true; this.playClip(0.95, pa.t | 0); } if (u >= 1) pa.played = false; }
     this.prevWt = W.t;
     // ---- thao tác cần: tiếng gạt, tiếp điểm ----
     const p = this.prev;
@@ -228,6 +249,6 @@
     if (T.animalHit > (p.animalHit || 0)) this.say(W, { ja: 'ただいま、動物と衝突したため、停車しております。', en: 'The train has stopped after hitting an animal.', vi: 'Tàu dừng do va chạm động vật.' }, true, true);
     if (W.leadStopAt !== undefined && W.leadStopAt !== A.leadStop) { A.leadStop = W.leadStopAt; this.say(W, { ja: '前を走る列車で、急病のお客様が出たため、間隔をあけて運転しております。', en: 'A passenger on the train ahead is ill, so we are keeping a distance.', vi: 'Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.' }, false, true); }
   };
-  GameAudio.prototype.reset = function (W) { this.prev = {}; this.ann = {}; this.q = []; if (root.speechSynthesis) root.speechSynthesis.cancel(); this.speaking = false; this.msgCount = W ? W.msgs.length : 0; this.lastResults = 0; this.lastMast = undefined; };
+  GameAudio.prototype.reset = function (W) { this.silence(); this.prev = {}; this.ann = {}; this.q = []; if (root.speechSynthesis) root.speechSynthesis.cancel(); this.speaking = false; this.msgCount = W ? W.msgs.length : 0; this.lastResults = 0; this.lastMast = undefined; };
   root.GameAudio = GameAudio;
 })(typeof window !== 'undefined' ? window : globalThis);
