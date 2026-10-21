@@ -135,7 +135,7 @@
     opts = opts || {}; const veh = VEH[opts.veh] || VEH['N700'];
     return { M, W, veh, load: opts.load != null ? opts.load : 0.7, k: 0, x: M[0].s, v: 0, f: 0, cmd: 0, pw: 0, bk: 0, notch: 0, a: 0, phase: 'dwell', dwellT: 0, started: false, atc: false, atcCount: 0, atcOk: 0, confirmed: false, needConfirm: false,
       allowed: 0, why: '', results: [], log: [], comfort: 0, jerkTime: 0, earlyDep: 0, excused: 0, holds: {}, forced: -1, cut: false, arrT: 0, free: 0,
-      door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, animalHit: 0,
+      lamp: 'auto', lampBad: 0, door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, animalHit: 0,
       bt: 0, kwh: 0, regen: 0, grade: 0, anx: 0, anxMax: 0, paAt: -999, fireTunnel: 0, waitFor: null, blockedT: 0, trace: [],
       isLead: !!opts.lead, label: opts.label || '', id: opts.id || '' };
   }
@@ -197,6 +197,10 @@
   }
   function adjustCS(T, d) { if (T.cs) T.csSet = clamp(T.csSet + d / 3.6, 70 / 3.6, T.veh.vmax); }
   function toggleWiper(T) { T.wiper = !T.wiper; }
+  // đèn pha: chế độ tự động / bật / tắt do lái tàu chọn. Cần đèn khi trong hầm, ban đêm (trước 6:18, sau 17:54) hoặc mưa lúc nhá nhem
+  function needsLight(W, T) { const h = (((W.trip.t0 + W.t) % 86400) + 86400) % 86400 / 3600; return inTunnel(W, T.x) || h < 6.3 || h > 17.9 || (W.rainHere && (h < 7.2 || h > 16.8)); }
+  const lampOn = (W, T) => !T.cut && (T.lamp === 'on' || (T.lamp !== 'off' && needsLight(W, T)));
+  function cycleLamp(T) { T.lamp = T.lamp === 'auto' ? 'on' : T.lamp === 'on' ? 'off' : 'auto'; }
   function honk(T) {
     const W = T.W; if (W.t - T.hornAt < 0.6 && T.started) return; T.hornAt = W.t; T.horn = 1.4;
     for (const z of W.workers || []) if (!z.checked && T.x >= z.s0 - 800 && T.x <= z.s1) z.hornOK = true;
@@ -302,6 +306,7 @@
       if (T.anx >= 100 && !T.panic) { T.panic = true; W.say('bad', 'Hành khách hoảng loạn và đòi sơ tán! Hãy phát thanh trấn an (M) và báo điều độ.'); T.anx = 60; }
       if (T.v > 0.5 && !T.atc && !T.cut) { const jerk = (a - prevA) / dt; if (Math.abs(jerk) > 0.7) T.jerkTime += dt; T.comfort += Math.max(0, Math.abs(jerk) - 0.7) * dt; }
       if (W.rainHere && !T.wiper && T.v > 5) T.wiperBad += dt;
+      if (T.lamp === 'off' && T.v > 5 && needsLight(W, T)) T.lampBad += dt;           // tắt đèn pha khi trong hầm / ban đêm
       checkRoadEvents(T);
       if (T.v < 0.5 && T.phase === 'run' && W.fireActive && inTunnel(W, T.x) && !W.fireTunnelDone) { T.fireTunnel = 1; W.fireTunnelDone = true; W.say('bad', 'ĐÃ DỪNG TRONG HẦM khi có cháy! (nguyên tắc: ra khỏi hầm rồi mới dừng)'); }
       if (W.trace && T.phase !== 'end' && Math.floor((W.t) ) !== Math.floor(W.t - dt) && W.running) T.trace.push([Math.round(W.t), Math.round(T.x), +(T.v * 3.6).toFixed(1), +(T.allowed * 3.6).toFixed(1), +T.pw, T.bk]);
@@ -659,13 +664,13 @@
     });
     n = Math.max(1, n);
     const comfort = Math.max(0, 100 - T.comfort * D.comfortK), atcPen = T.atcCount * 8, earlyPen = Math.min(30, T.earlyDep * 0.3);
-    const ackPen = Math.min(20, W.ackPen), hornPen = Math.min(20, T.hornPen + T.animalHit * 8), wiperPen = Math.min(10, Math.round(T.wiperBad / 20));
+    const ackPen = Math.min(20, W.ackPen), hornPen = Math.min(20, T.hornPen + T.animalHit * 8), wiperPen = Math.min(10, Math.round(T.wiperBad / 20)), lampPen = Math.min(10, Math.round((T.lampBad || 0) / 30));
     const anxPen = Math.min(15, Math.round(Math.max(0, T.anxMax - 60) / 2.5)) + (T.panic ? 10 : 0), firePen = T.fireTunnel ? 15 : 0, netBonus = clamp(W.netScore || 0, -9, 9);
-    const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - anxPen - firePen + netBonus)));
-    return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, anxPen, firePen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
+    const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - lampPen - anxPen - firePen + netBonus)));
+    return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, anxPen, firePen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, turnoutZones, divertsAt, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, turnoutZones, divertsAt, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

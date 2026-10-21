@@ -148,7 +148,7 @@
     }
     drawTracks();
     // đèn pha: chỉ bật khi tối, trong hầm, hoặc mưa/tuyết lúc nhá nhem; ban ngày ngoài hầm thì tắt. Chùm sáng bám đường đang chạy (kể cả đường nhánh/đường cong)
-    const lampOn = !T.cut && (night > 0.5 || zExit !== null || (wx > 0.3 && night > 0.25)), lightLvl = lampOn ? Math.max(0.55, night * (1 - wx * 0.2), zExit !== null ? 0.9 : 0) : 0;
+    const lampOn = S.lampOn(W, T), lightLvl = lampOn ? Math.max(0.55, night * (1 - wx * 0.2), zExit !== null ? 0.9 : 0) : 0;
     if (lampOn) { const lg = ctx.createLinearGradient(0, py + ph, 0, c.hy + 4); lg.addColorStop(0, 'rgba(255,246,210,' + 0.75 * lightLvl + ')'); lg.addColorStop(0.45, 'rgba(255,246,210,' + 0.32 * lightLvl + ')'); lg.addColorStop(1, 'rgba(255,246,210,0)');
       const cx0 = c.lane; strip(z => cx0 - 3.4, z => cx0 + 3.4, 0, ZN, 900, lg);
       const lg2 = ctx.createLinearGradient(0, py + ph, 0, c.hy + 4); lg2.addColorStop(0, 'rgba(255,246,210,' + 0.2 * lightLvl + ')'); lg2.addColorStop(0.6, 'rgba(255,246,210,0)'); strip(z => cx0 - 9, z => cx0 + 9, 0.02, ZN, 260, lg2); }

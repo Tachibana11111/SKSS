@@ -241,7 +241,7 @@
         const tc = scene._tint.getContext('2d'); tc.clearRect(0, 0, scene._tint.width, scene._tint.height); tc.drawImage(img, spr.width - srcW, 0, srcW, spr.height, 0, 0, srcW * f, dh); tc.globalCompositeOperation = 'source-atop'; tc.fillStyle = 'rgba(6,10,24,' + (0.5 * night) + ')'; tc.fillRect(0, 0, ow, oh); tc.globalCompositeOperation = 'source-over';
         ctx.drawImage(scene._tint, 0, 0, ow, oh, fx - srcW * f, base - (spr.railY * f * SV) + 2, ow, oh);
       } else ctx.drawImage(img, spr.width - srcW, 0, srcW, spr.height, fx - srcW * f, base - (spr.railY * f * SV) + 2, srcW * f, dh);
-      if (!T.cut && (night > 0.5 || tun || (wx > 0.3 && night > 0.25))) { ctx.fillStyle = 'rgba(255,245,190,' + (0.16 + 0.12 * night + 0.05 * Math.sin(now / 120)) + ')'; ctx.beginPath(); ctx.moveTo(fx - 2, base - 22); ctx.lineTo(fx + 100 + 60 * night, base - 32); ctx.lineTo(fx + 100 + 60 * night, base - 3); ctx.closePath(); ctx.fill(); }
+      if (root.Sim.lampOn(W, T)) { ctx.fillStyle = 'rgba(255,245,190,' + (0.16 + 0.12 * night + 0.05 * Math.sin(now / 120)) + ')'; ctx.beginPath(); ctx.moveTo(fx - 2, base - 22); ctx.lineTo(fx + 100 + 60 * night, base - 32); ctx.lineTo(fx + 100 + 60 * night, base - 3); ctx.closePath(); ctx.fill(); }
     } else trainProc(ctx, fx, base, T.veh.len * K, 26, T.veh.key, 1, false);
     if (!flipX) drawOpp();
     // tàu vượt qua đường thông qua khi ta đỗ ở ga tránh (quét qua màn hình ~ 9 giây)

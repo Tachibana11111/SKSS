@@ -219,4 +219,14 @@ section('11. Ghi: giới hạn tốc độ vào/ra đường sân ga, dừng qu�
     ok(Sim.turnoutZones(T2).some(z => z.j === od) === !expectMain, `dừng khẩn cách ${dist} m: giới hạn ghi ${expectMain ? 'không áp' : 'có áp'}`);
   }
 }
+section('12. Đèn pha: tự động / bật / tắt');
+{
+  const rec = find('tsk', 'Kodama', 'down', 0, 12), mk = hour => { const W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }); W.trip.t0 = hour * 3600; return W; };
+  let W = mk(11), T = W.player; ok(T.lamp === 'auto' && !Sim.lampOn(W, T), 'ban ngày, chế độ tự động: đèn tắt');
+  Sim.cycleLamp(T); ok(T.lamp === 'on' && Sim.lampOn(W, T), 'chế độ bật: đèn sáng cả ban ngày'); Sim.cycleLamp(T); ok(T.lamp === 'off' && !Sim.lampOn(W, T), 'chế độ tắt: đèn tắt'); Sim.cycleLamp(T); ok(T.lamp === 'auto', 'vòng trở lại tự động');
+  W = mk(21); T = W.player; ok(Sim.lampOn(W, T), 'ban đêm, tự động: đèn sáng'); T.lamp = 'off'; ok(!Sim.lampOn(W, T), 'ban đêm, người lái tắt: đèn tắt (và bị trừ điểm nếu chạy)');
+  T.phase = 'run'; T.v = 60; T.started = true; for (let i = 0; i < 4000; i++) Sim.tick(W, 0.05, {}, false); ok(T.lampBad > 20, 'chạy ban đêm với đèn tắt: tích lũy lỗi đèn pha', T.lampBad);
+  T.cut = true; T.lamp = 'on'; ok(!Sim.lampOn(W, T), 'mất điện: đèn tắt');
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
