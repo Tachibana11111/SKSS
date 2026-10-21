@@ -125,3 +125,6 @@ Màn hình rộng chia ba cột trên một canvas 1780×900: **trái** điện 
 - **Dừng khẩn tại ga không có lịch dừng:** nếu còn kịp giảm xuống 80 km/h trước đầu ghi thì rẽ ghi vào đường sân ga như dừng thường. Nếu quá gần thì tàu dừng ở **đường chính** (không có sân ga bên cạnh), cửa KHÔNG mở, điều độ được báo. Lệnh điều độ "cho thông qua" bị từ chối khi tàu đã quá gần ghi.
 - Ghi chữ X (hai ghi bắt chéo nối đường ta và đường ngược chiều) ở hai đầu mỗi ga; khi rời ga vẫn thấy tới khi tàu qua hẳn. Âm thanh "cạch-cạch" khi qua ghi và qua ghi chữ X.
 - Chưa mô hình: tín hiệu và lộ trình ghi (route) do điều độ thực hiện, thời gian đổi ghi.
+
+## Góc nhìn từ trên cao (22/10/2026)
+Khung thứ ba cạnh khung buồng lái và khung 2D (`prototype/drive/topview.js`): sơ đồ nhìn thẳng xuống, **tàu của ta ở giữa khung, hướng lên trên, ±750 m (tổng 1,5 km)**. Tỉ lệ ngang phóng đại (khoảng cách giữa các đường nhìn rõ) còn độ cong vẽ gần đúng tỉ lệ thật, nên đây là sơ đồ chứ không đúng tỉ lệ hình học. Hiện: đường ray, sân ga (kể cả mép vàng, vạch dừng, tên ga), ghi và ghi chữ X, đoạn giới hạn qua ghi (80 km/h), kết cấu (cầu cạn sáng, cầu có nước, hầm tối), tàu phía trước, tàu ngược chiều, tàu vượt.

@@ -83,6 +83,7 @@
 <script src="scene.js"></script>
 <script src="layout.js"></script>
 <script src="cabview.js"></script>
+<script src="topview.js"></script>
 <script src="audio.js"></script>
 <script src="tutorial.js"></script>
 <script src="dispatch.js"></script>
@@ -418,8 +419,8 @@ function draw() {
   fl.forEach((f, i) => txt('• ' + f.text, 920, any + 48 + i * 12, f.level === 'bad' ? '#ff7a7a' : '#ffc247', '9px system-ui'));
 
   // ---- Cảnh
-  panel(10, 416, 650, 474); drawCab(10, 416, 650, 474); panel(670, 416, 440, 200); drawView(670, 416, 440, 200);
-  panel(670, 626, 440, 264); txt('Góc nhìn từ trên cao', 690, 650, '#8aa0b5', 'bold 13px system-ui'); txt('(chỗ dành cho bản đồ đường ray, nhà ga, ghi — sắp có)', 690, 668, '#5f7389', '11px system-ui');
+  panel(10, 416, 650, 474); drawCab(10, 416, 650, 474); panel(670, 416, 440, 150); drawView(670, 416, 440, 150);
+  panel(670, 576, 440, 314); TopView.draw(ctx, 670, 576, 440, 314, W, T, { sprites: SPR, aud: AUD });
   // ---- Quyết định của điều độ
   if (W.decision) { const d = W.decision, left = Math.max(0, d.timeout - (W.t - d.t0)); ctx.fillStyle = 'rgba(40,30,8,.96)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(160, 104, 800, 56, 10); ctx.fill(); ctx.stroke();
     txt(d.text, 176, 126, '#ffe9b0', 'bold 14px system-ui'); txt('Còn ' + Math.ceil(left) + ' s', 940, 126, '#ffc247', 'bold 13px system-ui', 'right'); button(176, 134, 150, 20, d.a.label, () => doAct('ack'), true, '#2a8f5a'); button(336, 134, 150, 20, d.b.label, () => doAct('no'), true, '#8f3a3a'); }
