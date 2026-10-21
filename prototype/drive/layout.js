@@ -52,6 +52,13 @@
     for (let i = 1; i < n; i++) { const k = curvatureAt(L, Sim, dir, x + (i - 0.5) * step); th += k * step; lat -= th * step; out[i] = lat; }
     return out;
   }
+  // độ lệch ngang của đường PHÍA SAU tàu (khoảng cách z = i·step phía sau đầu tàu), cùng quy ước dấu với lateralTable (dương = bên trái hướng đi).
+  // Tàu đang trong đường cong thì đoạn đường phía sau cũng cong: lệch ngang = tổng của (độ cong tích luỹ trên u mét gần nhất) theo u.
+  function lateralTableBack(L, Sim, dir, x, zmax, step) {
+    const n = Math.ceil(zmax / step) + 1, out = new Float32Array(n); let K = 0, r = 0;
+    for (let i = 1; i < n; i++) { K += curvatureAt(L, Sim, dir, x - (i - 0.5) * step) * step; r += K * step; out[i] = -r; }
+    return out;
+  }
   // cao độ tuyến so với mặt đất quanh đó (m): nền 2, cầu cạn 9, cầu 13, hầm 0; chuyển tiếp mượt
   const ELEV = { g: 2, v: 9, b: 13, t: 0 };
   function elevTable(L, Sim, dir, x, zmax, step) {
@@ -81,6 +88,6 @@
     return ((b + clamp(dev, -35, 35)) % 360 + 360) % 360;
   }
   const lerp = (a, b, t) => a + (b - a) * t;
-  root.Layout = { bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);

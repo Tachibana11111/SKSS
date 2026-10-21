@@ -24,9 +24,10 @@
     const sts = []; M.forEach((m, i) => { const d = m.s - T.x; if (d < -1300 || d > 1900) return; const key = W.lineId + ':' + m.i + ':' + W.dir; const st = cache[key] || (cache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, m.i)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')) }); });
     const ourPath = z => { let x = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) x += q.st.ours.x * LAY.spread(T.x + z, q.m.s); return x; };
     const lane = ourPath(0);
-    const latT = LAY.lateralTable(L, S, W.dir, T.x, VIEW_R + 400, 10); const off = z => { if (z <= 0) return 0; const f = z / 10, i = Math.min(latT.length - 2, Math.floor(f)); return latT[i] + (latT[i + 1] - latT[i]) * (f - i); };
+    const latT = LAY.lateralTable(L, S, W.dir, T.x, VIEW_R + 400, 10), latB = LAY.lateralTableBack(L, S, W.dir, T.x, len + VIEW_R + 400, 10);
+    const off = z => { const tab = z >= 0 ? latT : latB, f = Math.abs(z) / 10, i = Math.min(tab.length - 2, Math.floor(f)); return tab[i] + (tab[i + 1] - tab[i]) * (f - i); };      // z<0: đường phía sau tàu cũng cong khi tàu đang trong đường cong
     const oppAt = z => { let x = LAY.ADJ; for (const q of sts) x += (q.st.opp - LAY.ADJ) * LAY.spread(T.x + z, q.m.s); return x; };
-    const Y = z => cy - (z - zOff) * ky, X = (xm, z) => cx - ((xm - lane) * kx + off(Math.max(0, z)) * kc);
+    const Y = z => cy - (z - zOff) * ky, X = (xm, z) => cx - ((xm - lane) * kx + off(z) * kc);
     const zLo = zOff - VIEW_R - 40, zHi = zOff + VIEW_R + 40;
 
     // ---- nền hình tròn (tàu luôn hướng lên)
@@ -43,9 +44,9 @@
     const tracks = [[() => 0, zLo, zHi], [oppAt, zLo, zHi]];
     for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; tracks.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), Math.max(zLo, q.d - 1150), Math.min(zHi, q.d + 630)]); }
     for (const [xf, z0, z1] of tracks) if (z1 > z0) line(xf, z0, z1, Math.max(3, kx * 2.6), dark ? '#1b2229' : '#464b4d');
-    for (const q of sts) { const z0 = q.d - 420, z1 = q.d + 20; if (z1 < zLo || z0 > zHi) continue; for (const p of q.st.plats) { const so = off(Math.max(0, (z0 + z1) / 2)) * kc, xa = cx - (p.xb - lane) * kx - so, xb = cx - (p.xa - lane) * kx - so, yA = Y(Math.min(z1, zHi)), yB = Y(Math.max(z0, zLo)); ctx.fillStyle = dark ? '#3a4658' : '#8c98a6'; ctx.fillRect(xa, yA, xb - xa, yB - yA);
+    for (const q of sts) { const z0 = q.d - 420, z1 = q.d + 20; if (z1 < zLo || z0 > zHi) continue; for (const p of q.st.plats) { const so = off((z0 + z1) / 2) * kc, xa = cx - (p.xb - lane) * kx - so, xb = cx - (p.xa - lane) * kx - so, yA = Y(Math.min(z1, zHi)), yB = Y(Math.max(z0, zLo)); ctx.fillStyle = dark ? '#3a4658' : '#8c98a6'; ctx.fillRect(xa, yA, xb - xa, yB - yA);
         ctx.fillStyle = '#d8b838'; for (const e of [p.xa, p.xb]) if (q.st.tracks.some(t => Math.abs(Math.abs(t.x - e) - 1.75) < 0.01)) ctx.fillRect(cx - (e - lane) * kx - so - 0.7, yA, 1.4, yB - yA); }
-      const ys = Y(q.d); if (ys > cy - Rr && ys < cy + Rr) { ctx.fillStyle = '#4cd68a'; ctx.fillRect(cx - (q.st.ours.x - lane) * kx - off(Math.max(0, q.d)) * kc - 9, ys - 1, 18, 2); } }
+      const ys = Y(q.d); if (ys > cy - Rr && ys < cy + Rr) { ctx.fillStyle = '#4cd68a'; ctx.fillRect(cx - (q.st.ours.x - lane) * kx - off(q.d) * kc - 9, ys - 1, 18, 2); } }
     const rail = (xf, z0, z1, col) => { for (const sx of [-0.72, 0.72]) line(z => xf(z) + sx, z0, z1, 1.2, col); };
     for (const [xf, z0, z1] of tracks) if (z1 > z0) rail(xf, z0, z1, dark ? '#7a8594' : '#d2d9e0');
     rail(ourPath, zOff - len, zHi, '#4aa3ff');

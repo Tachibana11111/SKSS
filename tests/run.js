@@ -194,6 +194,8 @@ section('10. Bố trí ga, kết cấu tuyến, đường cong (layout.js)');
   const fake = { kmEnd: 100, curves: [[10, 20, 2000, 1]] }, tab = LAY.lateralTable(fake, Sim, 'down', 10000, 1000, 10);
   approx(Math.abs(tab[50]), 500 * 500 / (2 * 2000), 3, 'cong R=2000: lệch ngang ở 500 m ≈ z²/2R'); ok(Math.abs(tab[100]) > Math.abs(tab[50]), 'cong: lệch ngang tăng theo khoảng cách');
   const up = LAY.lateralTable(fake, Sim, 'up', (100 - 15) * 1000, 100, 10); ok(up[5] * LAY.lateralTable(fake, Sim, 'down', 15000, 100, 10)[5] < 0, 'cong: đi chiều lên thì rẽ ngược hướng');
+  { const bk = LAY.lateralTableBack(fake, Sim, 'down', 20000, 1000, 10), fw = LAY.lateralTable(fake, Sim, 'down', 10000, 1000, 10);   // đang ở cuối cong: đoạn sau tàu cong cùng phía, giống đường cong đều
+    approx(Math.abs(bk[50]), 500 * 500 / (2 * 2000), 3, 'cong: đoạn phía SAU tàu lệch ngang ≈ z²/2R'); ok(bk[50] * fw[50] > 0, 'cong: phía sau và phía trước cong cùng chiều dấu'); }
 }
 
 section('11. Ghi: giới hạn tốc độ vào/ra đường sân ga, dừng quá muộn, thông qua');
