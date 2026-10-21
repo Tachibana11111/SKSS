@@ -80,6 +80,7 @@
 <script src="sim.js"></script>
 <script src="store.js"></script>
 <script src="assets/fronts.js"></script>
+<script src="assets/tops.js"></script>
 <script src="scene.js"></script>
 <script src="layout.js"></script>
 <script src="cabview.js"></script>
@@ -95,6 +96,7 @@ let curOX = 0;                                // độ lệch hiện tại khi �
 const $ = id => document.getElementById(id);
 const AUD = new GameAudio();
 const SPR = {}; function loadSpr(name, meta) { const img = new Image(), o = { img, meta, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/' + name + '_strip.png'; SPR[name] = o; }
+const TP = {}; for (const k of Object.keys(window.TOPS || {})) { TP[k] = {}; for (const part of ['head', 'mid', 'tail']) { const img = new Image(), o = { img, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/top_' + k + '_' + part + '.png'; TP[k][part] = o; } }
 const FR = {}; for (const k of Object.keys(window.FRONTS || {})) { const img = new Image(), o = { img, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/front_' + k + '.png'; FR[k] = o; }
 if (window.N700_STRIP) loadSpr('n700', window.N700_STRIP); for (const [k, m] of Object.entries(window.SPRITES || {})) loadSpr(k, m);
 let mode = 'drive', W = null, T = null, scale = 1, auto = false, paused = false, lastT = performance.now(), btns = [];
@@ -420,7 +422,7 @@ function draw() {
 
   // ---- Cảnh
   panel(10, 416, 650, 474); drawCab(10, 416, 650, 474); panel(670, 416, 440, 150); drawView(670, 416, 440, 150);
-  panel(670, 576, 440, 314); TopView.draw(ctx, 670, 576, 440, 314, W, T, { sprites: SPR, aud: AUD });
+  panel(670, 576, 440, 314); TopView.draw(ctx, 670, 576, 440, 314, W, T, { sprites: SPR, tops: TP, aud: AUD });
   // ---- Quyết định của điều độ
   if (W.decision) { const d = W.decision, left = Math.max(0, d.timeout - (W.t - d.t0)); ctx.fillStyle = 'rgba(40,30,8,.96)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(160, 104, 800, 56, 10); ctx.fill(); ctx.stroke();
     txt(d.text, 176, 126, '#ffe9b0', 'bold 14px system-ui'); txt('Còn ' + Math.ceil(left) + ' s', 940, 126, '#ffc247', 'bold 13px system-ui', 'right'); button(176, 134, 150, 20, d.a.label, () => doAct('ack'), true, '#2a8f5a'); button(336, 134, 150, 20, d.b.label, () => doAct('no'), true, '#8f3a3a'); }

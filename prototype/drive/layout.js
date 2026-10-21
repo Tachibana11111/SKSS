@@ -66,6 +66,21 @@
   function diverts(code, dir, pick) { const k = code + dir + pick; if (_div[k] === undefined) _div[k] = station(code, dir, pick).ours.x !== 0; return _div[k]; }
   const _sc = {};
   function stopCount(code, dir) { const k = code + dir; if (_sc[k] === undefined) _sc[k] = station(code, dir, 0).stops.length; return _sc[k]; }
-  root.Layout = { stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
+  // ---- Hướng địa lý của tuyến (độ, theo chiều kim đồng hồ từ hướng Bắc) tại vị trí s theo chiều chạy: lấy từ toạ độ các ga (nội suy giữa trung điểm các đoạn)
+  // cộng độ lệch cục bộ khi vào đường cong (đường cong là dữ liệu sinh [I], nên độ lệch chỉ là hiệu ứng, tắt dần trong ~2,5 km sau khi ra cong)
+  const _bc = {};
+  function brg(a, b) { const r = Math.PI / 180, f1 = a.lat * r, f2 = b.lat * r, dl = (b.lon - a.lon) * r, y = Math.sin(dl) * Math.cos(f2), x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl); return (Math.atan2(y, x) / r + 360) % 360; }
+  function baseBearings(L) { if (_bc[L.id]) return _bc[L.id]; const st = L.stations, mids = []; for (let i = 0; i + 1 < st.length; i++) mids.push({ km: (st[i].km + st[i + 1].km) / 2, b: brg(st[i], st[i + 1]) });
+    for (let i = 1; i < mids.length; i++) { while (mids[i].b - mids[i - 1].b > 180) mids[i].b -= 360; while (mids[i].b - mids[i - 1].b < -180) mids[i].b += 360; } return (_bc[L.id] = mids); }
+  function bearingAt(L, Sim, dir, s) {
+    const km = Sim.kmOfS(s, dir, L.kmEnd), mids = baseBearings(L); let b;
+    if (!mids.length) b = 0; else if (km <= mids[0].km) b = mids[0].b; else if (km >= mids[mids.length - 1].km) b = mids[mids.length - 1].b; else { let i = 0; while (mids[i + 1].km < km) i++; b = lerp(mids[i].b, mids[i + 1].b, (km - mids[i].km) / (mids[i + 1].km - mids[i].km)); }
+    if (dir === 'up') b += 180;
+    let dev = 0; for (const [a, c, R, sg] of L.curves || []) { const sgn = dir === 'up' ? -sg : sg, ln = (c - a) * 1000, full = ln / R * 180 / Math.PI * sgn;
+      if (dir === 'down') { if (km <= a) continue; dev += km < c ? full * (km - a) / (c - a) : full * Math.exp(-(km - c) / 2.5); } else { if (km >= c) continue; dev += km > a ? full * (c - km) / (c - a) : full * Math.exp(-(a - km) / 2.5); } }
+    return ((b + clamp(dev, -35, 35)) % 360 + 360) % 360;
+  }
+  const lerp = (a, b, t) => a + (b - a) * t;
+  root.Layout = { bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);

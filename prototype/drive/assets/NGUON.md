@@ -23,3 +23,6 @@ Chưa tải được: ba bản ghi trên Pixabay (Shinkansen pulling into the st
 
 ## Hình mặt trước (front_*.png)
 Cắt từ chính các bản vẽ ở trên (góc hình mặt trước nhỏ trong ảnh nguồn) bằng `tools/build_front_sprites.py`; cùng giấy phép CC BY-NC-ND 4.0, chỉ dùng cá nhân, không phân phối. Dùng cho tàu chạy trước/ngược chiều trong khung nhìn buồng lái.
+
+## Hình toa nhìn từ trên (top_*.png)
+Dựng bằng `tools/build_top_sprites.py` từ **một** ảnh toa đầu nhìn từ trên xuống do người dùng cung cấp (`src_top_head.png`), lấy từ mô hình SimplePlanes "Shinkansen - The Bullet Train" (https://www.simpleplanes.com/a/5vwi55/Shinkansen-The-Bullet-Train; trang chặn truy cập tự động nên tôi không tải gì từ đó). Toa giữa cắt từ phần thân phẳng, toa đuôi là toa đầu lật dọc, tô màu theo từng mẫu tàu. Chỉ dùng cá nhân, không phân phối.

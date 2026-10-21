@@ -12,3 +12,6 @@ prototype/drive/assets/sprites.js
 prototype/drive/assets/audio/
 prototype/drive/assets/front_*
 prototype/drive/assets/fronts.js
+
+prototype/drive/assets/top_*
+prototype/drive/assets/tops.js
