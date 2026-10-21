@@ -65,16 +65,19 @@
     const quad = (a, b, d, e, fill) => { ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(d[0], d[1]); ctx.lineTo(e[0], e[1]); ctx.closePath(); ctx.fill(); };
     const zsteps = (z0, z1) => { const a = [z0]; let z = z0; while (z < z1 - 0.01) { z = Math.min(z1, z + (z < 150 ? 12 : z < 600 ? 40 : 120)); a.push(z); } return a; };
     // dải nằm ngang theo chiều dài (bám đường cong): xa(z), xb(z) là X hai mép tại khoảng cách z; Y cố định
-    const strip = (xa, xb, Y, z0, z1, fill) => { const zs = zsteps(Math.max(z0, ZN), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xa(z), Y, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xb(zs[k]), Y, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
+    const strip = (xa, xb, Y, z0, z1, fill) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xa(z), Y, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xb(zs[k]), Y, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
     // tường đứng dọc theo chiều dài ở X(z), từ Y0 đến Y1
-    const wall = (xf, Y0, Y1, z0, z1, fill) => { const zs = zsteps(Math.max(z0, ZN), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), Y1, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xf(zs[k]), Y0, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
+    const wall = (xf, Y0, Y1, z0, z1, fill) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), Y1, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xf(zs[k]), Y0, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
     const fadeA = Z => clamp(1.15 - Z / fogZ, 0.12, 1);
     const km = z => S.kmOfS(T.x + z, W.dir, L.kmEnd), biomeAt = z => S.biomeAt(L, km(z));
     const rgbOf = s => s.match(/\d+/g).map(Number);
 
     // trạng thái hầm: zExit = khoảng cách tới cửa ra khi đang ở trong hầm; zLim = chân trời vẽ hiện tại (trong hầm cắt ở cửa ra, phần ngoài hầm vẽ riêng trong khung cửa ra)
     let zExit = null; for (const [k0, k1] of L.meta.tunnels) { const a = S.sOfKm(k0, W.dir, L.kmEnd), b = S.sOfKm(k1, W.dir, L.kmEnd), lo = Math.min(a, b), hi = Math.max(a, b); if (T.x >= lo && T.x <= hi) zExit = hi - T.x; }
-    let zLim = zExit !== null ? zExit : ZF;
+    let zLim = zExit !== null ? zExit : ZF, zMin = ZN, sink = null;
+    // cửa hầm sắp tới (khi đang ở ngoài hầm): cắt mọi thứ ở mặt cửa hầm; phần bên trong hầm vẽ riêng qua khung cửa
+    let entryZ = null, entryEnd = ZF; if (zExit === null) for (const [k0, k1] of L.meta.tunnels) { const a = S.sOfKm(k0, W.dir, L.kmEnd), b = S.sOfKm(k1, W.dir, L.kmEnd), z = Math.min(a, b) - T.x; if (z > ZN && z < ZF && (entryZ === null || z < entryZ)) { entryZ = z; entryEnd = Math.max(a, b) - T.x; } }
+    if (entryZ !== null) zLim = entryZ;
     const top = mixc([6, 12, 24], [92, 160, 224], day), hor = mixc([14, 24, 42], [183, 214, 240], day);
     const gb = biomeAt(60); const gcol = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
     // ---- nền: bầu trời, núi, mặt đất, sương mù (dùng cho phong cảnh thường và cho phần nhìn ra ngoài qua cửa hầm)
@@ -115,9 +118,9 @@
 
     // ---- đường ray và đá dăm (theo đường cong); các đường của ga toả ra từ đường chính
     const ballast = mixc([20, 24, 28], [88, 88, 84], day * (1 - wx * 0.3));
-    const ballastStrip = (xf, z0, z1, alpha) => { z0 = Math.max(z0, ZN); z1 = Math.min(z1, zLim); if (z1 <= z0) return; strip(z => xf(z) - 2.1, z => xf(z) + 2.1, 0, z0, z1, ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')')); };
+    const ballastStrip = (xf, z0, z1, alpha) => { z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return; strip(z => xf(z) - 2.1, z => xf(z) + 2.1, 0, z0, z1, ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')')); };
     const railStrip = (xf, z0, z1, sleepers) => {
-      z0 = Math.max(z0, ZN); z1 = Math.min(z1, zLim); if (z1 <= z0) return;
+      z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return;
       if (sleepers) for (let k = Math.ceil((T.x + z0) / 1.3), z = k * 1.3 - T.x; z < Math.min(z1, 110); k++, z = k * 1.3 - T.x) { const X = xf(z), p = P(X - 1.3, 0, z), q = P(X + 1.3, 0, z), d = P(X + 1.3, 0, z + 0.28), e = P(X - 1.3, 0, z + 0.28); if (d[1] - q[1] < 0.4 && z > 40) continue; quad(p, q, d, e, 'rgba(34,36,40,.85)'); }
       for (const sx of [-GAUGE / 2, GAUGE / 2]) strip(z => xf(z) + sx - 0.075, z => xf(z) + sx + 0.075, 0.15, z0, z1, 'rgba(208,216,226,.9)');
     };
@@ -153,10 +156,12 @@
       const cx0 = c.lane; strip(z => cx0 - 3.4, z => cx0 + 3.4, 0, ZN, 900, lg);
       const lg2 = ctx.createLinearGradient(0, py + ph, 0, c.hy + 4); lg2.addColorStop(0, 'rgba(255,246,210,' + 0.2 * lightLvl + ')'); lg2.addColorStop(0.6, 'rgba(255,246,210,0)'); strip(z => cx0 - 9, z => cx0 + 9, 0.02, ZN, 260, lg2); }
 
-    // ---- sân ga theo bố trí thật của từng ga
+    // ---- sân ga theo bố trí thật của từng ga (hàm: vẽ được cả bên ngoài lẫn nhìn qua cửa hầm vào ga ngầm)
+    sink = items;
+    const drawStations = () => {
     for (const q of sts) {
       const { m, i, d, st } = q;
-      const z0 = Math.max(ZN, d - 420), z1 = d + 20; if (z1 <= ZN || d - 420 > ZF) continue;
+      const z0 = Math.max(zMin, d - 420), z1 = d + 20; if (z1 <= zMin || d - 420 > ZF) continue;
       const dwellHere = T.phase === 'dwell' && T.k === i, openDoors = dwellHere && T.door === 'open';
       const topc = mixc([40, 52, 68], [120, 134, 150], day * (1 - wx * 0.3));
       for (const p of st.plats) {
@@ -171,31 +176,33 @@
             adjA = isAdj(p.xa), adjB = isAdj(p.xb), ra = p.xa + (adjA ? 1.2 : 0), rb = p.xb - (adjB ? 1.2 : 0), ya = adjA ? 5.2 : 6.2, yb = adjB ? 5.2 : 6.2, rm = (ra + rb) / 2, ym = adjA && adjB ? 6.2 : (ya + yb) / 2,
             pts = adjA && adjB ? [[ra, ya], [rm, ym], [rb, yb]] : [[ra, ya], [rb, yb]];
           for (let za = Math.max(z0, ZN); za < z1; za += 30) { const zb = Math.min(z1, za + 30);
-            items.push({ z: (za + zb) / 2, fn: () => { for (let k = 0; k + 1 < pts.length; k++) quad(P(pts[k][0], pts[k][1], za), P(pts[k + 1][0], pts[k + 1][1], za), P(pts[k + 1][0], pts[k + 1][1], zb), P(pts[k][0], pts[k][1], zb), under);
+            sink.push({ z: (za + zb) / 2, fn: () => { for (let k = 0; k + 1 < pts.length; k++) quad(P(pts[k][0], pts[k][1], za), P(pts[k + 1][0], pts[k + 1][1], za), P(pts[k + 1][0], pts[k + 1][1], zb), P(pts[k][0], pts[k][1], zb), under);
               for (const [x, y] of [pts[0], pts[pts.length - 1]]) quad(P(x, y, za), P(x, y + 0.45, za), P(x, y + 0.45, zb), P(x, y, zb), edge); } }); } }
         // cột mái
-        const xc = (p.xa + p.xb) / 2; for (let zz = Math.ceil((z0 - d) / 30) * 30 + d; zz < z1; zz += 30) if (zz >= ZN) items.push({ z: zz, fn: () => { const a = P(xc, PH, zz), b = P(xc, 5.6, zz); ctx.strokeStyle = '#2c3d52'; ctx.lineWidth = Math.max(1, 0.35 * c.f / zz); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } });
+        const xc = (p.xa + p.xb) / 2; for (let zz = Math.ceil((z0 - d) / 30) * 30 + d; zz < z1; zz += 30) if (zz >= ZN) sink.push({ z: zz, fn: () => { const a = P(xc, PH, zz), b = P(xc, 5.6, zz); ctx.strokeStyle = '#2c3d52'; ctx.lineWidth = Math.max(1, 0.35 * c.f / zz); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } });
         // hành khách trên sân ga (vơi dần khi lên tàu)
         const gone = dwellHere && isOurs ? clamp(T.dwellT / 22, 0, 1) : 0, count = Math.round((isOurs ? 30 : q.stopHere ? 14 : 5) * (p.xb - p.xa) / 9), sd = Math.round(p.xa);
         for (let k = 0; k < count; k++) { if (hash(i * 977 + k * 13 + 5 + sd) < gone) continue; const zz = d - 400 + hash(i * 131 + k * 7 + 1 + sd) * 410, X = lerp(p.xa + 1.0, p.xb - 1.0, hash(i * 53 + k * 11 + 3 + sd)); if (zz < ZN || zz > 700) continue;
-          items.push({ z: zz, fn: () => { const s = c.f / zz, a = P(X, PH, zz); ctx.fillStyle = personColor(k + i); ctx.fillRect(a[0] - 0.22 * s, a[1] - 1.45 * s, 0.44 * s, 0.75 * s); ctx.strokeStyle = '#1a2230'; ctx.lineWidth = Math.max(1, 0.1 * s); ctx.beginPath(); ctx.moveTo(a[0] - 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] - 0.1 * s, a[1]); ctx.moveTo(a[0] + 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] + 0.1 * s, a[1]); ctx.stroke(); ctx.fillStyle = '#d9b99b'; ctx.beginPath(); ctx.arc(a[0], a[1] - 1.58 * s, 0.12 * s, 0, 7); ctx.fill(); } }); }
+          sink.push({ z: zz, fn: () => { const s = c.f / zz, a = P(X, PH, zz); ctx.fillStyle = personColor(k + i); ctx.fillRect(a[0] - 0.22 * s, a[1] - 1.45 * s, 0.44 * s, 0.75 * s); ctx.strokeStyle = '#1a2230'; ctx.lineWidth = Math.max(1, 0.1 * s); ctx.beginPath(); ctx.moveTo(a[0] - 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] - 0.1 * s, a[1]); ctx.moveTo(a[0] + 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] + 0.1 * s, a[1]); ctx.stroke(); ctx.fillStyle = '#d9b99b'; ctx.beginPath(); ctx.arc(a[0], a[1] - 1.58 * s, 0.12 * s, 0, 7); ctx.fill(); } }); }
       }
       // cửa chắn kính, cửa tàu, tên ga, vạch dừng và biển khoảng cách ở sân ga kề đường dừng của ta
       if (st.plat && !m.mainStop) {
         const sg = st.platSign, Xe = st.ours.x + sg * PEDGE;
         wall(() => Xe + sg * 0.2, PH, PH + 1.4, z0, z1, 'rgba(150,205,235,.22)');
         for (let car = 0; car < 16; car++) for (const off of [3.5, 21.5]) { const zz = d - (car * 25 + (25 - off)); if (zz < ZN || zz > 600) continue;
-          items.push({ z: zz, fn: () => { const w2 = 1.7, a = P(Xe + sg * 0.2, PH, zz - w2 / 2), b = P(Xe + sg * 0.2, PH + 1.45, zz + w2 / 2); ctx.fillStyle = openDoors ? 'rgba(10,14,20,.85)' : 'rgba(170,215,240,.35)'; ctx.fillRect(Math.min(a[0], b[0]), b[1], Math.abs(b[0] - a[0]), a[1] - b[1]); ctx.strokeStyle = '#8aa0b5'; ctx.lineWidth = 1; ctx.strokeRect(Math.min(a[0], b[0]), b[1], Math.abs(b[0] - a[0]), a[1] - b[1]); } }); }
-        if (q.stopHere || q.isT) items.push({ z: Math.max(d - 70, ZN + 1), fn: () => { const zz = Math.max(d - 70, ZN + 1), xc = (st.plat.xa + st.plat.xb) / 2, a = P(xc + 3.4, 4.6, zz), b = P(xc - 3.4, 3.7, zz), x0 = Math.min(a[0], b[0]), ww = Math.abs(b[0] - a[0]); if (ww < 8) return; ctx.fillStyle = '#1f6f4a'; ctx.fillRect(x0, a[1], ww, b[1] - a[1]); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; const label = (m.jp || '') + '  ' + m.name; let fs = Math.max(7, (b[1] - a[1]) * 0.42); ctx.font = 'bold ' + fs + 'px system-ui'; const tw = ctx.measureText(label).width; if (tw > ww * 0.92) { fs *= ww * 0.92 / tw; ctx.font = 'bold ' + fs + 'px system-ui'; } ctx.fillText(label, x0 + ww / 2, a[1] + (b[1] - a[1]) * 0.66); } });
+          sink.push({ z: zz, fn: () => { const w2 = 1.7, a = P(Xe + sg * 0.2, PH, zz - w2 / 2), b = P(Xe + sg * 0.2, PH + 1.45, zz + w2 / 2); ctx.fillStyle = openDoors ? 'rgba(10,14,20,.85)' : 'rgba(170,215,240,.35)'; ctx.fillRect(Math.min(a[0], b[0]), b[1], Math.abs(b[0] - a[0]), a[1] - b[1]); ctx.strokeStyle = '#8aa0b5'; ctx.lineWidth = 1; ctx.strokeRect(Math.min(a[0], b[0]), b[1], Math.abs(b[0] - a[0]), a[1] - b[1]); } }); }
+        if (q.stopHere || q.isT) sink.push({ z: Math.max(d - 70, ZN + 1), fn: () => { const zz = Math.max(d - 70, ZN + 1), xc = (st.plat.xa + st.plat.xb) / 2, a = P(xc + 3.4, 4.6, zz), b = P(xc - 3.4, 3.7, zz), x0 = Math.min(a[0], b[0]), ww = Math.abs(b[0] - a[0]); if (ww < 8) return; ctx.fillStyle = '#1f6f4a'; ctx.fillRect(x0, a[1], ww, b[1] - a[1]); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; const label = (m.jp || '') + '  ' + m.name; let fs = Math.max(7, (b[1] - a[1]) * 0.42); ctx.font = 'bold ' + fs + 'px system-ui'; const tw = ctx.measureText(label).width; if (tw > ww * 0.92) { fs *= ww * 0.92 / tw; ctx.font = 'bold ' + fs + 'px system-ui'; } ctx.fillText(label, x0 + ww / 2, a[1] + (b[1] - a[1]) * 0.66); } });
         if (q.isT) {
-          items.push({ z: d, fn: () => { const x1 = Xe, x2 = Xe + sg * 7; quad(P(x1, PH, d), P(x2, PH, d), P(x2, PH, d + 0.4), P(x1, PH, d + 0.4), '#4cd68a'); const a = P(Xe + sg * 1.3, PH + 3.6, d), b = P(Xe + sg * 1.3, PH, d); ctx.strokeStyle = '#4cd68a'; ctx.lineWidth = Math.max(1, 0.12 * c.f / d); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); const pl = P(Xe + sg * 0.4, PH + 3.8, d), pr = P(Xe + sg * 2.6, PH + 3.0, d); ctx.fillStyle = '#4cd68a'; ctx.fillRect(Math.min(pl[0], pr[0]), pl[1], Math.abs(pr[0] - pl[0]), pr[1] - pl[1]); const hh = pr[1] - pl[1]; if (hh > 5) { ctx.fillStyle = '#082016'; ctx.textAlign = 'center'; ctx.font = 'bold ' + hh * 0.62 + 'px system-ui'; ctx.fillText('VẠCH', (pl[0] + pr[0]) / 2, pl[1] + hh * 0.72); } } });
-          for (const mm of [300, 200, 100, 50, 25, 10]) { const zz = d - mm; if (zz < ZN) continue; items.push({ z: zz, fn: () => { const onP = zz > d - 420, Yb = onP ? PH : 0, X = onP ? Xe + sg * 1.1 : st.ours.x + sg * 1.6, a = P(X, Yb + 2.3, zz), b = P(X, Yb + 1.3, zz), wpx = (b[1] - a[1]) * 1.2; ctx.strokeStyle = '#7a8ea5'; ctx.lineWidth = Math.max(1, 0.07 * c.f / zz); const bt = P(X, Yb, zz); ctx.beginPath(); ctx.moveTo(bt[0], bt[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.fillStyle = '#ffc247'; ctx.fillRect(a[0] - wpx / 2, a[1], wpx, b[1] - a[1]); if (b[1] - a[1] > 7) { ctx.fillStyle = '#10151c'; ctx.textAlign = 'center'; ctx.font = 'bold ' + (b[1] - a[1]) * 0.62 + 'px system-ui'; ctx.fillText(mm, a[0], b[1] - (b[1] - a[1]) * 0.25); } } }); }
+          sink.push({ z: d, fn: () => { const x1 = Xe, x2 = Xe + sg * 7; quad(P(x1, PH, d), P(x2, PH, d), P(x2, PH, d + 0.4), P(x1, PH, d + 0.4), '#4cd68a'); const a = P(Xe + sg * 1.3, PH + 3.6, d), b = P(Xe + sg * 1.3, PH, d); ctx.strokeStyle = '#4cd68a'; ctx.lineWidth = Math.max(1, 0.12 * c.f / d); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); const pl = P(Xe + sg * 0.4, PH + 3.8, d), pr = P(Xe + sg * 2.6, PH + 3.0, d); ctx.fillStyle = '#4cd68a'; ctx.fillRect(Math.min(pl[0], pr[0]), pl[1], Math.abs(pr[0] - pl[0]), pr[1] - pl[1]); const hh = pr[1] - pl[1]; if (hh > 5) { ctx.fillStyle = '#082016'; ctx.textAlign = 'center'; ctx.font = 'bold ' + hh * 0.62 + 'px system-ui'; ctx.fillText('VẠCH', (pl[0] + pr[0]) / 2, pl[1] + hh * 0.72); } } });
+          for (const mm of [300, 200, 100, 50, 25, 10]) { const zz = d - mm; if (zz < ZN) continue; sink.push({ z: zz, fn: () => { const onP = zz > d - 420, Yb = onP ? PH : 0, X = onP ? Xe + sg * 1.1 : st.ours.x + sg * 1.6, a = P(X, Yb + 2.3, zz), b = P(X, Yb + 1.3, zz), wpx = (b[1] - a[1]) * 1.2; ctx.strokeStyle = '#7a8ea5'; ctx.lineWidth = Math.max(1, 0.07 * c.f / zz); const bt = P(X, Yb, zz); ctx.beginPath(); ctx.moveTo(bt[0], bt[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.fillStyle = '#ffc247'; ctx.fillRect(a[0] - wpx / 2, a[1], wpx, b[1] - a[1]); if (b[1] - a[1] > 7) { ctx.fillStyle = '#10151c'; ctx.textAlign = 'center'; ctx.font = 'bold ' + (b[1] - a[1]) * 0.62 + 'px system-ui'; ctx.fillText(mm, a[0], b[1] - (b[1] - a[1]) * 0.25); } } }); }
         }
       }
     }
+    };
+    drawStations();
 
     // ---- dây điện trên cao (mỗi đường) và trụ điện giữa hai đường chính
-    const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, ZN), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
+    const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
     ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; wire(() => 0, ZN, ZF); wire(oppAt, ZN, ZF);
     for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; wire(z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), q.d - 1150, q.d + 630); }
     for (let k = Math.ceil((T.x + ZN) / 50), z = k * 50 - T.x; z < Math.min(1600, zLim); k++, z = k * 50 - T.x) items.push({ z, fn: () => { const oz = oppAt(z), X = oz / 2, a = P(X, 0, z), b = P(X, 7.0, z), w = Math.max(1, 0.32 * c.f / z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, w * 0.5); for (const XX of [0, oz]) { const e = P(XX, 5.5, z); ctx.beginPath(); ctx.moveTo(b[0], b[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(b[0] - w, b[1] - 1, w * 2, 2); } } });
@@ -223,13 +230,6 @@
     for (const an of W.animals) { if (!an.active) continue; const z = an.s - T.x; if (z < ZN - 30 || z > 1800) continue; const fl = an.fleeT0 !== undefined ? W.t - an.fleeT0 : -1; if (fl > 2.4) continue;
       items.push({ z: Math.max(z, ZN), fn: () => { const X = 3.8 + (fl > 0 ? fl * 9 : 0), zz = Math.max(z + (fl > 0 ? fl * 6 : 0), ZN), s = Math.max(c.f / zz, 6), a = P(X, fl > 0 ? Math.min(1.2, fl * 1.2) : 0, zz), h = 1.5 * s; ctx.fillStyle = '#6b4a2b'; ctx.beginPath(); ctx.ellipse(a[0], a[1] - h * 0.55, h * 0.5, h * 0.22, 0, 0, 7); ctx.fill(); ctx.strokeStyle = '#4a321c'; ctx.lineWidth = Math.max(1, h * 0.07); ctx.beginPath(); for (const dx of [-0.32, -0.12, 0.18, 0.34]) { ctx.moveTo(a[0] + h * dx, a[1] - h * 0.4); ctx.lineTo(a[0] + h * dx, a[1]); } ctx.moveTo(a[0] + h * 0.38, a[1] - h * 0.7); ctx.lineTo(a[0] + h * 0.55, a[1] - h * 1.0); ctx.moveTo(a[0] + h * 0.55, a[1] - h * 1.0); ctx.lineTo(a[0] + h * 0.46, a[1] - h * 1.22); ctx.moveTo(a[0] + h * 0.55, a[1] - h * 1.0); ctx.lineTo(a[0] + h * 0.66, a[1] - h * 1.2); ctx.stroke(); } }); }
     for (const wr of W.wires || []) { const z = wr.s - T.x; if (W.t > wr.tB || z < ZN || z > 2000) continue; items.push({ z, fn: () => { const a = P(0, 5.2, z - 40), b = P(0, 5.2, z + 40), m = P(0, 1.4, z); ctx.strokeStyle = '#8a98a8'; ctx.lineWidth = Math.max(1, 1.6 * c.f / z * 0.3); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(m[0], m[1] + 0.8 * c.f / z, b[0], b[1]); ctx.stroke(); if (Math.floor(now / 120) % 3) { ctx.fillStyle = '#ffd24a'; for (let i = 0; i < 7; i++) ctx.fillRect(m[0] + (Math.random() - 0.5) * 4 * c.f / z, m[1] + (Math.random() - 0.5) * 3 * c.f / z, 2, 2); } } }); }
-    // cửa hầm phía trước (có sườn đồi quanh miệng hầm)
-    for (const [k0, k1] of L.meta.tunnels) { const a = S.sOfKm(k0, W.dir, L.kmEnd), b = S.sOfKm(k1, W.dir, L.kmEnd), s = Math.min(a, b), z = s - T.x; if (z < ZN || z > 4000 || zExit !== null) continue;
-      items.push({ z, fn: () => { const l = P(-5.2, 0, z), r = P(5.2, 0, z), t = P(0, 8.0, z), w = Math.abs(r[0] - l[0]), h = l[1] - t[1], hc = mixc([14, 24, 18], [52, 84, 56], day * (1 - wx * 0.3)), urb = biomeAt(z) === 'urban';
-        if (urb) { const bc = mixc([26, 30, 38], [138, 144, 154], day * (1 - wx * 0.35)), x0 = l[0] - w * 1.5, x1 = r[0] + w * 1.5, y1 = t[1] - h * 1.1; ctx.fillStyle = bc; ctx.fillRect(x0, y1, x1 - x0, l[1] - y1);       // cửa hầm trong đô thị: nằm dưới toà nhà, không phải đồi
-          const lit = night > 0.35; for (let rr = 0; rr < 6; rr++) for (let qq = 0; qq < 10; qq++) { if (hash(rr * 31 + qq * 7 + Math.floor(z)) > (lit ? 0.55 : 0.25)) continue; ctx.fillStyle = lit ? 'rgba(255,224,130,.85)' : 'rgba(40,60,90,.45)'; ctx.fillRect(x0 + (qq + 0.5) * (x1 - x0) / 10 - w * 0.05, y1 + (rr + 0.5) * (t[1] - y1) / 6, w * 0.1, h * 0.12); } }
-        else { ctx.fillStyle = hc; ctx.beginPath(); ctx.ellipse(t[0], l[1], w * 2.4, h * 1.9, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); } ctx.fillStyle = '#6a7480'; ctx.beginPath(); ctx.ellipse(t[0], l[1], w * 0.62, h * 1.02, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#05080d'; ctx.beginPath(); ctx.ellipse(t[0], l[1], w * 0.5, h * 0.9, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); } }); }
-
     // ---- tàu: phía trước (mặt tàu), ngược chiều, và tàu vượt (dải nhìn ngang chiếu phối cảnh)
     const iconFor = key => { const k = SMAP[key] || 'n700'; const f = R.fronts && R.fronts[k]; return f && f.ready ? f : null; };
     const drawFront = (ic, X, z, alpha) => { const w = Math.max(3.4 * c.f / z, 9), h = w * ic.img.height / ic.img.width, a = P(X, 0.1, z); ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.imageSmoothingEnabled = true; ctx.drawImage(ic.img, a[0] - w / 2, a[1] - h, w, h); ctx.globalAlpha = 1; };
@@ -261,6 +261,39 @@
     items.sort((a, b) => b.z - a.z);
     for (const it of items) { if (it.z < ZN || it.z > zLim) continue; it.fn(); }
 
+    // ---- cửa hầm phía trước: mặt cửa (toà nhà ở đô thị / sườn đồi), khung cửa chữ nhật hoặc vòm, nhìn thấy ray, đèn trần và sân ga ngầm bên trong
+    if (entryZ !== null) {
+      const ent = entryZ, urbanEnt = biomeAt(ent) === 'urban', stIn = sts.filter(q => q.d > ent - 50 && q.d < ent + 700), wide = urbanEnt || stIn.length > 0;
+      const ex0 = Math.min(ADJ - 3.6, ...stIn.map(q => q.st.extent[0] - 0.8)), ex1 = Math.max(3.6, ...stIn.map(q => q.st.extent[1] + 0.8)), xc0 = (ex0 + ex1) / 2, hw = (ex1 - ex0) / 2;
+      const poly = []; if (wide) { for (const [x, y] of [[ex1, 0], [ex1, 6.6], [ex1 - 1.4, 8.0], [ex0 + 1.4, 8.0], [ex0, 6.6], [ex0, 0]]) poly.push(P(x, y, ent)); } else { for (let i = 0; i <= 28; i++) { const th = Math.PI * i / 28; poly.push(P(xc0 + hw * Math.cos(th), 0.1 + 7.8 * Math.sin(th), ent)); } poly.push(P(xc0 - hw, 0, ent)); poly.unshift(P(xc0 + hw, 0, ent)); }
+      // mặt cửa
+      if (urbanEnt || stIn.length) {          // toà nhà bê tông nhiều tầng có cửa sổ, ban công, mái, biển hiệu; cửa hầm là ô chữ nhật ở tầng trệt
+        for (let xa = -78, ci = 0; xa < 78; xa += 12, ci++) { const hh = (xa + 12 > ex0 - 6 && xa < ex1 + 6) ? 20 + hash(ci * 5 + 1) * 8 : 9 + hash(ci * 7 + Math.floor(ent / 50)) * 26, tone = hash(ci * 11 + 3), bc = mixc([22 + tone * 14, 26 + tone * 12, 34 + tone * 10], [130 + tone * 40, 134 + tone * 34, 142 + tone * 30], day * (1 - wx * 0.35));
+          const A = P(xa, 0, ent), B = P(xa + 12, 0, ent), C = P(xa + 12, hh, ent), Dp = P(xa, hh, ent); quad(A, B, C, Dp, bc);
+          const edgeC = mixc([14, 16, 22], [96, 100, 110], day * (1 - wx * 0.35)); quad(P(xa, hh, ent), P(xa + 12, hh, ent), P(xa + 12, hh + 0.7, ent), P(xa, hh + 0.7, ent), edgeC);               // mái / gờ trên
+          if (hash(ci * 13 + 5) < 0.4) quad(P(xa + 3, hh + 0.7, ent), P(xa + 8, hh + 0.7, ent), P(xa + 8, hh + 2.6, ent), P(xa + 3, hh + 2.6, ent), edgeC);                                    // bồn nước / cầu thang mái
+          for (let wy = 3.4, row = 0; wy < hh - 1.6; wy += 3.3, row++) for (let wx_ = xa + 1.2; wx_ < xa + 11; wx_ += 3.4) { if (Math.abs(wx_ - xc0) < hw + 1 && wy < 8.6) continue; const lit = night > 0.35 ? hash(ci * 97 + row * 17 + Math.floor(wx_)) < 0.5 : false, wc = lit ? 'rgba(255,224,130,.92)' : mixc([16, 24, 38], [92, 126, 160], day * (1 - wx * 0.4));
+            quad(P(wx_, wy, ent), P(wx_ + 2.0, wy, ent), P(wx_ + 2.0, wy + 1.7, ent), P(wx_, wy + 1.7, ent), wc); if (!lit && row % 2 === 0) quad(P(wx_ - 0.1, wy - 0.18, ent), P(wx_ + 2.1, wy - 0.18, ent), P(wx_ + 2.1, wy, ent), P(wx_ - 0.1, wy, ent), edgeC); }           // cửa sổ + bệ cửa
+          if (hh > 16) for (let wy = 6.7; wy < hh - 2; wy += 6.6) quad(P(xa, wy, ent), P(xa + 12, wy, ent), P(xa + 12, wy + 0.3, ent), P(xa, wy + 0.3, ent), edgeC);                                 // dải ban công
+        }
+        // biển ga / khung viền quanh cửa
+        quad(P(ex0 - 1.2, 8.0, ent), P(ex1 + 1.2, 8.0, ent), P(ex1 + 1.2, 9.4, ent), P(ex0 - 1.2, 9.4, ent), mixc([30, 40, 52], [150, 158, 170], day * (1 - wx * 0.3)));
+      } else {                                // sườn đồi: gò xanh quanh cửa vòm
+        const hc = mixc([14, 24, 18], [52, 84, 56], day * (1 - wx * 0.3)), hl = P(xc0 - hw, 0, ent), hr = P(xc0 + hw, 0, ent), ht = P(xc0, 8.0, ent), ww = Math.abs(hr[0] - hl[0]), hhh = hl[1] - ht[1];
+        ctx.fillStyle = hc; ctx.beginPath(); ctx.ellipse(ht[0], hl[1], ww * 2.4, hhh * 1.9, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#707a86'; ctx.beginPath(); ctx.ellipse(ht[0], hl[1], ww * 0.62, hhh * 1.02, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+      }
+      // bên trong cửa
+      ctx.save(); ctx.beginPath(); poly.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.clip();
+      const ig = ctx.createLinearGradient(0, py, 0, py + ph); ig.addColorStop(0, '#1c2128'); ig.addColorStop(0.5, '#0a0d11'); ig.addColorStop(1, '#161b22'); ctx.fillStyle = ig; ctx.fillRect(px - 60, py - 60, pw + 120, ph + 120);
+      const zEndIn = Math.min(ZF, entryEnd, ent + 900);
+      for (const sgn of [-1, 1]) for (let k = Math.ceil((T.x + ent) / 18), z = k * 18 - T.x; z < Math.min(ent + 500, zEndIn); k++, z = k * 18 - T.x) { const a = P(sgn * 2.9, 6.3, z), r = Math.max(1.2, 0.18 * c.f / z), gl = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], r * 4); gl.addColorStop(0, 'rgba(255,236,170,.9)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(a[0] - r * 4, a[1] - r * 4, r * 8, r * 8); }
+      zMin = ent; zLim = zEndIn; drawTracks(ent); ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; wire(() => 0, ent, zLim); wire(oppAt, ent, zLim);
+      sink = []; drawStations(); sink.sort((a, b) => b.z - a.z); for (const it of sink) if (it.z >= zMin && it.z <= zLim) it.fn();
+      zMin = ZN; zLim = ZF; sink = items; ctx.restore();
+      // viền khung cửa
+      ctx.strokeStyle = mixc([40, 46, 56], [150, 156, 166], day * (1 - wx * 0.3)); ctx.lineWidth = Math.max(2, 0.45 * c.f / ent); ctx.beginPath(); poly.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.stroke();
+    }
     ctx.restore();                                  // hết phần nghiêng theo đường cong
 
     // ---- hiệu ứng thời tiết, ban đêm, tốc độ
