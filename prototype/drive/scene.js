@@ -163,16 +163,16 @@
     ctx.strokeStyle = '#2a3a4c'; ctx.lineWidth = 2; const dens = 28, o2 = (T.x * K) % dens; for (let sx = px - dens; sx < px + pw + dens; sx += dens) { ctx.beginPath(); ctx.moveTo(sx - o2 + dens, base + 4); ctx.lineTo(sx - o2 + dens, base + 12); ctx.stroke(); }
 
     // ---- đối tượng phía trước (bản đồ nén)
-    const j = R.nextTarget(T), mark = T.phase === 'dwell' ? T.M[T.k].s : T.M[j].s, d = mark - T.x, markX = map(d);
-    const atStn = d < 450 && d > -420;
+    const j = R.nextTarget(T), leaving = T.phase === 'run' && T.M[T.k] && T.x - T.M[T.k].s >= -1 && T.x - T.M[T.k].s < 620 && T.M[j].s - T.x > 450, stI = T.phase === 'dwell' || leaving ? T.k : j, mark = T.M[stI].s, d = mark - T.x, markX = map(d);
+    const atStn = d < 450 && d > -620;
     // sân ga, biển, vạch, cửa chắn
     if (atStn) {
       const pStart = map(Math.max(d - 400, -200)), pEnd = markX + 60; const platTop = base - 15;
       ctx.fillStyle = '#2d3f55'; ctx.fillRect(pStart, platTop, pEnd - pStart, 15); ctx.fillStyle = '#e8c93a'; ctx.fillRect(pStart, platTop, pEnd - pStart, 2);
       ctx.fillStyle = 'rgba(70,100,130,.55)'; ctx.fillRect(pStart, base - 62, pEnd - pStart, 5);
       ctx.fillStyle = '#30475f'; for (let q = 0; q < 14; q++) { const cxp = map(d - q * 30); if (cxp > px - 10 && cxp < px + pw + 10) ctx.fillRect(cxp - 2, base - 58, 4, 44); }
-      const stName = T.M[T.phase === 'dwell' ? T.k : j]; const sj = stName.jp || '';
-      if (d < 120 && d > -60) { const bx = map(Math.max(d - 12, 0)); ctx.fillStyle = '#1f6f4a'; ctx.fillRect(bx - 38, base - 58, 76, 18); ctx.fillStyle = '#fff'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText(sj + '  ' + stName.name, bx, base - 45); }
+      const stName = T.M[stI]; const sj = stName.jp || '';
+      if (d < 120 && d > -60) { const bx = map(Math.max(d - 12, 0)), label = sj + '  ' + stName.name; let fs = 12; ctx.font = 'bold ' + fs + 'px system-ui'; const maxW = Math.min(pw - 24, 230); while (ctx.measureText(label).width > maxW - 14 && fs > 7) { fs -= 0.5; ctx.font = 'bold ' + fs + 'px system-ui'; } const sw = Math.max(76, Math.min(maxW, ctx.measureText(label).width + 14)), sx0 = clamp(bx - sw / 2, px + 4, px + pw - sw - 4); ctx.fillStyle = '#1f6f4a'; ctx.fillRect(sx0, base - 58, sw, 18); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(label, sx0 + sw / 2, base - 45); }
       [300, 200, 100, 50, 25, 10].forEach(m => { const bx = map(d - m); if (d - m > -1 && bx > px && bx < px + pw) { ctx.fillStyle = '#ffc247'; ctx.fillRect(bx - 1, base - 40, 3, 24); ctx.font = '10px system-ui'; ctx.textAlign = 'center'; ctx.fillText(m + ' m', bx, base - 44); } });
       ctx.fillStyle = '#4cd68a'; ctx.fillRect(markX - 2, base - 66, 4, 74); ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center'; ctx.fillText('VẠCH', markX, base - 70);
       for (let m = -2; m <= 2; m++) { ctx.fillStyle = m === 0 ? '#4cd68a' : 'rgba(76,214,138,.5)'; ctx.fillRect(markX + m * K - 0.5, base + 14, 1.2, 6); }
@@ -189,8 +189,17 @@
         const ax = markX + 22; person(ctx, ax, platTop, 17, '#2a6fd6', 0); if (dwell && (T.door === 'closing' || T.door === 'closed')) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ax + 2, platTop - 11); ctx.lineTo(ax + 8, platTop - 22); ctx.stroke(); }
       }
     }
-    // cửa hầm
-    for (const [k0, k1] of W.line.meta.tunnels) for (const kk of [k0, k1]) { const s = root.Sim.sOfKm(kk, W.dir, W.line.kmEnd), dd = (s - T.x) * (W.dir === 'up' ? 1 : 1); const dir = W.dir === 'up' ? 1 : 1; const ds = s - T.x; if (ds > 0 && ds < 1800) { const x = map(ds), q = sc(ds); ctx.fillStyle = '#05080d'; ctx.beginPath(); ctx.ellipse(x, base - 20 * q, 14 * q, 24 * q, 0, Math.PI, 0); ctx.lineTo(x + 14 * q, base); ctx.lineTo(x - 14 * q, base); ctx.fill(); ctx.strokeStyle = '#3a4c60'; ctx.lineWidth = 2 * q; ctx.stroke(); } }
+    // cửa hầm: sườn đồi và miệng hầm phía trước; khi đang ở trong hầm thì thấy cửa ra sáng phía trước (không vẽ cửa vào đã qua)
+    for (const [k0, k1] of W.line.meta.tunnels) {
+      const sIn = root.Sim.sOfKm(k0, W.dir, W.line.kmEnd), sOut = root.Sim.sOfKm(k1, W.dir, W.line.kmEnd), lo = Math.min(sIn, sOut), hi = Math.max(sIn, sOut);
+      const dIn = lo - T.x, dOut = hi - T.x;
+      if (dIn > 0 && dIn < 1800) { const x = map(dIn), q = sc(dIn), hc = mixc([14, 24, 18], [52, 84, 56], day * (1 - wx * 0.3));
+        ctx.fillStyle = hc; ctx.beginPath(); ctx.moveTo(x - 150 * q, base - 4); ctx.bezierCurveTo(x - 90 * q, base - 4 - 80 * q, x - 40 * q, base - 4 - 96 * q, x, base - 4 - 96 * q); ctx.bezierCurveTo(x + 40 * q, base - 4 - 96 * q, x + 160 * q, base - 4 - 60 * q, x + 260 * q, base - 4); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#6a7480'; ctx.beginPath(); ctx.ellipse(x, base - 22 * q, 17 * q, 28 * q, 0, Math.PI, 0); ctx.lineTo(x + 17 * q, base); ctx.lineTo(x - 17 * q, base); ctx.fill();
+        ctx.fillStyle = '#05080d'; ctx.beginPath(); ctx.ellipse(x, base - 20 * q, 14 * q, 24 * q, 0, Math.PI, 0); ctx.lineTo(x + 14 * q, base); ctx.lineTo(x - 14 * q, base); ctx.fill(); }
+      if (dIn <= 0 && dOut > 0 && dOut < 1800) { const x = map(dOut), q = sc(dOut), gl = ctx.createRadialGradient(x, base - 20 * q, 0, x, base - 20 * q, 36 * q); gl.addColorStop(0, 'rgba(230,240,255,.95)'); gl.addColorStop(0.6, 'rgba(200,220,240,.7)'); gl.addColorStop(1, 'rgba(200,220,240,0)');
+        ctx.fillStyle = gl; ctx.fillRect(x - 40 * q, base - 60 * q, 80 * q, 64 * q); ctx.fillStyle = 'rgba(225,238,252,.92)'; ctx.beginPath(); ctx.ellipse(x, base - 20 * q, 13 * q, 22 * q, 0, Math.PI, 0); ctx.lineTo(x + 13 * q, base); ctx.lineTo(x - 13 * q, base); ctx.fill(); }
+    }
     // biển chạy chậm: đầu và cuối vùng giới hạn
     for (const z of W.zones) {
       if (z.hold || W.t > z.tB || W.t < z.tA - 1 || z.v * 3.6 >= 284 || z.s1 - z.s0 > 5e8) continue;
@@ -219,31 +228,37 @@
     // tàu phía trước (nén theo khoảng cách)
     const Ld = W.lead;
     if (Ld && Ld.phase !== 'end') { const lenL = Ld.veh.len, dl = Ld.x - T.x; if (dl > 0 && dl - lenL < 1800) { const xf = map(dl), xr = map(Math.max(dl - lenL, 0)), q = sc(Math.max(dl - lenL, 0)); if (xf - xr > 2) fleet(ctx, R, Ld.veh.key, xf, base, xf - xr, hOf(R, Ld.veh.key, K) * SV * q, 0.95); } }
-    // tàu ngược chiều trên đường bên kia: nằm phía sau tàu của ta (nhìn từ phía đường bên cạnh), lướt qua ~4,5 s
-    if (T.v > 20) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 1) { const ok_ = W.lineId === 'toh' ? 'E5' : 'N700', wv = K * 0.8 * root.Sim.VEH[ok_].len, hh = hOf(R, ok_, K * 0.8) * SV, front = px + pw - u * (pw + wv); fleet(ctx, R, ok_, front, base - 4, wv, hh, 0.92, true); } }
+    // tàu ngược chiều: đi sang phải (đông/bắc) thì được vẽ ĐÈ lên tàu của ta; đi sang trái thì nằm phía SAU tàu của ta
+    const drawOpp = () => { if (T.v > 20) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 1) { const ok_ = W.lineId === 'toh' ? 'E5' : 'N700', wv = K * 0.8 * root.Sim.VEH[ok_].len, hh = hOf(R, ok_, K * 0.8) * SV, front = px + pw - u * (pw + wv); fleet(ctx, R, ok_, front, base - 4, wv, hh, 0.92, true); } } };
+    if (flipX) drawOpp();
     // ---- đoàn tàu người lái
     const psp = sprOf(R, T.veh.key);
     if (psp) {
       const spr = psp.meta, img = psp.img, f = K / spr.pxPerMeter, srcW = Math.min(spr.width, Math.ceil((fx - px + 4) / f)), dh = spr.height * f * SV;
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(fx - srcW * f, base - 1, srcW * f, 3);
-      ctx.drawImage(img, spr.width - srcW, 0, srcW, spr.height, fx - srcW * f, base - (spr.railY * f * SV) + 2, srcW * f, dh);
-      if (night > 0.3) { ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = 'rgba(' + Math.round(255 - 130 * night) + ',' + Math.round(255 - 120 * night) + ',' + Math.round(255 - 80 * night) + ',1)'; ctx.fillRect(fx - srcW * f, base - 60, srcW * f + 4, 62); ctx.restore(); }
-      if (T.phase === 'run' && T.v > 1 && !T.cut) { ctx.fillStyle = 'rgba(255,245,190,' + (0.16 + 0.12 * night + 0.05 * Math.sin(now / 120)) + ')'; ctx.beginPath(); ctx.moveTo(fx - 2, base - 22); ctx.lineTo(fx + 100 + 60 * night, base - 32); ctx.lineTo(fx + 100 + 60 * night, base - 3); ctx.closePath(); ctx.fill(); }
+      if (night > 0.3) {       // tô tối đúng hình tàu (không tô cả hình chữ nhật quanh tàu)
+        const ow = Math.ceil(srcW * f), oh = Math.ceil(dh); if (!scene._tint || scene._tint.width < ow || scene._tint.height < oh) { scene._tint = document.createElement('canvas'); scene._tint.width = Math.max(ow, 600); scene._tint.height = Math.max(oh, 120); }
+        const tc = scene._tint.getContext('2d'); tc.clearRect(0, 0, scene._tint.width, scene._tint.height); tc.drawImage(img, spr.width - srcW, 0, srcW, spr.height, 0, 0, srcW * f, dh); tc.globalCompositeOperation = 'source-atop'; tc.fillStyle = 'rgba(6,10,24,' + (0.5 * night) + ')'; tc.fillRect(0, 0, ow, oh); tc.globalCompositeOperation = 'source-over';
+        ctx.drawImage(scene._tint, 0, 0, ow, oh, fx - srcW * f, base - (spr.railY * f * SV) + 2, ow, oh);
+      } else ctx.drawImage(img, spr.width - srcW, 0, srcW, spr.height, fx - srcW * f, base - (spr.railY * f * SV) + 2, srcW * f, dh);
+      if (!T.cut && (night > 0.5 || tun || (wx > 0.3 && night > 0.25))) { ctx.fillStyle = 'rgba(255,245,190,' + (0.16 + 0.12 * night + 0.05 * Math.sin(now / 120)) + ')'; ctx.beginPath(); ctx.moveTo(fx - 2, base - 22); ctx.lineTo(fx + 100 + 60 * night, base - 32); ctx.lineTo(fx + 100 + 60 * night, base - 3); ctx.closePath(); ctx.fill(); }
     } else trainProc(ctx, fx, base, T.veh.len * K, 26, T.veh.key, 1, false);
+    if (!flipX) drawOpp();
     // tàu vượt qua đường thông qua khi ta đỗ ở ga tránh (quét qua màn hình ~ 9 giây)
     const pl = T.phase === 'dwell' ? (W.passers && W.passers[T.k]) : null;
     if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const wL = 404.7 * K * 1.18, hh = hOf(R, p.v || (W.lineId === 'toh' ? 'E5' : 'N700'), K * 1.18) * SV, xF = px + u * (pw + wL); fleet(ctx, R, p.v || (W.lineId === 'toh' ? 'E5' : 'N700'), xF, base + 9, wL * ((root.Sim.VEH[p.v] || {}).len ? root.Sim.VEH[p.v].len / 404.7 : 1), hh, 1, false); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(px, base - 40, pw, 50 * 0); txt2(ctx, p.label + ' thông qua', px + pw / 2, py + 16, '#ffd88a'); } }
     // hiệu ứng chớp khi hai tàu gặp nhau
     if (T.v > 20) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 0.4) { ctx.fillStyle = 'rgba(255,255,255,' + 0.15 * Math.sin(u / 0.4 * Math.PI) + ')'; ctx.fillRect(px, py, pw, ph); } }
     // ---- thời tiết phủ lên
-    if (rain) { ctx.strokeStyle = 'rgba(160,190,255,.5)'; ctx.lineWidth = 1; const tt = now / 30; for (let q = 0; q < 90; q++) { const rx = px + ((q * 83 + tt * 3 + (windy ? tt * 3 : 0)) % pw), ry = py + ((q * 47 + tt * 9) % ph); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5 - (windy ? 6 : 0), ry + 12); ctx.stroke(); } }
-    if (inSnow && T.x >= (W.zones.find(z => z.kind === 'snow') || { s0: 1e18 }).s0 - 4000) { ctx.fillStyle = 'rgba(245,250,255,.85)'; const tt = now / 25; for (let q = 0; q < 110; q++) { const rx = px + ((q * 61 + tt * (1.2 + (q % 3) * 0.5) + Math.sin(tt / 9 + q) * 8) % pw), ry = py + ((q * 37 + tt * (1.5 + (q % 4) * 0.6)) % ph); ctx.fillRect(rx, ry, 2, 2); } }
-    if (windy) { ctx.strokeStyle = 'rgba(210,225,240,.35)'; ctx.lineWidth = 1; const tt = now / 6; for (let q = 0; q < 14; q++) { const ry = py + 30 + (q * 29) % (base - py - 40), rx = px + pw - ((q * 131 + tt * (2 + q % 3)) % (pw + 80)); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx + 40 + (q % 3) * 14, ry + Math.sin(tt / 40 + q) * 2); ctx.stroke(); } }
+    if (rain && !tun) { ctx.strokeStyle = 'rgba(160,190,255,.5)'; ctx.lineWidth = 1; const tt = now / 30; for (let q = 0; q < 90; q++) { const rx = px + ((q * 83 + tt * 3 + (windy ? tt * 3 : 0)) % pw), ry = py + ((q * 47 + tt * 9) % ph); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5 - (windy ? 6 : 0), ry + 12); ctx.stroke(); } }
+    if (!tun && inSnow && T.x >= (W.zones.find(z => z.kind === 'snow') || { s0: 1e18 }).s0 - 4000) { ctx.fillStyle = 'rgba(245,250,255,.85)'; const tt = now / 25; for (let q = 0; q < 110; q++) { const rx = px + ((q * 61 + tt * (1.2 + (q % 3) * 0.5) + Math.sin(tt / 9 + q) * 8) % pw), ry = py + ((q * 37 + tt * (1.5 + (q % 4) * 0.6)) % ph); ctx.fillRect(rx, ry, 2, 2); } }
+    if (windy && !tun) { ctx.strokeStyle = 'rgba(210,225,240,.35)'; ctx.lineWidth = 1; const tt = now / 6; for (let q = 0; q < 14; q++) { const ry = py + 30 + (q * 29) % (base - py - 40), rx = px + pw - ((q * 131 + tt * (2 + q % 3)) % (pw + 80)); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx + 40 + (q % 3) * 14, ry + Math.sin(tt / 40 + q) * 2); ctx.stroke(); } }
     // sét (đồng bộ với tiếng sấm)
-    if (R.aud && R.aud.lastThunder) { const dt = now - R.aud.lastThunder; const fl = (dt < 90 ? 1 : 0) + (dt > 220 && dt < 300 ? 0.7 : 0); if (fl > 0) { ctx.fillStyle = 'rgba(235,240,255,' + 0.55 * fl + ')'; ctx.fillRect(px, py, pw, ph); } }
+    if (!tun && R.aud && R.aud.lastThunder) { const dt = now - R.aud.lastThunder; const fl = (dt < 90 ? 1 : 0) + (dt > 220 && dt < 300 ? 0.7 : 0); if (fl > 0) { ctx.fillStyle = 'rgba(235,240,255,' + 0.55 * fl + ')'; ctx.fillRect(px, py, pw, ph); } }
     if (flipX) delete ctx.fillText;
     ctx.restore();
   }
   function txt2(ctx, s, x, y, c) { ctx.fillStyle = c; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText(s, x, y); }
+  const scene = { _tint: null };
   root.Scene = { draw, K };
 })(typeof window !== 'undefined' ? window : globalThis);

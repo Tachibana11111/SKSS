@@ -94,37 +94,45 @@
 
     // ---- hầm: khi đang ở trong hầm vẽ lòng hầm thay cho phong cảnh
     let zExit = null; for (const [k0, k1] of L.meta.tunnels) { const a = S.sOfKm(k0, W.dir, L.kmEnd), b = S.sOfKm(k1, W.dir, L.kmEnd), lo = Math.min(a, b), hi = Math.max(a, b); if (T.x >= lo && T.x <= hi) zExit = hi - T.x; }
-    // ---- cầu (sông bên dưới) và cầu cạn (lan can, gờ bệ đường) theo kết cấu phía trước
+    // ---- cầu (sông bên dưới) và cầu cạn: bản mặt cầu bê tông rộng ra theo sân ga, lan can và gờ bệ
     if (zExit === null) {
       const runs = []; let prev = null; for (let z = 0; z <= ZF; z += 20) { const k = S.structAt(L, km(z)); if (k === prev) runs[runs.length - 1][1] = z + 20; else { runs.push([z, z + 20, k]); prev = k; } }
-      const colTop = mixc([22, 26, 32], [150, 156, 160], day * (1 - wx * 0.35)), colSide = mixc([14, 16, 20], [104, 110, 116], day * (1 - wx * 0.35));
+      const colTop = mixc([22, 26, 32], [150, 156, 160], day * (1 - wx * 0.35)), colSide = mixc([14, 16, 20], [104, 110, 116], day * (1 - wx * 0.35)), colDeck = mixc([20, 24, 28], [112, 116, 118], day * (1 - wx * 0.35));
+      const xr = z => { let x = 2.9; for (const q of sts) x += Math.max(0, q.st.extent[1] + 0.4 - 2.9) * LAY.spread(T.x + z, q.m.s); return x; };
+      const xl = z => { const base = oppAt(z) - 2.9; let x = base; for (const q of sts) x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, LAY.spread(T.x + z, q.m.s))); return x; };
       for (const [za, zb, k] of runs) {
         if (k === 'b') strip(() => -70, () => 70, -LAY.ELEV.b, za, zb, mixc([10, 22, 34], [66, 104, 132], day * (1 - wx * 0.4)));
-        if (k === 'v' || k === 'b') for (const xf of [() => 2.9, z => oppAt(z) - 2.9]) { wall(xf, 0, 1.0, za, zb, colTop); wall(xf, -1.4, 0, za, zb, colSide); }
+        if (k === 'v' || k === 'b') { strip(xl, xr, -0.02, za, zb, colDeck); for (const xf of [xr, xl]) { wall(xf, 0, 1.0, za, zb, colTop); wall(xf, -1.4, 0, za, zb, colSide); } }
       }
     }
 
     // ---- đường ray và đá dăm (theo đường cong); các đường của ga toả ra từ đường chính
     const ballast = mixc([20, 24, 28], [88, 88, 84], day * (1 - wx * 0.3));
-    const trackStrip = (xf, z0, z1, alpha) => {
+    const ballastStrip = (xf, z0, z1, alpha) => { z0 = Math.max(z0, ZN); z1 = Math.min(z1, ZF); if (z1 <= z0) return; strip(z => xf(z) - 2.1, z => xf(z) + 2.1, 0, z0, z1, ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')')); };
+    const railStrip = (xf, z0, z1, sleepers) => {
       z0 = Math.max(z0, ZN); z1 = Math.min(z1, ZF); if (z1 <= z0) return;
-      const bc = ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')');
-      strip(z => xf(z) - 2.1, z => xf(z) + 2.1, 0, z0, z1, bc);
-      for (let k = Math.ceil((T.x + z0) / 1.3), z = k * 1.3 - T.x; z < Math.min(z1, 110); k++, z = k * 1.3 - T.x) { const X = xf(z), p = P(X - 1.3, 0, z), q = P(X + 1.3, 0, z), d = P(X + 1.3, 0, z + 0.28), e = P(X - 1.3, 0, z + 0.28); if (d[1] - q[1] < 0.4 && z > 40) continue; quad(p, q, d, e, 'rgba(34,36,40,.85)'); }
+      if (sleepers) for (let k = Math.ceil((T.x + z0) / 1.3), z = k * 1.3 - T.x; z < Math.min(z1, 110); k++, z = k * 1.3 - T.x) { const X = xf(z), p = P(X - 1.3, 0, z), q = P(X + 1.3, 0, z), d = P(X + 1.3, 0, z + 0.28), e = P(X - 1.3, 0, z + 0.28); if (d[1] - q[1] < 0.4 && z > 40) continue; quad(p, q, d, e, 'rgba(34,36,40,.85)'); }
       for (const sx of [-GAUGE / 2, GAUGE / 2]) strip(z => xf(z) + sx - 0.075, z => xf(z) + sx + 0.075, 0.15, z0, z1, 'rgba(208,216,226,.9)');
     };
     const drawTracks = () => {
-      trackStrip(() => 0, ZN, ZF, 1); trackStrip(oppAt, ZN, ZF, zExit === null ? 0.95 : 1);
-      for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; const xf = z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)); if (q.d + 630 < ZN || q.d - 1150 > ZF) continue; trackStrip(xf, q.d - 1150, q.d + 630, 0.95); }
+      const parts = [[() => 0, ZN, ZF, 1], [oppAt, ZN, ZF, zExit === null ? 0.95 : 1]];
+      for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + 630 < ZN || q.d - 1150 > ZF) continue; parts.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), q.d - 1150, q.d + 630, 0.95]); }
+      for (const [xf, z0, z1, a] of parts) ballastStrip(xf, z0, z1, a);       // đá dăm trước: đường nhánh không còn đè lên ray đường chính
+      for (const [xf, z0, z1] of parts) railStrip(xf, z0, z1, true);
+      // ghi chữ X (hai ghi bắt chéo) nối đường ta và đường ngược chiều ở hai đầu mỗi ga
+      for (const q of sts) for (const zc of [q.d - 1300, q.d + 720]) { if (zc + 150 < ZN || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); };
+        railStrip(z => lerp(0, oppAt(z), sm((z - zc) / 150)), zc, zc + 150, false); railStrip(z => lerp(oppAt(z), 0, sm((z - zc) / 150)), zc, zc + 150, false); }
     };
     if (zExit !== null) {   // lòng hầm làm nền; ga ngầm (Tokyo, Ueno của Tohoku) vẫn vẽ sân ga bên trên
       const tw = ctx.createLinearGradient(0, py, 0, py + ph); tw.addColorStop(0, '#2a3038'); tw.addColorStop(0.5, '#0c0f13'); tw.addColorStop(1, '#1a1f26'); ctx.fillStyle = tw; ctx.fillRect(px - 60, py - 60, pw + 120, ph + 120);
       for (const sgn of [-1, 1]) for (let k = Math.ceil((T.x + ZN) / 18), z = k * 18 - T.x; z < 420; k++, z = k * 18 - T.x) { const a = P(sgn * 2.9, 6.3, z); const r = Math.max(1.2, 0.18 * c.f / z); const gl = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], r * 4); gl.addColorStop(0, 'rgba(255,236,170,.9)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(a[0] - r * 4, a[1] - r * 4, r * 8, r * 8); }
     }
     drawTracks();
-    // ánh đèn pha trên ray khi trời tối/trong hầm
-    const lightLvl = Math.max(night * (1 - wx * 0.3), zExit !== null ? 0.8 : 0);
-    if (lightLvl > 0.05 && !T.cut) { const lg = ctx.createLinearGradient(0, py + ph, 0, c.hy + 4); lg.addColorStop(0, 'rgba(255,244,200,' + 0.42 * lightLvl + ')'); lg.addColorStop(0.5, 'rgba(255,244,200,' + 0.12 * lightLvl + ')'); lg.addColorStop(1, 'rgba(255,244,200,0)'); strip(() => -2.6, () => 2.6, 0, ZN, 700, lg); }
+    // đèn pha: chỉ bật khi tối, trong hầm, hoặc mưa/tuyết lúc nhá nhem; ban ngày ngoài hầm thì tắt. Chùm sáng bám đường đang chạy (kể cả đường nhánh/đường cong)
+    const lampOn = !T.cut && (night > 0.5 || zExit !== null || (wx > 0.3 && night > 0.25)), lightLvl = lampOn ? Math.max(0.55, night * (1 - wx * 0.2), zExit !== null ? 0.9 : 0) : 0;
+    if (lampOn) { const lg = ctx.createLinearGradient(0, py + ph, 0, c.hy + 4); lg.addColorStop(0, 'rgba(255,246,210,' + 0.75 * lightLvl + ')'); lg.addColorStop(0.45, 'rgba(255,246,210,' + 0.32 * lightLvl + ')'); lg.addColorStop(1, 'rgba(255,246,210,0)');
+      const cx0 = c.lane; strip(z => cx0 - 3.4, z => cx0 + 3.4, 0, ZN, 900, lg);
+      const lg2 = ctx.createLinearGradient(0, py + ph, 0, c.hy + 4); lg2.addColorStop(0, 'rgba(255,246,210,' + 0.2 * lightLvl + ')'); lg2.addColorStop(0.6, 'rgba(255,246,210,0)'); strip(z => cx0 - 9, z => cx0 + 9, 0.02, ZN, 260, lg2); }
 
     // ---- sân ga theo bố trí thật của từng ga
     for (const q of sts) {
@@ -159,10 +167,10 @@
         wall(() => Xe + sg * 0.2, PH, PH + 1.4, z0, z1, 'rgba(150,205,235,.22)');
         for (let car = 0; car < 16; car++) for (const off of [3.5, 21.5]) { const zz = d - (car * 25 + (25 - off)); if (zz < ZN || zz > 600) continue;
           items.push({ z: zz, fn: () => { const w2 = 1.7, a = P(Xe + sg * 0.2, PH, zz - w2 / 2), b = P(Xe + sg * 0.2, PH + 1.45, zz + w2 / 2); ctx.fillStyle = openDoors ? 'rgba(10,14,20,.85)' : 'rgba(170,215,240,.35)'; ctx.fillRect(Math.min(a[0], b[0]), b[1], Math.abs(b[0] - a[0]), a[1] - b[1]); ctx.strokeStyle = '#8aa0b5'; ctx.lineWidth = 1; ctx.strokeRect(Math.min(a[0], b[0]), b[1], Math.abs(b[0] - a[0]), a[1] - b[1]); } }); }
-        if (q.stopHere || q.isT) items.push({ z: Math.max(d - 70, ZN + 1), fn: () => { const zz = Math.max(d - 70, ZN + 1), xc = (st.plat.xa + st.plat.xb) / 2, a = P(xc + 3.4, 4.6, zz), b = P(xc - 3.4, 3.7, zz), x0 = Math.min(a[0], b[0]), ww = Math.abs(b[0] - a[0]); if (ww < 8) return; ctx.fillStyle = '#1f6f4a'; ctx.fillRect(x0, a[1], ww, b[1] - a[1]); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = 'bold ' + Math.max(7, Math.min(28, (b[1] - a[1]) * 0.42)) + 'px system-ui'; ctx.fillText((m.jp || '') + '  ' + m.name, x0 + ww / 2, a[1] + (b[1] - a[1]) * 0.66); } });
+        if (q.stopHere || q.isT) items.push({ z: Math.max(d - 70, ZN + 1), fn: () => { const zz = Math.max(d - 70, ZN + 1), xc = (st.plat.xa + st.plat.xb) / 2, a = P(xc + 3.4, 4.6, zz), b = P(xc - 3.4, 3.7, zz), x0 = Math.min(a[0], b[0]), ww = Math.abs(b[0] - a[0]); if (ww < 8) return; ctx.fillStyle = '#1f6f4a'; ctx.fillRect(x0, a[1], ww, b[1] - a[1]); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; const label = (m.jp || '') + '  ' + m.name; let fs = Math.max(7, (b[1] - a[1]) * 0.42); ctx.font = 'bold ' + fs + 'px system-ui'; const tw = ctx.measureText(label).width; if (tw > ww * 0.92) { fs *= ww * 0.92 / tw; ctx.font = 'bold ' + fs + 'px system-ui'; } ctx.fillText(label, x0 + ww / 2, a[1] + (b[1] - a[1]) * 0.66); } });
         if (q.isT) {
-          items.push({ z: d, fn: () => { const x1 = Xe, x2 = Xe + sg * 7; quad(P(x1, PH, d), P(x2, PH, d), P(x2, PH, d + 0.4), P(x1, PH, d + 0.4), '#4cd68a'); const a = P(Xe + sg * 1.3, PH + 3.6, d), b = P(Xe + sg * 1.3, PH, d); ctx.strokeStyle = '#4cd68a'; ctx.lineWidth = Math.max(1, 0.12 * c.f / d); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); const pl = P(Xe + sg * 0.4, PH + 3.8, d), pr = P(Xe + sg * 2.6, PH + 3.0, d); ctx.fillStyle = '#4cd68a'; ctx.fillRect(Math.min(pl[0], pr[0]), pl[1], Math.abs(pr[0] - pl[0]), pr[1] - pl[1]); const hh = pr[1] - pl[1]; if (hh > 6) { ctx.fillStyle = '#082016'; ctx.textAlign = 'center'; ctx.font = 'bold ' + Math.min(22, hh * 0.62) + 'px system-ui'; ctx.fillText('VẠCH', (pl[0] + pr[0]) / 2, pl[1] + hh * 0.72); } } });
-          for (const mm of [300, 200, 100, 50, 25, 10]) { const zz = d - mm; if (zz < ZN) continue; items.push({ z: zz, fn: () => { const onP = zz > d - 420, Yb = onP ? PH : 0, X = onP ? Xe + sg * 1.1 : st.ours.x + sg * 1.6, a = P(X, Yb + 2.3, zz), b = P(X, Yb + 1.3, zz), wpx = (b[1] - a[1]) * 1.2; ctx.strokeStyle = '#7a8ea5'; ctx.lineWidth = Math.max(1, 0.07 * c.f / zz); const bt = P(X, Yb, zz); ctx.beginPath(); ctx.moveTo(bt[0], bt[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.fillStyle = '#ffc247'; ctx.fillRect(a[0] - wpx / 2, a[1], wpx, b[1] - a[1]); if (b[1] - a[1] > 7) { ctx.fillStyle = '#10151c'; ctx.textAlign = 'center'; ctx.font = 'bold ' + Math.min(18, (b[1] - a[1]) * 0.62) + 'px system-ui'; ctx.fillText(mm, a[0], b[1] - (b[1] - a[1]) * 0.25); } } }); }
+          items.push({ z: d, fn: () => { const x1 = Xe, x2 = Xe + sg * 7; quad(P(x1, PH, d), P(x2, PH, d), P(x2, PH, d + 0.4), P(x1, PH, d + 0.4), '#4cd68a'); const a = P(Xe + sg * 1.3, PH + 3.6, d), b = P(Xe + sg * 1.3, PH, d); ctx.strokeStyle = '#4cd68a'; ctx.lineWidth = Math.max(1, 0.12 * c.f / d); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); const pl = P(Xe + sg * 0.4, PH + 3.8, d), pr = P(Xe + sg * 2.6, PH + 3.0, d); ctx.fillStyle = '#4cd68a'; ctx.fillRect(Math.min(pl[0], pr[0]), pl[1], Math.abs(pr[0] - pl[0]), pr[1] - pl[1]); const hh = pr[1] - pl[1]; if (hh > 5) { ctx.fillStyle = '#082016'; ctx.textAlign = 'center'; ctx.font = 'bold ' + hh * 0.62 + 'px system-ui'; ctx.fillText('VẠCH', (pl[0] + pr[0]) / 2, pl[1] + hh * 0.72); } } });
+          for (const mm of [300, 200, 100, 50, 25, 10]) { const zz = d - mm; if (zz < ZN) continue; items.push({ z: zz, fn: () => { const onP = zz > d - 420, Yb = onP ? PH : 0, X = onP ? Xe + sg * 1.1 : st.ours.x + sg * 1.6, a = P(X, Yb + 2.3, zz), b = P(X, Yb + 1.3, zz), wpx = (b[1] - a[1]) * 1.2; ctx.strokeStyle = '#7a8ea5'; ctx.lineWidth = Math.max(1, 0.07 * c.f / zz); const bt = P(X, Yb, zz); ctx.beginPath(); ctx.moveTo(bt[0], bt[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.fillStyle = '#ffc247'; ctx.fillRect(a[0] - wpx / 2, a[1], wpx, b[1] - a[1]); if (b[1] - a[1] > 7) { ctx.fillStyle = '#10151c'; ctx.textAlign = 'center'; ctx.font = 'bold ' + (b[1] - a[1]) * 0.62 + 'px system-ui'; ctx.fillText(mm, a[0], b[1] - (b[1] - a[1]) * 0.25); } } }); }
         }
       }
     }
@@ -188,7 +196,7 @@
       if (zn.hold || W.t > zn.tB || W.t < zn.tA - 1 || zn.v * 3.6 >= 284 || zn.s1 - zn.s0 > 5e8) continue;
       const num = Math.round(zn.v * 3.6 / 10) * 10;
       for (const [s, txt, col] of [[zn.s0, String(num), '#ffd23a'], [zn.s1, '解除', '#e8eef5']]) { const z = s - T.x; if (z < ZN || z > 1800) continue;
-        items.push({ z, fn: () => { const X = 3.4, a = P(X, 3.3, z), b = P(X, 2.3, z), w = (b[1] - a[1]) * 1.25, bt = P(X, 0, z); ctx.strokeStyle = '#6b7f95'; ctx.lineWidth = Math.max(1, 0.1 * c.f / z); ctx.beginPath(); ctx.moveTo(bt[0], bt[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.fillStyle = col; ctx.fillRect(a[0] - w / 2, a[1], w, b[1] - a[1]); if (b[1] - a[1] > 7) { ctx.fillStyle = '#10151c'; ctx.textAlign = 'center'; ctx.font = 'bold ' + Math.min(22, (b[1] - a[1]) * 0.62) + 'px system-ui'; ctx.fillText(txt, a[0], b[1] - (b[1] - a[1]) * 0.22); } } }); }
+        items.push({ z, fn: () => { const X = 3.4, a = P(X, 3.3, z), b = P(X, 2.3, z), w = (b[1] - a[1]) * 1.25, bt = P(X, 0, z); ctx.strokeStyle = '#6b7f95'; ctx.lineWidth = Math.max(1, 0.1 * c.f / z); ctx.beginPath(); ctx.moveTo(bt[0], bt[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.fillStyle = col; ctx.fillRect(a[0] - w / 2, a[1], w, b[1] - a[1]); if (b[1] - a[1] > 7) { ctx.fillStyle = '#10151c'; ctx.textAlign = 'center'; ctx.font = 'bold ' + (b[1] - a[1]) * 0.62 + 'px system-ui'; ctx.fillText(txt, a[0], b[1] - (b[1] - a[1]) * 0.22); } } }); }
     }
     for (const wk of W.workers) { if (T.x > wk.s1 + 40) continue; for (let q = 0; q < 6; q++) { const z = wk.s0 + (wk.s1 - wk.s0) * (q / 5) - T.x; if (z < ZN || z > 1600) continue;
       items.push({ z, fn: () => { const X = 3.0 + (q % 2) * 0.9, s = Math.max(c.f / z, 5.5), a = P(X, 0, z); ctx.fillStyle = '#ff8c1a'; ctx.fillRect(a[0] - 0.24 * s, a[1] - 1.5 * s, 0.48 * s, 0.8 * s); ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.arc(a[0], a[1] - 1.68 * s, 0.17 * s, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#d9b99b'; ctx.fillRect(a[0] - 0.1 * s, a[1] - 1.7 * s, 0.2 * s, 0.1 * s); ctx.strokeStyle = '#1a2230'; ctx.lineWidth = Math.max(1, 0.12 * s); ctx.beginPath(); ctx.moveTo(a[0] - 0.12 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] - 0.12 * s, a[1]); ctx.moveTo(a[0] + 0.12 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] + 0.12 * s, a[1]); ctx.stroke(); if (q === 0 && Math.floor(now / 350) % 2) { ctx.fillStyle = 'rgba(255,60,30,.9)'; ctx.beginPath(); ctx.arc(a[0] + 0.6 * s, a[1] - 1.2 * s, 0.16 * s, 0, 7); ctx.fill(); } } }); } }
@@ -205,30 +213,39 @@
     const Ld = W.lead;
     if (Ld && Ld.phase !== 'end') { const tail = Ld.x - Ld.veh.len - T.x, ic = iconFor(Ld.veh.key); if (tail > ZN && tail < 6000) { const qL = Ld.phase === 'dwell' ? sts.find(q => Math.abs(q.m.s - Ld.x) < 60) : null, X = qL ? qL.st.ours.x : 0; items.push({ z: tail, fn: () => { if (ic) drawFront(ic, X, tail, fadeA(tail)); else { const w = 3.4 * c.f / tail, a = P(X, 0.1, tail); ctx.fillStyle = '#d8dee6'; ctx.fillRect(a[0] - w / 2, a[1] - w * 1.1, w, w * 1.1); } if (Ld.phase === 'run') { const a = P(X, 1.1, tail), w = 3.4 * c.f / tail; ctx.fillStyle = 'rgba(255,40,30,.95)'; ctx.beginPath(); ctx.arc(a[0] - w * 0.3, a[1], Math.max(1, w * 0.04), 0, 7); ctx.arc(a[0] + w * 0.3, a[1], Math.max(1, w * 0.04), 0, 7); ctx.fill(); } } }); } }
     const ricon = iconFor(W.lineId === 'toh' ? 'E5' : 'N700');
-    if (T.v > 20) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 3)) / 3; if (u > 0 && u < 1) { const z = Math.max(ZN, 900 * Math.pow(1 - u, 1.6)); items.push({ z, fn: () => { if (ricon) drawFront(ricon, oppAt(z), z, 1); ctx.fillStyle = 'rgba(255,255,255,' + 0.12 * Math.sin(u * Math.PI) + ')'; ctx.fillRect(px, py, pw, ph); } }); } }
+    // vẽ thân tàu bằng các lát ảnh nhìn ngang chiếu phối cảnh. sign=-1: thân kéo về phía sau mũi (tàu vượt); sign=+1: thân kéo ra xa mũi (tàu ngược chiều)
+    const slices = (sp, lenM, zRef, fxp, sign) => { if (!sp || !sp.ready) return; const m = sp.meta, N = 56; for (let i = 0; i < N; i++) { const t0_ = i / N, t1_ = (i + 1) / N, za0 = zRef + sign * lenM * t0_, zb0 = zRef + sign * lenM * t1_, lo = Math.min(za0, zb0), hi = Math.max(za0, zb0); if (hi < ZN) continue; const a1 = Math.max(lo, ZN), zm = (a1 + hi) / 2, xa = P(fxp, 0, a1)[0], xb = P(fxp, 0, hi)[0], hgt = c.f * 3.7 / zm, a = P(fxp, 0.1, zm), sx = (1 - t1_) * m.width, sw = Math.max(1, m.width / N + 1); ctx.drawImage(sp.img, sx, 0, sw, m.height, Math.min(xa, xb), a[1] - hgt, Math.abs(xb - xa) + 1, hgt); } };
+    if (T.v > 20) for (const t0 of W.opposing || []) { const VR = 200, zN = (t0 - W.t) * VR, key = W.lineId === 'toh' ? 'E5' : 'N700', veh = S.VEH[key] || S.VEH.N700; if (zN > 900 || zN < -veh.len - 20) continue;
+      const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), sp = R.sprites && R.sprites[SMAP[key] || 'n700'];
+      items.push({ z: Math.max(zN, ZN + 1), fn: () => { if (zN > ZN && ricon) drawFront(ricon, oppAt(zN), zN, 1); if (zN < 60) slices(sp, veh.len, zN, fxp, 1); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
     const pl = T.phase === 'dwell' ? (W.passers && W.passers[T.k]) : null;
-    if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const key = p.v || (W.lineId === 'toh' ? 'E5' : 'N700'), veh = S.VEH[key] || S.VEH.N700, sp = R.sprites && R.sprites[SMAP[key] || 'n700'], lenM = veh.len, zFront = -lenM + u * (lenM + 520), fxp = 0 + (c.lane > 0 ? 1.85 : -1.85);
-      items.push({ z: Math.max(zFront, ZN + 2), fn: () => { if (!sp || !sp.ready) return; const m = sp.meta, N = 56; for (let i = 0; i < N; i++) { const t0_ = i / N, t1_ = (i + 1) / N, z0 = zFront - lenM * t0_, z1 = zFront - lenM * t1_; if (z0 < ZN || z1 < ZN - 20) continue; const za = Math.max(z1, ZN); const xa = P(fxp, 0, z0)[0], xb = P(fxp, 0, za)[0], hgt = c.f * 3.7 / ((z0 + za) / 2), a = P(fxp, 0.1, (z0 + za) / 2); const sx = (1 - t1_) * m.width, sw = Math.max(1, m.width / N + 1); ctx.drawImage(sp.img, sx, 0, sw, m.height, Math.min(xa, xb), a[1] - hgt, Math.abs(xb - xa) + 1, hgt); } } }); } }
+    if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const key = p.v || (W.lineId === 'toh' ? 'E5' : 'N700'), veh = S.VEH[key] || S.VEH.N700, sp = R.sprites && R.sprites[SMAP[key] || 'n700'], zFront = -veh.len + u * (veh.len + 520), fxp = 0 + (c.lane > 0 ? 1.85 : -1.85);
+      items.push({ z: Math.max(zFront, ZN + 2), fn: () => slices(sp, veh.len, zFront, fxp, -1) }); } }
 
     // ---- vẽ các vật theo thứ tự xa → gần
     items.sort((a, b) => b.z - a.z);
     for (const it of items) { if (it.z < ZN) continue; it.fn(); }
 
-    // ---- cửa ra của hầm (ánh sáng phía xa)
-    if (zExit !== null && zExit > ZN) { const p = P(0, 3.2, zExit), r = Math.max(2, 4.6 * c.f / zExit); const gl = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 1.3); gl.addColorStop(0, 'rgba(235,245,255,1)'); gl.addColorStop(0.7, 'rgba(210,225,240,.9)'); gl.addColorStop(1, 'rgba(210,225,240,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(p[0], p[1], r * 1.2, r * 0.9, 0, 0, 7); ctx.fill(); }
+    // ---- cửa ra của hầm: vòm hầm nhìn ra phong cảnh bên ngoài (màu trời/đất theo giờ), ban đêm không chói
+    if (zExit !== null && zExit > ZN) { const z = zExit, l = P(-5.2, 0, z), r = P(5.2, 0, z), t = P(0, 8.0, z), w = Math.abs(r[0] - l[0]), h = l[1] - t[1];
+      const og = ctx.createLinearGradient(0, t[1], 0, l[1]); og.addColorStop(0, mixc(rgbOf(top), [70, 78, 90], wx)); og.addColorStop(0.55, mixc(rgbOf(hor), [110, 118, 128], wx)); og.addColorStop(0.6, mixc([10, 16, 12], gcol, day * (1 - wx * 0.3))); og.addColorStop(1, mixc([6, 10, 8], gcol.map(v => v * 0.8), day * (1 - wx * 0.3)));
+      ctx.fillStyle = '#0b0e12'; ctx.beginPath(); ctx.ellipse(t[0], l[1], w * 0.56, h * 1.0, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = og; ctx.beginPath(); ctx.ellipse(t[0], l[1], w * 0.5, h * 0.92, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+      if (day > 0.3) { const bl = ctx.createRadialGradient(t[0], l[1] - h * 0.4, 0, t[0], l[1] - h * 0.4, Math.max(w, h)); bl.addColorStop(0, 'rgba(255,255,255,' + 0.12 * day + ')'); bl.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = bl; ctx.fillRect(t[0] - w * 1.4, t[1] - h * 0.5, w * 2.8, h * 2); } }
     ctx.restore();                                  // hết phần nghiêng theo đường cong
 
     // ---- hiệu ứng thời tiết, ban đêm, tốc độ
     if (night > 0.35 && zExit === null) { ctx.fillStyle = 'rgba(4,8,20,' + (0.42 * night * (1 - lightLvl * 0.15)) + ')'; ctx.fillRect(px, py, pw, ph); }
-    if (rain || (wx > 0 && !inSnow)) { ctx.fillStyle = 'rgba(120,135,150,.12)'; ctx.fillRect(px, py, pw, ph); }
-    if (rain) { ctx.strokeStyle = 'rgba(190,210,245,.5)'; ctx.lineWidth = 1; const tt = now / 14; for (let q = 0; q < 110; q++) { const rx = px + ((q * 83 + tt * (1.5 + v / 40)) % pw), ry = py + ((q * 47 + tt * 9) % ph); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 3 - v / 12, ry + 10 + v / 8); ctx.stroke(); } }
-    if (inSnow) { ctx.fillStyle = 'rgba(245,250,255,.85)'; const tt = now / 25; for (let q = 0; q < 130; q++) { const rx = px + ((q * 61 + tt * (1.2 + (q % 3) * 0.5) + Math.sin(tt / 9 + q) * 8) % pw), ry = py + ((q * 37 + tt * (1.5 + (q % 4) * 0.6)) % ph); ctx.fillRect(rx, ry, 2 + (q % 3 === 0), 2 + (q % 3 === 0)); } }
-    if (windy) { ctx.strokeStyle = 'rgba(210,225,240,.3)'; ctx.lineWidth = 1; const tt = now / 6; for (let q = 0; q < 12; q++) { const ry = py + 20 + (q * 31) % (ph * 0.55), rx = px + pw - ((q * 131 + tt * (2 + q % 3)) % (pw + 80)); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx + 40, ry + Math.sin(tt / 40 + q) * 2); ctx.stroke(); } }
+    const noW = zExit !== null;      // trong hầm: không mưa, tuyết, gió, sét
+    if (!noW && (rain || (wx > 0 && !inSnow))) { ctx.fillStyle = 'rgba(120,135,150,.12)'; ctx.fillRect(px, py, pw, ph); }
+    if (rain && !noW) { ctx.strokeStyle = 'rgba(190,210,245,.5)'; ctx.lineWidth = 1; const tt = now / 14; for (let q = 0; q < 110; q++) { const rx = px + ((q * 83 + tt * (1.5 + v / 40)) % pw), ry = py + ((q * 47 + tt * 9) % ph); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 3 - v / 12, ry + 10 + v / 8); ctx.stroke(); } }
+    if (inSnow && !noW) { ctx.fillStyle = 'rgba(245,250,255,.85)'; const tt = now / 25; for (let q = 0; q < 130; q++) { const rx = px + ((q * 61 + tt * (1.2 + (q % 3) * 0.5) + Math.sin(tt / 9 + q) * 8) % pw), ry = py + ((q * 37 + tt * (1.5 + (q % 4) * 0.6)) % ph); ctx.fillRect(rx, ry, 2 + (q % 3 === 0), 2 + (q % 3 === 0)); } }
+    if (windy && !noW) { ctx.strokeStyle = 'rgba(210,225,240,.3)'; ctx.lineWidth = 1; const tt = now / 6; for (let q = 0; q < 12; q++) { const ry = py + 20 + (q * 31) % (ph * 0.55), rx = px + pw - ((q * 131 + tt * (2 + q % 3)) % (pw + 80)); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx + 40, ry + Math.sin(tt / 40 + q) * 2); ctx.stroke(); } }
     if (v > 60 && zExit === null) { ctx.strokeStyle = 'rgba(255,255,255,' + Math.min(0.12, (v - 60) / 400) + ')'; ctx.lineWidth = 1; for (let q = 0; q < 24; q++) { const ang = hash(q * 17) * Math.PI * 2, r0 = ph * (0.45 + 0.3 * ((now / 220 + q * 0.37) % 1)), r1 = r0 + 30; ctx.beginPath(); ctx.moveTo(c.cx + Math.cos(ang) * r0 * 1.6, c.hy + Math.sin(ang) * r0 * 0.5); ctx.lineTo(c.cx + Math.cos(ang) * r1 * 1.6, c.hy + Math.sin(ang) * r1 * 0.5); ctx.stroke(); } }
-    if (R.aud && R.aud.lastThunder) { const dt = now - R.aud.lastThunder; const fl = (dt < 90 ? 1 : 0) + (dt > 220 && dt < 300 ? 0.7 : 0); if (fl > 0) { ctx.fillStyle = 'rgba(235,240,255,' + 0.55 * fl + ')'; ctx.fillRect(px, py, pw, ph); } }
+    if (!noW && R.aud && R.aud.lastThunder) { const dt = now - R.aud.lastThunder; const fl = (dt < 90 ? 1 : 0) + (dt > 220 && dt < 300 ? 0.7 : 0); if (fl > 0) { ctx.fillStyle = 'rgba(235,240,255,' + 0.55 * fl + ')'; ctx.fillRect(px, py, pw, ph); } }
     if (T.cut) { ctx.fillStyle = 'rgba(154,90,214,.18)'; ctx.fillRect(px, py, pw, ph); }
     // kính chắn gió: giọt nước, gạt mưa, mờ khi chưa bật gạt mưa
-    if (rain) { if (!T.wiper) { ctx.fillStyle = 'rgba(165,190,225,.26)'; ctx.fillRect(px, py, pw, ph); for (let q = 0; q < 50; q++) { const x = px + hash(q * 5 + 1) * pw, y = py + hash(q * 9 + 2) * ph * 0.85; ctx.fillStyle = 'rgba(210,225,250,.35)'; ctx.beginPath(); ctx.arc(x, y, 1.5 + hash(q) * 2.5, 0, 7); ctx.fill(); } } }
+    if (rain && !noW) { if (!T.wiper) { ctx.fillStyle = 'rgba(165,190,225,.26)'; ctx.fillRect(px, py, pw, ph); for (let q = 0; q < 50; q++) { const x = px + hash(q * 5 + 1) * pw, y = py + hash(q * 9 + 2) * ph * 0.85; ctx.fillStyle = 'rgba(210,225,250,.35)'; ctx.beginPath(); ctx.arc(x, y, 1.5 + hash(q) * 2.5, 0, 7); ctx.fill(); } } }
     if (T.wiper) { for (const [pvx, ph0] of [[px + pw * 0.3, py + ph * 0.93], [px + pw * 0.62, py + ph * 0.93]]) { const a = Math.sin(now / 280) * 0.95 - 0.1; ctx.strokeStyle = 'rgba(15,18,24,.92)'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(pvx, ph0); ctx.lineTo(pvx + Math.sin(a) * ph * 0.85, ph0 - Math.cos(a) * ph * 0.85); ctx.stroke(); } }
     // khung buồng lái (gờ kính và bảng đồng hồ phía dưới)
     const fr = ctx.createLinearGradient(0, py + ph * 0.9, 0, py + ph); fr.addColorStop(0, 'rgba(8,10,14,.0)'); fr.addColorStop(0.35, 'rgba(8,10,14,.92)'); fr.addColorStop(1, '#05070a'); ctx.fillStyle = fr; ctx.fillRect(px, py + ph * 0.9, pw, ph * 0.1);

@@ -157,7 +157,7 @@
     // ---- âm theo thời gian thực: máy nén khí, tàu ngược chiều, sấm, ho, em bé, bước chân ----
     const R = this.rt; if (st.scale <= 1) {
       R.comp -= dt; if (R.comp < 0) { this.compressor(); R.comp = 35 + Math.random() * 50; }
-      if (this.prevWt !== undefined && v > 40) for (const t0 of W.opposing || []) if (this.prevWt < t0 - 2.0 && W.t >= t0 - 2.0) this.playClip(0.35 + 0.4 * sp, 0, 5.5);
+      if (this.prevWt !== undefined && v > 40) for (const t0 of W.opposing || []) if (this.prevWt < t0 - 2.3 && W.t >= t0 - 2.3) this.playClip(0.35 + 0.4 * sp, 0, 5.5);
       if (W.weatherKind === 'typhoon' || W.weatherKind === 'rain') { R.thunder -= dt; if (R.thunder < 0) { if (W.weatherKind === 'typhoon' || Math.random() < 0.4) this.thunder(); R.thunder = 35 + Math.random() * 70; } }
     }
     this.ambience(dw && !st.paused && st.scale <= 4 ? (T.door === 'open' ? 0.55 : 0.4) : 0);
