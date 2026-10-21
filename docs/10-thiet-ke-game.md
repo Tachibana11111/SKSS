@@ -116,3 +116,6 @@ Số sự kiện mỗi chuyến: Dễ 1 · Thường 2–3 · Khó 4–5 · Chuy
 - Mỗi ga có bố trí riêng (số đường, sân đảo/hai bên, đường thông qua) thay vì một kiểu cố định; tàu dừng chạy vào đường dừng có sân ga kề, tàu thông qua chạy đường thông qua; các đường toả ra từ đường chính trước ga ~1,1 km. Nguồn và phần suy luận: `docs/02-ha-tang.md` mục 8.
 - Tuyến có đoạn nền đất, cầu cạn, cầu (sông bên dưới) và hầm (ở khung 2D mặt đất lùi xuống khi lên cầu cạn, hầm che hết phong cảnh); đường cong làm ray uốn ở khung buồng lái, thân tàu nghiêng nhẹ theo v²/R.
 - Chưa làm: giới hạn tốc độ và độ êm theo bán kính cong; số đường ảnh hưởng sức chứa ga trong chế độ điều độ (hiện chỉ dùng cờ có đường thông qua).
+
+## Bố cục giao diện (21/10/2026)
+Màn hình rộng chia ba cột trên một canvas 1780×900: **trái** điện đàm dọc (tin mới nhất ở dưới), **giữa** bản đồ, đồng hồ, cần, TIMS, khung buồng lái và khung 2D (cao hơn trước vì không còn dải nút/điện đàm ở dưới), **phải** nút điều khiển + đèn báo ở trên và bảng phím tắt ở dưới. Chế độ điều độ dùng cột giữa như cũ và cột phải hiện phím tắt riêng.
