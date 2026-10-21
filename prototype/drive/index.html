@@ -17,6 +17,11 @@
   label{color:var(--mut)}
   #wrap{max-width:1800px;margin:0 auto;padding:8px;position:relative}
   canvas{width:100%;display:block;background:#0b0f14;border-radius:8px}
+  body.fullui #wrap{max-width:none;padding:6px}
+  body.fullui canvas{width:min(100%, calc((100vh - 150px) * 1.7778));margin:0 auto}
+  body.isfull header,body.isfull #help{display:none}
+  body.isfull #wrap{padding:0}
+  body.isfull canvas{width:min(100vw, calc(100vh * 1.7778));margin:0 auto}
   #help{color:var(--mut);font-size:13px;padding:6px 4px}
   kbd{background:#223042;border:1px solid #33475e;border-radius:4px;padding:0 5px;color:var(--fg)}
   .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;width:100%}
@@ -45,7 +50,7 @@
     <label>Thời tiết <select id="weather"></select></label>
     <label>Seed <input id="seed" type="number" value="1"></label>
     <button id="dice" title="Seed ngẫu nhiên">🎲</button>
-    <button id="start" class="go">Bắt đầu / chạy lại (R)</button>
+    <button id="start" class="go">Bắt đầu / chạy lại (R)</button> <button id="layoutBtn" title="F2">Bố cục: toàn màn hình</button>
     <button id="auto">Tự lái: tắt (T)</button>
     <label>Tua <button data-s="1">×1</button><button data-s="4">×4</button><button data-s="16">×16</button></label>
     <label><input type="checkbox" id="autoslow" checked> tự về ×1 gần ga</label>
@@ -86,12 +91,13 @@
 <script src="layout.js"></script>
 <script src="cabview.js"></script>
 <script src="topview.js"></script>
+<script src="fullui.js"></script>
 <script src="audio.js"></script>
 <script src="tutorial.js"></script>
 <script src="dispatch.js"></script>
 <script>
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-const W_ = cv.width, H_ = cv.height, LINES = window.LINES;
+let W_ = cv.width, H_ = cv.height; const LINES = window.LINES;
 const CW = 1120, OX = 310;                    // vùng giữa (đồng hồ, cảnh) rộng 1120 px, lệch OX; cột trái = điện đàm, cột phải = nút điều khiển + phím tắt
 let curOX = 0;                                // độ lệch hiện tại khi đăng ký vùng bấm
 const $ = id => document.getElementById(id);
@@ -142,6 +148,7 @@ function setMode(m) {
   if (m === 'profile') showProfile();
   tutorialRun = m === 'tutorial' && tutorialRun;
 }
+$('layoutBtn').onclick = () => { ui.layout = ui.layout === 'full' ? 'classic' : 'full'; $('layoutBtn').textContent = 'Bố cục: ' + (ui.layout === 'full' ? 'toàn màn hình' : 'cổ điển'); syncLayout(); };
 $('tabDrive').onclick = () => { tutorialRun = false; setMode('drive'); if (!W) startDrive(); }; $('tabDisp').onclick = () => setMode('dispatch'); $('tabTut').onclick = () => setMode('tutorial'); $('tabProf').onclick = () => setMode('profile');
 // ---- lưu cài đặt
 const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('diff').value = S.diff || 'normal';
@@ -192,6 +199,11 @@ addEventListener('keydown', e => {
   if (!W || mode === 'profile') return;
   if (k === 'p' || k === 'P') { paused = !paused; e.preventDefault(); return; }
   if (k === 'Tab' && T.finished) { endPage = (endPage + 1) % 2; e.preventDefault(); return; }
+  if (k === 'Tab' && ui.cur === 'full') { cycleMain(); e.preventDefault(); return; }
+  if ((k === 'h' || k === 'H') && ui.cur === 'full') { ui.focus = !ui.focus; return; }
+  if ((k === 'o' || k === 'O') && ui.cur === 'full') { ui.radio = !ui.radio; return; }
+  if (k === 'F11') { toggleFullscreen(); e.preventDefault(); return; }
+  if (k === 'F2') { ui.layout = ui.layout === 'full' ? 'classic' : 'full'; syncLayout(); e.preventDefault(); return; }
   if (k === 'r' || k === 'R') { if (replaying) { replaying = null; } if (tutLessonActive) { startLesson(Tutorial.S.lesson); } else startDrive(recipe); e.preventDefault(); return; }
   if (k === '1') { scale = 1; return; } if (k === '2') { scale = 4; return; } if (k === '3') { scale = 16; return; }
   if ((k === 'k' || k === 'K') && tutLessonActive) { Tutorial.skip(W, T); return; }
@@ -221,7 +233,7 @@ cv.addEventListener('click', e => {
 
 // ---- vòng lặp
 function frame(now) {
-  const rdt = Math.min(0.25, (now - lastT) / 1000); lastT = now;
+  const rdt = Math.min(0.25, (now - lastT) / 1000); lastT = now; syncLayout();
   if (mode === 'dispatch' || mode === 'profile') AUD.silence();
   if (mode === 'dispatch') { Dispatch.frame(rdt); ctx.clearRect(0, 0, W_, H_); ctx.save(); ctx.translate(OX, 0); Dispatch.draw(ctx, CW, H_); ctx.restore(); drawKeys('dispatch'); requestAnimationFrame(frame); return; }
   if (W && !paused && mode !== 'profile') {
@@ -297,7 +309,7 @@ function wrapText(str, maxW) {
 }
 const KEYS = {
   drive: [['Lái', null], ['W / S', 'cần gia tốc tăng / giảm'], ['↓ / ↑', 'cần phanh tăng / giảm (nhả về 0 mới kéo gia tốc)'], ['Space', 'về N (không kéo)'], ['Q', 'phanh khẩn'], ['Enter', 'đóng cửa (đèn sáng thì kéo cần để đi)'], ['C', 'tốc độ không đổi'], ['[ / ]', 'chỉnh tốc độ không đổi ∓5'],
-    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['P', 'tạm dừng'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
+    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['Tab', 'đổi khung nhìn chính (buồng lái / bản đồ nhỏ / 2D)'], ['H', 'chế độ tập trung (ẩn bớt bảng)'], ['O', 'ẩn / hiện điện đàm'], ['F11', 'toàn màn hình'], ['F2', 'bố cục toàn màn hình ⇄ cổ điển'], ['P', 'tạm dừng'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
   dispatch: [['Điều độ', null], ['Bấm vào tàu', 'chọn tàu, rồi dùng nút lệnh'], ['Tab', 'chọn tàu kế'], ['Space', 'dừng / chạy'], ['1 – 4', 'tốc độ mô phỏng'], ['Chung', null], ['P', 'tạm dừng'], ['R', 'chạy lại']]
 };
 function drawKeys(m) {
@@ -314,6 +326,7 @@ function drawKeys(m) {
 }
 
 function draw() {
+  if (ui.cur === 'full' && mode === 'drive') { drawFull(); return; }
   btns = []; ctx.clearRect(0, 0, W_, H_);
   if (mode === 'profile') { return; }
   if (!W) { txt('Chọn chuyến và nhấn "Bắt đầu / chạy lại", hoặc mở tab Hướng dẫn / Điều độ.', W_ / 2, H_ / 2, '#8aa0b5', '20px system-ui', 'center'); return; }

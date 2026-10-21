@@ -39,7 +39,7 @@
     let sh = 0; if (W.eqkAt !== undefined && W.eqkActive) sh = 5 * Math.exp(-(W.t - W.eqkAt) / 40) + 0.8; if (W.shakeAt !== undefined && W.t - W.shakeAt < 4) sh = Math.max(sh, (W.shakeAmp || 4) * Math.exp(-(W.t - W.shakeAt) / 1.2));
     const sway = 0.1 * Math.sin(T.x / 90) * Math.min(1, v / 70) + (sh > 0.1 ? (Math.random() - 0.5) * sh * 0.05 : 0);
     const bob = Math.min(1, v / 80) * (Math.sin(now / 90) * 0.4) + (sh > 0.1 ? (Math.random() - 0.5) * sh * 2 : 0);
-    const c = { cx: px + pw / 2, hy: py + ph * 0.40, f: pw * 0.92, camX: sway, pitch: bob - T.grade * 0.4, lane: 0, off: null };
+    const c = { cx: px + pw / 2, hy: py + ph * 0.40, f: Math.min(pw * 0.92, ph * 1.45), camX: sway, pitch: bob - T.grade * 0.4, lane: 0, off: null };
 
     // ---- hình học phía trước: đường cong (độ lệch ngang theo khoảng cách) và cao độ tuyến so với mặt đất
     const latT = LAY.lateralTable(L, S, W.dir, T.x, ZF, STEP), elvT = LAY.elevTable(L, S, W.dir, T.x, ZF, STEP);
