@@ -95,11 +95,24 @@ function drawTopBar(blink) {
     if (m.stop || showAll) txt(m.name, px, i % 2 ? 20 : 54, m.stop ? '#e8eef5' : '#7a8ea5', '10px system-ui', 'center'); });
   if (W.lead && W.lead.phase !== 'end') { const lx = pos(W.lead.x); if (lx > x0 - 6 && lx < x1 + 6) { ctx.fillStyle = '#ffa24a'; ctx.fillRect(lx - 4, ly - 8, 8, 16); } }
   ctx.fillStyle = '#4aa3ff'; ctx.fillRect(pos(T.x) - 6, ly - 9, 12, 18);
-  txt((delay >= 0 ? '+' : '') + Math.round(delay) + ' s' + (T.started ? '' : ' (chưa chạy)'), 1700, 30, Math.abs(delay) <= 15 ? '#4cd68a' : delay > 0 ? '#ff6464' : '#ffc247', 'bold 18px system-ui', 'right');
-  txt('lệch kế hoạch', 1700, 46, '#7a8ea5', '10px system-ui', 'right');
+  txt((delay >= 0 ? '+' : '') + Math.round(delay) + ' s' + (T.started ? '' : ' (chưa chạy)'), 1738, 30, Math.abs(delay) <= 15 ? '#4cd68a' : delay > 0 ? '#ff6464' : '#ffc247', 'bold 18px system-ui', 'right');
+  txt('lệch kế hoạch', 1738, 46, '#7a8ea5', '10px system-ui', 'right');
   // nút nhỏ: điện đàm, HUD, toàn màn hình
-  const bs = [['Điện đàm (O)', () => { ui.radio = !ui.radio; }, ui.radio], ['HUD (H)', () => { ui.focus = !ui.focus; }, !ui.focus], ['⛶ Toàn màn hình', toggleFullscreen, !!document.fullscreenElement]];
-  bs.forEach((b, i) => button(1716, 4 + i * 18, 190, 17, b[0], b[1], b[2], '#2a6fd6'));
+  // ba ô vuông biểu tượng cạnh nhau: điện đàm (O), HUD / tập trung (H), toàn màn hình (F11)
+  const SZ = 44, GAP = 6, bx0 = FW - 16 - 3 * SZ - 2 * GAP, by0 = 7;
+  iconBtn(bx0, by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
+  iconBtn(bx0 + SZ + GAP, by0, SZ, 'hud', !ui.focus, 'H', () => { ui.focus = !ui.focus; });
+  iconBtn(bx0 + 2 * (SZ + GAP), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
+}
+
+// ô vuông chỉ có biểu tượng (vẽ bằng nét, không dùng emoji để khỏi lệch giữa các máy)
+function iconBtn(x, y, sz, kind, on, key, fn) {
+  ctx.fillStyle = on ? '#2a6fd6' : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.fill(); ctx.strokeStyle = on ? '#6fb0ff' : '#3b516a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.stroke();
+  const cx = x + sz / 2, cy = y + sz / 2 - 2; ctx.strokeStyle = on ? '#fff' : '#9fb4c9'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (kind === 'radio') { ctx.beginPath(); ctx.roundRect(cx - 12, cy - 10, 24, 17, 4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 5, cy + 7); ctx.lineTo(cx - 8, cy + 13); ctx.lineTo(cx + 1, cy + 7); ctx.stroke(); for (const dy of [-4, 1]) { ctx.beginPath(); ctx.moveTo(cx - 7, cy + dy); ctx.lineTo(cx + 7, cy + dy); ctx.stroke(); } }
+  else if (kind === 'hud') { ctx.beginPath(); ctx.roundRect(cx - 13, cy - 10, 26, 20, 3); ctx.stroke(); ctx.fillRect(cx - 9, cy - 6, 10, 4); ctx.fillRect(cx - 9, cy + 1, 18, 3); }
+  else { for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.moveTo(cx + sx * 4, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 4); ctx.stroke(); } }
+  ctx.lineCap = 'butt'; txt(key, cx, y + sz - 3, on ? '#dbe9ff' : '#7a8ea5', 'bold 9px system-ui', 'center'); btns.push({ x, y, w: sz, h: sz, fn });
 }
 
 function drawFull() {
