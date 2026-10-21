@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lái Shinkansen - bản thử 0.3</title>
+<style>
+  :root{--bg:#10151c;--panel:#18212c;--fg:#e8eef5;--mut:#8aa0b5}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,"Segoe UI",sans-serif}
+  header{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px;background:var(--panel)}
+  header select,header button,header input{background:#223042;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:4px 8px;font:inherit}
+  header input[type=number]{width:84px}
+  header button:hover{background:#2c4059;cursor:pointer}
+  header .go{background:#2a6fd6;border-color:#4aa3ff;font-weight:600}
+  label{color:var(--mut)}
+  #wrap{max-width:1180px;margin:0 auto;padding:8px}
+  canvas{width:100%;display:block;background:#0b0f14;border-radius:8px}
+  #help{color:var(--mut);font-size:13px;padding:6px 4px}
+  kbd{background:#223042;border:1px solid #33475e;border-radius:4px;padding:0 5px;color:var(--fg)}
+  .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;width:100%}
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <strong>Lái Shinkansen · bản thử 0.3 · Tokaido</strong>
+    <label>Chiều <select id="dir"><option value="up">Lên: Shin-Osaka → Tokyo (lịch thật)</option><option value="down">Xuống: Tokyo → Shin-Osaka (đối xứng, ước)</option></select></label>
+    <label>Tàu <select id="train"></select></label>
+    <label>Từ <select id="from"></select></label>
+    <label>Đến <select id="to"></select></label>
+  </div>
+  <div class="row">
+    <label>Độ khó <select id="diff"></select></label>
+    <label>Thời tiết <select id="weather"></select></label>
+    <label>Seed <input id="seed" type="number" value="1"></label>
+    <button id="dice" title="Seed ngẫu nhiên">🎲</button>
+    <button id="start" class="go">Bắt đầu / chạy lại (R)</button>
+    <button id="auto">Tự lái: tắt (T)</button>
+    <label>Tua <button data-s="1">×1</button><button data-s="4">×4</button><button data-s="16">×16</button></label>
+    <label><input type="checkbox" id="autoslow" checked> tự về ×1 gần ga</label>
+    <label><input type="checkbox" id="stopmsg" checked> về ×1 khi có điện đàm</label>
+    <label><input type="checkbox" id="lead" checked> tàu chạy trước</label>
+    <label><input type="checkbox" id="snd" checked> âm thanh</label>
+    <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
+    <label><input type="checkbox" id="pax" checked> tiếng hành khách</label> <input id="vol" type="range" min="0" max="100" value="60" style="width:90px;vertical-align:middle">
+  </div>
+</header>
+<div id="wrap">
+  <canvas id="c" width="1120" height="800"></canvas>
+  <div id="help">
+    <b>Cần gia tốc:</b> <kbd>W</kbd> tăng nấc · <kbd>S</kbd> giảm nấc (P0–P13). <b>Cần phanh:</b> <kbd>↓</kbd> thêm nấc phanh · <kbd>↑</kbd> nhả (B1–B7, EB). <kbd>Space</kbd> về N · <kbd>Q</kbd> phanh khẩn.
+    Phải nhả phanh về 0 mới kéo được (liên động). <kbd>Enter</kbd> đóng cửa (đèn đóng cửa sáng thì kéo cần để đi) · <kbd>C</kbd> tốc độ không đổi (<kbd>[</kbd> <kbd>]</kbd> ±5 km/h) ·
+    <kbd>Y</kbd> nhắc lại lệnh điều độ · <kbd>X</kbd> xác nhận ATC · <kbd>H</kbd> còi · <kbd>V</kbd> gạt mưa · <kbd>T</kbd> tự lái · <kbd>P</kbd> tạm dừng · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> tua.
+    Có thể bấm chuột vào các nút trên màn hình. Hình tàu: bản vẽ N700 của rail.kychung.com (CC BY-NC-ND 4.0), chỉ dùng cá nhân (xem assets/NGUON.md). Âm thanh (tổng hợp bằng code) bật sau khi bạn bấm phím/chuột lần đầu; chỉnh âm lượng ở thanh trên. Chiều lên dùng lịch thật 20/10/2026 (JR West); chiều xuống là lịch đối xứng ước tính.
+  </div>
+</div>
+<script src="data-tokaido.js"></script>
+<script src="assets/n700_strip.js"></script>
+<script src="sim.js"></script>
+<script src="scene.js"></script>
+<script src="audio.js"></script>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W_ = cv.width, H_ = cv.height, CAT = window.TOKAIDO_UP, STN = Sim.STN;
+const $ = id => document.getElementById(id);
+const AUD = new GameAudio();
+let NREADY = false; const NIMG = new Image(); NIMG.onload = () => { NREADY = true; }; NIMG.src = 'assets/n700_strip.png';
+let W, T, scale = 1, auto = false, paused = false, lastT = performance.now(), btns = [];
+const hhmm = s => { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'); };
+const fmt = Sim.fmtT;
+Object.entries(Sim.DIFF).forEach(([k, d]) => $('diff').add(new Option(d.name, k, false, k === 'normal')));
+Object.entries(Sim.WEATHER).forEach(([k, v]) => $('weather').add(new Option(v, k)));
+function trainList() {
+  const dir = $('dir').value; $('train').innerHTML = '';
+  CAT.forEach((rec, i) => { const seq = Sim.trainSeq(rec, dir); const a = seq[0], b = seq[seq.length - 1];
+    $('train').add(new Option(`${rec[0]} ${rec[1]} · ${hhmm(a.dep)} ${STN[a.i][0]} → ${STN[b.i][0]}`, i)); });
+  $('train').value = CAT.findIndex(r => r[0] === 'Nozomi');
+  stopList();
+}
+function stopList() {
+  const rec = CAT[+$('train').value], seq = Sim.trainSeq(rec, $('dir').value).filter(e => e.stop);
+  $('from').innerHTML = ''; $('to').innerHTML = '';
+  seq.forEach((e, k) => { if (k < seq.length - 1) $('from').add(new Option(STN[e.i][0], e.i)); if (k > 0) $('to').add(new Option(STN[e.i][0], e.i)); });
+  $('from').selectedIndex = 0; $('to').selectedIndex = $('to').options.length - 1;
+}
+$('dir').onchange = trainList; $('train').onchange = stopList;
+$('from').onchange = () => {
+  const seq = Sim.trainSeq(CAT[+$('train').value], $('dir').value).filter(e => e.stop).map(e => e.i), f = seq.indexOf(+$('from').value);
+  [...$('to').options].forEach(o => o.disabled = seq.indexOf(+o.value) <= f);
+  if ($('to').selectedOptions[0] && $('to').selectedOptions[0].disabled) { const ok = [...$('to').options].reverse().find(o => !o.disabled); if (ok) ok.selected = true; }
+};
+$('dice').onclick = () => { $('seed').value = Math.floor(Math.random() * 99999); };
+function start() {
+  const rec = CAT[+$('train').value], dir = $('dir').value;
+  const trip = Sim.makeTrip(rec, dir, +$('from').value, +$('to').value);
+  if (!trip) { alert('Chọn ga đi/đến hợp lệ cho chuyến này.'); return; }
+  W = Sim.createWorld(CAT, trip, { diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: $('lead').checked });
+  T = W.player; auto = false; $('auto').textContent = 'Tự lái: tắt (T)'; window.__W = W; window.__T = T;
+  W.say('info', `Chuyến ${trip.label} · ${STN[trip.M[0].i][0]} → ${STN[trip.M[trip.M.length - 1].i][0]} · ${Sim.DIFF[$('diff').value].name}` + (W.lead ? ` · tàu trước: ${W.leadLabel}` : ' · không có tàu trước'));
+  W.say('info', 'Nhấn Enter để đóng cửa. Khi đèn ĐÓNG CỬA sáng, kéo cần gia tốc (W) để khởi hành.');
+  AUD.reset(W);
+}
+const sndUpd = () => AUD.setVolume(+$('vol').value / 100, $('snd').checked); $('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
+$('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); }; $('pax').onchange = () => { AUD.pax = $('pax').checked; }; AUD.setAnn($('ann').value);
+addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
+$('start').onclick = start; $('auto').onclick = toggleAuto;
+function toggleAuto() { auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
+document.querySelectorAll('button[data-s]').forEach(b => b.onclick = () => scale = +b.dataset.s);
+const act = {
+  power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
+  door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, ack() { if (!Sim.ackOldest(W)) W.say('info', 'Không có lệnh nào cần nhắc lại.'); },
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, auto() { toggleAuto(); }
+};
+addEventListener('keydown', e => {
+  if (['INPUT', 'SELECT'].includes(document.activeElement.tagName) && e.key !== 'Enter') return;
+  const k = e.key; if (!T) return;
+  if (k === 'w' || k === 'W') act.power(1);
+  else if (k === 's' || k === 'S') act.power(-1);
+  else if (k === 'ArrowDown') act.brake(1);
+  else if (k === 'ArrowUp') act.brake(-1);
+  else if (k === ' ') act.coast();
+  else if (k === 'q' || k === 'Q') act.eb();
+  else if (k === 'Enter') { document.activeElement.blur(); act.door(); }
+  else if (k === 'c' || k === 'C') act.cs();
+  else if (k === '[') Sim.adjustCS(T, -5); else if (k === ']') Sim.adjustCS(T, 5);
+  else if (k === 'y' || k === 'Y') act.ack();
+  else if (k === 'x' || k === 'X') act.confirm();
+  else if (k === 'h' || k === 'H') act.horn();
+  else if (k === 'v' || k === 'V') act.wiper();
+  else if (k === 't' || k === 'T') act.auto();
+  else if (k === 'p' || k === 'P') paused = !paused;
+  else if (k === 'r' || k === 'R') start();
+  else if (k === '1') scale = 1; else if (k === '2') scale = 4; else if (k === '3') scale = 16;
+  else return;
+  e.preventDefault();
+});
+cv.addEventListener('click', e => {
+  const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * W_ / r.width, y = (e.clientY - r.top) * H_ / r.height;
+  for (const b of btns) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { b.fn(); return; }
+});
+
+function frame(now) {
+  const rdt = Math.min(0.25, (now - lastT) / 1000); lastT = now;
+  if (W && !paused) {
+    let sc = scale;
+    if ($('autoslow').checked) {
+      if (T.phase === 'run') { const j = Sim.nextTarget(T), d = T.M[j].s - T.x; if (d < 1500 || Math.abs(T.x - T.M[T.k].s) < 500) sc = Math.min(sc, 1); }
+      else if (T.phase === 'dwell' && T.started) { const mk = T.M[T.k], dep = mk.dep != null ? mk.dep : 0; if (dep - W.t < 50 && !(T.holds[T.k] > W.t)) sc = Math.min(sc, 1); }
+    }
+    const n = Math.ceil(sc * rdt / 0.05);
+    for (let i = 0; i < n; i++) { Sim.tick(W, 0.05, {}, auto); if (W.newMsg) { W.newMsg = false; if ($('stopmsg').checked && scale > 1) { scale = 1; break; } } }
+  }
+  if (W) AUD.update(W, T, { scale, paused });
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function txt(s, x, y, c, f, al) { ctx.fillStyle = c || '#e8eef5'; ctx.font = f || '14px system-ui'; ctx.textAlign = al || 'left'; ctx.fillText(s, x, y); }
+function panel(x, y, w, h, c) { ctx.fillStyle = c || '#18212c'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill(); }
+function button(x, y, w, h, label, fn, on, color) {
+  ctx.fillStyle = on ? (color || '#2a6fd6') : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill();
+  txt(label, x + w / 2, y + h / 2 + 4, on ? '#fff' : '#c8d4e2', '12px system-ui', 'center'); btns.push({ x, y, w, h, fn });
+}
+function lamp(x, y, label, on, color) {
+  ctx.fillStyle = on ? color : '#243447'; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill(); if (on) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2; ctx.stroke(); }
+  txt(label, x + 12, y + 4, on ? '#fff' : '#7a8ea5', '12px system-ui');
+}
+const WHY = { line: 'giới hạn tuyến', stop: 'mẫu dừng ga', rain: 'mưa lớn', wind: 'gió', snow: 'tuyết', order: 'lệnh điều độ', fault: 'sự cố bệ trục', lead: 'tàu phía trước', eqk: 'sự cố/động đất', ga: 'đang đỗ ga' };
+const ZC = { rain: '#2f6fd6', wind: '#8a96a6', snow: '#dfe9f5', order: '#e08a2f', fault: '#d64a4a', eqk: '#9a5ad6' };
+
+function draw() {
+  btns = [];
+  ctx.clearRect(0, 0, W_, H_);
+  if (!W) { txt('Chọn chuyến và nhấn "Bắt đầu / chạy lại"', W_ / 2, H_ / 2, '#8aa0b5', '20px system-ui', 'center'); return; }
+  const M = T.M, s0 = M[0].s, s1 = M[M.length - 1].s, span = s1 - s0, pos = s => 40 + (W_ - 80) * (s - s0) / span;
+  const blink = Math.floor(performance.now() / 400) % 2 === 0;
+  // ---- Bản đồ tuyến
+  panel(10, 10, W_ - 20, 86);
+  ctx.strokeStyle = '#3b516a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(40, 50); ctx.lineTo(W_ - 40, 50); ctx.stroke();
+  for (const z of W.zones) {
+    if (W.t < z.tA || W.t > z.tB) continue;
+    const lo = Math.min(pos(z.s0), pos(z.s1)), hi = Math.max(pos(z.s0), pos(z.s1)), l = Math.max(40, lo), h = Math.min(W_ - 40, hi); if (h <= l) continue;
+    ctx.fillStyle = z.hold ? 'rgba(138,150,166,.55)' : (ZC[z.kind] || '#e08a2f'); ctx.globalAlpha = z.hold ? 1 : 0.8; ctx.fillRect(l, 56, h - l, 8); ctx.globalAlpha = 1;
+    if (h - l > 60) txt(z.label, (l + h) / 2, 76, '#c8d4e2', '10px system-ui', 'center');
+  }
+  for (const an of W.animals) if (an.active && !an.resolved) { const ax = pos(an.s); ctx.fillStyle = '#ffd24a'; ctx.beginPath(); ctx.moveTo(ax, 40); ctx.lineTo(ax - 6, 54); ctx.lineTo(ax + 6, 54); ctx.fill(); txt('🦌', ax, 36, '#ffd24a', '12px system-ui', 'center'); }
+  M.forEach((m, i) => {
+    const px = pos(m.s); ctx.fillStyle = m.stop ? (i <= T.k ? '#4cd68a' : '#e8eef5') : '#5a6f86'; ctx.beginPath(); ctx.arc(px, 50, m.stop ? 5 : 3, 0, 7); ctx.fill();
+    if (m.stop || M.length < 9) txt(m.name, px, [40, 28, 16][i % 3], m.stop ? '#e8eef5' : '#7a8ea5', '11px system-ui', i === 0 ? 'left' : i === M.length - 1 ? 'right' : 'center');
+  });
+  if (W.lead && W.lead.phase !== 'end') { const lx = pos(W.lead.x); if (lx > 30 && lx < W_ - 30) { ctx.fillStyle = '#ffa24a'; ctx.fillRect(lx - 5, 42, 10, 16); txt(W.leadLabel, lx, 92, '#ffa24a', '10px system-ui', 'center'); } }
+  ctx.fillStyle = '#4aa3ff'; ctx.fillRect(pos(T.x) - 6, 42, 12, 16);
+  txt(Sim.DIFF[W.diffKey].name + ' · ' + Sim.WEATHER[W.weatherKind] + (W.weather === 'auto' ? ' (ngẫu nhiên)' : ''), W_ - 20, 90, '#8aa0b5', '12px system-ui', 'right');
+
+  // ---- Đồng hồ tốc độ
+  panel(10, 106, 320, 300);
+  const cx = 170, cy = 240, rr = 105, vmax = 320;
+  const ang = v => Math.PI * 0.8 + (Math.PI * 1.4) * Math.min(v, vmax) / vmax;
+  const kmh = T.v * 3.6, atcK = T.allowed * 3.6;
+  ctx.lineWidth = 14; ctx.strokeStyle = '#243447'; ctx.beginPath(); ctx.arc(cx, cy, rr, ang(0), ang(vmax)); ctx.stroke();
+  ctx.strokeStyle = '#7a2d2d'; ctx.beginPath(); ctx.arc(cx, cy, rr, ang(Math.min(atcK, vmax)), ang(vmax)); ctx.stroke();
+  ctx.strokeStyle = '#2f7a55'; ctx.beginPath(); ctx.arc(cx, cy, rr, ang(0), ang(Math.min(atcK, vmax))); ctx.stroke();
+  if (T.cs) { const a = ang(T.csSet * 3.6); ctx.strokeStyle = '#3ad6e6'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * (rr - 20), cy + Math.sin(a) * (rr - 20)); ctx.lineTo(cx + Math.cos(a) * (rr + 12), cy + Math.sin(a) * (rr + 12)); ctx.stroke(); }
+  ctx.lineWidth = 2; ctx.strokeStyle = '#8aa0b5';
+  for (let v = 0; v <= vmax; v += 20) { const a = ang(v); ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * (rr - 12), cy + Math.sin(a) * (rr - 12)); ctx.lineTo(cx + Math.cos(a) * (rr - 20), cy + Math.sin(a) * (rr - 20)); ctx.stroke();
+    if (v % 40 === 0) txt(v, cx + Math.cos(a) * (rr - 34), cy + Math.sin(a) * (rr - 34) + 4, '#8aa0b5', '10px system-ui', 'center'); }
+  const a = ang(kmh); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (rr - 16), cy + Math.sin(a) * (rr - 16)); ctx.stroke();
+  txt(Math.round(kmh), cx, cy + 16, '#fff', 'bold 38px system-ui', 'center'); txt('km/h', cx, cy + 34, '#8aa0b5', '12px system-ui', 'center');
+  txt('ATC ' + (Math.floor(atcK / 5) * 5), cx, cy + 58, T.atc ? '#ff6464' : '#4cd68a', 'bold 18px system-ui', 'center');
+  txt(T.atc ? 'ATC ĐANG PHANH · ' + (WHY[T.why] || '') : (T.phase === 'run' ? 'giới hạn bởi: ' + (WHY[T.why] || '') : ''), cx, cy + 76, T.atc ? '#ff6464' : '#8aa0b5', '12px system-ui', 'center');
+  txt('Gia tốc ' + T.a.toFixed(2) + ' m/s²', 24, 128, '#8aa0b5', '12px system-ui');
+  if (T.cs) txt('定速 ' + Math.round(T.csSet * 3.6) + ' km/h', 306, 128, '#3ad6e6', 'bold 13px system-ui', 'right');
+  if (T.cut) { ctx.fillStyle = 'rgba(154,90,214,.85)'; ctx.fillRect(40, 140, 260, 24); txt('MẤT ĐIỆN – PHANH KHẨN', 170, 157, '#fff', 'bold 13px system-ui', 'center'); }
+
+  // ---- Thông tin chuyến
+  panel(340, 106, 350, 300);
+  const pt = Sim.plannedTime(T), delay = W.t - pt, run = T.phase === 'run';
+  const j = Sim.nextTarget(T), next = run ? T.M[j].name : (T.phase === 'dwell' ? T.M[T.k].name : '—'), dist = run ? T.M[j].s - T.x : 0;
+  txt(W.trip.label + ' · ' + hhmm(W.trip.t0 + W.t), 356, 130, '#fff', 'bold 15px system-ui');
+  txt('Lệch kế hoạch', 356, 156, '#8aa0b5'); txt((delay >= 0 ? '+' : '') + Math.round(delay) + ' s' + (T.started ? '' : ' (chưa chạy)'), 480, 156, Math.abs(delay) <= 15 ? '#4cd68a' : delay > 0 ? '#ff6464' : '#ffc247', 'bold 17px system-ui');
+  if (T.excused > 5) txt('miễn ' + Math.round(T.excused) + ' s (sự kiện)', 590, 156, '#8aa0b5', '11px system-ui');
+  txt('Ga kế tiếp', 356, 182, '#8aa0b5'); txt(next + (run && T.forced === j ? ' (DỪNG khẩn)' : ''), 480, 182, '#fff', 'bold 16px system-ui');
+  txt('Còn tới vạch', 356, 206, '#8aa0b5'); txt(run ? (dist >= 1000 ? (dist / 1000).toFixed(2) + ' km' : Math.round(dist) + ' m') : '—', 480, 206, '#fff', 'bold 16px system-ui');
+  const nm = T.M[run ? j : Math.min(T.k + 1, T.M.length - 1)], pa = nm.arr != null ? nm.arr : nm.pt;
+  txt('Giờ đến (KH)', 356, 230, '#8aa0b5'); txt(T.phase === 'end' || pa == null ? '—' : hhmm(W.trip.t0 + pa), 480, 230, '#fff', 'bold 16px system-ui');
+  const L = W.lead;
+  if (L && L.phase !== 'end') { const gap = L.x - 400 - T.x, tg = T.v > 5 ? gap / T.v : null; txt('Tàu trước ' + W.leadLabel, 356, 254, '#ffa24a', '12px system-ui'); txt(L.phase === 'dwell' && L.atMark ? 'đỗ tại ' + L.M[L.k].name : 'cách ' + (gap / 1000).toFixed(1) + ' km' + (tg ? ' (≈ ' + fmt(tg) + ')' : ''), 500, 254, gap < 3000 ? '#ff6464' : '#e8eef5', '12px system-ui'); }
+  else txt(W.lead ? 'Tàu trước đã tới ga cuối' : 'Không có tàu chạy trước', 356, 254, '#8aa0b5', '12px system-ui');
+  if (T.phase === 'dwell' && T.k < T.M.length - 1 || (T.phase === 'dwell' && !T.started)) {
+    const mk = T.M[T.k], dep = mk.dep != null ? mk.dep : 0, hold = T.holds[T.k], rel = Math.max(dep, hold || 0);
+    const ds = T.door === 'open' ? 'MỞ (đỗ ' + Math.round(T.dwellT) + ' s)' : T.door === 'closing' ? 'ĐANG ĐÓNG ' + Math.round(T.doorT) + '/' + Math.round(T.doorDur) + ' s' : 'ĐÃ ĐÓNG → kéo cần';
+    txt('Cửa: ' + ds, 356, 282, T.door === 'closed' ? '#4cd68a' : '#ffc247', 'bold 14px system-ui');
+    txt('KH khởi hành ' + hhmm(W.trip.t0 + dep) + (hold && hold > dep ? ' · giữ tới ' + hhmm(W.trip.t0 + hold) : '') + (W.t < rel ? ' (còn ' + Math.round(rel - W.t) + ' s)' : ''), 356, 302, hold && hold > W.t ? '#ff6464' : '#e8eef5', '12px system-ui');
+    if (T.started) txt('Mẹo: bấm Enter khoảng 12 s trước giờ khởi hành để đi đúng giờ.', 356, 320, '#8aa0b5', '11px system-ui');
+  }
+  const pend = W.pending.filter(m => !m.done).length;
+  txt('Lệnh chờ nhắc lại: ' + pend + (pend ? '  → nhấn Y' : ''), 356, 350, pend ? '#ffc247' : '#8aa0b5', pend ? 'bold 13px system-ui' : '13px system-ui');
+  txt('ATC phanh thay bạn: ' + T.atcCount + ' lần · Độ êm ' + Math.max(0, Math.round(100 - T.comfort * W.diff.comfortK)) + '/100', 356, 372, T.atcCount ? '#ffc247' : '#8aa0b5', '12px system-ui');
+  txt('Tua ×' + scale + (auto ? ' · TỰ LÁI' : '') + (paused ? ' · TẠM DỪNG' : ''), 356, 394, '#8aa0b5', '12px system-ui');
+
+  // ---- Hai cần: gia tốc và phanh
+  panel(700, 106, 200, 300);
+  txt('Cần gia tốc', 757, 126, '#fff', 'bold 12px system-ui', 'center'); txt('Cần phanh', 846, 126, '#fff', 'bold 12px system-ui', 'center');
+  for (let i = 0; i < 14; i++) {
+    const n = 13 - i, y = 134 + i * 19.5, cur = n === T.pw && T.bk === 0 || (n === 0 && T.pw === 0);
+    const on = n === T.pw; ctx.fillStyle = on ? (n > 0 ? '#4aa3ff' : '#4cd68a') : '#243447'; ctx.fillRect(712, y, 90, 18);
+    txt(n === 0 ? 'N / P0' : 'P' + n, 757, y + 13, on ? '#0b0f14' : '#8aa0b5', on ? 'bold 11px system-ui' : '11px system-ui', 'center'); const yy = y; btns.push({ x: 712, y: yy, w: 90, h: 18, fn: () => Sim.setPower(T, n) });
+  }
+  const bl = ['EB', 'B7', 'B6', 'B5', 'B4', 'B3', 'B2', 'B1', '0'];
+  for (let i = 0; i < 9; i++) {
+    const nb = 8 - i, y = 134 + i * 19.5, on = nb === T.bk;
+    ctx.fillStyle = on ? (nb === 8 ? '#ff5a5a' : nb > 0 ? '#ff8a4a' : '#4cd68a') : '#243447'; ctx.fillRect(808, y, 76, 18);
+    txt(bl[i], 846, y + 13, on ? '#0b0f14' : '#8aa0b5', on ? 'bold 11px system-ui' : '11px system-ui', 'center'); btns.push({ x: 808, y, w: 76, h: 18, fn: () => Sim.setBrake(T, nb) });
+  }
+  txt('Phanh phải về 0', 846, 326, '#7a8ea5', '10px system-ui', 'center'); txt('mới kéo được', 846, 338, '#7a8ea5', '10px system-ui', 'center');
+  ctx.fillStyle = '#243447'; ctx.fillRect(890, 134, 6, 270); const fcmd = T.f, zy = 134 + 13 * 19.5 + 9, fh = Math.min(1.4, Math.abs(fcmd)) * (fcmd >= 0 ? 13 * 19.5 : 7 * 19.5); ctx.fillStyle = fcmd >= 0 ? '#4aa3ff' : '#ff8a4a'; ctx.fillRect(890, fcmd >= 0 ? zy - fh : zy, 6, fh);
+
+  // ---- TIMS
+  panel(910, 106, 200, 300);
+  txt('TIMS (trạng thái xe)', 1010, 126, '#fff', 'bold 12px system-ui', 'center');
+  const faultCars = new Set(W.faults.map(f => f.car));
+  for (let c = 1; c <= 16; c++) {
+    const x = 920 + (c - 1) * 11, doorCol = T.phase === 'dwell' ? (T.door === 'open' ? '#ffc247' : T.door === 'closing' ? '#e08a2f' : '#4cd68a') : '#2f7a55';
+    ctx.fillStyle = faultCars.has(c) ? '#ff5a5a' : doorCol; ctx.fillRect(x, 136, 9, 16); txt(c, x + 4.5, 166, '#7a8ea5', '8px system-ui', 'center');
+  }
+  txt('Cửa: ' + (T.phase === 'dwell' ? (T.door === 'open' ? 'mở' : T.door === 'closing' ? 'đang đóng' : 'đã đóng') : 'đóng (chạy)'), 920, 188, '#c8d4e2', '11px system-ui');
+  const Ft = T.f >= 0 ? T.f * Math.min(515e3, 14.5e6 / Math.max(T.v, 1)) : 0, amps = Math.round(Ft * T.v / 25000);
+  txt('Điện áp dây điện: 25 kV', 920, 208, '#c8d4e2', '11px system-ui');
+  txt('Dòng kéo: ' + amps + ' A', 920, 226, '#c8d4e2', '11px system-ui');
+  const bar = (T.f < 0 ? Math.min(1.4, -T.f) / 1.4 : 0) * 5; txt('Áp suất xi lanh phanh: ' + bar.toFixed(1) + ' bar', 920, 244, '#c8d4e2', '11px system-ui');
+  txt('Camera cửa: ' + (T.phase === 'dwell' ? 'hiển thị' : 'tắt'), 920, 262, '#7a8ea5', '11px system-ui');
+  txt('Cảnh báo:', 920, 284, '#8aa0b5', '11px system-ui');
+  const fl = W.faults.slice(-4); if (!fl.length) txt('(không có)', 920, 302, '#4cd68a', '11px system-ui');
+  fl.forEach((f, i) => txt('• ' + f.text, 920, 302 + i * 16, f.level === 'bad' ? '#ff7a7a' : '#ffc247', '10px system-ui'));
+  if (T.hornPen || T.animalHit) txt('Phạt còi/động vật: ' + (T.hornPen + T.animalHit * 8), 920, 394, '#ffc247', '10px system-ui');
+
+  // ---- Cảnh ga / đường
+  panel(10, 416, 580, 180); drawView(10, 416, 580, 180);
+  // ---- Bảng nút và đèn
+  panel(600, 416, 510, 180);
+  const bx = 612, by = 428, bw = 112, bh = 26, gap = 8;
+  const bl2 = [
+    ['Đóng cửa (Enter)', act.door, T.door !== 'open', '#e08a2f'], ['Tốc độ không đổi (C)', act.cs, T.cs, '#2a8fa0'], ['Còi (H)', act.horn, T.horn > 0, '#c9a227'],
+    ['Gạt mưa (V)', act.wiper, T.wiper, '#2a6fd6'], ['Nhắc lệnh (Y)', act.ack, pend > 0 && blink, '#c9a227'], ['Xác nhận ATC (X)', act.confirm, T.needConfirm && blink, '#d64a4a'],
+    ['Tự lái (T)', act.auto, auto, '#2a6fd6'], ['Phanh khẩn (Q)', act.eb, T.bk === 8, '#d64a4a'], ['Về N (Space)', act.coast, false, '#2a6fd6']];
+  bl2.forEach((b, i) => button(bx + (i % 4) * (bw + gap), by + Math.floor(i / 4) * (bh + 8), bw, bh, b[0], b[1], b[2], b[3]));
+  const ly = 552;
+  lamp(620, ly, 'ĐÓNG CỬA', T.door === 'closed', '#4cd68a'); lamp(740, ly, 'ATC', T.atc, '#ff5a5a'); lamp(810, ly, '定速', T.cs, '#3ad6e6'); lamp(880, ly, 'GẠT MƯA', T.wiper, '#4aa3ff');
+  lamp(985, ly, 'CÒI', T.horn > 0, '#ffd24a'); lamp(1050, ly, 'MƯA', W.rainHere, '#2f6fd6');
+  txt(T.needConfirm ? 'ATC dừng: nhấn X để xác nhận mới nhả phanh' : (W.rainHere && !T.wiper ? 'Đang có mưa: bật gạt mưa (V)' : ''), 620, 574, T.needConfirm ? '#ff7a7a' : '#ffc247', 'bold 12px system-ui');
+  txt('Chế độ xác nhận ATC: ' + ({ auto: 'tự động', auto5: 'tự động sau 5 s', manual: 'bấm X' }[W.diff.confirm]) + ' · cửa kẹt ~' + Math.round(W.diff.reopen * 100) + '%', 620, 590, '#7a8ea5', '10px system-ui');
+
+  // ---- Điện đàm
+  panel(10, 606, W_ - 20, 184);
+  txt('Điện đàm điều độ / thời tiết / TIMS', 24, 626, '#fff', 'bold 13px system-ui');
+  let yy = 784; const msgs = W.msgs.slice(-14);
+  const C = { info: '#9fc3ff', warn: '#ffc247', bad: '#ff7a7a', stop: '#4cd68a', pa: '#b8c4d4' };
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i]; ctx.font = '12px system-ui';
+    const words = (fmt(m.t) + '  ' + (m.ack && !m.done ? '[CHỜ NHẮC LẠI] ' : '') + m.text).split(' '); let line = '', lines = [];
+    for (const wd of words) { const t = line ? line + ' ' + wd : wd; if (ctx.measureText(t).width > 1060 && line) { lines.push(line); line = wd; } else line = t; } lines.push(line);
+    const h = lines.length * 15 + 2; if (yy - h < 634) break; yy -= h;
+    lines.forEach((l, q) => txt(l, 24, yy + 12 + q * 15, C[m.kind] || '#c8d4e2', '12px system-ui'));
+  }
+  if (T.finished) drawEnd(); else if (!T.started) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(10, 416, 580, 180); txt('Nhấn Enter để đóng cửa, rồi kéo cần gia tốc (W) khi đèn ĐÓNG CỬA sáng', 300, 510, '#fff', 'bold 16px system-ui', 'center'); }
+}
+
+// Vẽ một đoàn tàu N700 nhìn từ bên cạnh, đầu tàu quay sang phải. fx = x mũi tàu, base = mặt ray, k = px/m (chiều dài 400 m)
+function drawTrain(fx, base, k, o) {
+  o = o || {};
+  const L = 400 * k, x0 = fx - L, noseL = Math.max(26, 24 * k * 1.6), bodyEnd = fx - noseL, H = 22, bottom = base - 6, top = bottom - H, cw = L / 16;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x0, base - 1, L, 3);
+  const g = ctx.createLinearGradient(0, top, 0, bottom); g.addColorStop(0, '#fbfdff'); g.addColorStop(0.55, '#e9eef3'); g.addColorStop(1, '#c4ced8');
+  ctx.fillStyle = g; ctx.fillRect(x0, top, bodyEnd - x0 + 1, H);
+  ctx.fillStyle = '#aebac6'; ctx.fillRect(x0, top, bodyEnd - x0, 2);
+  ctx.fillStyle = '#3d4854'; ctx.fillRect(x0, bottom - 4, bodyEnd - x0, 4);
+  for (let c = 0; c < 16; c++) {
+    const cx = x0 + c * cw; if (cx + cw > bodyEnd + 1) continue;
+    ctx.fillStyle = '#15283f'; const nw = 4, ww = (cw - 8) / nw - 1.2;
+    for (let q = 0; q < nw; q++) ctx.fillRect(cx + 4 + q * (ww + 1.2), top + 5, ww, 5);
+    ctx.fillStyle = '#9fb0c2'; ctx.fillRect(cx + 1, top + 4, 2.4, H - 9);
+    ctx.fillStyle = 'rgba(40,52,66,.55)'; ctx.fillRect(cx + cw - 0.6, top, 1.2, H);
+    ctx.fillStyle = o.lead ? '#e0801f' : '#1b4fb5'; ctx.fillRect(cx, top + 12.5, cw, 2.6);
+    ctx.fillStyle = '#1a2027'; ctx.beginPath(); ctx.arc(cx + 5, base - 3, 2.6, 0, 7); ctx.arc(cx + cw - 5, base - 3, 2.6, 0, 7); ctx.fill();
+  }
+  if (!o.lead) for (const c of [3, 11]) { const pxx = x0 + c * cw + cw / 2; ctx.strokeStyle = '#2d3946'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(pxx - 5, top); ctx.lineTo(pxx, top - 5); ctx.lineTo(pxx + 5, top); ctx.stroke(); ctx.fillStyle = '#2d3946'; ctx.fillRect(pxx - 3, top - 6, 6, 1.6); }
+  ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(bodyEnd, top);
+  ctx.bezierCurveTo(bodyEnd + noseL * 0.5, top, fx - 7, top + 9, fx, top + H - 7);
+  ctx.bezierCurveTo(fx, bottom - 2, fx - 6, bottom, bodyEnd + noseL * 0.45, bottom); ctx.lineTo(bodyEnd, bottom); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = o.lead ? '#e0801f' : '#1b4fb5'; ctx.beginPath(); ctx.moveTo(bodyEnd, top + 12.5); ctx.lineTo(fx - 4, top + 14.5); ctx.lineTo(fx - 3.5, top + 17.2); ctx.lineTo(bodyEnd, top + 15.1); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#3d4854'; ctx.beginPath(); ctx.moveTo(bodyEnd, bottom - 4); ctx.lineTo(fx - 8, bottom - 4); ctx.lineTo(fx - 7, bottom); ctx.lineTo(bodyEnd, bottom); ctx.fill();
+  ctx.fillStyle = '#15283f'; ctx.beginPath();
+  ctx.moveTo(bodyEnd + noseL * 0.38, top + 2.5); ctx.lineTo(fx - 12, top + 8.5); ctx.lineTo(fx - 8.5, top + 11); ctx.lineTo(bodyEnd + noseL * 0.30, top + 8.5); ctx.closePath(); ctx.fill();
+  if (!o.lead) { ctx.fillStyle = 'rgba(255,240,170,.9)'; ctx.beginPath(); ctx.arc(fx - 2.5, top + H - 10, 2, 0, 7); ctx.fill(); }
+  ctx.fillStyle = '#e9eef3'; ctx.fillRect(x0 - 1, top, 2, H);
+  if (o.label) txt(o.label, x0 + L / 2, top - 8, o.lead ? '#ffa24a' : '#8aa0b5', '10px system-ui', 'center');
+  ctx.restore();
+}
+function drawView(px, py, pw, ph) {
+  ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
+  const j = Sim.nextTarget(T), mark = T.phase === 'dwell' ? T.M[T.k].s : T.M[j].s, d = (mark - T.x);
+  const spr = NREADY && window.N700_STRIP;
+  Scene.draw(ctx, px, py, pw, ph, W, T, { spr, img: NIMG, nextTarget: Sim.nextTarget, stnJP: Sim.STN_JP, tunnels: Sim.TUNNELS, sOfKm: Sim.sOfKm, fallbackTrain: (fx, b, k) => drawTrain(fx, b, k, {}), aud: AUD });
+  if (spr) txt('Hình tàu: rail.kychung.com (CC BY-NC-ND) – dùng cá nhân', px + 10, py + ph - 6, 'rgba(160,175,190,.6)', '9px system-ui');
+  // thanh tiến trình tới vạch (0–300 m)
+  if (T.phase === 'run' && d < 600) {
+    const bx0 = px + 16, bw = pw - 32, by = py + ph - 24; ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(bx0, by, bw, 6);
+    [300, 200, 100, 50, 25, 0].forEach(m => { const x = bx0 + bw * (1 - Math.min(m, 300) / 300); ctx.fillStyle = m === 0 ? '#4cd68a' : '#8aa0b5'; ctx.fillRect(x - 1, by - 3, 2, 12); txt(m, x, by - 6, '#8aa0b5', '9px system-ui', 'center'); });
+    const hx = bx0 + bw * (1 - Math.max(0, Math.min(d, 300)) / 300); ctx.fillStyle = '#4aa3ff'; ctx.beginPath(); ctx.moveTo(hx, by - 2); ctx.lineTo(hx - 6, by - 11); ctx.lineTo(hx + 6, by - 11); ctx.closePath(); ctx.fill();
+  }
+  if (T.phase === 'run' || T.phase === 'dwell') {
+    const close = Math.abs(d) < 60, e = -d;
+    txt(T.phase === 'run' ? (d >= 0 ? 'Còn ' + (d >= 100 ? Math.round(d) : d.toFixed(1)) + ' m tới vạch' : 'Quá vạch ' + (-d).toFixed(1) + ' m') : 'Lệch vạch: ' + (e >= 0 ? '+' : '') + e.toFixed(2) + ' m', px + 16, py + 26, close ? '#fff' : '#8aa0b5', 'bold 16px system-ui');
+    txt('±0,5 m xuất sắc (độ khó đổi ngưỡng) · ATC cắt khi quá 30 m', px + 16, py + 44, '#8aa0b5', '11px system-ui');
+    if (T.phase === 'run' && W.diff.hint >= 1 && d > 0 && d < 9000) {
+      const dBrake = T.v * T.v / (2 * 0.55), left = d - dBrake;
+      txt(left > 30 ? `Gợi ý: bắt đầu phanh sau ~${Math.round(left)} m (phanh trung bình B5)` : 'Gợi ý: PHANH ngay', px + 16, py + 62, left > 30 ? '#9fc3ff' : '#ff8a4a', '12px system-ui');
+      if (W.diff.hint >= 2 && T.v > 1) { const need = T.v * T.v / (2 * Math.max(d, 1)) / 0.75 * 7; txt('Nấc phanh cần: B' + Math.max(1, Math.min(7, Math.ceil(need))) + (need > 7 ? ' (không kịp!)' : ''), px + 16, py + 78, '#9fc3ff', '12px system-ui'); }
+    }
+  }
+  if (AUD.inTunnel(W, T)) { ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(px, py, pw, ph); txt('ĐƯỜNG HẦM (hầm Tanna, vị trí xấp xỉ)', px + pw - 16, py + 26, '#ffd88a', '11px system-ui', 'right'); }
+  if (W.rainHere) {
+    if (!T.wiper) { ctx.fillStyle = 'rgba(160,190,230,.22)'; ctx.fillRect(px, py, pw, ph); txt('Kính mờ - bật gạt mưa (V)', px + pw / 2, py + ph - 34, '#ffc247', 'bold 13px system-ui', 'center'); }
+  }
+  if (T.wiper) { const a = Math.sin(performance.now() / 250) * 0.9; ctx.strokeStyle = 'rgba(232,238,245,.8)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px + pw - 40, py + ph - 8); ctx.lineTo(px + pw - 40 + Math.sin(a) * 70, py + ph - 8 - Math.cos(a) * 70); ctx.stroke(); }
+  if (T.horn > 0) txt('♪ PÍP – PÍP ♪', px + pw - 20, py + 26, '#ffd24a', 'bold 18px system-ui', 'right');
+  ctx.restore();
+}
+function drawEnd() {
+  ctx.fillStyle = 'rgba(8,12,18,1)'; ctx.fillRect(10, 106, 1100, 684);
+  const sc = Sim.score(T, W);
+  txt('Kết thúc chuyến · ' + W.trip.label + ' · ' + Sim.DIFF[W.diffKey].name + ' · seed ' + $('seed').value, 560, 140, '#fff', 'bold 22px system-ui', 'center');
+  const last = T.M[T.M.length - 1];
+  txt('Thời gian chạy ' + fmt(W.t) + ' (kế hoạch ' + fmt(last.arr) + ') · miễn trừ do sự kiện ' + Math.round(T.excused) + ' s', 560, 166, '#8aa0b5', '15px system-ui', 'center');
+  let y = 200; txt('Ga', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Dừng', 850, y, '#8aa0b5'); txt('Đúng giờ', 940, y, '#8aa0b5'); y += 24;
+  const rows = sc.out, lh = rows.length > 14 ? 20 : 26;
+  rows.forEach(o => { txt(o[0], 60, y, '#fff', '14px system-ui'); txt(o[1], 230, y, '#fff', '14px system-ui'); txt(o[2], 850, y, '#fff', '14px system-ui'); txt(o[3], 940, y, '#fff', '14px system-ui'); y += lh; });
+  y += 10;
+  txt('Độ êm ' + sc.comfort + ' · ATC phanh ' + T.atcCount + ' lần (−' + sc.atcPen + ') · Khởi hành sớm (−' + sc.earlyPen + ')', 60, y, '#8aa0b5', '14px system-ui'); y += 22;
+  txt('Nhắc lệnh điều độ (−' + sc.ackPen + ') · Còi/động vật (−' + sc.hornPen + ') · Gạt mưa (−' + sc.wiperPen + ')', 60, y, '#8aa0b5', '14px system-ui'); y += 44;
+  txt('ĐIỂM: ' + sc.final + ' / 100', 560, y, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
+  txt('R: chạy lại cùng seed · 🎲 đổi seed để gặp sự kiện khác', 560, y + 34, '#8aa0b5', '14px system-ui', 'center');
+}
+trainList(); $('from').onchange(); start(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
