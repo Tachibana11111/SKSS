@@ -194,7 +194,10 @@
       const sIn = root.Sim.sOfKm(k0, W.dir, W.line.kmEnd), sOut = root.Sim.sOfKm(k1, W.dir, W.line.kmEnd), lo = Math.min(sIn, sOut), hi = Math.max(sIn, sOut);
       const dIn = lo - T.x, dOut = hi - T.x;
       if (dIn > 0 && dIn < 1800) { const x = map(dIn), q = sc(dIn), hc = mixc([14, 24, 18], [52, 84, 56], day * (1 - wx * 0.3));
-        ctx.fillStyle = hc; ctx.beginPath(); ctx.moveTo(x - 150 * q, base - 4); ctx.bezierCurveTo(x - 90 * q, base - 4 - 80 * q, x - 40 * q, base - 4 - 96 * q, x, base - 4 - 96 * q); ctx.bezierCurveTo(x + 40 * q, base - 4 - 96 * q, x + 160 * q, base - 4 - 60 * q, x + 260 * q, base - 4); ctx.closePath(); ctx.fill();
+        const urb = root.Sim.biomeAt(W.line, kmOf(W, T.x + dIn)) === 'urban';
+        if (urb) { ctx.fillStyle = mixc([26, 30, 38], [118, 126, 140], day * (1 - wx * 0.4)); ctx.fillRect(x - 130 * q, base - 4 - 130 * q, 260 * q, 130 * q);        // đô thị: cửa hầm nằm dưới toà nhà
+          if (night > 0.35 || q > 0.6) { ctx.fillStyle = night > 0.35 ? 'rgba(255,224,130,.85)' : 'rgba(40,60,90,.4)'; for (let ry = 0; ry < 4; ry++) for (let rx = 0; rx < 9; rx++) if (hash(rx * 13 + ry * 7 + Math.floor(dIn / 50)) < 0.5) ctx.fillRect(x - 120 * q + rx * 27 * q, base - 4 - 118 * q + ry * 26 * q, 8 * q, 10 * q); } }
+        else { ctx.fillStyle = hc; ctx.beginPath(); ctx.moveTo(x - 150 * q, base - 4); ctx.bezierCurveTo(x - 90 * q, base - 4 - 80 * q, x - 40 * q, base - 4 - 96 * q, x, base - 4 - 96 * q); ctx.bezierCurveTo(x + 40 * q, base - 4 - 96 * q, x + 160 * q, base - 4 - 60 * q, x + 260 * q, base - 4); ctx.closePath(); ctx.fill(); }
         ctx.fillStyle = '#6a7480'; ctx.beginPath(); ctx.ellipse(x, base - 22 * q, 17 * q, 28 * q, 0, Math.PI, 0); ctx.lineTo(x + 17 * q, base); ctx.lineTo(x - 17 * q, base); ctx.fill();
         ctx.fillStyle = '#05080d'; ctx.beginPath(); ctx.ellipse(x, base - 20 * q, 14 * q, 24 * q, 0, Math.PI, 0); ctx.lineTo(x + 14 * q, base); ctx.lineTo(x - 14 * q, base); ctx.fill(); }
       if (dIn <= 0 && dOut > 0 && dOut < 1800) { const x = map(dOut), q = sc(dOut), gl = ctx.createRadialGradient(x, base - 20 * q, 0, x, base - 20 * q, 36 * q); gl.addColorStop(0, 'rgba(230,240,255,.95)'); gl.addColorStop(0.6, 'rgba(200,220,240,.7)'); gl.addColorStop(1, 'rgba(200,220,240,0)');

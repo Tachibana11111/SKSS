@@ -17,7 +17,7 @@ SHARES = {
     'tsk': [(0, 515.4, 53, 11, 22, 13), (515.4, 1069.1, 12, 9, 28, 50), (1069.1, 1199.1, 5, 14, 51, 30), (1199.1, 1325.9, 12, 7, 12, 69)],
     'toh': [(0, 496.5, 5, 16, 56, 23), (496.5, 593.1, 14, 3, 9, 73), (593.1, 674.9, 15, 5, 18, 62)]}
 FIXED_T = {'tsk': [(97.5, 105.5), (549.9, 566.1)], 'toh': [(533, 559), (641, 667)]}        # hầm lớn đã có: Tanna, Rokko, Iwate-Ichinohe, Hakkoda
-FORCE = {'tsk': [(0, 8, 'v')], 'toh': [(0, 3.6, 't'), (3.6, 31, 'v')]}                       # Tokyo-Shinagawa trên cao; Tokyo-Ueno ngầm, Ueno-Omiya trên cao
+FORCE = {'tsk': [(0, 8, 'v')], 'toh': [(0, 4.6, 't'), (4.6, 31, 'v')]}                       # Tokyo-Shinagawa trên cao; Tokyo-Ueno-(cửa hầm ~1 km phía bắc Ueno, gần Nippori) ngầm, sau đó trên cao tới Omiya [I vị trí cửa hầm]
 NO_TUNNEL = {'tsk': [(515.4 + 54.8, 515.4 + 85.9)], 'toh': [(31.3, 109)]}                    # Nishi-Akashi-Himeji và Omiya-Utsunomiya không có hầm [N]
 
 

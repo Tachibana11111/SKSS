@@ -189,7 +189,7 @@ section('10. Bố trí ga, kết cấu tuyến, đường cong (layout.js)');
     for (const [a, b, R] of L.curves) ok(R >= 400 && b > a, `${ln}: đường cong hợp lệ`, [a, b, R]);
   }
   const tsk = Sim.lineOf('tsk'); ok(!tsk.struct.some(g => g[2] === 't' && g[1] > 515.4 + 54.8 && g[0] < 515.4 + 85.9), 'tsk: Nishi-Akashi–Himeji không có hầm');
-  ok(Sim.lineOf('toh').struct.every(g => g[2] !== 't' || g[1] <= 31.3 || g[0] >= 109), 'toh: Omiya–Utsunomiya không có hầm');
+  ok(Sim.lineOf('toh').struct.every(g => g[2] !== 't' || g[1] <= 31.3 || g[0] >= 109), 'toh: Omiya–Utsunomiya không có hầm'); { const L = Sim.lineOf('toh'), ue = L.stations.find(s => s.en === 'Ueno'); ok(Sim.structAt(L, ue.km - 0.3) === 't' && Sim.structAt(L, ue.km + 0.3) === 't', 'toh: ga Ueno nằm hẳn trong hầm (cả hai phía)'); }
   // đường cong: độ lệch ngang khớp z²/(2R) ở đường cong đều, và chiều lên rẽ ngược hướng
   const fake = { kmEnd: 100, curves: [[10, 20, 2000, 1]] }, tab = LAY.lateralTable(fake, Sim, 'down', 10000, 1000, 10);
   approx(Math.abs(tab[50]), 500 * 500 / (2 * 2000), 3, 'cong R=2000: lệch ngang ở 500 m ≈ z²/2R'); ok(Math.abs(tab[100]) > Math.abs(tab[50]), 'cong: lệch ngang tăng theo khoảng cách');
