@@ -56,3 +56,4 @@ Cập nhật lần cuối: 2026-10-21 (Phase 1–2: prototype 0.4)
 ## Câu hỏi còn mở cho người dùng
 - Thích phần nào nhất: điều độ, lái tàu hay cả hai? Công cụ lập trình quen thuộc? Tuyến muốn bắt đầu?
 - (Đã giải quyết) tải PDF lịch Kyushu/Nishi-Kyushu.
+- **(2026-10-21) Sửa theo phản hồi chơi thử:** (1) Nhật chạy bên trái: khung buồng lái lật làm sân ga của ta bên trái, đường ngược chiều bên phải, thêm sân ga cho đường bên kia; (2) hành lang đường sắt: cây/ruộng/nhà/toà nhà không lấn vào đường và sân ga; (3) cảnh 2D lật hướng theo chiều đi (đông/bắc = phải, tây/nam = trái); (4) tàu ngược chiều vẽ phía sau tàu của ta; (5) tàu ngược chiều lướt chậm hơn (~4,5 s) và tiếng gặp nhau bắt đầu sớm 2 s để khớp hình.

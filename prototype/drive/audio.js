@@ -41,9 +41,9 @@
   // tua tới t giây nếu phần đó đã sẵn sàng (máy chủ không hỗ trợ Range thì phải chờ tải xong)
   function seekTo(e, t) { try { if (e.seekable && e.seekable.length && e.seekable.end(e.seekable.length - 1) >= t) { e.currentTime = t; return true; } } catch (x) { } return false; }
   const CLIPS = [[118.6, 127.8], [176.6, 186.0], [266.6, 275.8], [326.6, 337.4]];
-  GameAudio.prototype.playClip = function (gain, i) {
+  GameAudio.prototype.playClip = function (gain, i, maxDur) {
     const e = this.clipEl; if (!e || !this.enabled) return; const c = CLIPS[(i != null ? i : Math.floor(Math.random() * CLIPS.length)) % CLIPS.length];
-    try { if (!seekTo(e, c[0])) return; e.volume = Math.max(0, Math.min(1, this.vol * (gain || 0.9))); const p = e.play(); if (p && p.catch) p.catch(() => {}); clearTimeout(this.clipT); this.clipT = setTimeout(() => { try { e.pause(); } catch (x) { } }, (c[1] - c[0]) * 1000); } catch (x) { }
+    try { if (!seekTo(e, c[0])) return; e.volume = Math.max(0, Math.min(1, this.vol * (gain || 0.9))); const p = e.play(); if (p && p.catch) p.catch(() => {}); clearTimeout(this.clipT); this.clipT = setTimeout(() => { try { e.pause(); } catch (x) { } }, Math.min(c[1] - c[0], maxDur || 99) * 1000); } catch (x) { }
   };
   // nền ga: lặp đoạn 10–118 s khi tàu đang đỗ ở ga
   GameAudio.prototype.ambience = function (level) {
@@ -157,7 +157,7 @@
     // ---- âm theo thời gian thực: máy nén khí, tàu ngược chiều, sấm, ho, em bé, bước chân ----
     const R = this.rt; if (st.scale <= 1) {
       R.comp -= dt; if (R.comp < 0) { this.compressor(); R.comp = 35 + Math.random() * 50; }
-      if (this.prevWt !== undefined && v > 40) for (const t0 of W.opposing || []) if (this.prevWt < t0 && W.t >= t0) this.playClip(0.35 + 0.4 * sp);
+      if (this.prevWt !== undefined && v > 40) for (const t0 of W.opposing || []) if (this.prevWt < t0 - 2.0 && W.t >= t0 - 2.0) this.playClip(0.35 + 0.4 * sp, 0, 5.5);
       if (W.weatherKind === 'typhoon' || W.weatherKind === 'rain') { R.thunder -= dt; if (R.thunder < 0) { if (W.weatherKind === 'typhoon' || Math.random() < 0.4) this.thunder(); R.thunder = 35 + Math.random() * 70; } }
     }
     this.ambience(dw && !st.paused && st.scale <= 4 ? (T.door === 'open' ? 0.55 : 0.4) : 0);

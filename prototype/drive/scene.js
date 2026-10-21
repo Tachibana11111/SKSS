@@ -96,6 +96,9 @@
     const windy = W.zones.some(z => z.kind === 'wind' && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 - 25000 && T.x < z.s1 + 5000);
     const wx = rain ? 0.55 : inSnow ? 0.4 : 0;
     ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
+    // hướng chạy trên màn hình: sang phải = đi về phía đông/bắc; sang trái = đi về phía tây/nam (lật ngang cả cảnh, chữ viết lật lại cho đọc được)
+    const flipX = W.lineId === 'toh' ? W.dir === 'up' : W.dir === 'down';
+    if (flipX) { ctx.translate(2 * px + pw, 0); ctx.scale(-1, 1); const ft = CanvasRenderingContext2D.prototype.fillText; ctx.fillText = function (s, x, y, mw) { this.save(); this.translate(x, y); this.scale(-1, 1); ft.call(this, s, 0, 0, mw); this.restore(); }; }
     // rung (động đất, va chạm)
     let sh = 0; if (W.eqkAt !== undefined && W.eqkActive) sh = 7 * Math.exp(-(W.t - W.eqkAt) / 40) + 1.2; if (W.shakeAt !== undefined && W.t - W.shakeAt < 4) sh = Math.max(sh, (W.shakeAmp || 4) * Math.exp(-(W.t - W.shakeAt) / 1.2));
     if (sh > 0.2) ctx.translate((Math.random() - 0.5) * sh * 2, (Math.random() - 0.5) * sh * 1.4);
@@ -203,6 +206,8 @@
     // tàu phía trước (nén theo khoảng cách)
     const Ld = W.lead;
     if (Ld && Ld.phase !== 'end') { const lenL = Ld.veh.len, dl = Ld.x - T.x; if (dl > 0 && dl - lenL < 1800) { const xf = map(dl), xr = map(Math.max(dl - lenL, 0)), q = sc(Math.max(dl - lenL, 0)); if (xf - xr > 2) fleet(ctx, R, Ld.veh.key, xf, base, xf - xr, hOf(R, Ld.veh.key, K) * SV * q, 0.95); } }
+    // tàu ngược chiều trên đường bên kia: nằm phía sau tàu của ta (nhìn từ phía đường bên cạnh), lướt qua ~4,5 s
+    if (T.v > 20) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 1) { const ok_ = W.lineId === 'toh' ? 'E5' : 'N700', wv = K * 0.8 * root.Sim.VEH[ok_].len, hh = hOf(R, ok_, K * 0.8) * SV, front = px + pw - u * (pw + wv); fleet(ctx, R, ok_, front, base - 4, wv, hh, 0.92, true); } }
     // ---- đoàn tàu người lái
     const psp = sprOf(R, T.veh.key);
     if (psp) {
@@ -214,15 +219,16 @@
     } else trainProc(ctx, fx, base, T.veh.len * K, 26, T.veh.key, 1, false);
     // tàu vượt qua đường thông qua khi ta đỗ ở ga tránh (quét qua màn hình ~ 9 giây)
     const pl = T.phase === 'dwell' ? (W.passers && W.passers[T.k]) : null;
-    if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const wL = 404.7 * K * 1.18, hh = hOf(R, p.v || (W.lineId === 'toh' ? 'E5' : 'N700'), K * 1.18) * SV, xF = px + u * (pw + wL); fleet(ctx, R, p.v || (W.lineId === 'toh' ? 'E5' : 'N700'), xF, base + 9, wL * ((root.Sim.VEH[p.v] || {}).len ? root.Sim.VEH[p.v].len / 404.7 : 1), hh, false, 1); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(px, base - 40, pw, 50 * 0); txt2(ctx, p.label + ' thông qua', px + pw / 2, py + 16, '#ffd88a'); } }
-    // tàu ngược chiều trên đường bên kia (vút qua trong ~2 s)
-    if (T.v > 20) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 1)) / 2.2; if (u > 0 && u < 1) { const wL = 404.7 * K * 0.8, hh = hOf(R, W.lineId === 'toh' ? 'E5' : 'N700', K * 0.8) * SV, xF = px + pw + wL - u * (pw + wL * 1.0); { const ok_ = W.lineId === 'toh' ? 'E5' : 'N700', wv = wL * root.Sim.VEH[ok_].len / 404.7; fleet(ctx, R, ok_, xF - wv, base - 4, wv, hh, 0.92, true); } ctx.fillStyle = 'rgba(255,255,255,' + 0.15 * Math.sin(u * Math.PI) + ')'; ctx.fillRect(px, py, pw, ph); } }
+    if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const wL = 404.7 * K * 1.18, hh = hOf(R, p.v || (W.lineId === 'toh' ? 'E5' : 'N700'), K * 1.18) * SV, xF = px + u * (pw + wL); fleet(ctx, R, p.v || (W.lineId === 'toh' ? 'E5' : 'N700'), xF, base + 9, wL * ((root.Sim.VEH[p.v] || {}).len ? root.Sim.VEH[p.v].len / 404.7 : 1), hh, 1, false); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(px, base - 40, pw, 50 * 0); txt2(ctx, p.label + ' thông qua', px + pw / 2, py + 16, '#ffd88a'); } }
+    // hiệu ứng chớp khi hai tàu gặp nhau
+    if (T.v > 20) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 0.4) { ctx.fillStyle = 'rgba(255,255,255,' + 0.15 * Math.sin(u / 0.4 * Math.PI) + ')'; ctx.fillRect(px, py, pw, ph); } }
     // ---- thời tiết phủ lên
     if (rain) { ctx.strokeStyle = 'rgba(160,190,255,.5)'; ctx.lineWidth = 1; const tt = now / 30; for (let q = 0; q < 90; q++) { const rx = px + ((q * 83 + tt * 3 + (windy ? tt * 3 : 0)) % pw), ry = py + ((q * 47 + tt * 9) % ph); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5 - (windy ? 6 : 0), ry + 12); ctx.stroke(); } }
     if (inSnow && T.x >= (W.zones.find(z => z.kind === 'snow') || { s0: 1e18 }).s0 - 4000) { ctx.fillStyle = 'rgba(245,250,255,.85)'; const tt = now / 25; for (let q = 0; q < 110; q++) { const rx = px + ((q * 61 + tt * (1.2 + (q % 3) * 0.5) + Math.sin(tt / 9 + q) * 8) % pw), ry = py + ((q * 37 + tt * (1.5 + (q % 4) * 0.6)) % ph); ctx.fillRect(rx, ry, 2, 2); } }
     if (windy) { ctx.strokeStyle = 'rgba(210,225,240,.35)'; ctx.lineWidth = 1; const tt = now / 6; for (let q = 0; q < 14; q++) { const ry = py + 30 + (q * 29) % (base - py - 40), rx = px + pw - ((q * 131 + tt * (2 + q % 3)) % (pw + 80)); ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx + 40 + (q % 3) * 14, ry + Math.sin(tt / 40 + q) * 2); ctx.stroke(); } }
     // sét (đồng bộ với tiếng sấm)
     if (R.aud && R.aud.lastThunder) { const dt = now - R.aud.lastThunder; const fl = (dt < 90 ? 1 : 0) + (dt > 220 && dt < 300 ? 0.7 : 0); if (fl > 0) { ctx.fillStyle = 'rgba(235,240,255,' + 0.55 * fl + ')'; ctx.fillRect(px, py, pw, ph); } }
+    if (flipX) delete ctx.fillText;
     ctx.restore();
   }
   function txt2(ctx, s, x, y, c) { ctx.fillStyle = c; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText(s, x, y); }
