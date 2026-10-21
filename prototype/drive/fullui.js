@@ -4,7 +4,8 @@
 const ui = { layout: 'full', main: 'cab', focus: false, radio: true, cur: 'classic' };
 const FW = 1920, FH = 1080, TOPH = 58, DASH_Y = 676;
 const MAIN_R = [0, TOPH, FW, DASH_Y - TOPH];
-const SLOT = [[1566, 74, 336, 300], [1566, 382, 336, 170]];
+const SLOT_PIP = [1566, 74, 336, 212];                  // khung phụ góc trên phải
+const SLOT_DASH = [276, DASH_Y + 22, 284, 284];          // khung phụ trong bảng điều khiển (trái đồng hồ tốc độ)
 
 // chọn bố cục theo chế độ: lái tàu dùng bố cục toàn màn hình (nếu bật), các chế độ khác dùng bố cục cổ điển 1780×900
 function syncLayout() {
@@ -28,12 +29,13 @@ function drawViewIn(kind, x, y, w, h) {
 }
 
 // đồng hồ tròn nhỏ
-function miniGauge(mx, my, r, v, lo, hi, label, unit, col, ticks) {
+function miniGauge(mx, my, r, v, lo, hi, label, unit, col, ticks, below) {
   const a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, f = t => a0 + (a1 - a0) * (Math.max(lo, Math.min(hi, t)) - lo) / (hi - lo);
   ctx.lineWidth = 7; ctx.strokeStyle = '#243447'; ctx.beginPath(); ctx.arc(mx, my, r, a0, a1); ctx.stroke(); ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(mx, my, r, f(Math.min(0, hi)), f(v)); ctx.stroke();
   ctx.lineWidth = 1.2; ctx.strokeStyle = '#6a8098'; for (const t of ticks) { const a = f(t); ctx.beginPath(); ctx.moveTo(mx + Math.cos(a) * (r + 6), my + Math.sin(a) * (r + 6)); ctx.lineTo(mx + Math.cos(a) * (r + 10), my + Math.sin(a) * (r + 10)); ctx.stroke(); }
   const a = f(v); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx + Math.cos(a) * (r - 4), my + Math.sin(a) * (r - 4)); ctx.stroke();
-  txt(unit, mx, my + r * 0.62, '#e8eef5', 'bold 14px system-ui', 'center'); txt(label, mx + r + 22, my + 5, '#8aa0b5', '14px system-ui');
+  if (below) { txt(unit, mx, my + r * 0.58, '#e8eef5', 'bold 11px system-ui', 'center'); txt(label, mx, my + r + 20, '#8aa0b5', '12px system-ui', 'center'); }
+  else { txt(unit, mx, my + r * 0.62, '#e8eef5', 'bold 14px system-ui', 'center'); txt(label, mx + r + 22, my + 5, '#8aa0b5', '14px system-ui'); }
 }
 
 // đồng hồ tốc độ lớn (cùng logic với đồng hồ cũ, bán kính rr)
@@ -105,6 +107,15 @@ function drawTopBar(blink) {
   iconBtn(bx0 + 2 * (SZ + GAP), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
 }
 
+// công tắc ATC lớn, nổi bật: xanh khi bật, vàng khi chờ xác nhận, đỏ nhấp nháy khi đang cắt
+function atcButton(x0, y0, w0, h0, blink) {
+  const off = T.atcOn === false, arm = !off && W.t - T.atcArm <= 4, hot = (off || arm) && blink;
+  ctx.fillStyle = off ? (hot ? '#c0392b' : '#8f2a22') : arm ? '#9a6a12' : '#1f6f4a'; ctx.beginPath(); ctx.roundRect(x0, y0, w0, h0, 10); ctx.fill();
+  ctx.strokeStyle = off || arm ? (hot ? '#ffd0c8' : '#ff7a6a') : '#6fe0a8'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(x0, y0, w0, h0, 10); ctx.stroke();
+  const l1 = off ? 'ATC: ĐANG CẮT' : arm ? 'XÁC NHẬN CẮT ATC?' : 'ATC: BẬT', l2 = off ? 'không có bảo vệ · A để bật' : arm ? 'bấm lại trong 4 giây' : 'A: cắt (bấm hai lần)';
+  txt(l1, x0 + w0 / 2, y0 + h0 / 2 - 2, '#fff', 'bold 19px system-ui', 'center'); txt(l2, x0 + w0 / 2, y0 + h0 / 2 + 20, 'rgba(255,255,255,.85)', '12px system-ui', 'center'); btns.push({ x: x0, y: y0, w: w0, h: h0, fn: () => doAct('atcsw') });
+}
+
 // ô vuông chỉ có biểu tượng (vẽ bằng nét, không dùng emoji để khỏi lệch giữa các máy)
 function iconBtn(x, y, sz, kind, on, key, fn) {
   ctx.fillStyle = on ? '#2a6fd6' : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.fill(); ctx.strokeStyle = on ? '#6fb0ff' : '#3b516a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.stroke();
@@ -134,13 +145,14 @@ function tileBtn(x, y, s, icon, label, key, on, color, fn) {
 }
 
 function drawFull() {
+  const PY = DASH_Y + 14, PH = FH - PY - 14;
   btns = []; curOX = 0; ctx.clearRect(0, 0, FW, FH); ctx.fillStyle = '#0b0f14'; ctx.fillRect(0, 0, FW, FH);
   if (!W) { txt('Chọn chuyến và nhấn "Bắt đầu / chạy lại", hoặc mở tab Hướng dẫn / Điều độ.', FW / 2, FH / 2, '#8aa0b5', '24px system-ui', 'center'); return; }
   const blink = Math.floor(performance.now() / 400) % 2 === 0, M = T.M, j = T.phase === 'dwell' ? T.k : Sim.nextTarget(T), d = M[j].s - T.x, pend = W.pending.filter(m => !m.done).length;
-  // ---- khung chính + hai khung phụ
+  // ---- khung chính + hai khung phụ: khung thứ nhất nằm trong bảng điều khiển (bên trái đồng hồ tốc độ), khung thứ hai ở góc trên phải
   drawViewIn(ui.main, MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]);
-  if (!ui.focus) ui.main && VIEWS.filter(v => v !== ui.main).forEach((v, i) => { const [x, y, w, h] = SLOT[i]; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); drawViewIn(v, x, y, w, h);
-    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(x, y, 170, 20); txt(VNAME[v] + ' · bấm để phóng to', x + 6, y + 14, '#cfe0f0', '11px system-ui'); btns.push({ x, y, w, h, fn: () => { ui.main = v; } }); });
+  const others = VIEWS.filter(v => v !== ui.main), slotLabel = (v, x, y, w) => { ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y, Math.min(w, 206), 20); txt(VNAME[v] + ' · bấm để phóng to', x + 6, y + 14, '#cfe0f0', '11px system-ui'); };
+  if (!ui.focus) { const [x, y, w, h] = SLOT_PIP, v = others[1]; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); drawViewIn(v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: () => { ui.main = v; } }); }
   // ---- điện đàm
   if (!ui.focus && ui.radio) drawRadioFull(16, 72, 496, 340);
   // ---- hộp HUD giữa phía trên
@@ -157,22 +169,19 @@ function drawFull() {
       if (barFrac !== null) { ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(hx + hw - 84, hy + 12, 70, 6); ctx.fillStyle = '#4aa3ff'; ctx.fillRect(hx + hw - 84, hy + 12, 70 * barFrac, 6); } } }
   // ---- bảng điều khiển phía dưới
   { const g = ctx.createLinearGradient(0, DASH_Y, 0, FH); g.addColorStop(0, '#0d1319'); g.addColorStop(1, '#070a0e'); ctx.fillStyle = g; ctx.fillRect(0, DASH_Y, FW, FH - DASH_Y); ctx.fillStyle = '#2a3b4f'; ctx.fillRect(0, DASH_Y, FW, 3); }
-  const PY = DASH_Y + 14, PH = FH - PY - 14;
   lever(20, PY, 236, PH, 'pw'); lever(1664, PY, 236, PH, 'bk');
-  // đồng hồ phụ
-  if (!ui.focus) { panel(268, PY, 300, PH); txt('ĐỒNG HỒ PHỤ', 418, PY + 22, '#fff', 'bold 14px system-ui', 'center');
-    const Ft = T.f >= 0 ? T.f * Sim.tractiveOf(T, T.v) : 0, amps = T.f >= 0 ? Ft * T.v / 25000 : -(Math.min(1.4, -T.f) / 1.4) * Math.min(500, T.v * 3.6 * 2.2), bar = (T.f < 0 ? Math.min(1.4, -T.f) / 1.4 : 0) * 5;
-    miniGauge(326, PY + 96, 46, amps, -500, 900, 'Dòng kéo', Math.round(amps) + ' A', amps < 0 ? '#4cd68a' : '#4aa3ff', [-500, 0, 400, 900]);
-    miniGauge(326, PY + 208, 46, bar, 0, 5, 'Áp phanh', bar.toFixed(1) + ' bar', bar > 3.5 ? '#ff8a4a' : '#ffc247', [0, 2.5, 5]);
-    miniGauge(326, PY + 320, 46, T.a, -1.2, 0.8, 'Gia tốc', (T.a >= 0 ? '+' : '') + T.a.toFixed(2) + ' m/s²', T.a < -0.05 ? '#ff8a4a' : '#4aa3ff', [-1, -0.5, 0, 0.5]);
-    txt('Dốc ' + (T.grade >= 0 ? '+' : '') + T.grade.toFixed(0) + '‰ (mô phỏng)', 418, PY + PH - 12, Math.abs(T.grade) > 10 ? '#ffc247' : '#7a8ea5', '12px system-ui', 'center'); }
-  // đồng hồ tốc độ + công tắc ATC + đèn
-  panel(580, PY, 600, PH); bigDial(880, PY + 168, 150, blink);
+  // bảng trái: khung phụ (bản đồ nhỏ) + công tắc ATC ngay dưới
+  if (!ui.focus) { panel(268, PY, 300, PH); const [x, y, w, h] = SLOT_DASH, v = others[0]; drawViewIn(v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: () => { ui.main = v; } }); atcButton(276, PY + 300, 284, 66, blink); }
+  // đồng hồ tốc độ (lệch trái), đèn báo xếp dọc bên phải, ba đồng hồ phụ nhỏ ngay dưới
+  panel(580, PY, 600, PH); bigDial(820, PY + 150, 125, blink);
   { const lampsL = [['ĐÓNG CỬA', T.door === 'closed', '#4cd68a'], ['ATC', T.atc, '#ff5a5a'], ['定速', T.cs, '#3ad6e6'], ['GẠT MƯA', T.wiper, '#4aa3ff'], ['ĐÈN PHA', Sim.lampOn(W, T), '#fff2b0'], ['MƯA', W.rainHere, '#2f6fd6']];
-    lampsL.forEach((l, i) => lamp(604 + i * 96, PY + 300, l[0], l[1], l[2]));
-    const off = T.atcOn === false, arm = !off && W.t - T.atcArm <= 4, hot = (off || arm) && blink, x0 = 620, y0 = PY + 318, w0 = 520, h0 = 40;
-    ctx.fillStyle = off ? (hot ? '#c0392b' : '#8f2a22') : arm ? '#9a6a12' : '#1f6f4a'; ctx.beginPath(); ctx.roundRect(x0, y0, w0, h0, 8); ctx.fill(); ctx.strokeStyle = off || arm ? (hot ? '#ffd0c8' : '#ff7a6a') : '#6fe0a8'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(x0, y0, w0, h0, 8); ctx.stroke();
-    txt(off ? 'ATC: ĐANG CẮT — KHÔNG CÓ BẢO VỆ (A để bật)' : arm ? 'XÁC NHẬN CẮT ATC? bấm lại trong 4 s' : 'ATC: BẬT  (A: cắt, bấm 2 lần)', x0 + w0 / 2, y0 + 26, '#fff', 'bold 15px system-ui', 'center'); btns.push({ x: x0, y: y0, w: w0, h: h0, fn: () => doAct('atcsw') }); }
+    lampsL.forEach((l, i) => lamp(1046, PY + 44 + i * 34, l[0], l[1], l[2]));
+    txt('Dốc ' + (T.grade >= 0 ? '+' : '') + T.grade.toFixed(0) + '‰ (mô phỏng)', 1034, PY + 268, Math.abs(T.grade) > 10 ? '#ffc247' : '#7a8ea5', '11px system-ui'); }
+  if (!ui.focus) { const Ft = T.f >= 0 ? T.f * Sim.tractiveOf(T, T.v) : 0, amps = T.f >= 0 ? Ft * T.v / 25000 : -(Math.min(1.4, -T.f) / 1.4) * Math.min(500, T.v * 3.6 * 2.2), bar = (T.f < 0 ? Math.min(1.4, -T.f) / 1.4 : 0) * 5;
+    miniGauge(696, PY + 318, 32, amps, -500, 900, 'Dòng kéo', Math.round(amps) + ' A', amps < 0 ? '#4cd68a' : '#4aa3ff', [-500, 0, 400, 900], true);
+    miniGauge(820, PY + 318, 32, bar, 0, 5, 'Áp phanh', bar.toFixed(1) + ' bar', bar > 3.5 ? '#ff8a4a' : '#ffc247', [0, 2.5, 5], true);
+    miniGauge(944, PY + 318, 32, T.a, -1.2, 0.8, 'Gia tốc', (T.a >= 0 ? '+' : '') + T.a.toFixed(2), T.a < -0.05 ? '#ff8a4a' : '#4aa3ff', [-1, -0.5, 0, 0.5], true); }
+  else atcButton(640, PY + 300, 480, 66, blink);        // chế độ tập trung: nút ATC về dưới đồng hồ tốc độ
   // nút điều khiển: 10 ô vuông (biểu tượng + nhãn ngắn + phím) + TIMS gọn bên dưới
   if (!ui.focus) { const PX = 1192, PW = 460; panel(PX, PY, PW, PH); txt('NÚT ĐIỀU KHIỂN', PX + PW / 2, PY + 22, '#fff', 'bold 14px system-ui', 'center');
     const lampLab = { auto: 'Tự động', on: 'Bật', off: 'Tắt' }[T.lamp], tl = [
