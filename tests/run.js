@@ -229,4 +229,16 @@ section('12. Đèn pha: tự động / bật / tắt');
   T.cut = true; T.lamp = 'on'; ok(!Sim.lampOn(W, T), 'mất điện: đèn tắt');
 }
 
+section('13. Công tắc ATC (bật / cắt)');
+{
+  const rec = find('tsk', 'Kodama', 'down', 0, 12), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+  ok(T.atcOn === true, 'ATC mặc định BẬT');
+  ok(Sim.toggleATC(T) === 'arm' && T.atcOn === true, 'bấm một lần: chỉ chờ xác nhận, chưa cắt'); W.t += 5; ok(Sim.toggleATC(T) === 'arm', 'quá 4 s thì phải xác nhận lại');
+  ok(Sim.toggleATC(T) === 'off' && T.atcOn === false, 'bấm hai lần trong 4 s: cắt ATC'); ok(Sim.toggleATC(T) === 'on' && T.atcOn === true, 'bấm lại: bật ATC ngay');
+  // cắt ATC thì không còn phanh tự động khi vượt tốc độ cho phép
+  const run = cut => { const W2 = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }), T2 = W2.player; T2.started = true; T2.phase = 'run'; T2.x = T2.M[0].s + 500; T2.v = 100 / 3.6; T2.door = 'closed'; T2.atcOn = !cut; let hit = false; for (let i = 0; i < 400; i++) { Sim.setPower(T2, 13); Sim.tick(W2, 0.05, { cmd: 1 }, false); if (T2.atc) hit = true; } return { hit, v: T2.v * 3.6, bad: T2.atcOffBad }; };
+  const on = run(false), off = run(true);
+  ok(on.hit, 'ATC bật: phanh khi vượt tốc độ cho phép'); ok(!off.hit && off.v > on.v + 20, 'ATC cắt: không phanh tự động, tàu vượt giới hạn', off.v + ' vs ' + on.v); ok(off.bad > 5, 'ATC cắt và chạy > 30 km/h: tích lũy lỗi', off.bad);
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

@@ -135,7 +135,7 @@
     opts = opts || {}; const veh = VEH[opts.veh] || VEH['N700'];
     return { M, W, veh, load: opts.load != null ? opts.load : 0.7, k: 0, x: M[0].s, v: 0, f: 0, cmd: 0, pw: 0, bk: 0, notch: 0, a: 0, phase: 'dwell', dwellT: 0, started: false, atc: false, atcCount: 0, atcOk: 0, confirmed: false, needConfirm: false,
       allowed: 0, why: '', results: [], log: [], comfort: 0, jerkTime: 0, earlyDep: 0, excused: 0, holds: {}, forced: -1, cut: false, arrT: 0, free: 0,
-      lamp: 'auto', lampBad: 0, door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, animalHit: 0,
+      lamp: 'auto', lampBad: 0, atcOn: true, atcArm: -1e9, atcOffBad: 0, atcCuts: 0, door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, animalHit: 0,
       bt: 0, kwh: 0, regen: 0, grade: 0, anx: 0, anxMax: 0, paAt: -999, fireTunnel: 0, waitFor: null, blockedT: 0, trace: [],
       isLead: !!opts.lead, label: opts.label || '', id: opts.id || '' };
   }
@@ -206,6 +206,13 @@
     for (const z of W.workers || []) if (!z.checked && T.x >= z.s0 - 800 && T.x <= z.s1) z.hornOK = true;
     for (const an of W.animals || []) if (!an.resolved && an.active && T.x >= an.s - 1500 && T.x <= an.s - 100) { an.hornOK = true; if (an.fleeT0 === undefined) an.fleeT0 = W.t; }
   }
+  // Công tắc ATC (bật / cắt). Cắt ATC phải bấm hai lần trong 4 s để tránh bấm nhầm; bật lại thì tức thì. Khi cắt: không còn phanh tự động ATC [I]
+  function toggleATC(T) {
+    const W = T.W;
+    if (T.atcOn === false) { T.atcOn = true; T.atcArm = -1e9; W.say('info', 'ATC: BẬT lại.'); return 'on'; }
+    if (W.t - T.atcArm <= 4) { T.atcOn = false; T.atcArm = -1e9; T.atc = false; T.needConfirm = false; if (T.phase === 'run' && T.v > 1) T.atcCuts++; W.say('bad', 'ATC: ĐÃ CẮT. KHÔNG còn phanh tự động bảo vệ. Chỉ cắt khi có lệnh; giữ tốc độ ≤ 30 km/h theo quy định [I]. Bấm lại để bật ATC.'); return 'off'; }
+    T.atcArm = W.t; W.say('warn', 'CẮT ATC? Bấm A (hoặc nút ATC) lần nữa trong 4 giây để xác nhận.'); return 'arm';
+  }
   function confirmATC(T) { if (T.atc) T.confirmed = true; }
   // phát thanh trấn an hành khách (giảm bất an); hồi lại sau 45 s
   function announcePA(T) {
@@ -261,6 +268,7 @@
       else { const vset = Math.min(T.csSet, Math.max(0, T.allowed - 3 / 3.6)), err = vset - T.v; cmd = clamp((resistOf(T, T.v) + mass * 9.81 * T.grade / 1000) / tractiveOf(T, T.v) + 0.6 * err, -0.25, 1); }
     }
     if (T.cut) { cmd = EBCMD(T); T.atc = false; }
+    else if (T.atcOn === false) { T.atc = false; T.needConfirm = false; }      // ATC đang cắt: không có phanh tự động
     else {
       if (!T.atc && T.v > T.allowed + (T.isLead ? 0.3 : D.atcOver) && T.v > 0.5) {
         T.atc = true; T.atcOk = 0; T.confirmed = false;
@@ -306,6 +314,7 @@
       if (T.anx >= 100 && !T.panic) { T.panic = true; W.say('bad', 'Hành khách hoảng loạn và đòi sơ tán! Hãy phát thanh trấn an (M) và báo điều độ.'); T.anx = 60; }
       if (T.v > 0.5 && !T.atc && !T.cut) { const jerk = (a - prevA) / dt; if (Math.abs(jerk) > 0.7) T.jerkTime += dt; T.comfort += Math.max(0, Math.abs(jerk) - 0.7) * dt; }
       if (W.rainHere && !T.wiper && T.v > 5) T.wiperBad += dt;
+      if (T.atcOn === false && T.v > 30 / 3.6) T.atcOffBad += dt;                // cắt ATC mà chạy quá 30 km/h
       if (T.lamp === 'off' && T.v > 5 && needsLight(W, T)) T.lampBad += dt;           // tắt đèn pha khi trong hầm / ban đêm
       checkRoadEvents(T);
       if (T.v < 0.5 && T.phase === 'run' && W.fireActive && inTunnel(W, T.x) && !W.fireTunnelDone) { T.fireTunnel = 1; W.fireTunnelDone = true; W.say('bad', 'ĐÃ DỪNG TRONG HẦM khi có cháy! (nguyên tắc: ra khỏi hầm rồi mới dừng)'); }
@@ -664,13 +673,13 @@
     });
     n = Math.max(1, n);
     const comfort = Math.max(0, 100 - T.comfort * D.comfortK), atcPen = T.atcCount * 8, earlyPen = Math.min(30, T.earlyDep * 0.3);
-    const ackPen = Math.min(20, W.ackPen), hornPen = Math.min(20, T.hornPen + T.animalHit * 8), wiperPen = Math.min(10, Math.round(T.wiperBad / 20)), lampPen = Math.min(10, Math.round((T.lampBad || 0) / 30));
+    const ackPen = Math.min(20, W.ackPen), hornPen = Math.min(20, T.hornPen + T.animalHit * 8), wiperPen = Math.min(10, Math.round(T.wiperBad / 20)), lampPen = Math.min(10, Math.round((T.lampBad || 0) / 30)), atcOffPen = Math.min(30, Math.round((T.atcOffBad || 0) / 8) + (T.atcCuts || 0) * 3);
     const anxPen = Math.min(15, Math.round(Math.max(0, T.anxMax - 60) / 2.5)) + (T.panic ? 10 : 0), firePen = T.fireTunnel ? 15 : 0, netBonus = clamp(W.netScore || 0, -9, 9);
-    const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - lampPen - anxPen - firePen + netBonus)));
-    return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, anxPen, firePen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
+    const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - lampPen - atcOffPen - anxPen - firePen + netBonus)));
+    return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, turnoutZones, divertsAt, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

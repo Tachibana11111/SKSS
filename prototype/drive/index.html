@@ -178,7 +178,7 @@ const act = {
   power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, setpw(n) { Sim.setPower(T, n); }, setbk(n) { Sim.setBrake(T, n); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
   door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, csAdj(d) { Sim.adjustCS(T, d); },
   ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', 'Không có lệnh nào cần nhắc lại.'); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
-  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, atcsw() { Sim.toggleATC(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
 };
 function doAct(name, arg) { if (!W || replaying) return; recActs.push([tickCount, name, arg]); act[name](arg); }
 addEventListener('keydown', e => {
@@ -198,7 +198,7 @@ addEventListener('keydown', e => {
   else if (k === 'Enter') { document.activeElement.blur(); doAct('door'); }
   else if (k === 'c' || k === 'C') doAct('cs'); else if (k === '[') doAct('csAdj', -5); else if (k === ']') doAct('csAdj', 5);
   else if (k === 'y' || k === 'Y') doAct('ack'); else if (k === 'n' || k === 'N') doAct('no');
-  else if (k === 'x' || k === 'X') doAct('confirm'); else if (k === 'h' || k === 'H') doAct('horn'); else if (k === 'v' || k === 'V') doAct('wiper'); else if (k === 'l' || k === 'L') doAct('lamp');
+  else if (k === 'x' || k === 'X') doAct('confirm'); else if (k === 'h' || k === 'H') doAct('horn'); else if (k === 'v' || k === 'V') doAct('wiper'); else if (k === 'l' || k === 'L') doAct('lamp'); else if (k === 'a' || k === 'A') doAct('atcsw');
   else if (k === 'm' || k === 'M') doAct('pa'); else if (k === 't' || k === 'T') doAct('auto');
   else return;
   e.preventDefault();
@@ -260,6 +260,7 @@ function advise(sc) {
   if (sc.ackPen > 0) out.push('Nhắc lại lệnh điều độ chậm: nhấn Y ngay khi thấy "[CHỜ NHẮC LẠI]".');
   if (sc.hornPen > 0) out.push('Quên bấm còi (nhân viên làm việc/động vật): xem thanh cam và biểu tượng trên bản đồ.');
   if (sc.wiperPen > 0) out.push('Quên bật gạt mưa khi vào vùng mưa (V).');
+  if (sc.atcOffPen > 0) out.push('Cắt ATC (hoặc chạy quá 30 km/h khi ATC cắt): ATC là bảo vệ chính, chỉ cắt khi có lệnh.');
   if (sc.lampPen > 0) out.push('Tắt đèn pha khi đang trong hầm hoặc ban đêm (L): dùng chế độ tự động hoặc bật.');
   if (sc.anxPen > 0) out.push('Hành khách bất an khi tàu đứng giữa đường: nhấn M để phát thanh trấn an mỗi ~45 s.');
   if (sc.firePen > 0) out.push('Đã dừng trong hầm khi có cháy: ra khỏi hầm rồi mới dừng.');
@@ -292,11 +293,11 @@ function wrapText(str, maxW) {
 }
 const KEYS = {
   drive: [['Lái', null], ['W / S', 'cần gia tốc tăng / giảm'], ['↓ / ↑', 'cần phanh tăng / giảm (nhả về 0 mới kéo gia tốc)'], ['Space', 'về N (không kéo)'], ['Q', 'phanh khẩn'], ['Enter', 'đóng cửa (đèn sáng thì kéo cần để đi)'], ['C', 'tốc độ không đổi'], ['[ / ]', 'chỉnh tốc độ không đổi ∓5'],
-    ['H', 'còi'], ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['X', 'xác nhận ATC'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['P', 'tạm dừng'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
+    ['H', 'còi'], ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['X', 'xác nhận ATC'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['P', 'tạm dừng'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
   dispatch: [['Điều độ', null], ['Bấm vào tàu', 'chọn tàu, rồi dùng nút lệnh'], ['Tab', 'chọn tàu kế'], ['Space', 'dừng / chạy'], ['1 – 4', 'tốc độ mô phỏng'], ['Chung', null], ['P', 'tạm dừng'], ['R', 'chạy lại']]
 };
 function drawKeys(m) {
-  const RX = 1440, RW = 330, y0 = m === 'drive' ? 412 : 10; panel(RX, y0, RW, m === 'drive' ? 890 - y0 : 210); txt('Phím tắt', RX + 14, y0 + 22, '#fff', 'bold 13px system-ui');
+  const RX = 1440, RW = 330, y0 = m === 'drive' ? 460 : 10; panel(RX, y0, RW, m === 'drive' ? 890 - y0 : 210); txt('Phím tắt', RX + 14, y0 + 22, '#fff', 'bold 13px system-ui');
   let y = y0 + 44;
   for (const [k, d] of KEYS[m]) {
     if (d === null) { y += 8; txt(k, RX + 14, y, '#4aa3ff', 'bold 11px system-ui'); y += 14; continue; }
@@ -348,7 +349,7 @@ function draw() {
     if (v % 40 === 0) txt(v, cx + Math.cos(a) * (rr - 34), cy + Math.sin(a) * (rr - 34) + 4, '#8aa0b5', '10px system-ui', 'center'); }
   const a = ang(kmh); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (rr - 16), cy + Math.sin(a) * (rr - 16)); ctx.stroke();
   txt(Math.round(kmh), cx, cy + 16, '#fff', 'bold 38px system-ui', 'center'); txt('km/h', cx, cy + 34, '#8aa0b5', '12px system-ui', 'center');
-  txt('ATC ' + (Math.floor(atcK / 5) * 5), cx, cy + 58, T.atc ? '#ff6464' : '#4cd68a', 'bold 18px system-ui', 'center');
+  txt(T.atcOn === false ? 'ATC CẮT' : 'ATC ' + (Math.floor(atcK / 5) * 5), cx, cy + 58, T.atcOn === false ? (blink ? '#ff3b3b' : '#a02020') : T.atc ? '#ff6464' : '#4cd68a', 'bold 18px system-ui', 'center');
   txt(T.atc ? 'ATC ĐANG PHANH · ' + (WHY[T.why] || '') : (T.phase === 'run' ? 'giới hạn bởi: ' + (WHY[T.why] || '') : ''), cx, cy + 76, T.atc ? '#ff6464' : '#8aa0b5', '12px system-ui', 'center');
   txt('Gia tốc ' + T.a.toFixed(2) + ' m/s²', 24, 128, '#8aa0b5', '12px system-ui'); txt('Dốc ' + (T.grade >= 0 ? '+' : '') + T.grade.toFixed(0) + '‰ (mô phỏng)', 24, 144, Math.abs(T.grade) > 10 ? '#ffc247' : '#8aa0b5', '11px system-ui');
   if (T.cs) txt('定速 ' + Math.round(T.csSet * 3.6) + ' km/h', 306, 128, '#3ad6e6', 'bold 13px system-ui', 'right');
@@ -416,17 +417,23 @@ function draw() {
   ctx.restore(); curOX = 0;
   // ---- Cột phải: nút điều khiển, đèn báo, bảng phím tắt
   const RX = 1440, RW = 330;
-  panel(RX, 10, RW, 392); txt('Nút điều khiển', RX + 14, 30, '#fff', 'bold 13px system-ui');
-  const bw = 154, bh = 28, bgp = 8, bx = RX + 12, by = 40;
+  panel(RX, 10, RW, 440); txt('Nút điều khiển', RX + 14, 30, '#fff', 'bold 13px system-ui');
+  const bw = 154, bh = 28, bgp = 8, bx = RX + 12, by = 84;
+  { // công tắc ATC: nút lớn, viền đỏ nhấp nháy khi đang cắt hoặc đang chờ xác nhận
+    const off = T.atcOn === false, arm = !off && W.t - T.atcArm <= 4, hot = (off || arm) && blink, x0 = RX + 12, y0 = 38, w0 = 2 * bw + bgp, h0 = 38;
+    ctx.fillStyle = off ? (hot ? '#c0392b' : '#8f2a22') : arm ? '#9a6a12' : '#1f6f4a'; ctx.beginPath(); ctx.roundRect(x0, y0, w0, h0, 8); ctx.fill();
+    ctx.strokeStyle = off || arm ? (hot ? '#ffd0c8' : '#ff7a6a') : '#6fe0a8'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(x0, y0, w0, h0, 8); ctx.stroke();
+    txt(off ? 'ATC: ĐANG CẮT — KHÔNG CÓ BẢO VỆ (A để bật)' : arm ? 'XÁC NHẬN CẮT ATC? bấm lại trong 4 s' : 'ATC: BẬT (A: cắt, bấm 2 lần)', x0 + w0 / 2, y0 + 24, '#fff', 'bold 13px system-ui', 'center'); btns.push({ x: x0, y: y0, w: w0, h: h0, fn: () => doAct('atcsw') });
+  }
   const bl2 = [
     ['Đóng cửa (Enter)', () => doAct('door'), T.door !== 'open', '#e08a2f'], ['Tốc độ không đổi (C)', () => doAct('cs'), T.cs, '#2a8fa0'], ['Còi (H)', () => doAct('horn'), T.horn > 0, '#c9a227'], ['Gạt mưa (V)', () => doAct('wiper'), T.wiper, '#2a6fd6'], ['Đèn pha: ' + ({ auto: 'tự động', on: 'bật', off: 'tắt' }[T.lamp]) + ' (L)', () => doAct('lamp'), T.lamp !== 'auto', '#c9a227'],
     ['Nhắc lệnh (Y)', () => doAct('ack'), pend > 0 && blink, '#c9a227'], ['Xác nhận ATC (X)', () => doAct('confirm'), T.needConfirm && blink, '#d64a4a'], ['Phát thanh (M)', () => doAct('pa'), T.anx > 40 && blink, '#2a8fa0'], ['Tự lái (T)', () => doAct('auto'), auto, '#2a6fd6'],
     ['Phanh khẩn (Q)', () => doAct('eb'), T.bk === 8, '#d64a4a'], ['Về N (Space)', () => doAct('coast'), false, '#2a6fd6']];
   bl2.forEach((b, i) => button(bx + (i % 2) * (bw + bgp), by + Math.floor(i / 2) * (bh + 8), bw, bh, b[0], b[1], b[2], b[3]));
-  const lampsL = [['ĐÈN PHA', Sim.lampOn(W, T), '#fff2b0'], ['ĐÓNG CỬA', T.door === 'closed', '#4cd68a'], ['ATC', T.atc, '#ff5a5a'], ['定速', T.cs, '#3ad6e6'], ['GẠT MƯA', T.wiper, '#4aa3ff'], ['CÒI', T.horn > 0, '#ffd24a'], ['MƯA', W.rainHere, '#2f6fd6']];
-  lampsL.forEach((l, i) => lamp(RX + 24 + (i % 3) * 104, 300 + Math.floor(i / 3) * 22, l[0], l[1], l[2]));
-  txt(T.needConfirm ? 'ATC dừng: nhấn X để xác nhận mới nhả phanh' : (W.rainHere && !T.wiper ? 'Đang có mưa: bật gạt mưa (V)' : ''), RX + 14, 360, T.needConfirm ? '#ff7a7a' : '#ffc247', 'bold 12px system-ui');
-  txt('Xác nhận ATC: ' + ({ auto: 'tự động', auto5: 'tự động sau 5 s', manual: 'bấm X' }[W.diff.confirm]) + ' · cửa kẹt ~' + Math.round(W.diff.reopen * 100) + '%', RX + 14, 380, '#7a8ea5', '10px system-ui');
+  const lampsL = [['ATC CẮT', T.atcOn === false && blink, '#ff3b3b'], ['ĐÈN PHA', Sim.lampOn(W, T), '#fff2b0'], ['ĐÓNG CỬA', T.door === 'closed', '#4cd68a'], ['ATC', T.atc, '#ff5a5a'], ['定速', T.cs, '#3ad6e6'], ['GẠT MƯA', T.wiper, '#4aa3ff'], ['CÒI', T.horn > 0, '#ffd24a'], ['MƯA', W.rainHere, '#2f6fd6']];
+  lampsL.forEach((l, i) => lamp(RX + 24 + (i % 3) * 104, 340 + Math.floor(i / 3) * 22, l[0], l[1], l[2]));
+  txt(T.needConfirm ? 'ATC dừng: nhấn X để xác nhận mới nhả phanh' : (W.rainHere && !T.wiper ? 'Đang có mưa: bật gạt mưa (V)' : ''), RX + 14, 410, T.needConfirm ? '#ff7a7a' : '#ffc247', 'bold 12px system-ui');
+  txt('Xác nhận ATC: ' + ({ auto: 'tự động', auto5: 'tự động sau 5 s', manual: 'bấm X' }[W.diff.confirm]) + ' · cửa kẹt ~' + Math.round(W.diff.reopen * 100) + '%', RX + 14, 430, '#7a8ea5', '10px system-ui');
   drawKeys('drive');
   // ---- Cột trái: điện đàm dọc, tin mới nhất ở trên cùng, xếp dần xuống; dài quá khung thì có thanh trượt riêng
   const LX = 10, LW = 290, VT = 56, VB = 884; panel(LX, 10, LW, 880); txt('Điện đàm điều độ', LX + 14, 30, '#fff', 'bold 13px system-ui'); txt('thời tiết · TIMS · phát thanh · mới nhất ở trên', LX + 14, 46, '#7a8ea5', '10px system-ui');
@@ -494,7 +501,7 @@ function drawEnd() {
     let y = 226; txt('Ga', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Dừng', 850, y, '#8aa0b5'); txt('Đúng giờ', 940, y, '#8aa0b5'); y += 22;
     const rows = sc.out, lh = rows.length > 12 ? 18 : 24;
     rows.forEach(o => { txt(o[0], 60, y, '#fff', '13px system-ui'); txt(o[1], 230, y, '#fff', '13px system-ui'); txt(o[2], 850, y, '#fff', '13px system-ui'); txt(o[3], 940, y, '#fff', '13px system-ui'); y += lh; });
-    y += 8; const pen = [['Độ êm', sc.comfort + '/100'], ['ATC', '−' + sc.atcPen], ['Khởi hành sớm', '−' + sc.earlyPen], ['Nhắc lệnh', '−' + sc.ackPen], ['Còi/động vật', '−' + sc.hornPen], ['Gạt mưa', '−' + sc.wiperPen], ['Đèn pha', '−' + (sc.lampPen || 0)], ['Bất an', '−' + sc.anxPen], ['Cháy', '−' + sc.firePen], ['Phối hợp', (sc.netBonus >= 0 ? '+' : '') + sc.netBonus]];
+    y += 8; const pen = [['Độ êm', sc.comfort + '/100'], ['ATC', '−' + sc.atcPen], ['Khởi hành sớm', '−' + sc.earlyPen], ['Nhắc lệnh', '−' + sc.ackPen], ['Còi/động vật', '−' + sc.hornPen], ['Gạt mưa', '−' + sc.wiperPen], ['Đèn pha', '−' + (sc.lampPen || 0)], ['Cắt ATC', '−' + (sc.atcOffPen || 0)], ['Bất an', '−' + sc.anxPen], ['Cháy', '−' + sc.firePen], ['Phối hợp', (sc.netBonus >= 0 ? '+' : '') + sc.netBonus]];
     txt(pen.map(p => p[0] + ' ' + p[1]).join(' · '), 60, y, '#8aa0b5', '13px system-ui'); y += 20; txt(`Điện ${sc.kwh} kWh (hoàn ${sc.regen}) · Má phanh nóng nhất ${Math.round((T.btMax || 0) * 100)}% · bất an cao nhất ${Math.round(T.anxMax)}%`, 60, y, '#8aa0b5', '13px system-ui');
     txt('ĐIỂM: ' + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
     if (endInfo && endInfo.best) txt('Tốt nhất cho cấu hình này: ' + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');
