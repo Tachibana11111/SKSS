@@ -108,7 +108,10 @@
     ctx.fillStyle = g; ctx.fillRect(px - 20, py - 20, pw + 40, ph + 40);
     if (dusk > 0.05 && wx < 0.3) { ctx.fillStyle = 'rgba(255,140,60,' + Math.min(0.35, dusk * 0.3) + ')'; ctx.fillRect(px, py + 40, pw, base - py - 40); }
     if (night > 0.4 && wx < 0.5) { ctx.fillStyle = 'rgba(255,255,255,' + (0.7 * (night - 0.4)) + ')'; for (let i = 0; i < 40; i++) ctx.fillRect(px + hash(i * 17) * pw, py + hash(i * 31 + 7) * (base - py - 30), 1.3, 1.3); }
+    // kết cấu dưới chân tàu: hầm / cầu cạn / cầu (cao độ tuyến so với mặt đất làm nền lùi xuống) [I theo tỷ lệ kết cấu thật]
+    const tun = root.Sim.inTunnel(W, T.x), elev = root.Layout ? root.Layout.elevTable(W.line, root.Sim, W.dir, T.x, 40, 10)[0] : 0, kindNow = root.Sim.structAt(W.line, kmOf(W, T.x)), drop = tun ? 0 : elev * 2.6;
     // ---- lớp xa: núi, núi Phú Sĩ
+    ctx.save(); ctx.translate(0, drop);
     const kmNow = kmOf(W, T.x), dirS = W.dir === 'up' ? -1 : 1;
     const farK = 0.06;                                                 // px/m cho lớp xa
     const hillCol = mixc([28, 40, 58], [70, 100, 120], day * (1 - wx * 0.5));
@@ -138,10 +141,20 @@
         else if (r1 < 0.34) { ctx.fillStyle = mixc([30, 30, 36], [150, 120, 100], day); ctx.fillRect(xs, base - 14, 14, 10); ctx.fillStyle = mixc([20, 20, 28], [90, 50, 40], day); ctx.beginPath(); ctx.moveTo(xs - 2, base - 14); ctx.lineTo(xs + 7, base - 21); ctx.lineTo(xs + 16, base - 14); ctx.closePath(); ctx.fill(); if (night > 0.4) { ctx.fillStyle = 'rgba(255,220,120,.9)'; ctx.fillRect(xs + 4, base - 11, 3, 4); } }
       }
     }
+    ctx.restore();
+    if (tun) { // trong hầm: tường bê tông, đèn trần chạy lướt theo tốc độ, che hết phong cảnh
+      const tg = ctx.createLinearGradient(0, py, 0, py + ph); tg.addColorStop(0, '#222830'); tg.addColorStop(0.5, '#0d1116'); tg.addColorStop(1, '#171c23'); ctx.fillStyle = tg; ctx.fillRect(px, py, pw, ph);
+      const lsp = 18 * K, lo = (T.x * K) % lsp; for (let sx = px - lsp; sx < px + pw + lsp; sx += lsp) { const x = sx - lo + lsp, gl = ctx.createRadialGradient(x, py + 22, 0, x, py + 22, 34); gl.addColorStop(0, 'rgba(255,236,170,.85)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(x - 34, py - 12, 68, 68); }
+      ctx.fillStyle = 'rgba(180,190,200,.12)'; ctx.fillRect(px, base - 72, pw, 3);
+    }
     // mặt đất / đá dăm
-    ctx.fillStyle = inSnow ? '#cfd8e3' : mixc([14, 20, 27], [60, 66, 62], day * (1 - wx * 0.4)); ctx.fillRect(px, base - 4, pw, ph);
-    ctx.fillStyle = inSnow ? '#e9eff6' : '#0e141b'; ctx.fillRect(px, base, pw, ph);
-    ctx.fillStyle = inSnow ? '#b8c4d2' : '#19212b'; ctx.fillRect(px, base + 3, pw, ph);
+    const gy = base - 4 + drop;
+    if (!tun) { ctx.fillStyle = inSnow ? '#cfd8e3' : drop > 0.5 ? mixc([16, 26, 20], [74, 104, 60], day * (1 - wx * 0.4)) : mixc([14, 20, 27], [60, 66, 62], day * (1 - wx * 0.4)); ctx.fillRect(px, gy, pw, ph); if (kindNow === 'b' && drop > 0) { ctx.fillStyle = mixc([10, 22, 34], [66, 104, 132], day * (1 - wx * 0.4)); ctx.fillRect(px, gy, pw, ph); ctx.fillStyle = 'rgba(255,255,255,.12)'; for (let q = 0; q < 6; q++) ctx.fillRect(px + ((q * 97 - T.x * 0.3) % pw + pw) % pw, gy + 6 + q * 6, 30, 1.5); } }
+    if (drop > 0.5) { // cầu cạn / cầu: bản mặt cầu bê tông và trụ cầu cách nhau 30 m
+      ctx.fillStyle = mixc([30, 34, 40], [150, 156, 160], day * (1 - wx * 0.35)); ctx.fillRect(px, base - 3, pw, 13); ctx.fillStyle = mixc([20, 24, 30], [112, 118, 124], day * (1 - wx * 0.35)); const ps = 30 * K, po = (T.x * K) % ps; for (let sx = px - ps; sx < px + pw + ps; sx += ps) ctx.fillRect(sx - po + ps - 5, base + 10, 10, Math.max(0, gy - base - 6 + 12));
+      ctx.fillStyle = mixc([30, 34, 40], [150, 156, 160], day * (1 - wx * 0.35)); ctx.fillRect(px, base - 3, pw, 2);
+    } else { ctx.fillStyle = inSnow ? '#e9eff6' : '#0e141b'; ctx.fillRect(px, base, pw, ph); }
+    if (drop <= 0.5) { ctx.fillStyle = inSnow ? '#b8c4d2' : '#19212b'; ctx.fillRect(px, base + 3, pw, ph); }
     // ---- trụ điện và dây điện (cuộn theo vận tốc thật)
     const sp = 50 * K, off = (T.x * K) % sp; ctx.strokeStyle = '#3a4c60'; ctx.lineWidth = 4;
     for (let sx = px - sp; sx < px + pw + sp; sx += sp) { const x = sx - off + sp; ctx.beginPath(); ctx.moveTo(x, base - 70); ctx.lineTo(x, base); ctx.stroke(); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 10, base - 66); ctx.lineTo(x + 10, base - 66); ctx.stroke(); ctx.lineWidth = 4; if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(x - 10, base - 70, 20, 4); } }

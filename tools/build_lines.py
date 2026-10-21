@@ -2,7 +2,8 @@
 # Nguồn: docs/data (JR East 2610 ngày thường; JR West 20/10/2026) + km thực từ Wikipedia tiếng Nhật (tra 21/10/2026). Chỉ dùng cá nhân.
 # Tuyến 'tsk' = Tokaido + Sanyo + Kyushu liền nhau (Tokyo - Kagoshima-Chuo); tuyến 'toh' = Tohoku (Tokyo - Shin-Aomori).
 # Chạy: python -X utf8 tools/build_lines.py
-import csv, json, os, re
+import csv, json, os, re, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 D = os.path.join(ROOT, 'docs', 'data')
 
@@ -28,6 +29,8 @@ for jp, en, km, lp in SANYO: tsk.append(dict(jp=jp, en=en, km=round(515.4 + km, 
 for jp, en, km, lp in KYUSHU: tsk.append(dict(jp=jp, en=en, km=round(515.4 + 553.7 + km, 1), loop=lp))
 toh = build_stations(TOH)
 LINES = {'tsk': dict(id='tsk', name='Tokaido – Sanyo – Kyushu', stations=tsk, kmEnd=tsk[-1]['km']), 'toh': dict(id='toh', name='Tohoku (Tokyo – Shin-Aomori)', stations=toh, kmEnd=toh[-1]['km'])}
+import build_struct
+build_struct.apply(LINES)
 IDX = {k: {s['jp']: i for i, s in enumerate(v['stations'])} for k, v in LINES.items()}
 TYPE = {'のぞみ': 'Nozomi', 'ひかり': 'Hikari', 'こだま': 'Kodama', 'みずほ': 'Mizuho', 'さくら': 'Sakura', 'つばめ': 'Tsubame', 'かもめ': 'Kamome',
         'はやぶさ': 'Hayabusa', 'はやて': 'Hayate', 'やまびこ': 'Yamabiko', 'なすの': 'Nasuno', 'こまち': 'Komachi', 'つばさ': 'Tsubasa'}

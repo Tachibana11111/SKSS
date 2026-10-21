@@ -21,6 +21,6 @@ class H(SimpleHTTPRequestHandler):
             if not buf: break
             dst.write(buf); left -= len(buf)
         self._left = None
-    def end_headers(self): self.send_header('Accept-Ranges', 'bytes'); super().end_headers()
+    def end_headers(self): self.send_header('Accept-Ranges', 'bytes'); self.send_header('Cache-Control', 'no-cache'); super().end_headers()
     def log_message(self, *a): pass
 ThreadingHTTPServer(('127.0.0.1', PORT), H).serve_forever()

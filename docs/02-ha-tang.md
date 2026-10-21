@@ -102,7 +102,7 @@ Ghi chú: Tokyo – Ueno – Omiya là đoạn tuyến đô thị đông dân, n
 ### Tohoku
 - Danh sách km kinh doanh các ga: Tokyo 0 · Ueno 3.6 · Omiya 30.3 · (Washimiya SS 50.9) · Oyama 80.6 · Utsunomiya 109.5 · Nasushiobara 157.8 · Shin-Shirakawa 185.4 · Koriyama 226.7 · Fukushima 272.8 · Shiroishi-Zao 306.8 · Sendai 351.8 · Furukawa 395.0 · Kurikoma-Kogen 416.2 · Ichinoseki 445.1 · Mizusawa-Esashi 470.1 · Kitakami 487.5 · Shin-Hanamaki 500.0 · Morioka 535.3 · Iwate-Numakunai 566.4 · Ninohe 601.0 · Hachinohe 631.9 · Shichinohe-Towada 668.0 · Shin-Aomori 713.7 (đây là 営業キロ, dùng cho vé).
 - Kurikoma-Kogen, Mizusawa-Esashi, Shin-Hanamaki là **ga "gậy" (棒線駅), không có đường tránh** **[N]**.
-- **Cấu trúc ga (từ bảng "配線分類" của Wikipedia tiếng Nhật; việc ghép tên ga với từng nhóm là suy ra theo thứ tự liệt kê nên có thể lệch, cần đối chiếu sơ đồ [haisenryakuzu.net](https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku)) [?]:**
+- **Cấu trúc ga (bảng "配線分類" và mục "各駅の構造" của [Wikipedia tiếng Nhật 東北新幹線](https://ja.wikipedia.org/wiki/東北新幹線), đối chiếu lại 21/10/2026, khớp bảng dưới; vẫn nên so với sơ đồ [haisenryakuzu.net](https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku)) [N]:**
 
 | Ga | Cấu trúc | Đường thông qua |
 |---|---|---|
@@ -191,3 +191,17 @@ Chi tiết cách vận hành các hệ thống điều hành sẽ ở tài liệ
 - Tần số/đổi tần số Tokaido: [JR Central – FC](https://jr-central.co.jp/news/release/_pdf/000042735.pdf), [Trafficnews – FC](https://trafficnews.jp/post/37258), [Trafficnews – Nishi-Sagami](https://trafficnews.jp/post/107531)
 - Cảnh báo động đất: [JR Central – Terrace](https://jr-central.co.jp/news/release/_pdf/000014824.pdf), [Trafficnews – 3 trụ cột](https://trafficnews.jp/post/36087/2)- ATC: [newswitch – ATC-NS](https://newswitch.jp/p/8219)
 - OpenStreetMap wiki – [OpenRailwayMap/Tagging in Japan](https://wiki.openstreetmap.org/wiki/OpenRailwayMap/Tagging_in_Japan)
+
+## 8. Dữ liệu bố trí ga, kết cấu và đường cong dùng trong game (21/10/2026)
+
+Sinh bởi `tools/build_struct.py` vào `prototype/drive/data-lines.js`; vẽ bởi `layout.js`, `cabview.js`, `scene.js`.
+
+**Bố trí ga [N]** (Wikipedia JP [東海道](https://ja.wikipedia.org/wiki/東海道新幹線), [山陽](https://ja.wikipedia.org/wiki/山陽新幹線), [東北](https://ja.wikipedia.org/wiki/東北新幹線), [九州](https://ja.wikipedia.org/wiki/九州新幹線)): mỗi ga có mã `số sân-số đường-thông qua` (ví dụ Odawara 2-2-1, Gifu-Hashima 2-4-1, Shin-Osaka 5-8-0). Cờ ga tránh (`loop`) nay lấy từ đây (Tokaido–Sanyo–Kyushu 23 ga, Tohoku 10 ga). Kyushu: bài ghi danh sách ga theo nhóm, tôi ghép tên theo thứ tự nên có thể lệch [?].
+- **Kiểu sân ga:** chỉ có nguồn ở vài ga (2面4線 là sân đảo, Mishima 1面2線 sân đảo, Shin-Kobe 2面2線 sân hai bên, Fukui là ga đảo duy nhất ở Hokuriku). Cách xếp đường/sân cụ thể của các ga còn lại (ví dụ 2面3線, 3面6線, 5面8線, sân đảo nằm giữa hai đường cùng chiều hay giữa đường xuống và lên) là **suy luận [I]**, định nghĩa ở `layout.js` (`TOK`).
+- Nhật chạy bên trái: đường xuống nằm bên trái đường lên khi nhìn theo chiều xuống [N chung; áp vào sơ đồ là I].
+
+**Kết cấu tuyến** (nền đất / cầu cạn / cầu / hầm) **[N tỷ lệ, I vị trí]:**
+- Tokaido: nền 53%, cầu 11%, cầu cạn 22%, hầm 13%. Sanyo: 12/9/28/50 (hầm 142 cái; chỉ Nishi-Akashi–Himeji không có hầm). Tohoku: Tokyo–Morioka 5/16/56/23, Morioka–Hachinohe 14/3/9/73, Hachinohe–Shin-Aomori 15/5/18/62 (Omiya–Utsunomiya không có hầm). Kyushu: Hakata–Shin-Yatsushiro 5/14/51/30, Shin-Yatsushiro–Kagoshima-Chuo 12/7/12/69.
+- **Không tìm được nguồn công khai cho vị trí từng đoạn theo km.** Game sinh ngẫu nhiên cố định sao cho tổng khớp tỷ lệ, giữ ga ngoài hầm (trừ Tokyo/Ueno Tohoku đi ngầm), giữ các hầm lớn đã biết (Tanna, Rokko, Iwate-Ichinohe, Hakkoda), Tokyo–Shinagawa trên cao, Ueno–Omiya trên cao.
+
+**Đường cong:** bán kính cơ bản 4.000 m. Tokaido: 2.500 m (Tokyo, Shizuoka phía đông, Aichi, Kyoto, Osaka) và 3.000 m (nơi khác) theo đơn vị hành chính; chỗ gấp nhất ~600 m giữa cầu Tamagawa và Musashi-Kosugi; đô thị có cong 1.000–1.500 m. Sanyo: rải rác 3.500 m, tối thiểu 1.000 m. Tohoku: tối thiểu 400 m (Tokyo–Omiya 400–2.000 m). Kyushu: tối thiểu 500 m **[N]**. Vị trí, độ dài và hướng rẽ từng cong là **[I]** sinh ngẫu nhiên cố định.

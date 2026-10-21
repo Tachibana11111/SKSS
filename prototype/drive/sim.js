@@ -46,7 +46,13 @@
   // ---- Hình học tuyến -----------------------------------------------------
   const sOfKm = (km, dir, kmEnd) => dir === 'up' ? (kmEnd - km) * 1000 : km * 1000;
   const kmOfS = (s, dir, kmEnd) => dir === 'up' ? kmEnd - s / 1000 : s / 1000;
-  function lineOf(id) { const L = lineData(id); if (!L) throw new Error('Thiếu dữ liệu tuyến ' + id); if (!L.meta) { L.meta = LINE_META[id]; L.skm = L.stations.map(s => s.km); } return L; }
+  function lineOf(id) { const L = lineData(id); if (!L) throw new Error('Thiếu dữ liệu tuyến ' + id); if (!L.meta) {
+      L.meta = LINE_META[id]; L.skm = L.stations.map(s => s.km);
+      if (L.struct) { const named = L.meta.tunnels; L.meta.tunnels = L.struct.filter(g => g[2] === 't').map(g => { const n = named.find(t => t[0] === g[0] && t[1] === g[1]); return n ? n : [g[0], g[1]]; }); }   // mọi hầm (kể cả hầm sinh theo tỷ lệ) [I]
+    } return L; }
+  // kết cấu nền (g đất / v cầu cạn / b cầu / t hầm) và đường cong tại km; cong: {R, sg} hoặc null
+  function structAt(L, km) { for (const [a, b, k] of L.struct || []) if (km >= a && km < b) return k; return 'g'; }
+  function curveAt(L, km) { for (const [a, b, R, sg] of L.curves || []) if (km >= a && km < b) return { R, sg, a, b }; return null; }
   function biomeAt(L, km) { for (const [a, b, t] of L.meta.biomes) if (km >= a && km < b) return t; return 'field'; }
   function gradeKm(L, km) {                                               // ‰ theo chiều tăng km: mô phỏng [I]
     let typ = 8, mx = 20; for (const [a, b, t, m] of L.meta.grade) if (km >= a && km < b) { typ = t; mx = m; }
@@ -535,7 +541,7 @@
           startHold(w, 1e12, dur, 'fire'); w.faults.push({ car, kind: 'fire', text: `Toa ${car}: báo cháy/khói`, level: 'bad', t: w.t });
           w.say('bad', `BÁO CHÁY toa ${car}: nếu đang TRONG HẦM thì KHÔNG dừng, chạy ra khỏi hầm; ngoài hầm thì dừng ở ga gần nhất. Báo điều độ (Y) và phát thanh trấn an (M).`, { ack: true }); };
         ev(at, w => { // nếu sắp có hầm phía trước thì chờ tới khi tàu vào hầm
-          const T = w.player; let target = null; for (const [k0, k1] of w.line.meta.tunnels) { const a = sOfKm(k0, w.dir, w.line.kmEnd), b = sOfKm(k1, w.dir, w.line.kmEnd), lo = Math.min(a, b), hi = Math.max(a, b); const ent = sgn > 0 ? lo : hi; if ((ent - T.x) * sgn > 3000 && (ent - T.x) * sgn < 40000 && (ent - lastS) * sgn < 0) { target = ent + sgn * 1500; break; } }
+          const T = w.player; let target = null; for (const [k0, k1] of w.line.meta.tunnels) { if (k1 - k0 < 2.5) continue; const a = sOfKm(k0, w.dir, w.line.kmEnd), b = sOfKm(k1, w.dir, w.line.kmEnd), lo = Math.min(a, b), hi = Math.max(a, b); const ent = sgn > 0 ? lo : hi; if ((ent - T.x) * sgn > 3000 && (ent - T.x) * sgn < 40000 && (ent - lastS) * sgn < 0) { target = ent + sgn * 1500; break; } }
           if (target != null) { w.armedFire = { s: target, fn: doFire }; w.say('info', 'Tàu sắp vào hầm. Hãy sẵn sàng.'); } else doFire(w); });
       } else if (kind === 'overtake') {
         const cands = stopsIdx.filter(j => W.passers[j] && W.passers[j].length && !usedJ.has(j)); if (!cands.length) continue; const j = pickJ(cands), p = W.passers[j][0];
@@ -640,7 +646,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, anxPen, firePen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

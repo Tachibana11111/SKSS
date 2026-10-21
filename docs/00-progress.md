@@ -57,3 +57,4 @@ Cập nhật lần cuối: 2026-10-21 (Phase 1–2: prototype 0.4)
 - Thích phần nào nhất: điều độ, lái tàu hay cả hai? Công cụ lập trình quen thuộc? Tuyến muốn bắt đầu?
 - (Đã giải quyết) tải PDF lịch Kyushu/Nishi-Kyushu.
 - **(2026-10-21) Sửa theo phản hồi chơi thử:** (1) Nhật chạy bên trái: khung buồng lái lật làm sân ga của ta bên trái, đường ngược chiều bên phải, thêm sân ga cho đường bên kia; (2) hành lang đường sắt: cây/ruộng/nhà/toà nhà không lấn vào đường và sân ga; (3) cảnh 2D lật hướng theo chiều đi (đông/bắc = phải, tây/nam = trái); (4) tàu ngược chiều vẽ phía sau tàu của ta; (5) tàu ngược chiều lướt chậm hơn (~4,5 s) và tiếng gặp nhau bắt đầu sớm 2 s để khớp hình.
+- **(2026-10-21) Bố trí ga/kết cấu/đường cong:** mỗi ga có bố trí đường-sân riêng (nguồn Wikipedia JP), tuyến có cầu cạn/cầu/hầm/đường cong theo tỷ lệ thật (vị trí là suy luận); xem docs/02 mục 8. Thêm `layout.js`, `tools/build_struct.py`, kiểm thử mục 10 (3.807 kiểm tra).
