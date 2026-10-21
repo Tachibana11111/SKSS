@@ -44,8 +44,9 @@
     const tracks = [[() => 0, zLo, zHi], [oppAt, zLo, zHi]];
     for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; tracks.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), Math.max(zLo, q.d - 1150), Math.min(zHi, q.d + 630)]); }
     for (const [xf, z0, z1] of tracks) if (z1 > z0) line(xf, z0, z1, Math.max(3, kx * 2.6), dark ? '#1b2229' : '#464b4d');
-    for (const q of sts) { const z0 = q.d - 420, z1 = q.d + 20; if (z1 < zLo || z0 > zHi) continue; for (const p of q.st.plats) { const so = off((z0 + z1) / 2) * kc, xa = cx - (p.xb - lane) * kx - so, xb = cx - (p.xa - lane) * kx - so, yA = Y(Math.min(z1, zHi)), yB = Y(Math.max(z0, zLo)); ctx.fillStyle = dark ? '#3a4658' : '#8c98a6'; ctx.fillRect(xa, yA, xb - xa, yB - yA);
-        ctx.fillStyle = '#d8b838'; for (const e of [p.xa, p.xb]) if (q.st.tracks.some(t => Math.abs(Math.abs(t.x - e) - 1.75) < 0.01)) ctx.fillRect(cx - (e - lane) * kx - so - 0.7, yA, 1.4, yB - yA); }
+    for (const q of sts) { const z0 = q.d - 420, z1 = q.d + 20; if (z1 < zLo || z0 > zHi) continue; for (const p of q.st.plats) { const za = Math.min(z1, zHi), zb = Math.max(z0, zLo), n = Math.max(2, Math.ceil((za - zb) / 20)), zs = Array.from({ length: n + 1 }, (_, i) => zb + (za - zb) * i / n);   // sân ga uốn theo đường cong: mỗi mép là một đường gấp khúc
+        const edge = e => zs.map(z => [cx - (e - lane) * kx - off(z) * kc, Y(z)]); ctx.fillStyle = dark ? '#3a4658' : '#8c98a6'; ctx.beginPath(); edge(p.xb).forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); edge(p.xa).reverse().forEach(([x, y]) => ctx.lineTo(x, y)); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#d8b838'; ctx.lineWidth = 1.4; for (const e of [p.xa, p.xb]) if (q.st.tracks.some(t => Math.abs(Math.abs(t.x - e) - 1.75) < 0.01)) { ctx.beginPath(); edge(e).forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); } }
       const ys = Y(q.d); if (ys > cy - Rr && ys < cy + Rr) { ctx.fillStyle = '#4cd68a'; ctx.fillRect(cx - (q.st.ours.x - lane) * kx - off(q.d) * kc - 9, ys - 1, 18, 2); } }
     const rail = (xf, z0, z1, col) => { for (const sx of [-0.72, 0.72]) line(z => xf(z) + sx, z0, z1, 1.2, col); };
     for (const [xf, z0, z1] of tracks) if (z1 > z0) rail(xf, z0, z1, dark ? '#7a8594' : '#d2d9e0');
