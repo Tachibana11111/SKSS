@@ -12,3 +12,11 @@ Người dùng đã đồng ý cho tải vào ngày 2026-10-21. Chỉ dùng cá 
 | `src_n700s8.webp` | https://rail.kychung.com/en/2d-en/shinkansen-n700s-8000-series/ (`jrkyushu_n700s.webp`) | N700S-8000 sáu toa Kamome (chưa dùng) |
 
 Sinh lại dải toa: `python -X utf8 tools/build_n700_sprite.py` (N700) và `python -X utf8 tools/build_vehicle_sprites.py` (còn lại). Các tệp `src_*`, `*_strip.*`, `sprites.js` nằm trong `.gitignore`.
+
+## Âm thanh
+
+| Tệp | Nguồn | Giấy phép | Ghi chú |
+|---|---|---|---|
+| `audio/odawara_leaving.mp3` (8,9 MB, 6 phút 30) | Internet Archive `aporee_70029_81567`, Flavien Gillié, "Odawara Station, Préfecture de Kanagawa, Japon – Shinkansen train leaving for Tokyo" | Public Domain Mark 1.0 | Đã tải 2026-10-21 với sự đồng ý của người dùng. Phân tích phổ: **không có tiếng còi**; có tiếng nền ga và các lần tàu qua/rời ga (khoảng 2:00, 3:00, 4:30, 5:30). Thư mục `audio/` nằm trong `.gitignore`. |
+
+Chưa tải được: ba bản ghi trên Pixabay (Shinkansen pulling into the station; KoriyamaShinkansenStation; Train_horn) vì Pixabay chặn tải tự động bằng Cloudflare; tôi không vượt cơ chế chống bot. Người dùng có thể tự tải về và đặt vào `audio/`.
