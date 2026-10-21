@@ -33,7 +33,7 @@
     const zLo = zOff - HALF - 50, zHi = zOff + HALF + 50;
     const tracks = [[() => 0, zLo, zHi], [oppAt, zLo, zHi]];
     for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; tracks.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), Math.max(zLo, q.d - 1150), Math.min(zHi, q.d + 630)]); }
-    for (const [xf, z0, z1] of tracks) if (z1 > z0) line(xf, z0, z1, Math.max(5, kx * GAUGE_W), dark ? '#202830' : '#4a4f50');
+    for (const [xf, z0, z1] of tracks) if (z1 > z0) line(xf, z0, z1, Math.max(4, kx * 2.6), dark ? '#1b2229' : '#464b4d');
     // sân ga
     for (const q of sts) { const z0 = q.d - 420, z1 = q.d + 20; if (z1 < zLo || z0 > zHi) continue; for (const p of q.st.plats) { const so = off(Math.max(0, (z0 + z1) / 2)) * kc, xa = cx - (p.xb - lane) * kx - so, xb = cx - (p.xa - lane) * kx - so, yA = Y(Math.min(z1, zHi)), yB = Y(Math.max(z0, zLo)); ctx.fillStyle = dark ? '#3a4658' : '#8c98a6'; ctx.fillRect(xa, yA, xb - xa, yB - yA);
         ctx.fillStyle = '#d8b838'; for (const e of [p.xa, p.xb]) { if (q.st.tracks.some(t => Math.abs(Math.abs(t.x - e) - 1.75) < 0.01)) { const ex = cx - (e - lane) * kx - so; ctx.fillRect(ex - 1, yA, 2, yB - yA); } } }
@@ -41,10 +41,13 @@
       const ys = Y(q.d); if (ys > py && ys < py + ph) { const t = q.st.ours; ctx.fillStyle = '#4cd68a'; ctx.fillRect(cx - (t.x - lane) * kx - off(Math.max(0, q.d)) * kc - 12, ys - 1, 24, 2); }
       const yn = clamp(Y(Math.min(z1, zHi)) + 10, py + 12, py + ph - 6); ctx.fillStyle = '#e8eef5'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'left'; ctx.fillText(q.m.name, px + 8, clamp(Y(q.d - 200), py + 14, py + ph - 8)); }
     // đường ray (tim) vẽ trên đá dăm
-    for (const [xf, z0, z1] of tracks) if (z1 > z0) line(xf, z0, z1, 1.6, dark ? '#6d7886' : '#c8d0d8');
+    const rail = (xf, z0, z1, col) => { for (const sx of [-0.72, 0.72]) line(z => xf(z) + sx, z0, z1, 1.4, col); };
+    for (const [xf, z0, z1] of tracks) if (z1 > z0) rail(xf, z0, z1, dark ? '#7a8594' : '#d2d9e0');
+    // tuyến của ta (đường đang chạy) tô xanh
+    rail(z => { let x = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) x += q.st.ours.x * LAY.spread(T.x + z, q.m.s); return x; }, zOff - 80, zHi, '#4aa3ff');
     // ghi chữ X ở hai đầu mỗi ga
     for (const q of sts) for (const zc of [q.d - 1300, q.d + 720]) { if (zc + 150 < zLo || zc > zHi) continue; const sm = u => { const t = clamp(u, 0, 1); return t * t * (3 - 2 * t); };
-      line(z => lerp(0, oppAt(z), sm((z - zc) / 150)), zc, zc + 150, 1.6, dark ? '#6d7886' : '#c8d0d8'); line(z => lerp(oppAt(z), 0, sm((z - zc) / 150)), zc, zc + 150, 1.6, dark ? '#6d7886' : '#c8d0d8'); }
+      rail(z => lerp(0, oppAt(z), sm((z - zc) / 150)), zc, zc + 150, dark ? '#7a8594' : '#d2d9e0'); rail(z => lerp(oppAt(z), 0, sm((z - zc) / 150)), zc, zc + 150, dark ? '#7a8594' : '#d2d9e0'); }
     // đoạn giới hạn qua ghi
     for (const z of S.turnoutZones(T)) { const a = z.s0 - T.x, b = z.s1 - T.x; if (b < zLo || a > zHi) continue; const ya = Y(Math.min(b, zHi)), yb = Y(Math.max(a, zLo)); ctx.fillStyle = 'rgba(255,194,71,.10)'; ctx.fillRect(px, ya, pw, yb - ya); ctx.fillStyle = '#ffc247'; ctx.font = '10px system-ui'; ctx.textAlign = 'right'; if (a > zLo && a < zHi) ctx.fillText('ghi 80', px + pw - 6, Y(a) - 2); }
     // phủ tối khi trong hầm / đoạn hầm phía trước (giống khung 2D)
