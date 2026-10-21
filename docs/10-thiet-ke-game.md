@@ -106,7 +106,7 @@ Số sự kiện mỗi chuyến: Dễ 1 · Thường 2–3 · Khó 4–5 · Chuy
 - **Chưa có người chơi thật thử** (chỉ có bot/tự lái): cân bằng điểm và độ khó là ước đoán.
 - Độ dốc là giả lập; công suất, sức cản, nấc phanh, mẫu ATC, thời lượng và xác suất sự kiện là **[I]**.
 - Chưa có dữ liệu thật cho: số nút buồng lái N700S, độ dốc/cong theo km, độ trễ chính thức của ATC, lịch Kyushu chiều lên (PDF chưa dùng), lịch ngày nghỉ, Joetsu/Hokuriku/Hokkaido, tàu ghép/tách.
-- Hình tàu là ảnh N700 (CC BY-NC-ND), E5/800 vẽ bằng code. Âm thanh và phong cảnh tổng hợp bằng code.
+- **Hình tàu là ảnh của rail.kychung.com (CC BY-NC-ND)**: N700, N700S, E5, 800 series (và N700S-8000 sáu toa, chưa dùng). **N700 8 toa (Sakura/Mizuho) tạm dùng toa N700S** vì chưa có ảnh đúng livery Kyushu. Phong cảnh, người, âm thanh tổng hợp bằng code. Quy tắc: **không tự vẽ tàu**, chỉ dùng ảnh từ nguồn đã được người dùng cho phép (xem `prototype/drive/assets/NGUON.md`).
 - Chưa quyết định **góc nhìn (2D/1st/3rd person) và engine**: sẽ chọn sau bước hoàn thiện này.
 
 ## 12. Cấu trúc mã

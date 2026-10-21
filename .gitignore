@@ -7,3 +7,5 @@ docs/data/raw-pdf/
 prototype/drive/assets/*.webp
 prototype/drive/assets/n700_strip.*
 prototype/drive/_*
+prototype/drive/assets/src_*
+prototype/drive/assets/sprites.js

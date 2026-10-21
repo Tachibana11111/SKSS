@@ -1,0 +1,41 @@
+{
+ "name": "kamome",
+ "scale": 0.3,
+ "width": 2148,
+ "height": 54,
+ "pxPerMeter": 13.944,
+ "cars": [
+  {
+   "i": 1,
+   "x": 0,
+   "w": 379
+  },
+  {
+   "i": 2,
+   "x": 378,
+   "w": 349
+  },
+  {
+   "i": 3,
+   "x": 726,
+   "w": 349
+  },
+  {
+   "i": 4,
+   "x": 1074,
+   "w": 349
+  },
+  {
+   "i": 5,
+   "x": 1422,
+   "w": 349
+  },
+  {
+   "i": 6,
+   "x": 1770,
+   "w": 379
+  }
+ ],
+ "railY": 52,
+ "source": "rail.kychung.com 2D drawing (CC BY-NC-ND 4.0), personal use only"
+}

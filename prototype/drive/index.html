@@ -81,6 +81,7 @@
 </div>
 <script src="data-lines.js"></script>
 <script src="assets/n700_strip.js"></script>
+<script src="assets/sprites.js"></script>
 <script src="sim.js"></script>
 <script src="store.js"></script>
 <script src="scene.js"></script>
@@ -92,7 +93,8 @@ const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const W_ = cv.width, H_ = cv.height, LINES = window.LINES;
 const $ = id => document.getElementById(id);
 const AUD = new GameAudio();
-let NREADY = false; const NIMG = new Image(); NIMG.onload = () => { NREADY = true; }; NIMG.src = 'assets/n700_strip.png';
+const SPR = {}; function loadSpr(name, meta) { const img = new Image(), o = { img, meta, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/' + name + '_strip.png'; SPR[name] = o; }
+if (window.N700_STRIP) loadSpr('n700', window.N700_STRIP); for (const [k, m] of Object.entries(window.SPRITES || {})) loadSpr(k, m);
 let mode = 'drive', W = null, T = null, scale = 1, auto = false, paused = false, lastT = performance.now(), btns = [];
 let tickCount = 0, recActs = [], recipe = null, replaying = null, ptr = 0, finalized = false, endInfo = null, endPage = 0, tutorialRun = false;
 const hhmm = s => { const h = Math.floor(s / 3600) % 24, m = Math.floor(s % 3600 / 60); return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'); };
@@ -395,9 +397,9 @@ function draw() {
 }
 function drawView(px, py, pw, ph) {
   ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
-  const j = Sim.nextTarget(T), mark = T.phase === 'dwell' ? T.M[T.k].s : T.M[j].s, d = (mark - T.x), spr = NREADY && window.N700_STRIP;
-  Scene.draw(ctx, px, py, pw, ph, W, T, { spr, img: NIMG, nextTarget: Sim.nextTarget, aud: AUD });
-  if (spr) txt('Hình tàu: rail.kychung.com (CC BY-NC-ND) – dùng cá nhân', px + 10, py + ph - 6, 'rgba(160,175,190,.6)', '9px system-ui');
+  const j = Sim.nextTarget(T), mark = T.phase === 'dwell' ? T.M[T.k].s : T.M[j].s, d = (mark - T.x);
+  Scene.draw(ctx, px, py, pw, ph, W, T, { sprites: SPR, nextTarget: Sim.nextTarget, aud: AUD });
+  if (Object.values(SPR).some(o => o.ready)) txt('Hình tàu: rail.kychung.com (CC BY-NC-ND) – dùng cá nhân', px + 10, py + ph - 6, 'rgba(160,175,190,.6)', '9px system-ui');
   if (T.phase === 'run' && d < 600) { const bx0 = px + 16, bw = pw - 32, by = py + ph - 24; ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.fillRect(bx0, by, bw, 6);
     [300, 200, 100, 50, 25, 0].forEach(m => { const x = bx0 + bw * (1 - Math.min(m, 300) / 300); ctx.fillStyle = m === 0 ? '#4cd68a' : '#8aa0b5'; ctx.fillRect(x - 1, by - 3, 2, 12); txt(m, x, by - 6, '#8aa0b5', '9px system-ui', 'center'); });
     const hx = bx0 + bw * (1 - Math.max(0, Math.min(d, 300)) / 300); ctx.fillStyle = '#4aa3ff'; ctx.beginPath(); ctx.moveTo(hx, by - 2); ctx.lineTo(hx - 6, by - 11); ctx.lineTo(hx + 6, by - 11); ctx.closePath(); ctx.fill(); }

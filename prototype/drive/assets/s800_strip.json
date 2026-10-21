@@ -1,0 +1,41 @@
+{
+ "name": "s800",
+ "scale": 0.3,
+ "width": 2068,
+ "height": 51,
+ "pxPerMeter": 15.525,
+ "cars": [
+  {
+   "i": 1,
+   "x": 0,
+   "w": 362
+  },
+  {
+   "i": 2,
+   "x": 361,
+   "w": 337
+  },
+  {
+   "i": 3,
+   "x": 698,
+   "w": 337
+  },
+  {
+   "i": 4,
+   "x": 1034,
+   "w": 337
+  },
+  {
+   "i": 5,
+   "x": 1370,
+   "w": 337
+  },
+  {
+   "i": 6,
+   "x": 1706,
+   "w": 362
+  }
+ ],
+ "railY": 49,
+ "source": "rail.kychung.com 2D drawing (CC BY-NC-ND 4.0), personal use only"
+}
