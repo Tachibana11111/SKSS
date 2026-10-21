@@ -18,3 +18,9 @@
 
 ## Danh sách tài liệu nghiệp vụ (docs/)
 01 tổng quan 5 JR · 02 hạ tầng · 03 đoàn tàu · 04 biểu đồ chạy tàu · 05 điều độ · 06 tín hiệu & an toàn · 07 lái tàu · 08 ga & depot · 09 sự cố
+
+## Cập nhật 2026-10-21
+- Dự án đã ở trong **git** (kho cục bộ, không có remote; không đẩy lên mạng). `.gitignore` bỏ qua tài nguyên có giấy phép NC/ND và PDF gốc.
+- Thiết kế game nằm ở `docs/10-thiet-ke-game.md`; prototype ở `prototype/drive/` (xem `prototype/README.md`). **Chạy `node tests/run.js` sau mỗi thay đổi ở `sim.js`.**
+- Không đổi góc nhìn (2D/1st/3rd person) hay engine khi chưa được người dùng quyết định.
+- Ảnh tàu N700 (`prototype/drive/assets/`) chỉ dùng cá nhân: không chia sẻ, không đóng gói.
