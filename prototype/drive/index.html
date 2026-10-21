@@ -260,7 +260,7 @@ function finalize() {
   finalized = true; const sc = Sim.score(T, W); const ctxo = {
     kind: tutLessonActive ? 'tutorial-run' : 'drive', line: recipe.lineId, trainLabel: W.trip.label, diff: recipe.diff, weather: W.weatherKind, seed: recipe.seed, score: sc.final, finished: T.finished && !T.failed,
     perfectStops: T.results.filter(r => !r.overrun && Math.abs(r.err) <= 0.5).length, stops: T.results.length, atc: T.atcCount, ackCount: W.ackCount || 0, ackPen: W.ackPen, paCount: W.paCount || 0,
-    hadFire: W.faults.some(f => f.kind === 'fire'), fireTunnel: T.fireTunnel, scenario: { kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed } };
+    hadFire: W.faults.some(f => f.kind === 'fire'), fireTunnel: T.fireTunnel, deadViol: T.deadViol || 0, xingHit: T.xingHit || 0, scenario: { kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed } };
   let res = { fresh: [], best: null };
   if (!replaying && !tutLessonActive) { const r2 = Object.assign({}, recipe); delete r2.rec; res = Store.record(ctxo, { recipe: r2, actions: recActs.slice(0, 5000) }); }
   if (tutLessonActive && Tutorial.S.done && Tutorial.LESSONS.every(l => Tutorial.S.done[l.id])) { const r3 = Store.record({ kind: 'tutorial', allDone: true, score: 0, trainLabel: 'Hướng dẫn', scenario: { kind: 'tutorial' } }); res.fresh = res.fresh.concat(r3.fresh); }
@@ -278,6 +278,8 @@ function advise(sc) {
   if (sc.wiperPen > 0) out.push('Quên bật gạt mưa khi vào vùng mưa (V).');
   if (sc.atcOffPen > 0) out.push('Cắt ATC (hoặc chạy quá 30 km/h khi ATC cắt): ATC là bảo vệ chính, chỉ cắt khi có lệnh.');
   if (sc.lampPen > 0) out.push('Tắt đèn pha khi đang trong hầm hoặc ban đêm (L): dùng chế độ tự động hoặc bật.');
+  if (sc.xingPen > 0) out.push('Va chạm xe kẹt ở đường ngang: khi thấy đèn đỏ nhấp nháy (特殊信号発光機) phải phanh khẩn ngay và dừng trước đường ngang.');
+  if (sc.deadPen > 0) out.push('Vào đoạn cách điện đổi tần số khi đang kéo lực (hồ quang, máy cắt chính nhảy): về N trước vạch và chạy trôi qua.');
   if (sc.anxPen > 0) out.push('Hành khách bất an khi tàu đứng giữa đường: nhấn M để phát thanh trấn an mỗi ~45 s.');
   if (sc.firePen > 0) out.push('Đã dừng trong hầm khi có cháy: ra khỏi hầm rồi mới dừng.');
   if ((T.btMax || 0) > 0.8) out.push(`Má phanh nóng tới ${Math.round(T.btMax * 100)}%: phanh sớm, nhẹ, tránh phanh khẩn.`);
@@ -518,7 +520,7 @@ function drawEnd() {
     let y = 226; txt('Ga', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Dừng', 850, y, '#8aa0b5'); txt('Đúng giờ', 940, y, '#8aa0b5'); y += 22;
     const rows = sc.out, lh = rows.length > 12 ? 18 : 24;
     rows.forEach(o => { txt(o[0], 60, y, '#fff', '13px system-ui'); txt(o[1], 230, y, '#fff', '13px system-ui'); txt(o[2], 850, y, '#fff', '13px system-ui'); txt(o[3], 940, y, '#fff', '13px system-ui'); y += lh; });
-    y += 8; const pen = [['Độ êm', sc.comfort + '/100'], ['ATC', '−' + sc.atcPen], ['Khởi hành sớm', '−' + sc.earlyPen], ['Nhắc lệnh', '−' + sc.ackPen], ['Còi/động vật', '−' + sc.hornPen], ['Gạt mưa', '−' + sc.wiperPen], ['Đèn pha', '−' + (sc.lampPen || 0)], ['Cắt ATC', '−' + (sc.atcOffPen || 0)], ['Bất an', '−' + sc.anxPen], ['Cháy', '−' + sc.firePen], ['Phối hợp', (sc.netBonus >= 0 ? '+' : '') + sc.netBonus]];
+    y += 8; const pen = [['Độ êm', sc.comfort + '/100'], ['ATC', '−' + sc.atcPen], ['Khởi hành sớm', '−' + sc.earlyPen], ['Nhắc lệnh', '−' + sc.ackPen], ['Còi/động vật', '−' + sc.hornPen], ['Gạt mưa', '−' + sc.wiperPen], ['Đèn pha', '−' + (sc.lampPen || 0)], ['Cắt ATC', '−' + (sc.atcOffPen || 0)], ['Bất an', '−' + sc.anxPen], ['Cháy', '−' + sc.firePen], ['Đoạn cách điện', '−' + (sc.deadPen || 0)], ['Đường ngang', '−' + (sc.xingPen || 0)], ['Phối hợp', (sc.netBonus >= 0 ? '+' : '') + sc.netBonus]];
     txt(pen.map(p => p[0] + ' ' + p[1]).join(' · '), 60, y, '#8aa0b5', '13px system-ui'); y += 20; txt(`Điện ${sc.kwh} kWh (hoàn ${sc.regen}) · Má phanh nóng nhất ${Math.round((T.btMax || 0) * 100)}% · bất an cao nhất ${Math.round(T.anxMax)}%`, 60, y, '#8aa0b5', '13px system-ui');
     txt('ĐIỂM: ' + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
     if (endInfo && endInfo.best) txt('Tốt nhất cho cấu hình này: ' + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');

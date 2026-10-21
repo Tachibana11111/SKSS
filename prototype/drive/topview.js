@@ -7,7 +7,7 @@
   const CARD = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const lerp = (a, b, t) => a + (b - a) * t;
-  const SPR = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5' };
+  const SPR = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', 'E5+E6': 'e5', 'E5+E8': 'e5', 'N700S-6': 'n700s' };
   const COL = { n700: '#e4eaf1', n700s: '#eaf0f6', s800: '#d9dde2', e5: '#27a07f' };
   const cache = {};
 
@@ -26,7 +26,8 @@
     const lane = ourPath(0);
     const latT = LAY.lateralTable(L, S, W.dir, T.x, VIEW_R + 400, 10), latB = LAY.lateralTableBack(L, S, W.dir, T.x, len + VIEW_R + 400, 10);
     const off = z => { const tab = z >= 0 ? latT : latB, f = Math.abs(z) / 10, i = Math.min(tab.length - 2, Math.floor(f)); return tab[i] + (tab[i + 1] - tab[i]) * (f - i); };      // z<0: đường phía sau tàu cũng cong khi tàu đang trong đường cong
-    const oppAt = z => { let x = LAY.ADJ; for (const q of sts) x += (q.st.opp - LAY.ADJ) * LAY.spread(T.x + z, q.m.s); return x; };
+    const hasSingle = !!(W.line.single && W.line.single.length);
+    const oppAt = z => { let x = LAY.ADJ; for (const q of sts) x += (q.st.opp - LAY.ADJ) * LAY.spread(T.x + z, q.m.s); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };       // đường đơn: đường ngược chiều nhập vào đường ta
     const Y = z => cy - (z - zOff) * ky, X = (xm, z) => cx - ((xm - lane) * kx + off(z) * kc);
     const zLo = zOff - VIEW_R - 40, zHi = zOff + VIEW_R + 40;
 
@@ -69,7 +70,7 @@
     const Ld = W.lead; if (Ld && Ld.phase !== 'end') { const zf = Ld.x - T.x;
       const leadPath = z => { let x = 0; for (const q of sts) { const stops = Ld.M.some(m => m.i === q.m.i && (m.stop || Ld.phase === 'dwell' && Math.abs(m.s - Ld.x) < 60)); if (!stops) continue; const other = q.st.tracks.find(t => t.own && !t.thr && t !== q.st.ours && q.st.stops.includes(t)); x += (other || q.st.ours).x * LAY.spread(T.x + z, q.m.s); } return x; };
       if (zf > zLo && zf - Ld.veh.len < zHi) consist(leadPath, zf, Ld.veh, false, false); }
-    if (T.v > 20) for (const t0 of W.opposing || []) { const zN = (t0 - W.t) * 200, ov = S.VEH[W.lineId === 'toh' ? 'E5' : 'N700']; if (zN < zHi && zN + ov.len > zLo) consist(z => oppAt(Math.max(0, z)), zN + ov.len, ov, true, false); }
+    if (T.v > 20 && !S.oppHidden(W, T)) for (const t0 of W.opposing || []) { const zN = (t0 - W.t) * 200, ov = S.VEH[W.line.meta.defVeh]; if (zN < zHi && zN + ov.len > zLo) consist(z => oppAt(Math.max(0, z)), zN + ov.len, ov, true, false); }
     if (T.phase === 'dwell' && W.passers && W.passers[T.k]) for (const p of W.passers[T.k]) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const pv = S.VEH[p.v] || S.VEH.N700, zf = -pv.len + u * (pv.len + 520); consist(() => 0, zf, pv, false, false); } }
     consist(ourPath, 0, T.veh, false, true);
     ctx.restore();

@@ -26,3 +26,17 @@ Cắt từ chính các bản vẽ ở trên (góc hình mặt trước nhỏ tro
 
 ## Hình toa nhìn từ trên (top_*.png)
 Dựng bằng `tools/build_top_sprites.py` từ **một** ảnh toa đầu nhìn từ trên xuống do người dùng cung cấp (`src_top_head.png`), lấy từ mô hình SimplePlanes "Shinkansen - The Bullet Train" (https://www.simpleplanes.com/a/5vwi55/Shinkansen-The-Bullet-Train; trang chặn truy cập tự động nên tôi không tải gì từ đó). Toa giữa cắt từ phần thân phẳng, toa đuôi là toa đầu lật dọc, tô màu theo từng mẫu tàu. Chỉ dùng cá nhân, không phân phối.
+
+## Bổ sung 2026-10-22 (người dùng tự tải về)
+Cùng nguồn Nanyue Express / K.Y. Chung, cùng giấy phép CC BY-NC-ND 4.0, chỉ dùng cá nhân. Người dùng tự tải và đặt vào `assets/`.
+
+| Tệp | Dùng cho |
+|---|---|
+| `e7 w7.png` | E7/W7 (Joetsu, Hokuriku) -> dải `e7_strip.*` |
+| `e6.png` | E6 (Komachi) -> `e6_strip.*` |
+| `e8.png` | E8 (Tsubasa) -> `e8_strip.*` |
+| `h5.png` | H5 (Hokkaido) -> `h5_strip.*` |
+| `doctor yellow.png` | 923 Doctor Yellow -> `t4_strip.*` (tàu kiểm tra Tokaido/Sanyo) |
+| `east-i.png` | E926 East i -> `e926_strip.*` (tàu kiểm tra JR East) |
+
+Hình mặt trước (`front_*`) cắt từ góc các ảnh này bằng `tools/build_front_sprites.py`. Hình nhìn từ trên (`top_*`) vẫn dựng từ ảnh SimplePlanes, chỉ đổi màu theo mẫu tàu.

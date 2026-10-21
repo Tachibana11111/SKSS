@@ -5,7 +5,8 @@ import os, json
 import numpy as np
 from PIL import Image, ImageFilter
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'prototype', 'drive', 'assets')
-TINT = {'n700': (228, 234, 241), 'n700s': (234, 240, 246), 's800': (217, 221, 226), 'e5': (39, 160, 127)}
+TINT = {'n700': (228, 234, 241), 'n700s': (234, 240, 246), 's800': (217, 221, 226), 'e5': (39, 160, 127),
+        'e7': (232, 226, 214), 'e6': (222, 112, 138), 'e8': (146, 108, 170), 'h5': (46, 170, 150), 't4': (246, 208, 30), 'e926': (238, 238, 240)}
 src = Image.open(os.path.join(ROOT, 'src_top_head.png')).convert('RGB')
 a = np.asarray(src).astype(np.float32)
 mask = (a.min(axis=2) < 240).astype(np.uint8) * 255

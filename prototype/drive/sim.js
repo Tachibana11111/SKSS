@@ -12,14 +12,26 @@
     'N700S':  { name: 'N700S',  len: 404.7, m: 700e3, a0: 0.72,  P: 14.5e6, vmax: 300 / 3.6, aB7: 0.75, aEB: 1.04, cap: 1323, cd: 1.0,  cars: 16 },
     'N700-8': { name: 'N700 (8 toa)', len: 204.7, m: 360e3, a0: 0.72, P: 8.4e6, vmax: 285 / 3.6, aB7: 0.75, aEB: 1.04, cap: 546, cd: 1.0, cars: 8 },
     'S800':   { name: '800 series', len: 152, m: 255e3, a0: 0.62, P: 5.6e6, vmax: 260 / 3.6, aB7: 0.75, aEB: 1.04, cap: 392, cd: 1.0, cars: 6 },
+    'E7':     { name: 'E7 / W7', len: 300.0, m: 480e3, a0: 0.5, P: 9.6e6, vmax: 275 / 3.6, aB7: 0.75, aEB: 1.04, cap: 934, cd: 0.5, cars: 12 },
+    'N700S-6': { name: 'N700S 8000 (6 toa)', len: 154.7, m: 275e3, a0: 0.72, P: 5.4e6, vmax: 260 / 3.6, aB7: 0.75, aEB: 1.04, cap: 391, cd: 1.0, cars: 6 },
+    'H5':     { name: 'H5',     len: 253,   m: 453.5e3, a0: 0.475, P: 9.2e6, vmax: 320 / 3.6, aB7: 0.75, aEB: 1.04, cap: 658, cd: 0.55, cars: 10 },
     'E5':     { name: 'E5',     len: 253,   m: 453.5e3, a0: 0.475, P: 9.2e6, vmax: 320 / 3.6, aB7: 0.75, aEB: 1.04, cap: 723, cd: 0.55, cars: 10 }
   };
+  // mini-Shinkansen: E6 (Komachi) và E8 (Tsubasa) 7 toa, khổ thân hẹp; số liệu công suất/khối lượng là [I]
+  VEH['E6'] = { name: 'E6', len: 148.7, m: 335e3, a0: 0.5, P: 5.0e6, vmax: 320 / 3.6, aB7: 0.75, aEB: 1.04, cap: 338, cd: 0.6, cars: 7 };
+  VEH['E8'] = { name: 'E8', len: 148.7, m: 336e3, a0: 0.5, P: 5.0e6, vmax: 300 / 3.6, aB7: 0.75, aEB: 1.04, cap: 355, cd: 0.6, cars: 7 };
+  VEH['T4'] = { name: '923 Doctor Yellow', len: 177.1, m: 360e3, a0: 0.72, P: 6.0e6, vmax: 270 / 3.6, aB7: 0.75, aEB: 1.04, cap: 0, cd: 1.0, cars: 7 };          // tàu kiểm tra Tokaido/Sanyo; số liệu [K]
+  VEH['E926'] = { name: 'E926 East i', len: 135.0, m: 300e3, a0: 0.5, P: 4.8e6, vmax: 275 / 3.6, aB7: 0.75, aEB: 1.04, cap: 0, cd: 0.6, cars: 6 };               // tàu kiểm tra JR East; số liệu [K]
+  // tàu ghép hai đoàn (Hayabusa + Komachi, Yamabiko + Tsubasa): đoàn đầu + đoàn sau; parts dùng để vẽ từng đoạn
+  function combo(a, b) { const A = VEH[a], B = VEH[b], gap = 2.5; return { name: A.name + ' + ' + B.name, len: A.len + gap + B.len, m: A.m + B.m, a0: (A.a0 * A.m + B.a0 * B.m) / (A.m + B.m), P: A.P + B.P, vmax: Math.min(A.vmax, B.vmax), aB7: 0.75, aEB: 1.04, cap: A.cap + B.cap, cd: (A.cd * A.len + B.cd * B.len) / (A.len + B.len), cars: A.cars + B.cars, parts: [a, b], gap }; }
+  VEH['E5+E6'] = combo('E5', 'E6'); VEH['E5+E8'] = combo('E5', 'E8');
   Object.keys(VEH).forEach(k => { VEH[k].key = k; });
   const lenFactor = v => 0.55 + 0.45 * v.len / 404.7;
 
   // ---- Tuyến: giới hạn tốc độ (km thực dọc tuyến), hầm lớn, cảnh quan, độ dốc mô phỏng. Chỉ có [I] (số liệu thật: docs/02)
   const LINE_META = {
     tsk: {
+      pa: '東海道・山陽・九州', defVeh: 'N700', flipDown: true, snow: [[385, 405, 120, 'tuyết Sekigahara'], [405, 462, 170, 'tuyết Maibara–Otsu']],
       limits: [[0, 6.8, 110], [6.8, 90, 270], [90, 515.4, 285], [515.4, 1069.1, 300], [1069.1, 1325.9, 260]],
       tunnels: [[97.5, 105.5, 'Tanna'], [549.9, 566.1, 'Rokko']],
       biomes: [[0, 42, 'urban'], [70, 112, 'mountain'], [335, 352, 'urban'], [360, 372, 'urban'], [384, 420, 'mountain'], [452, 470, 'mountain'], [470, 520, 'urban'],
@@ -27,10 +39,58 @@
       grade: [[0, 515.4, 8, 20], [515.4, 1069.1, 9, 18], [1069.1, 1325.9, 13, 35]]   // [km0, km1, điển hình ‰, tối đa ‰]; hình dạng giả lập, tối đa theo docs/02
     },
     toh: {
-      limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 674.9, 260]],
-      tunnels: [[533, 559, 'Iwate-Ichinohe'], [641, 667, 'Hakkoda']],
-      biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [520, 565, 'mountain'], [636, 674.9, 'mountain']],
-      grade: [[0, 36, 15, 25], [36, 674.9, 7, 15]]
+      pa: '東北・北海道', defVeh: 'E5', flipDown: false, snow: [[330, 400, 230, 'tuyết Sendai–Morioka'], [520, 674, 200, 'tuyết Morioka–Shin-Aomori']],
+      limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 703.8, 260], [703.8, 715.9, 140], [715.9, 769.8, 160], [769.8, 786.3, 140], [786.3, 823.7, 260]],   // Hokkaido: đoạn dùng chung ray ba với tàu hàng (Shin-Nakaoguni–Kikonai) 140 km/h ngoài hầm, 160 km/h trong hầm Seikan [N]
+      tunnels: [[533, 559, 'Iwate-Ichinohe'], [641, 667, 'Hakkoda'], [715.9, 769.8, 'Seikan']],
+      biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [520, 565, 'mountain'], [636, 674.9, 'mountain'], [674.9, 715, 'mountain'], [769.8, 823.7, 'field']],
+      grade: [[0, 36, 15, 25], [36, 674.9, 7, 15], [674.9, 823.7, 8, 20.8]],
+      refuges: [732.9, 755.9],     // 竜飛定点 (km 58.0 từ Shin-Aomori) và 吉岡定点 (81.0) trong hầm Seikan [N]
+      notes: [{ km: 703.8, dir: 'down', text: 'Vào đoạn dùng chung ray ba với tàu hàng (Shin-Nakaoguni–Kikonai, ~82 km): ≤ 140 km/h ngoài hầm, ≤ 160 km/h trong hầm Seikan (53,85 km).' },
+              { km: 786.3, dir: 'up', text: 'Vào đoạn dùng chung ray ba với tàu hàng (Kikonai–Shin-Nakaoguni): ≤ 140 km/h ngoài hầm, ≤ 160 km/h trong hầm Seikan.' },
+              { km: 732.9, dir: 'down', text: 'Dưới đáy biển eo Tsugaru (≈ 23 km). Nếu có cháy: không dừng giữa hầm, chạy tới điểm cứu hộ 吉岡 hoặc ra khỏi hầm.' }]
+    },
+    yam: {
+      pa: '山形', defVeh: 'E8', flipDown: false,
+      snow: [[262, 300, 100, 'tuyết đèo Itaya'], [300, 403.7, 110, 'tuyết Yamagata–Shinjo']],
+      limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 255.1, 300], [255.1, 403.7, 130]],        // Fukushima–Shinjo là đường sắt thường khổ chuẩn: tối đa 130 km/h [N]
+      curveA: 1.3, curveFrom: 255.1, tunnels: [],
+      biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [208, 220, 'urban'], [250, 262, 'urban'], [262, 292, 'mountain'], [292, 300, 'urban'], [336, 348, 'urban'], [348, 400, 'field'], [400, 403.7, 'urban']],
+      grade: [[0, 36, 15, 25], [36, 255.1, 7, 15], [255.1, 296, 26, 37.5], [296, 403.7, 9, 20]],   // dốc tối đa 37,5‰ (đèo Itaya) [N]
+      notes: [{ km: 255.1, dir: 'down', text: 'Rời Shinkansen thật, vào đường sắt thường Ou (khổ chuẩn): ≤ 130 km/h, đường đơn gần hết chặng, nhiều đường ngang, cong gắt và dốc tới 37,5‰ ở đèo Itaya.' },
+              { km: 311.2, dir: 'down', text: 'Đoạn đường đôi Akayu–Kita-Akayu ngắn; sau đó đường đơn: tàu ngược chiều đợi ở ga.' },
+              { km: 255.1, dir: 'up', text: 'Sắp ghép với Yamabiko tại Fukushima (nếu là tàu ghép): dừng đúng vạch, chờ ghép xong.' }]
+    },
+    aki: {
+      pa: '秋田', defVeh: 'E6', flipDown: false,
+      snow: [[330, 400, 230, 'tuyết Sendai–Morioka'], [496.5, 545, 95, 'tuyết Sengan-toge'], [545, 623.8, 110, 'tuyết Akita']],
+      limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 623.8, 130]],
+      curveA: 1.3, curveFrom: 496.5, tunnels: [],
+      biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [515, 548, 'mountain'], [548, 616, 'field'], [616, 623.8, 'urban']],
+      grade: [[0, 36, 15, 25], [36, 496.5, 7, 15], [496.5, 545, 22, 37], [545, 623.8, 8, 18]],
+      notes: [{ km: 496.5, dir: 'down', text: 'Rời Shinkansen thật tại Morioka, vào Tazawako Line (đường sắt thường khổ chuẩn): ≤ 130 km/h, đường đơn, đường ngang, đèo Sengan-toge cong và dốc.' },
+              { km: 572.1, dir: 'down', text: 'Tại Omagari tàu đổi chiều chạy (switchback): từ đây tới Akita ghế quay ngược chiều. (Mô hình giữ nguyên hướng nhìn.)' }]
+    },
+    jts: {
+      pa: '上越', defVeh: 'E7', flipDown: false, snow: [[151, 272, 200, 'tuyết Jomo-Kogen–Nagaoka']],
+      limits: [[0, 30.3, 110], [30.3, 113, 275], [113, 127.9, 260], [127.9, 333.9, 275]],       // hầm Nakayama có cong R=1.500 m: trang Wikipedia JP ghi 160 km/h (số cũ); lịch 2026 chạy nhanh hơn nhiều nên dùng 260 km/h [I]
+      tunnels: [[113, 127.9, 'Nakayama'], [164, 186.2, 'Oshimizu']],
+      biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [112, 262, 'mountain'], [262, 275, 'urban'], [318, 333.9, 'urban']],
+      grade: [[0, 36, 15, 25], [36, 333.9, 8, 15]]
+    },
+    nks: {
+      pa: '西九州', defVeh: 'N700S-6', flipDown: true, snow: [],
+      limits: [[0, 66.0, 260]],
+      tunnels: [[1.2, 6.9, 'Tawarazaka'], [14.5, 17.4, 'Kiba'], [35.5, 40.5, 'Kuyama'], [50.0, 57.5, 'Shin-Nagasaki']],   // tên [N]; vị trí km [I]
+      biomes: [[0, 12, 'mountain'], [30, 36, 'field'], [43, 47, 'urban'], [47, 60, 'mountain'], [60, 66, 'urban']],
+      grade: [[0, 66.0, 12, 30]]
+    },
+    hok: {
+      pa: '北陸', defVeh: 'E7', flipDown: true, snow: [[140, 300, 200, 'tuyết Karuizawa–Joetsu-Myoko'], [300, 575.6, 180, 'tuyết Itoigawa–Tsuruga']],
+      limits: [[0, 30.3, 110], [30.3, 105, 275], [105, 575.6, 260]],
+      tunnels: [[254, 276.2, 'Iiyama'], [284, 295, 'Kubiki']],
+      biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [120, 160, 'mountain'], [218, 228, 'urban'], [240, 335, 'mountain'], [386, 398, 'urban'], [445, 458, 'urban'], [575.6 - 10, 575.6, 'urban']],
+      grade: [[0, 36, 15, 25], [36, 105, 8, 15], [105, 147, 20, 30], [147, 575.6, 9, 15]],
+      freq: [{ km: 149.5, len: 90, hz: [50, 60], label: '新軽井沢SP' }, { km: 293.5, len: 90, hz: [60, 50], label: '新高田SP' }, { km: 322, len: 90, hz: [50, 60], label: '新糸魚川SP' }]   // [N: SP của Wikipedia JP; km và chiều dài là I]
     }
   };
   const lineData = id => (root.LINES || {})[id];
@@ -48,6 +108,11 @@
   const kmOfS = (s, dir, kmEnd) => dir === 'up' ? kmEnd - s / 1000 : s / 1000;
   function lineOf(id) { const L = lineData(id); if (!L) throw new Error('Thiếu dữ liệu tuyến ' + id); if (!L.meta) {
       L.meta = LINE_META[id]; L.skm = L.stations.map(s => s.km);
+      if (L.meta.curveA && !L.meta._cl) {          // đường sắt thường: tốc độ qua đường cong v = sqrt(a·R) (a = gia tốc ngang cho phép, chưa có nghiêng thân) [I]
+        L.meta._cl = true; const extra = [];
+        for (const [a, b, R] of L.curves || []) if (a >= L.meta.curveFrom) { const v = Math.floor(3.6 * Math.sqrt(L.meta.curveA * R) / 5) * 5; if (v < 125) extra.push([a, b, Math.max(40, v)]); }
+        L.meta.limits = L.meta.limits.concat(extra);
+      }
       if (L.struct) { const named = L.meta.tunnels; L.meta.tunnels = L.struct.filter(g => g[2] === 't').map(g => { const n = named.find(t => t[0] === g[0] && t[1] === g[1]); return n ? n : [g[0], g[1]]; }); }   // mọi hầm (kể cả hầm sinh theo tỷ lệ) [I]
     } return L; }
   // kết cấu nền (g đất / v cầu cạn / b cầu / t hầm) và đường cong tại km; cong: {R, sg} hoặc null
@@ -63,7 +128,7 @@
     return clamp(n * typ * 1.6, -mx, mx) * flat;
   }
   function gradeAt(W, s) { const km = kmOfS(s, W.dir, W.line.kmEnd); const g = gradeKm(W.line, km); return W.dir === 'up' ? -g : g; }  // ‰ theo chiều chạy (+ là lên dốc)
-  function limitKm(L, km) { let v = 285; for (const [a, b, lv] of L.meta.limits) if (km >= a && km < b) v = lv; return v; }
+  function limitKm(L, km) { let v = null; for (const [a, b, lv] of L.meta.limits) if (km >= a && km < b) v = v === null ? lv : Math.min(v, lv); return v === null ? 285 : v; }
   function staticLimit(W, T, s) { const km = kmOfS(s, W.dir, W.line.kmEnd); return Math.min(limitKm(W.line, km) / 3.6, T.veh.vmax); }
   function staticBoundaries(W, T) {   // [s bắt đầu đoạn, tốc độ] theo chiều chạy
     const out = []; for (const [a, b, lv] of W.line.meta.limits) { const sa = sOfKm(a, W.dir, W.line.kmEnd), sb = sOfKm(b, W.dir, W.line.kmEnd); out.push([Math.min(sa, sb), Math.min(lv / 3.6, T.veh.vmax)]); } return out;
@@ -132,11 +197,12 @@
 
   // ---- Tàu -------------------------------------------------------------------
   function newTrain(M, W, opts) {
-    opts = opts || {}; const veh = VEH[opts.veh] || VEH['N700'];
+    opts = opts || {}; const cpDone = !!opts.cp && (M[M.length - 1].i >= M[0].i ? M[0].i >= opts.cp[0] : M[0].i <= opts.cp[0]);      // chuyến bắt đầu sau ga ghép/tách: đã ở dạng đoàn sau khi ghép/tách
+    const veh = cpDone ? VEH[opts.cp[1]] : (VEH[opts.veh] || VEH['N700']);
     return { M, W, veh, load: opts.load != null ? opts.load : 0.7, k: 0, x: M[0].s, v: 0, f: 0, cmd: 0, pw: 0, bk: 0, notch: 0, a: 0, phase: 'dwell', dwellT: 0, started: false, atc: false, atcCount: 0, atcOk: 0, confirmed: false, needConfirm: false,
       allowed: 0, why: '', results: [], log: [], comfort: 0, jerkTime: 0, earlyDep: 0, excused: 0, holds: {}, forced: -1, cut: false, arrT: 0, free: 0,
       lamp: 'auto', lampBad: 0, atcOn: true, atcArm: -1e9, atcOffBad: 0, atcCuts: 0, door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, animalHit: 0,
-      bt: 0, kwh: 0, regen: 0, grade: 0, anx: 0, anxMax: 0, paAt: -999, fireTunnel: 0, waitFor: null, blockedT: 0, trace: [],
+      xingHit: 0, cp: opts.cp ? { i: opts.cp[0], v: opts.cp[1], done: cpDone } : null, coup: null, deadViol: 0, vcbUntil: -1e9, bt: 0, kwh: 0, regen: 0, grade: 0, anx: 0, anxMax: 0, paAt: -999, fireTunnel: 0, waitFor: null, blockedT: 0, trace: [],
       isLead: !!opts.lead, label: opts.label || '', id: opts.id || '' };
   }
   const massOf = T => T.veh.m + T.load * T.veh.cap * 70;
@@ -227,6 +293,7 @@
   function requestClose(T) {
     const W = T.W;
     if (T.phase !== 'dwell' || T.v > 0.05 || T.door !== 'open') return false;
+    if (T.coup) { if (!T.isLead) W.say('warn', 'Chưa thể đóng cửa: đang ' + (T.coup.to.parts ? 'ghép' : 'tách') + ' toa (còn ' + Math.ceil(T.coup.end - W.t) + ' s)'); return false; }
     if (T.k > 0 && T.dwellT < 20) { if (!T.isLead) W.say('warn', 'Chưa thể đóng cửa (cần mở cửa ≥ 20 s)'); return false; }
     T.door = 'closing'; T.doorT = 0; T.doorDur = 9 + (T.k === 0 ? 0 : W.rnd() * 6);
     T.willReopen = T.doorFaultOnce || W.rnd() < W.diff.reopen; T.doorFaultOnce = false;
@@ -241,11 +308,24 @@
       else { T.door = 'closed'; W.say('info', 'Đèn ĐÓNG CỬA sáng. Được khởi hành: kéo cần gia tốc.'); if (T.k === 0 && !T.started) { T.started = true; W.running = true; } }
     }
   }
+  // Ghép / tách toa của tàu mini-Shinkansen tại Fukushima (Yamabiko + Tsubasa) và Morioka (Hayabusa + Komachi). Thời gian lấy từ thời gian dừng trong lịch [I]
+  function startCoupling(T, mk) {
+    if (!T.cp || T.cp.done || mk.i !== T.cp.i) return;
+    const W = T.W, to = VEH[T.cp.v], plan = mk.arr != null && mk.dep != null ? mk.dep - mk.arr : 360, dur = clamp(plan - 90, 100, 300);
+    T.coup = { end: W.t + dur, to }; T.cp.done = true;
+    if (!T.isLead) W.say('info', to.parts ? `Ghép toa: ${VEH[to.parts[1]].name} nối vào đoàn ${VEH[to.parts[0]].name}. Chờ nối xong (~${Math.round(dur)} s), đừng khởi hành.` : `Tách toa: ${VEH[T.veh.parts ? T.veh.parts[0] : 'E5'].name} tách khỏi đoàn, ${to.name} chạy tiếp một mình. Chờ tách xong (~${Math.round(dur)} s).`);
+  }
+  function coupStep(T) {
+    if (!T.coup || T.W.t < T.coup.end) return;
+    T.veh = T.coup.to; const W = T.W; T.coup = null;
+    if (!T.isLead) W.say('stop', T.veh.parts ? `Ghép xong: đoàn ${T.veh.name} (${T.veh.cars} toa, ${Math.round(T.veh.len)} m). Được khởi hành.` : `Tách xong: còn ${T.veh.name} (${T.veh.cars} toa, ${Math.round(T.veh.len)} m) chạy tiếp. Được khởi hành.`);
+  }
   function departBlock(T) {
     const W = T.W, hold = T.holds[T.k];
     if (hold != null && W.t < hold) return 'Đang giữ tàu theo lệnh điều độ (còn ' + Math.ceil(hold - W.t) + ' s)';
     if (T.waitFor && T.waitFor.train.phase !== 'end' && T.waitFor.train.x < T.waitFor.s + 120) return 'Chờ ' + T.waitFor.train.label + ' vượt qua ga';
     if (T.cut) return 'Mất điện / kiểm tra sau sự cố';
+    if (T.coup) return (T.coup.to.parts ? 'Đang ghép toa' : 'Đang tách toa') + ' (còn ' + Math.ceil(T.coup.end - W.t) + ' s)';
     return null;
   }
   function departNow(T, silent) {
@@ -269,6 +349,7 @@
       if (T.phase !== 'run' || T.atc || T.cut) cancelCS(T, T.atc ? 'ATC phanh' : '');
       else { const vset = Math.min(T.csSet, Math.max(0, T.allowed - 3 / 3.6)), err = vset - T.v; cmd = clamp((resistOf(T, T.v) + mass * 9.81 * T.grade / 1000) / tractiveOf(T, T.v) + 0.6 * err, -0.25, 1); }
     }
+    if (T.vcbUntil > W.t && cmd > 0) cmd = 0;                                    // máy cắt chính nhảy: mất lực kéo
     if (T.cut) { cmd = EBCMD(T); T.atc = false; }
     else if (T.atcOn === false) { T.atc = false; T.needConfirm = false; }      // ATC đang cắt: không có phanh tự động
     else {
@@ -287,6 +368,7 @@
       if (T.atc) cmd = Math.min(cmd, -1);
     }
     if (T.phase === 'dwell') {
+      coupStep(T);
       doorStep(T, dt);
       if (T.door === 'closed' && cmd > 0.01) { if (!departNow(T)) cmd = 0; }
       if (T.phase === 'dwell') cmd = Math.min(cmd, 0);
@@ -309,6 +391,7 @@
     T.bt = Math.max(0, T.bt - 0.003 * (1 + T.v / 30) * T.bt * dt); if (T.bt > (T.btMax || 0)) T.btMax = T.bt;
     if (Ft > 0) T.kwh += Ft * T.v / 0.9 * dt / 3.6e6;
     if (T.horn > 0) T.horn = Math.max(0, T.horn - dt);
+    deadStep(T); noteStep(T); xingStep(T);
     // bất an của hành khách khi đứng giữa đường
     if (!T.isLead) {
       if (T.phase === 'run' && T.v < 0.3 && W.running) { T.anx = Math.min(100, T.anx + dt * 100 / 900); } else if (T.anx > 0) T.anx = Math.max(0, T.anx - dt * 0.4);
@@ -319,7 +402,10 @@
       if (T.atcOn === false && T.v > 30 / 3.6) T.atcOffBad += dt;                // cắt ATC mà chạy quá 30 km/h
       if (T.lamp === 'off' && T.v > 5 && needsLight(W, T)) T.lampBad += dt;           // tắt đèn pha khi trong hầm / ban đêm
       checkRoadEvents(T);
-      if (T.v < 0.5 && T.phase === 'run' && W.fireActive && inTunnel(W, T.x) && !W.fireTunnelDone) { T.fireTunnel = 1; W.fireTunnelDone = true; W.say('bad', 'ĐÃ DỪNG TRONG HẦM khi có cháy! (nguyên tắc: ra khỏi hầm rồi mới dừng)'); }
+      if (T.v < 0.5 && T.phase === 'run' && W.fireActive && inTunnel(W, T.x) && !W.fireTunnelDone) {
+        if (atRefuge(W, T.x)) { W.fireTunnelDone = true; W.say('stop', 'Dừng tại điểm cứu hộ (定点) trong hầm: đúng quy trình hầm Seikan, sơ tán qua đường hầm cứu hộ.'); }
+        else { T.fireTunnel = 1; W.fireTunnelDone = true; W.say('bad', 'ĐÃ DỪNG TRONG HẦM khi có cháy! (nguyên tắc: ra khỏi hầm rồi mới dừng)'); }
+      }
       if (W.trace && T.phase !== 'end' && Math.floor((W.t) ) !== Math.floor(W.t - dt) && W.running) T.trace.push([Math.round(W.t), Math.round(T.x), +(T.v * 3.6).toFixed(1), +(T.allowed * 3.6).toFixed(1), +T.pw, T.bk]);
     }
     if (!T.isLead && T.phase === 'run' && T.why !== 'line' && T.why !== 'stop' && T.free > 1) T.excused += dt * Math.max(0, 1 - T.v / T.free);
@@ -338,7 +424,7 @@
         } else if (W.net) { T.lastArrDelay = W.t - (mk.arr != null ? mk.arr : (mk.pt != null ? mk.pt : W.t)); T.results.push({ station: mk.name, delay: T.lastArrDelay, t: W.t }); }
         if (T.forced === j) T.forced = -1;
         if (j === M.length - 1) { T.phase = 'end'; if (!T.isLead) T.finished = true; }
-        else { T.phase = 'dwell'; T.dwellT = 0; }
+        else { T.phase = 'dwell'; T.dwellT = 0; startCoupling(T, mk); }
       } else if (T.x > mk.s + G.stopTol + 80) {
         T.phase = 'end';
         if (!T.isLead) { T.finished = true; T.failed = true; T.log.push(['FAIL', W.t, 'Chạy quá ga']); W.say('bad', 'Chạy quá ga ' + mk.name); T.results.push({ station: mk.name, err: T.x - mk.s, delay: NaN, overrun: true }); }
@@ -401,8 +487,10 @@
     if (!T.isLead && T.phase === 'dwell' && T.door === 'closed') return 0.3;
     if (T.phase !== 'run') return undefined;
     const W = T.W, j = nextTarget(T), mk = T.M[j], d = mk.s - T.x, v = T.v;
+    if (deadAt(W, T.x, 450, 30) && d > 600) return 0;                           // đoạn cách điện: trôi
     const m = (margin === undefined ? (T.isLead ? 4 : (W.diff.atcOver * 3.6 < 1 ? 9 : 4)) : margin) / 3.6;
     let vT = Math.max(0, T.allowed - m);
+    { const xg = xingAhead(W, T, 2500); if (xg) { const vx = Math.sqrt(2 * 0.45 * Math.max(0, xg.s - 90 - T.x)); if (v > vx) return -0.9; vT = Math.min(vT, vx); } }          // xe kẹt ở đường ngang: dừng trước đường ngang
     let soft = false;                                                    // giới hạn do kế hoạch đúng giờ (không phải an toàn): chỉ trôi/phanh nhẹ khi vượt đáng kể
     const arr = mk.arr != null ? mk.arr : (mk.pt != null && mk.stop ? mk.pt : null), remT = arr != null ? arr - W.t : 0;
     const ai = T.isLead && W.net, slack = ai ? 50 : 20, fac = ai ? 1.12 : 1.06;
@@ -418,12 +506,67 @@
     return Math.max(0, Math.min(1, (resistOf(T, v) + massOf(T) * 9.81 * T.grade / 1000) / tractiveOf(T, v) + 0.6 * err));
   }
 
+  // ---- Đường đơn (mini-Shinkansen) và đường ngang
+  // trọng số "đường đơn" tại s (0..1, chuyển tiếp 300 m); singleEff trừ phần nằm trong vùng ga (ga có đường tránh để tàu ngược chiều gặp nhau)
+  const smooth01 = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  function singleW(W, s) {
+    const L = W.line; if (!L.single || !L.single.length) return 0; let w = 0;
+    for (const [k0, k1] of L.single) { const a = sOfKm(k0, W.dir, L.kmEnd), b = sOfKm(k1, W.dir, L.kmEnd), lo = Math.min(a, b), hi = Math.max(a, b); w = Math.max(w, smooth01(lo, lo + 300, s) * smooth01(hi, hi - 300, s)); }
+    return w;
+  }
+  function singleEff(W, s) {
+    const w = singleW(W, s); if (w <= 0) return 0; const Ly = root.Layout; let cov = 0;
+    if (Ly && W.player) for (const m of W.player.M) cov = Math.max(cov, Ly.spread(s, m.s)); else if (Ly && W.net) for (const m of (W.net.trains[0] ? W.net.trains[0].M : [])) cov = Math.max(cov, Ly.spread(s, m.s));
+    return w * (1 - cov);
+  }
+  const worldXings = (L, dir) => (L.xings || []).map(k => ({ s: sOfKm(k, dir, L.kmEnd), blocked: false, until: 0, hit: false, cleared: false })).sort((a, b) => a.s - b.s);
+  function xingStep(T) {
+    const W = T.W; if (T.isLead || !W.xings || !W.xings.length) return;
+    if (W.armedX && T.x >= W.armedX.s - 1000 + 0.0) { const g = W.armedX.xg; W.armedX = null; g.blocked = true; g.until = W.t + 150 + W.rnd() * 90; W.xingAt = W.t;
+      W.say('bad', 'ĐƯỜNG NGANG PHÍA TRƯỚC: đèn đỏ nhấp nháy (特殊信号発光機): có xe kẹt trên đường ngang! Phanh khẩn cấp ngay (EB), dừng trước đường ngang.'); }
+    for (const g of W.xings) {
+      if (g.blocked && W.t >= g.until && !g.cleared && T.x < g.s + 5) { g.blocked = false; g.cleared = true; W.say('info', 'Đường ngang đã thông (xe được dời đi). Được chạy tiếp, ≤ 25 km/h qua đường ngang.'); }
+      if (g.blocked && !g.hit && T.x >= g.s - 4 && T.x < g.s + 60) {
+        g.hit = true; g.blocked = false; T.xingHit++; W.shakeAt = W.t; W.shakeAmp = 6; T.cut = true; W.eqkActive = true; W.eqkRelease = W.t + 420 + W.rnd() * 240; W.recoverText = 'Kiểm tra xe và đường sau va chạm tại đường ngang.'; W.recoverV = 100;
+        W.say('bad', 'VA CHẠM TẠI ĐƯỜNG NGANG: xe ô tô bị kẹt, tàu không kịp dừng. Phanh khẩn cấp, dừng kiểm tra.');
+      }
+    }
+  }
+  const xingAhead = (W, T, dist) => (W.xings || []).find(g => g.blocked && g.s > T.x - 5 && g.s - T.x < dist);
+
+  // ---- Đoạn cách điện đổi tần số (Hokuriku: 50/60 Hz) [N: Wikipedia JP 北陸新幹線 — 新軽井沢SP, 新高田SP, 新糸魚川SP; vị trí km là I]
+  // Tàu phải cắt lực kéo (về N) trước đoạn này và trôi qua; kéo lực khi vào đoạn => hồ quang, máy cắt chính nhảy, mất lực 12 s.
+  function deadSections(L, dir) {
+    return ((L.meta && L.meta.freq) || []).map(f => {
+      const a = sOfKm(f.km - f.len / 2000, dir, L.kmEnd), b = sOfKm(f.km + f.len / 2000, dir, L.kmEnd), hz = dir === 'up' ? [f.hz[1], f.hz[0]] : f.hz;
+      return { s0: Math.min(a, b), s1: Math.max(a, b), hzA: hz[0], hzB: hz[1], label: f.label, warned: false, hit: false };
+    }).sort((p, q) => p.s0 - q.s0);
+  }
+  const atRefuge = (W, x) => ((W.line.meta && W.line.meta.refuges) || []).some(k => Math.abs(sOfKm(k, W.dir, W.line.kmEnd) - x) < 400);      // điểm cứu hộ (定点) trong hầm dài: dừng ở đó khi cháy là đúng quy trình [N: Seikan 竜飛・吉岡]
+  const deadAt = (W, x, pre, post) => (W.dead || []).find(d => x >= d.s0 - pre && x <= d.s1 + post);
+  // ghi chú dọc tuyến: hiện một dòng thông báo khi tàu tới gần (meta.notes = [{km, text}], km theo chiều tăng; hiện theo chiều chạy)
+  function noteStep(T) {
+    const W = T.W; if (T.isLead) return; const ns = W.line.meta.notes; if (!ns) return; W.notesShown = W.notesShown || {};
+    ns.forEach((n, i) => { if (W.notesShown[i]) return; const s = sOfKm(n.km, W.dir, W.line.kmEnd); if (T.x >= s - 3000 && T.x < s + 500 && !(n.dir && n.dir !== W.dir)) { W.notesShown[i] = 1; W.say('info', n.text); } });
+  }
+  function deadStep(T) {
+    const W = T.W; if (T.isLead) return;
+    for (const d of W.dead || []) {
+      if (!d.warned && T.x >= d.s0 - 2500 && T.x < d.s0) { d.warned = true; W.say('warn', `Phía trước: đoạn cách điện đổi tần số ${d.hzA}→${d.hzB} Hz (${d.label}). Về N (cắt lực kéo) trước vạch và chạy trôi qua.`); }
+      if (T.x >= d.s0 && T.x <= d.s1 && !d.hit && T.f > 0.05 && !T.cut) {
+        d.hit = true; T.deadViol++; T.vcbUntil = W.t + 12; W.shakeAt = W.t; W.shakeAmp = 2;
+        W.say('bad', `Vào đoạn cách điện (${d.label}) khi đang kéo lực: hồ quang, máy cắt chính nhảy. Mất lực kéo 12 s. Lần sau về N trước vạch.`);
+      }
+    }
+  }
+
   // ---- Thế giới -----------------------------------------------------------------
   function baseWorld(lineId, dir, diffKey, seed, weather) {
     const L = lineOf(lineId), diff = DIFF[diffKey || 'normal'];
     const W = { t: 0, line: L, lineId, dir, diff, diffKey: diffKey || 'normal', zones: [], msgs: [], events: [], lead: null, running: false, weather: weather || 'auto', seed: seed || 1,
       pending: [], faults: [], workers: [], animals: [], wires: [], ackPen: 0, rainHere: false, rnd: rng((seed || 1) * 7919 + 13), netScore: 0, decision: null, trace: true,
       say(kind, text, o) { const m = { t: this.t, kind, text }; this.msgs.push(m); if (kind !== 'pa') this.newMsg = true; if (o && o.ack) { m.ack = true; this.pending.push(m); } } };
+    W.dead = deadSections(L, dir); W.xings = worldXings(L, dir);
     return W;
   }
   function createWorld(lineId, trip, opts) {
@@ -432,14 +575,14 @@
     W.trip = trip; W.catalog = catalogOf(L, trip.dir);
     const M = fillPlan(trip.M.map(m => Object.assign({}, m)));
     W.load = opts.load != null ? opts.load : 0.45 + W.rnd() * 0.55;
-    W.player = newTrain(M, W, { veh: trip.rec.v, label: trip.label, load: W.load });
+    W.player = newTrain(M, W, { veh: trip.rec.v, label: trip.label, load: W.load, cp: trip.rec.cp });
     W.passers = passers(L, W.catalog, { ...trip, M });
     const leadRec = opts.lead === false ? null : pickLead(L, W.catalog, trip);
     if (leadRec) {
       const seq = trainSeq(leadRec);
       const LM = fillPlan(seq.map(e => ({ name: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, trip.dir, L.kmEnd), stop: e.stop, arr: e.arr != null ? e.arr - trip.t0 : null, dep: e.dep != null ? e.dep - trip.t0 : null })));
       LM[0].arr = null; LM[LM.length - 1].dep = null; W.leadLabel = leadRec.t + ' ' + leadRec.n;
-      W.lead = newTrain(LM, W, { lead: true, veh: leadRec.v, label: W.leadLabel, load: 0.6 });
+      W.lead = newTrain(LM, W, { lead: true, veh: leadRec.v, label: W.leadLabel, load: 0.6, cp: leadRec.cp });
       W.leadStartT = LM[0].dep != null ? LM[0].dep : -600;
     }
     if (opts.events === false) { W.weatherKind = 'clear'; W.opposing = []; } else genEvents(W, M, rnd);
@@ -515,7 +658,7 @@
     if (weather === 'eqk' || rnd() < D.eqk) pool.push('eqk');
     if (weather === 'snow') {
       // vùng tuyết: Sekigahara–Maibara (Tokaido) và vùng núi Tohoku phía bắc; chỉ có [I]
-      const zs = W.lineId === 'tsk' ? [[385, 405, 120, 'tuyết Sekigahara'], [405, 462, 170, 'tuyết Maibara–Otsu']] : [[330, 400, 230, 'tuyết Sendai–Morioka'], [520, 674, 200, 'tuyết Morioka–Shin-Aomori']];
+      const zs = W.line.meta.snow || [];
       for (const [k0, k1, v, lab] of zs) { const a = sOfKm(k0, W.dir, W.line.kmEnd), b = sOfKm(k1, W.dir, W.line.kmEnd); W.zones.push({ s0: Math.min(a, b), s1: Math.max(a, b), v: v / 3.6, tA: -1e9, tB: 1e9, kind: 'snow', label: lab }); }
       ev(0, w => w.say('info', 'Dự báo: tuyết dày ở vùng núi. Chạy chậm theo quy định (tài liệu 06 §5.3).'));
     }
@@ -525,6 +668,7 @@
     while (pool.length < n) pool.push(orders[Math.floor(rnd() * orders.length)]);
     if (D.fault && rnd() < D.fault) pool.push('fault');
     for (const k of rare) if (rnd() < D.rare) pool.push(k);
+    if (W.xings && W.xings.length && rnd() < 0.15 + D.rare) pool.push('xingcar');
     for (const kind of pool) {
       const at = Math.round(planT * (0.12 + rnd() * 0.6));
       if (kind === 'rain') {
@@ -572,6 +716,8 @@
         ev(at, w => { const car = 1 + Math.floor(rnd() * Math.max(1, w.player.veh.cars)); w.faults.push({ car, kind: 'door', text: `Toa ${car}: cửa lỗi (không đóng hoàn toàn)`, level: 'warn', t: w.t }); w.player.doorFaultOnce = true; w.say('warn', `TIMS: toa ${car} báo lỗi cửa. Lần đóng cửa tới có thể phải mở lại.`); });
       } else if (kind === 'fault') {
         ev(at, w => { const car = 1 + Math.floor(rnd() * Math.max(1, w.player.veh.cars)); w.faults.push({ car, kind: 'hotbox', text: `Toa ${car}: nhiệt độ ổ trục cao`, level: 'bad', t: w.t }); w.zones.push({ s0: -1e9, s1: 1e9, v: 230 / 3.6, tA: w.t, tB: 1e9, kind: 'fault', label: 'nhiệt độ ổ trục cao' }); w.say('bad', `CẢNH BÁO TIMS: toa ${car} nhiệt độ bệ ổ trục cao. Hạn chế ≤ 230 km/h tới hết chuyến (tài liệu 06 §5.4). Nhấn Y để nhắc lại lệnh.`, { ack: true }); });
+      } else if (kind === 'xingcar') {
+        ev(at, w => { const T = w.player, cand = w.xings.filter(g => !g.hit && g.s > T.x + 3500 && (g.s - lastS) * sgn < 0 && Math.abs(g.s - T.x) < 25000); if (!cand.length) return; const g = cand[Math.floor(rnd() * Math.min(3, cand.length))]; w.armedX = { xg: g, s: g.s }; });
       } else if (kind === 'wire') {
         const dur = 1500 + rnd() * 1500;
         ev(at, w => { const T = w.player, s = T.x + sgn * 12000; w.wires.push({ s, tA: w.t, tB: w.t + dur }); w.zones.push({ s0: s - 1500, s1: s + 1500, v: 0, tA: w.t, tB: w.t + dur, kind: 'wire', hold: true, label: 'dây điện hỏng' }); startHold(w, s + 1500, dur, 'wire');
@@ -625,7 +771,7 @@
     for (const rec of cat) {
       const seq = trainSeq(rec), M = fillPlan(seq.map(e => ({ name: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, dir, L.kmEnd), stop: e.stop, loop: !!L.stations[e.i].loop, arr: e.arr != null ? e.arr - t0 : null, dep: e.dep != null ? e.dep - t0 : null })));
       M[0].arr = null; M[M.length - 1].dep = null;
-      const T = newTrain(M, W, { lead: true, veh: rec.v, label: rec.t + ' ' + rec.n, load: 0.4 + rnd() * 0.6, id: rec.t + rec.n }); T.rec = rec; T.cls = rec.t; W.net.trains.push(T);
+      const T = newTrain(M, W, { lead: true, veh: rec.v, label: rec.t + ' ' + rec.n, load: 0.4 + rnd() * 0.6, id: rec.t + rec.n, cp: rec.cp }); T.rec = rec; T.cls = rec.t; W.net.trains.push(T);
     }
     // sự kiện ngẫu nhiên cho mạng: thời tiết, tàu hỏng/bệnh nhân, động đất
     const ev = (at, fn) => W.events.push({ at, fire: fn, done: false });
@@ -681,12 +827,12 @@
     n = Math.max(1, n);
     const comfort = Math.max(0, 100 - T.comfort * D.comfortK), atcPen = T.atcCount * 8, earlyPen = Math.min(30, T.earlyDep * 0.3);
     const ackPen = Math.min(20, W.ackPen), hornPen = Math.min(20, T.hornPen + T.animalHit * 8), wiperPen = Math.min(10, Math.round(T.wiperBad / 20)), lampPen = Math.min(10, Math.round((T.lampBad || 0) / 30)), atcOffPen = Math.min(30, Math.round((T.atcOffBad || 0) / 8) + (T.atcCuts || 0) * 3);
-    const anxPen = Math.min(15, Math.round(Math.max(0, T.anxMax - 60) / 2.5)) + (T.panic ? 10 : 0), firePen = T.fireTunnel ? 15 : 0, netBonus = clamp(W.netScore || 0, -9, 9);
-    const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - lampPen - atcOffPen - anxPen - firePen + netBonus)));
-    return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
+    const anxPen = Math.min(15, Math.round(Math.max(0, T.anxMax - 60) / 2.5)) + (T.panic ? 10 : 0), firePen = T.fireTunnel ? 15 : 0, deadPen = Math.min(20, (T.deadViol || 0) * 6), xingPen = Math.min(40, (T.xingHit || 0) * 25), netBonus = clamp(W.netScore || 0, -9, 9);
+    const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - lampPen - atcOffPen - anxPen - firePen - deadPen - xingPen + netBonus)));
+    return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

@@ -3,7 +3,7 @@
 (function (root) {
   const JPN = ['東京', '品川', '新横浜', '小田原', '熱海', '三島', '新富士', '静岡', '掛川', '浜松', '豊橋', '三河安城', '名古屋', '岐阜羽島', '米原', '京都', '新大阪'];
   const VI = { Tokyo: 'Tokyo', Shinagawa: 'Shinagawa' };
-  const TYPEJ = { Nozomi: 'のぞみ', Hikari: 'ひかり', Kodama: 'こだま' };
+  const TYPEJ = { Nozomi: 'のぞみ', Hikari: 'ひかり', Kodama: 'こだま', Mizuho: 'みずほ', Sakura: 'さくら', Tsubame: 'つばめ', Kamome: 'かもめ', Hayabusa: 'はやぶさ', Hayate: 'はやて', Yamabiko: 'やまびこ', Nasuno: 'なすの', Komachi: 'こまち', Tsubasa: 'つばさ', Toki: 'とき', Tanigawa: 'たにがわ', Asama: 'あさま', Hakutaka: 'はくたか', Kagayaki: 'かがやき', Tsurugi: 'つるぎ', 'Doctor Yellow': 'ドクターイエロー', 'East i': 'イーストアイ' };
   function GameAudio() {
     this.ctx = null; this.enabled = true; this.vol = 0.6; this.ready = false; this.annMode = 'ja';
     this.prev = {}; this.msgCount = 0; this.lastConfirmBeep = 0; this.lastResults = 0; this.q = []; this.ann = {}; this.next = {};
@@ -164,7 +164,9 @@
     // ---- âm theo thời gian thực: máy nén khí, tàu ngược chiều, sấm, ho, em bé, bước chân ----
     const R = this.rt; if (st.scale <= 1) {
       R.comp -= dt; if (R.comp < 0) { this.compressor(); R.comp = 35 + Math.random() * 50; }
-      if (this.prevWt !== undefined && v > 40) for (const t0 of W.opposing || []) if (this.prevWt < t0 - 2.3 && W.t >= t0 - 2.3) this.playClip(0.35 + 0.4 * sp, 0, 5.5);
+      { const xg = (W.xings || []).find(g => g.s - T.x > -25 && g.s - T.x < 520); R.bell = (R.bell || 0) - dt;      // chuông đường ngang (踏切警報機): kêu khi tàu cách đường ngang < 520 m
+        if (xg && v > 3 && R.bell < 0) { const d = Math.max(0, xg.s - T.x), vol = 0.03 + 0.07 * (1 - d / 520); this.tone(2150, 0.09, 'sine', vol, 0); this.tone(1750, 0.09, 'sine', vol, 0.14); R.bell = 0.3; } }
+      if (this.prevWt !== undefined && v > 40 && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) if (this.prevWt < t0 - 2.3 && W.t >= t0 - 2.3) this.playClip(0.35 + 0.4 * sp, 0, 5.5);
       if (W.weatherKind === 'typhoon' || W.weatherKind === 'rain') { R.thunder -= dt; if (R.thunder < 0) { if (W.weatherKind === 'typhoon' || Math.random() < 0.4) this.thunder(); R.thunder = 35 + Math.random() * 70; } }
     }
     this.ambience(dw && !st.paused && st.scale <= 4 ? (T.door === 'open' ? 0.55 : 0.4) : 0);
@@ -218,7 +220,7 @@
     const j = root.Sim.nextTarget(T), nxt = M[j];
     // lúc bắt đầu chuyến
     if (T.started && !A.start) { A.start = true;
-      this.say(W, { ja: `本日も、${W.lineId === 'toh' ? '東北' : '東海道・山陽・九州'}新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, en: `Thank you for riding the Shinkansen. This is the ${W.trip.rec.t} number ${no} bound for ${dest}.`, vi: `Cảm ơn quý khách đã đi Shinkansen. Đây là ${W.trip.rec.t} số ${no} đi ${dest}.` }, false, true); }
+      this.say(W, { ja: `本日も、${W.line.meta.pa}新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, en: `Thank you for riding the Shinkansen. This is the ${W.trip.rec.t} number ${no} bound for ${dest}.`, vi: `Cảm ơn quý khách đã đi Shinkansen. Đây là ${W.trip.rec.t} số ${no} đi ${dest}.` }, false, true); }
     // đóng cửa
     if (T.door === 'closing' && p.door !== 'closing' && T.started) this.say(W, { ja: 'ドアが閉まります。ご注意ください。', en: 'The doors are closing. Please stand clear.', vi: 'Cửa sắp đóng, xin quý khách chú ý.' }, false, false);
     // sau khi rời ga: ga dừng kế tiếp, và xin lỗi nếu trễ

@@ -24,3 +24,7 @@
 - Thiết kế game nằm ở `docs/10-thiet-ke-game.md`; prototype ở `prototype/drive/` (xem `prototype/README.md`). **Chạy `node tests/run.js` sau mỗi thay đổi ở `sim.js`.**
 - Góc nhìn đã chốt (2026-10-21): phương án D = giữ 2D nhìn ngang + thêm khung nhìn buồng lái phía trước (cabview.js, giả 3D). Không đổi sang engine 3D thật khi chưa được người dùng quyết định.
 - Ảnh tàu N700 (`prototype/drive/assets/`) chỉ dùng cá nhân: không chia sẻ, không đóng gói.
+
+## Cập nhật 2026-10-22
+- Game có 7 tuyến: `tsk`, `toh` (+Hokkaido), `jts`, `hok`, `nks`, `yam`, `aki`. Tham số riêng từng tuyến nằm trong `LINE_META` (`sim.js`) và `tools/build_struct.py`; xem `docs/11-mo-rong-tuyen.md`. Thêm tuyến mới = thêm danh sách ga trong `build_lines.py`, cấu hình trong `build_struct.py`, `LINE_META`, rồi chạy lại `python -X utf8 tools/build_lines.py` và `node tests/run.js`.
+- Hình E7/E6/E8/H5 chưa có: đang dùng tạm mô hình E5. Không tải thêm ảnh khi chưa hỏi người dùng.

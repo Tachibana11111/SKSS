@@ -1,6 +1,6 @@
 # Nhật ký tiến độ
 
-Cập nhật lần cuối: 2026-10-21 (Phase 1–2: prototype 0.4)
+Cập nhật lần cuối: 2026-10-22 (prototype 0.4 + 7 tuyến)
 
 ## Giai đoạn hiện tại: 0 – Xây bộ tri thức nghiệp vụ
 
@@ -14,6 +14,7 @@ Cập nhật lần cuối: 2026-10-21 (Phase 1–2: prototype 0.4)
 | 06 | Tín hiệu & an toàn | **bản 2** (thêm gió/mưa/tuyết, thiết bị phát hiện, EGS/bảo vệ tàu, sự cố 2016–2025, cận dưới headway 38 giây; còn 6 lỗ hổng không công khai ở §10) |
 | 07 | Lái tàu | **bản 1 xong** (tổ lái, đường vào nghề, mô phỏng, buồng lái/13 nấc, lái theo biểu đồ 15 giây, dừng ga và TASC mùa thu 2026, GOA2 ~2028, mô hình game; còn ghi chú ở §11) |
 | 08 | Ga & depot | **bản 2** (đã xử lý lỗ hổng: chu kỳ JR East, đội dọn, hệ thống nhập đổi xe bảo trì 7/2029, Hamamatsu, Oi, cửa chắn FY2026) — bản 1: (sân ga/quay đầu/cửa chắn, 12 depot của 5 JR kèm số đường–sức chứa, chu kỳ kiểm tra, bảo trì đêm 0–6 giờ, tàu đêm 8/8/2026, ngập Nagano; lỗ hổng ở §8) |
+| 11 | Mở rộng tuyến | **bản 1** (`11-mo-rong-tuyen.md`: Joetsu, Hokuriku, Hokkaido, Yamagata, Akita, Nishi-Kyushu) |
 | 10 | Thiết kế game | **bản 1** (`10-thiet-ke-game.md`: chế độ, tuyến/tàu, ATC, sự kiện, chấm điểm, độ khó, hiệu chuẩn, giới hạn) |
 | 09 | Sự cố | **bản 1 xong** (thống kê FY2022 122 vụ, động đất 2004–2026 kèm thời gian khôi phục 13–52 ngày, bão/mưa, thiết bị/ghép tách, dây điện 1/2024, an ninh, gấu, khung khôi phục, thư viện sự kiện game; lỗ hổng ở §10) |
 | – | `audit-cross-01-09.md` | **rà soát chéo 01–09 xong (2026-10-21)**: 5 lỗi đã sửa, các chênh lệch còn lại ở mục C |
@@ -46,6 +47,7 @@ Cập nhật lần cuối: 2026-10-21 (Phase 1–2: prototype 0.4)
 - Phanh khẩn cấp Tokaido 285 km/h: ~3 km. Seikan: Shinkansen dùng chung ray với tàu hàng. 営業キロ ≠ 実キロ: game dùng km thực.
 
 ## Việc tiếp theo
+- **(2026-10-22) Mở rộng 5 tuyến mới + Hokkaido:** thêm Joetsu, Hokuriku, Nishi-Kyushu, Yamagata, Akita mini-Shinkansen và kéo dài Tohoku tới Shin-Hakodate-Hokuto; cơ chế mới: đoạn cách điện đổi tần số, ray ba/điểm cứu hộ Seikan, ghép/tách toa, đường đơn, đường ngang + sự kiện xe kẹt, giới hạn tốc độ theo đường cong. Xem `11-mo-rong-tuyen.md` (nguồn, chỗ [I], hạn chế). Còn thiếu: hình E7/E6/E8/H5 thật (cần xin phép tải), tiếng còi thật.
 - **(2026-10-21) Bước hoàn thiện 0.4 xong:** đã giải quyết các vấn đề tự nêu (git, kiểm thử 2.564 kiểm tra, tài liệu thiết kế, hướng dẫn, điều độ chủ động, sự cố từ docs/09, độ dốc/tải/nhiệt phanh/điện, hồ sơ/xem lại/tổng kết, dữ liệu Sanyo–Kyushu–Tohoku và cả hai chiều). **Việc còn lại theo thứ tự:** (1) người dùng chơi thử và phản hồi; (2) ~~quyết định góc nhìn~~ **đã chốt D: 2D + khung nhìn buồng lái phía trước (cabview.js), xong ngày 2026-10-21**; (3) dữ liệu còn thiếu ở docs/10 §11.
 - **Prototype 0.3:** thêm 6 nhóm thiết bị buồng lái (hai cần, tốc độ không đổi + xác nhận ATC, còi + gạt mưa, đóng cửa, nhắc lệnh điều độ, TIMS); bảng so với buồng lái thật ở docs/07 §4.3. Chưa biết số nút thật: chờ ảnh/video buồng lái N700S từ người dùng nếu muốn bám sát.
 - **Prototype 0.2** (`prototype/drive/`, xem `prototype/README.md`): 79 chuyến Tokaido chiều lên có lịch thật (tools/build_tokaido_catalog.py), chiều xuống đối xứng ước tính, tàu chạy trước + ATC giữ khoảng cách, thời tiết (mưa 50/60 mm, gió 30 m/s, tuyết Sekigahara, động đất), lệnh điều độ ngẫu nhiên (giữ tàu, thông qua, dừng thêm, chạy chậm, tàu trước dừng), 4 độ khó. Chờ người dùng chơi thử và phản hồi.

@@ -13,6 +13,12 @@ SPECS = {
     'n700s': ('src_n700s.webp', 16, 25.0, False, 0.30),
     'kamome': ('src_n700s8.webp', 6, 25.0, False, 0.30),   # N700S-8000 sáu toa (Nishi-Kyushu Kamome)
     's800':  ('src_s800.png', 6, 21.7, True, 0.30),
+    'e7':    ('e7 w7.png', 12, 25.0, False, 0.30),        # E7/W7 (Joetsu, Hokuriku)
+    'e6':    ('e6.png', 7, 21.2, False, 0.30),            # E6 (Komachi)
+    'e8':    ('e8.png', 7, 21.2, False, 0.30),            # E8 (Tsubasa)
+    'h5':    ('h5.png', 10, 25.0, False, 0.30),           # H5 (Hokkaido)
+    't4':    ('doctor yellow.png', 7, 25.0, False, 0.30), # 923 Dr. Yellow
+    'e926':  ('east-i.png', 6, 25.0, False, 0.30),        # E926 East i
 }
 
 def bg_model(im):

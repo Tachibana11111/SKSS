@@ -3,7 +3,7 @@
 Mở `prototype/drive/index.html` trực tiếp bằng Chrome/Edge (không cần cài gì). Kiểm thử mô phỏng: `node tests/run.js` (không cần trình duyệt). Thiết kế đầy đủ, số liệu thật/tự đặt, giới hạn: **`docs/10-thiet-ke-game.md`**.
 
 ## Ba chế độ (thanh trên cùng)
-- **Lái tàu:** chọn tuyến (Tokaido–Sanyo–Kyushu hoặc Tohoku), chiều, chuyến thật, ga đi/đến, độ khó, thời tiết, seed. Sự kiện ngẫu nhiên theo seed.
+- **Lái tàu:** chọn tuyến (7 tuyến: Tokaido–Sanyo–Kyushu, Tohoku–Hokkaido, Joetsu, Hokuriku, Nishi-Kyushu, Yamagata, Akita; xem `docs/11-mo-rong-tuyen.md`), chiều, chuyến thật, ga đi/đến, độ khó, thời tiết, seed. Sự kiện ngẫu nhiên theo seed.
 - **Điều độ:** nhiều tàu thật tự chạy, biểu đồ chạy tàu; lệnh giữ / thông qua / cho vượt.
 - **Hướng dẫn:** 3 bài từng bước. **Hồ sơ:** thành tích, kết quả tốt nhất, lịch sử, xoá dữ liệu.
 
