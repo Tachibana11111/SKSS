@@ -119,3 +119,9 @@ Số sự kiện mỗi chuyến: Dễ 1 · Thường 2–3 · Khó 4–5 · Chuy
 
 ## Bố cục giao diện (21/10/2026)
 Màn hình rộng chia ba cột trên một canvas 1780×900: **trái** điện đàm dọc (tin mới nhất ở dưới), **giữa** bản đồ, đồng hồ, cần, TIMS, khung buồng lái và khung 2D (cao hơn trước vì không còn dải nút/điện đàm ở dưới), **phải** nút điều khiển + đèn báo ở trên và bảng phím tắt ở dưới. Chế độ điều độ dùng cột giữa như cũ và cột phải hiện phím tắt riêng.
+
+## Ghi, đường sân ga và dừng muộn (cập nhật 21/10/2026)
+- **Giới hạn qua ghi 80 km/h [I]** từ 1.150 m trước vạch tới 630 m sau vạch, áp cho tàu dừng ở ga mà đường dừng khác đường chính (ga có đường thông qua, hoặc ga nhiều đường mà ta dừng ở đường ngoài). ATC phanh theo mẫu tới đầu đoạn ghi như các giới hạn khác; có biển "80" và "解除" ở khung buồng lái. Tàu thông qua ga tránh chạy đường thông qua nên không bị giới hạn.
+- **Dừng khẩn tại ga không có lịch dừng:** nếu còn kịp giảm xuống 80 km/h trước đầu ghi thì rẽ ghi vào đường sân ga như dừng thường. Nếu quá gần thì tàu dừng ở **đường chính** (không có sân ga bên cạnh), cửa KHÔNG mở, điều độ được báo. Lệnh điều độ "cho thông qua" bị từ chối khi tàu đã quá gần ghi.
+- Ghi chữ X (hai ghi bắt chéo nối đường ta và đường ngược chiều) ở hai đầu mỗi ga; khi rời ga vẫn thấy tới khi tàu qua hẳn. Âm thanh "cạch-cạch" khi qua ghi và qua ghi chữ X.
+- Chưa mô hình: tín hiệu và lộ trình ghi (route) do điều độ thực hiện, thời gian đổi ghi.

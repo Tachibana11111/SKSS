@@ -5,7 +5,7 @@ global.window = global;
 global.localStorage = (() => { const m = {}; return { getItem: k => m[k] || null, setItem: (k, v) => { m[k] = String(v); }, removeItem: k => { delete m[k]; } }; })();
 require(path.join(DRIVE, 'data-lines.js'));
 const Sim = require(path.join(DRIVE, 'sim.js')); global.Sim = Sim;
-require(path.join(DRIVE, 'store.js')); require(path.join(DRIVE, 'tutorial.js'));
+require(path.join(DRIVE, 'layout.js')); require(path.join(DRIVE, 'store.js')); require(path.join(DRIVE, 'tutorial.js'));
 let pass = 0, fail = 0; const failures = [];
 function ok(cond, name, info) { if (cond) pass++; else { fail++; failures.push(name + (info !== undefined ? ' → ' + info : '')); } }
 function approx(a, b, tol, name) { ok(Math.abs(a - b) <= tol, name, `${a} vs ${b} ±${tol}`); }
@@ -196,4 +196,27 @@ section('10. Bố trí ga, kết cấu tuyến, đường cong (layout.js)');
   const up = LAY.lateralTable(fake, Sim, 'up', (100 - 15) * 1000, 100, 10); ok(up[5] * LAY.lateralTable(fake, Sim, 'down', 15000, 100, 10)[5] < 0, 'cong: đi chiều lên thì rẽ ngược hướng');
 }
 
+section('11. Ghi: giới hạn tốc độ vào/ra đường sân ga, dừng quá muộn, thông qua');
+{
+  const rec = find('tsk', 'Kodama', 'down', 0, 12), L = Sim.lineOf('tsk');
+  const trip = Sim.makeTrip('tsk', rec, 0, 12), W = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, zs = Sim.turnoutZones(T);
+  const odawara = T.M.findIndex(m => m.name === 'Odawara'), atami = T.M.findIndex(m => m.name === 'Atami'), nagoya = T.M.findIndex(m => m.name === 'Nagoya');
+  ok(zs.some(z => z.j === odawara), 'Odawara (2-2-1): dừng thì phải rẽ ghi sang đường sân ga');
+  ok(!zs.some(z => z.j === atami), 'Atami (không đường thông qua): không rẽ ghi, sân ga nằm ở đường chính');
+  const zn = zs.find(z => z.j === odawara); approx(zn.v * 3.6, 80, 0.01, 'giới hạn qua ghi 80 km/h');
+  let vmax = 0, n = 0, before = 0; while (!T.finished && n++ < 3e6 && T.x < zn.s1 + 10) { Sim.tick(W, 0.05, {}, true); if (T.x >= zn.s0 + 30 && T.x < zn.s1) vmax = Math.max(vmax, T.v); if (T.x < zn.s0) before = Math.max(before, T.v); }
+  ok(vmax * 3.6 < 86, 'trong đoạn ghi tàu không vượt 80 km/h quá 6 km/h (kể cả tự lái)', vmax * 3.6); ok(before * 3.6 > 150, 'trước ghi tàu chạy nhanh bình thường', before * 3.6);
+  // thông qua Odawara thì không bị giới hạn ghi
+  T.M[odawara].stop = false; ok(!Sim.turnoutZones(T).some(z => z.j === odawara), 'thông qua ga tránh chạy đường thông qua: không giới hạn ghi');
+  // điểm ghi/ghi chữ X cho âm thanh
+  const pts = Sim.switchPoints(T); ok(pts.length >= 4 * T.M.length && pts.every((p, i) => i === 0 || p >= pts[i - 1]), 'danh sách điểm ghi đã sắp xếp');
+  // dừng khẩn tại ga tránh không có lịch dừng: quá gần để rẽ ghi -> dừng đường chính, cửa không mở; đủ xa -> rẽ ghi bình thường
+  for (const [dist, v, expectMain] of [[1800, 40, true], [9000, 70, false]]) {
+    const rn = find('tsk', 'Nozomi', 'down', 0, 16), W2 = Sim.createWorld('tsk', Sim.makeTrip('tsk', rn, 0, 16), { diff: 'easy', seed: 1, lead: false, events: false }), T2 = W2.player, od = T2.M.findIndex(m => m.name === 'Odawara');
+    T2.x = T2.M[od].s - dist; T2.v = v; T2.phase = 'run'; T2.k = 1; T2.started = true; Sim.inject(W2, 'wire');
+    ok(T2.forced === od, `dừng khẩn cách ${dist} m: chọn Odawara làm ga dừng`, T2.forced);
+    ok(!!T2.M[od].mainStop === expectMain, `dừng khẩn cách ${dist} m ở ${v} m/s: ${expectMain ? 'dừng đường chính (không kịp rẽ ghi)' : 'rẽ ghi bình thường'}`, T2.M[od].mainStop);
+    ok(Sim.turnoutZones(T2).some(z => z.j === od) === !expectMain, `dừng khẩn cách ${dist} m: giới hạn ghi ${expectMain ? 'không áp' : 'có áp'}`);
+  }
+}
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

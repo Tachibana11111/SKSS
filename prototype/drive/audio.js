@@ -70,6 +70,12 @@
     s.connect(f); f.connect(g); g.connect(this.master); s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.05);
   };
   // ---- âm thanh cơ khí và sự kiện ----
+  // qua ghi / ghi chữ X: chuỗi cú "cạch-cạch" ở khe ray, dồn dập hơn khi nhanh
+  GameAudio.prototype.switchClatter = function (v) {
+    const sp = Math.min(1, v / 80), gap = 0.085 - 0.04 * sp, n = 6;
+    this.tone(62, 0.22, 'sine', 0.2 + 0.2 * sp); this.burst(0.07, 0.12 + 0.16 * sp, 220, 1.2, 'lowpass');
+    for (let i = 0; i < n; i++) { const dl = 0.05 + i * gap; this.burst(0.045, 0.16 + 0.22 * sp, 330 + 140 * (i % 2), 2.4, 'bandpass', dl); this.tone(88 + 26 * (i % 2), 0.06, 'square', 0.05 + 0.09 * sp, dl); }
+  };
   GameAudio.prototype.click = function (gain) { this.burst(0.03, gain || 0.18, 2800, 1.5, 'bandpass'); this.tone(180, 0.05, 'square', (gain || 0.18) * 0.4); };
   GameAudio.prototype.contactor = function () { this.click(0.22); this.burst(0.05, 0.2, 1800, 1, 'bandpass', 0.09); this.tone(120, 0.08, 'square', 0.1, 0.09); };
   GameAudio.prototype.airRelease = function (g) { this.burst(0.6, g || 0.18, 5200, 0.8, 'highpass'); };
@@ -152,6 +158,7 @@
     set(this.hiss, T.prevF !== undefined && T.prevF < -0.3 && frc > T.prevF + 0.01 && v < 40 ? 0.12 : 0, 0.08);
     T.prevF = frc;
     // trụ điện lướt qua (mỗi 50 m)
+    if (active && v > 3 && root.Sim.switchPoints) { const px0 = this.prevSw; if (px0 !== undefined && T.x > px0 && T.x - px0 < 200) for (const p of root.Sim.switchPoints(T)) if (px0 < p && T.x >= p) this.switchClatter(v); this.prevSw = T.x; } else this.prevSw = undefined;
     if (active && v > 8) { const idx = Math.floor(T.x / 50); if (this.lastMast !== undefined && idx !== this.lastMast) this.burst(0.09, 0.05 + 0.18 * sp, 700 + 900 * sp, 0.8); this.lastMast = idx; } else this.lastMast = undefined;
     if (!this.enabled || st.paused) { this.ambience(0); return; }
     // ---- âm theo thời gian thực: máy nén khí, tàu ngược chiều, sấm, ho, em bé, bước chân ----

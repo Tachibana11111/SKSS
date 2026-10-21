@@ -51,8 +51,9 @@
     // ---- các ga trong tầm nhìn: bố trí đường, vị trí đường dừng của ta
     const target = S.nextTarget(T), tIdx = T.phase === 'dwell' ? T.k : target;
     const sts = [];
-    M.forEach((m, i) => { const d = m.s - T.x; if (d < -700 || d > 3600) return; const key = W.lineId + ':' + m.i + ':' + W.dir; const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, m.i)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i), isT: i === tIdx }); });
-    for (const q of sts) if (q.stopHere) { const w = LAY.spread(T.x, q.m.s); if (w > 0) c.lane = q.st.ours.x * w; }
+    M.forEach((m, i) => { const d = m.s - T.x; if (d < -1000 || d > 3600) return;      // giữ ga tới 1 km phía sau để ghi chữ X lúc rời ga không biến mất sớm
+       const key = W.lineId + ':' + m.i + ':' + W.dir; const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, m.i)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i), isT: i === tIdx }); });
+    for (const q of sts) if (q.stopHere && !q.m.mainStop) { const w = LAY.spread(T.x, q.m.s); if (w > 0) c.lane = q.st.ours.x * w; }      // mainStop: dừng khẩn quá gần để rẽ ghi -> ở lại đường chính
     const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * LAY.spread(T.x + z, q.m.s); return x; };   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
     const inStationZone = (za, zb) => { const qs = sts.filter(q => zb > q.d - 1200 && za < q.d + 650); return qs.length ? { st: { extent: [Math.min(...qs.map(q => q.st.extent[0])), Math.max(...qs.map(q => q.st.extent[1]))] } } : null; };   // hợp các ga trong tầm (ga vừa qua và ga sắp tới)
 
@@ -179,7 +180,7 @@
           items.push({ z: zz, fn: () => { const s = c.f / zz, a = P(X, PH, zz); ctx.fillStyle = personColor(k + i); ctx.fillRect(a[0] - 0.22 * s, a[1] - 1.45 * s, 0.44 * s, 0.75 * s); ctx.strokeStyle = '#1a2230'; ctx.lineWidth = Math.max(1, 0.1 * s); ctx.beginPath(); ctx.moveTo(a[0] - 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] - 0.1 * s, a[1]); ctx.moveTo(a[0] + 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] + 0.1 * s, a[1]); ctx.stroke(); ctx.fillStyle = '#d9b99b'; ctx.beginPath(); ctx.arc(a[0], a[1] - 1.58 * s, 0.12 * s, 0, 7); ctx.fill(); } }); }
       }
       // cửa chắn kính, cửa tàu, tên ga, vạch dừng và biển khoảng cách ở sân ga kề đường dừng của ta
-      if (st.plat) {
+      if (st.plat && !m.mainStop) {
         const sg = st.platSign, Xe = st.ours.x + sg * PEDGE;
         wall(() => Xe + sg * 0.2, PH, PH + 1.4, z0, z1, 'rgba(150,205,235,.22)');
         for (let car = 0; car < 16; car++) for (const off of [3.5, 21.5]) { const zz = d - (car * 25 + (25 - off)); if (zz < ZN || zz > 600) continue;
@@ -210,7 +211,7 @@
           tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) }); } }
     }
     // ---- biển chạy chậm, công nhân, hươu, dây điện hỏng
-    for (const zn of W.zones) {
+    for (const zn of W.zones.concat(S.turnoutZones(T).map(z => ({ s0: z.s0, s1: z.s1, v: z.v, tA: -1e9, tB: 1e9 })))) {   // gồm biển tốc độ qua ghi vào/ra đường sân ga
       if (zn.hold || W.t > zn.tB || W.t < zn.tA - 1 || zn.v * 3.6 >= 284 || zn.s1 - zn.s0 > 5e8) continue;
       const num = Math.round(zn.v * 3.6 / 10) * 10;
       for (const [s, txt, col] of [[zn.s0, String(num), '#ffd23a'], [zn.s1, '解除', '#e8eef5']]) { const z = s - T.x; if (z < ZN || z > 1800) continue;

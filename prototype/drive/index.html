@@ -273,7 +273,7 @@ function txt(s, x, y, c, f, al) { ctx.fillStyle = c || '#e8eef5'; ctx.font = f |
 function panel(x, y, w, h, c) { ctx.fillStyle = c || '#18212c'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill(); }
 function button(x, y, w, h, label, fn, on, color) { ctx.fillStyle = on ? (color || '#2a6fd6') : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); txt(label, x + w / 2, y + h / 2 + 4, on ? '#fff' : '#c8d4e2', '12px system-ui', 'center'); btns.push({ x: x + curOX, y, w, h, fn }); }
 function lamp(x, y, label, on, color) { ctx.fillStyle = on ? color : '#243447'; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill(); if (on) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2; ctx.stroke(); } txt(label, x + 12, y + 4, on ? '#fff' : '#7a8ea5', '12px system-ui'); }
-const WHY = { line: 'giới hạn tuyến', stop: 'mẫu dừng ga', rain: 'mưa lớn', wind: 'gió', snow: 'tuyết', order: 'lệnh điều độ', fault: 'sự cố bệ trục', lead: 'tàu phía trước', eqk: 'sự cố/động đất', ga: 'đang đỗ ga', wire: 'dây điện' };
+const WHY = { turnout: 'ghi vào/ra đường ga (80 km/h)', line: 'giới hạn tuyến', stop: 'mẫu dừng ga', rain: 'mưa lớn', wind: 'gió', snow: 'tuyết', order: 'lệnh điều độ', fault: 'sự cố bệ trục', lead: 'tàu phía trước', eqk: 'sự cố/động đất', ga: 'đang đỗ ga', wire: 'dây điện' };
 const ZC = { rain: '#2f6fd6', wind: '#8a96a6', snow: '#dfe9f5', order: '#e08a2f', fault: '#d64a4a', eqk: '#9a5ad6', wire: '#d6c24a' };
 
 

@@ -61,6 +61,9 @@
     for (let i = 0; i < n; i++) { let a = 0, c = 0; for (let j = Math.max(0, i - r); j <= Math.min(n - 1, i + r); j++) { a += raw[j]; c++; } out[i] = a / c; }
     return out;
   }
-  root.Layout = { TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
+  // tàu dừng ở ga này phải rẽ ghi sang đường sân ga (đường dừng khác đường chính)? [I theo bố trí]
+  const _div = {};
+  function diverts(code, dir, pick) { const k = code + dir + pick; if (_div[k] === undefined) _div[k] = station(code, dir, pick).ours.x !== 0; return _div[k]; }
+  root.Layout = { diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);
