@@ -598,11 +598,6 @@
   }
   // độ lệch ngang của đường chính Tohoku so với đường ta khi tuyến mini rẽ ra (hoặc nhập vào) ở gần ga ghép/tách
   // đường chính Tohoku (đi thẳng) so với đường ta (rẽ sang tuyến mini, bị cong): độ lệch ngang = −(độ lệch của ta so với tiếp tuyến tại ngã rẽ)
-  // chiều lên (từ tuyến mini vào ga ghép): tàu nhập vào đường PHẢI của đôi Tohoku rồi chuyển sang đường TRÁI bằng ghi chữ X trước ga. rightLaneW = 1 khi đang chạy trên đường phải
-  function rightLaneW(W, s) {
-    const j = W.line.meta.junction; if (!j || W.dir !== 'up') return 0; const sj = sOfKm(j.km, 'up', W.line.kmEnd), sM = sOfKm(j.stationKm, 'up', W.line.kmEnd);
-    return smooth01(sj, sj + 300, s) * (1 - smooth01(sM - 1300, sM - 1150, s));
-  }
   const trunkCache = new Map();
   function trunkOff(W, s) {
     const j = W.line.meta.junction; if (!j) return 0; const key = W.lineId + W.dir; let tb = trunkCache.get(key);
@@ -917,7 +912,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { rightLaneW, oppKey, trunkOff, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { oppKey, trunkOff, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

@@ -55,6 +55,7 @@ Mọi tuyến chỉ dùng cá nhân. Dữ liệu sinh bằng `tools/build_lines.
 - **Xuất phát từ Tokyo (chuyến ghép):** đoàn Tohoku ở phía sau chạy tới nối vào trong ~30 s, nối xong ~45 s mới đóng cửa được.
 - **Chiều xuống tới Morioka/Fukushima:** mini tách khỏi đoàn Tohoku; phần Tohoku **ở lại sân ga** (hiện trong khung 2D, bản đồ nhỏ, camera cuối đoàn) rồi mini chạy tiếp sang tuyến riêng. Chuyến bắt đầu đúng ga tách cũng có phần Tohoku đứng phía sau.
 - **Chiều lên:** đoàn Tohoku chờ sẵn ở ga; vạch dừng của mini lùi về phía sau đúng chiều dài E5 + khe nối 2,5 m; nối xong đầu đoàn nhảy tới đầu tàu Tohoku.
+- **Ngã rẽ (theo người dùng, 2026-10-22):** mini rẽ khỏi đường TRÁI của đôi Tohoku (đường chiều xuống), cách ga ~2 km sau ghi chữ X ra ga; chiều lên đường mini nhập thẳng vào đường trái (chiều về Tokyo), không phải chuyển làn bằng ghi X. Cam trước luôn đi đường trái, cam sau thấy đuôi tàu đi theo nhánh nhập vào.
 - **Đường chính Tohoku tách/nhập** cách ga ~0,9 km (`junction` trong `LINE_META`): vẽ trong khung buồng lái và bản đồ nhỏ. Hình học nhánh là [I].
 - **Camera cuối đoàn (phím B hoặc nút trên thanh trên):** dựng "thế giới phản chiếu" (hướng đảo, s' = chiều dài tuyến − s) rồi dùng lại bộ vẽ buồng lái.
 - **Tàu ngược chiều trên đoạn Tohoku** có xác suất là đoàn ghép (mini ở đuôi nếu ta đi xuống, ở đầu nếu ta đi lên); **tàu đỗ ở đường phụ** của ga (~30% ga có đường phụ). Tỉ lệ là [I].

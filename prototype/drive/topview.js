@@ -22,7 +22,7 @@
     const km = z => S.kmOfS(T.x + z, W.dir, L.kmEnd);
     const heading = LAY.bearingAt(L, S, W.dir, T.x);
     const sts = []; M.forEach((m, i) => { const d = m.s - T.x; if (d < -1300 || d > 1900) return; const key = W.lineId + ':' + m.i + ':' + W.dir; const st = cache[key] || (cache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, m.i)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')) }); });
-    const ourPath = z => { let x = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) x += q.st.ours.x * LAY.spread(T.x + z, q.m.s); return x + (L.meta.junction ? LAY.ADJ * S.rightLaneW(W, T.x + z) : 0); };      // chiều lên: chạy đường phải sau ngã rẽ rồi sang trái ở ghi chữ X
+    const ourPath = z => { let x = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) x += q.st.ours.x * LAY.spread(T.x + z, q.m.s); return x; };
     const lane = ourPath(0);
     const latT = LAY.lateralTable(L, S, W.dir, T.x, VIEW_R + 400, 10), latB = LAY.lateralTableBack(L, S, W.dir, T.x, len + VIEW_R + 400, 10);
     const off = z => { const tab = z >= 0 ? latT : latB, f = Math.abs(z) / 10, i = Math.min(tab.length - 2, Math.floor(f)); return tab[i] + (tab[i + 1] - tab[i]) * (f - i); };      // z<0: đường phía sau tàu cũng cong khi tàu đang trong đường cong
