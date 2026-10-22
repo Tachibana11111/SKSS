@@ -272,7 +272,7 @@
       while (z < hi && n++ < 700) {
         const dz = clamp(z * z * 3 / (c.f * xrel), 0.04, 8), z2 = Math.min(hi, z + dz), zm = (z + z2) / 2, xa = P(fxp, 0, z)[0], xb = P(fxp, 0, z2)[0];   // lát mảnh ≤ ~3 px nên thân tàu liền một khối, không bậc thang
         const x0 = Math.min(xa, xb), x1 = Math.max(xa, xb);
-        if (x1 > px - 40 && x0 < px + pw + 40) { const s0 = (1 - tOf(z)) * m.width, s1 = (1 - tOf(z2)) * m.width, sx = Math.min(s0, s1), sw = Math.max(0.5, Math.abs(s1 - s0)), hgt = c.f * 3.7 / zm, a0 = P(fxp, 0.1, zm); ctx.drawImage(sp.img, sx, 0, Math.min(sw, m.width - sx), m.height, x0, a0[1] - hgt, x1 - x0 + 0.8, hgt); }
+        if (x1 > px - 40 && x0 < px + pw + 40) { const s0 = (1 - tOf(z)) * m.width, s1 = (1 - tOf(z2)) * m.width, sx = Math.min(s0, s1), sw = Math.max(0.5, Math.abs(s1 - s0)), hgt = c.f * 3.7 / zm, a0 = P(fxp, 0.1, zm); ctx.fillStyle = 'rgba(30,35,42,.96)'; ctx.fillRect(x0, a0[1] - hgt * 0.27, x1 - x0 + 0.8, hgt * 0.25); ctx.drawImage(sp.img, sx, 0, Math.min(sw, m.width - sx), m.height, x0, a0[1] - hgt, x1 - x0 + 0.8, hgt); }      // gầm tàu đặc (tối): ảnh có khe hở giữa các bánh nên nếu không chèn thì thấy tà vẹt/ray của đường đó xuyen qua thân
         z = z2;
       }
     };
