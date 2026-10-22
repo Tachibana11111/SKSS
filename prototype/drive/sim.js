@@ -613,9 +613,9 @@
     M.forEach((m, k) => {
       const st = L.stations[m.i]; if (!st || !st.lay || (k === 0 && m.s === M[0].s && false)) return;
       const sc = Ly.station(st.lay, W.dir, m.i), cand = sc.tracks.filter(t => !t.main && t !== sc.ours); if (!cand.length || r() > 0.3) return;
-      const t = cand[Math.floor(r() * cand.length)]; let key = L.meta.defVeh;
-      if (L.meta.coupleMini && st.km <= L.meta.coupleMini.maxKm && r() < 0.5) key = r() < 0.5 ? 'E5' : (r() < 0.5 ? 'E5+E6' : 'E8+E5');
-      W.stabled.push({ k, i: m.i, track: t, key, front: m.s + (r() * 100 - 30) });
+      const t = cand[Math.floor(r() * cand.length)], face = t.own ? 1 : -1; let key = L.meta.defVeh;      // face = 1: đỗ quay đầu theo chiều chạy của ta; -1: quay ngược lại (đường chiều kia)
+      if (L.meta.coupleMini && st.km <= L.meta.coupleMini.maxKm && r() < 0.5) { const north = (W.dir === 'down') === (face === 1), mini = r() < 0.5 ? 'E6' : 'E8'; key = r() < 0.4 ? 'E5' : (north ? mini + '+E5' : 'E5+' + mini); }      // mini luôn ở phía bắc đoàn
+      W.stabled.push({ k, i: m.i, track: t, key, face, front: m.s + (r() * 100 - 30) });
     });
   }
   function createWorld(lineId, trip, opts) {
