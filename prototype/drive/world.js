@@ -7,6 +7,10 @@
   const cache = new Map(), have = {};                // 'lid/k' -> {b, a, r, w, x} | null (không có) | 'loading'
   const srcOf = (lid, s) => { for (;;) { const sh = SHARE[lid]; if (sh && s < sh[1]) lid = sh[0]; else return lid; } };
 
+  // tệp world/<tuyến>/<k>.js gọi World._r(tuyến, k, base64)
+  function reg(lid, k, b64) {
+    try { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const d = parse(u.buffer); cache.set(lid + '/' + k, d); if (d) have[lid] = true; } catch (e) { cache.set(lid + '/' + k, null); }
+  }
   function parse(buf) {
     const dv = new DataView(buf); if (dv.getUint8(0) !== 87 || dv.getUint8(1) !== 49) return null; let p = 2;
     const nb = dv.getUint32(p, true), na = dv.getUint32(p + 4, true), nr = dv.getUint32(p + 8, true), nw = dv.getUint32(p + 12, true), nx = dv.getUint32(p + 16, true); p += 20;
@@ -24,7 +28,8 @@
     const key = lid + '/' + k, c = cache.get(key); if (c !== undefined) return c === 'loading' ? undefined : c;
     if (have[lid] === false) return null;
     cache.set(key, 'loading');
-    fetch(`world/${lid}/${k}.bin`).then(r => r.ok ? r.arrayBuffer() : null).then(b => { const d = b ? parse(b) : null; cache.set(key, d); if (d) have[lid] = true; }).catch(() => { cache.set(key, null); });
+    if (typeof document === 'undefined') { cache.set(key, null); return null; }
+    const sc = document.createElement('script'); sc.src = `world/${lid}/${k}.js`; sc.onerror = () => { cache.set(key, null); sc.remove(); }; sc.onload = () => sc.remove(); document.head.appendChild(sc);      // thẻ script: chạy được cả khi mở bằng file://
     return undefined;
   }
   // các đoạn dữ liệu phủ khoảng s (chiều xuống) [a, b]: [{lid, k, s0, data}]
@@ -109,5 +114,5 @@
     }
     return out;
   }
-  root.World = { poles, parse, drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
+  root.World = { _r: reg, poles, parse, drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
 })(typeof window !== 'undefined' ? window : globalThis);

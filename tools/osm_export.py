@@ -1,4 +1,4 @@
-# Biên dịch cảnh vật OSM (data-osm/feat_all.pkl, từ osm_features.py) thành các tệp nhị phân nhỏ theo đoạn 4 km: prototype/drive/world/<tuyến>/<k>.bin
+# Biên dịch cảnh vật OSM (data-osm/feat_*.pkl, từ osm_features.py) thành các tệp .js nhỏ (base64 của dữ liệu nhị phân) theo đoạn 4 km: prototype/drive/world/<tuyến>/<k>.js
 # (k = floor(s / 4000), s = km·1000 của game). Toạ độ (s, d): d dương = bên TRÁI đường xuống; đường ray là đường ray chiều xuống.
 # Tệp ra là dữ liệu phái sinh từ OpenStreetMap (© OpenStreetMap contributors, ODbL 1.0): chỉ dùng cá nhân, đã thêm vào .gitignore.
 import os, sys, pickle, struct, math, json
@@ -93,7 +93,8 @@ def write_line(lid, F):
             for cl, br, c in b[key]:
                 out += struct.pack('<BBH', cl, br, len(c)) + enc_pts(c, s0)
         g = grid_of(b, s0); out += struct.pack('<I', len(g)) + g
-        open(os.path.join(d, f'{k}.bin'), 'wb').write(bytes(out)); tot += len(out)
+        import base64
+        open(os.path.join(d, f'{k}.js'), 'w').write('World._r("%s",%d,"%s");' % (lid, k, base64.b64encode(bytes(out)).decode())); tot += len(out)      # .js (không phải .bin) để mở được cả bằng file:// (thẻ script không bị chặn như fetch)
     json.dump({'ch': CH, 'k0': k0, 'k1': k1}, open(os.path.join(d, 'index.json'), 'w'))
     print(lid, 'đoạn', k1 - k0 + 1, 'dung lượng', round(tot / 1e6, 1), 'MB;', {k: sum(len(b[k]) for b in buckets.values()) for k in ('b', 'a', 'r', 'w', 'x')}, flush=True)
 
