@@ -140,6 +140,8 @@
       // ghi chữ X (hai ghi bắt chéo) nối đường ta và đường ngược chiều ở hai đầu mỗi ga
       for (const q of sts) for (const zc of [q.d - XA, q.d + XB]) { if (zc + 150 < zf || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); };
         railStrip(z => lerp(0, oppAt(z), sm((z - zc) / 150)), zc, zc + 150, false); railStrip(z => lerp(oppAt(z), 0, sm((z - zc) / 150)), zc, zc + 150, false); }
+      for (const jc of L.meta.junctions || []) if (jc.xover) for (const zc of S.xoverZ(W, T, jc)) { if (zc + 150 < zf || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); }, tx = z => S.trunkOff(W, T.x + z);
+        railStrip(z => lerp(tx(z), tx(z) + ADJ, sm((z - zc) / 150)), zc, zc + 150, false); railStrip(z => lerp(tx(z) + ADJ, tx(z), sm((z - zc) / 150)), zc, zc + 150, false); }      // ghi chữ X trên đường chính (Takasaki)
     };
     // khung cửa ra hầm: hầm thường là vòm; ga ngầm (Tokyo, Ueno của Tohoku) mở rộng bằng cả bề ngang sân ga
     const openingPoly = () => { if (zExit === null || zExit <= ZN) return null; const z = zExit, near = sts.filter(q => Math.abs(q.d - z) < 150 && q.st.extent), wide = near.length ? [Math.min(...near.map(q => q.st.extent[0])) - 0.8, Math.max(...near.map(q => q.st.extent[1])) + 0.8] : null, pts = [];

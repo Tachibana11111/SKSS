@@ -85,7 +85,7 @@
       grade: [[0, 66.0, 12, 30]]
     },
     hok: {
-      pa: '北陸', defVeh: 'E7', flipDown: true, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, line: 'jts', shared: true }], snow: [[140, 300, 200, 'tuyết Karuizawa–Joetsu-Myoko'], [300, 575.6, 180, 'tuyết Itoigawa–Tsuruga']],
+      pa: '北陸', defVeh: 'E7', flipDown: true, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, line: 'jts', shared: true, xover: true }], snow: [[140, 300, 200, 'tuyết Karuizawa–Joetsu-Myoko'], [300, 575.6, 180, 'tuyết Itoigawa–Tsuruga']],
       limits: [[0, 30.3, 110], [30.3, 105, 275], [105, 575.6, 260]],
       tunnels: [[254, 276.2, 'Iiyama'], [284, 295, 'Kubiki']],
       biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [120, 160, 'mountain'], [218, 228, 'urban'], [240, 335, 'mountain'], [386, 398, 'urban'], [445, 458, 'urban'], [575.6 - 10, 575.6, 'urban']],
@@ -229,6 +229,8 @@
   function leadDiverged(W, Ld) {
     if (Ld.fj === undefined || W.dir !== 'down') return false; return Ld.x - Ld.veh.len > sOfKm(W.line.meta.junctions[Ld.fj].km, 'down', W.line.kmEnd) + 60;
   }
+  // ghi chữ X (hai ghi bắt chéo) trên đường chính ngay sau ngã rẽ (Takasaki): hai đoạn nối chéo dài 150 m, [z đầu] so với đầu tàu
+  function xoverZ(W, T, jc) { const sj = sOfKm(jc.km, W.dir, W.line.kmEnd) - T.x; return W.dir === 'down' ? [sj + 120, sj + 420] : [sj - 570, sj - 270]; }
   function leaderOf(T) {
     const W = T.W; if (!W.net) return T.isLead ? null : W.lead;
     let best = null; for (const O of W.net.trains) { if (O === T || O.phase === 'end' || O.phase === 'dwell' || offMain(O)) continue; if (O.x > T.x && (!best || O.x < best.x)) best = O; } return best;
@@ -975,7 +977,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { xoverZ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

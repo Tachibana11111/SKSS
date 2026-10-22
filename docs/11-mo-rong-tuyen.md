@@ -68,7 +68,8 @@ Mọi tuyến chỉ dùng cá nhân. Dữ liệu sinh bằng `tools/build_lines.
 Người dùng nêu (2026-10-22): Joetsu và Hokuriku đi chung đường với Tohoku từ Tokyo tới Omiya, rồi rẽ trái; tới Takasaki hai tuyến tách nhau; mọi đoạn đều là đường đôi; đoạn chung có thể phải nhường nhau nhiều.
 
 - **Hình học [I]:** Joetsu rẽ trái khỏi Tohoku sau Omiya (km 32,3; cong R 4.000 m dài 1,5 km), Hokuriku rẽ trái khỏi Joetsu sau Takasaki (km 107,0, cùng thông số) và vẫn rẽ trái khỏi Tohoku ở Omiya. Góc rẽ và km là suy luận; chỉ có thứ tự và hướng rẽ lấy từ bản đồ người dùng cung cấp. Đường của tuyến cha vẽ ở buồng lái, bản đồ nhỏ và camera sau như ngã rẽ của mini-Shinkansen (dùng chung `meta.junctions`).
-- **Chưa làm:** ghi chữ X (đường chéo) ở Takasaki, không giới hạn tốc độ qua ghi rẽ; tuyến Tohoku không vẽ nhánh Joetsu tách ra bên trái.
+- **Ghi chữ X ở Takasaki [I]:** hai đoạn nối chéo giữa hai đường của tuyến Joetsu ngay sau ngã rẽ (cách ngã rẽ 120 m và 420 m, mỗi đoạn dài 150 m), vẽ ở buồng lái và bản đồ nhỏ, cả hai chiều. Chỉ là hình vẽ: tàu vẫn chạy thẳng hoặc rẽ trái, chưa có giới hạn tốc độ qua ghi.
+- **Chưa làm:** giới hạn tốc độ qua ghi rẽ; tuyến Tohoku không vẽ nhánh Joetsu tách ra bên trái.
 - **Tàu đi trước thuộc tuyến cha [D]:** tàu Tohoku chạy trước Joetsu/Hokuriku trên Tokyo–Omiya, tàu Joetsu chạy trước Hokuriku trên Omiya–Takasaki, lấy từ lịch thật (nội suy theo km). Chiều xuống: tàu đó chạy thông qua ngã rẽ rồi sang đường chính (vẽ lệch ngang theo ngã rẽ), hết cản đường ta. Chiều lên: tàu xuất hiện đang chạy trên đường chính, nhập vào trước ngã rẽ. Giãn cách 90–1.500 s, không để tàu ta vượt. Chọn giữa tàu cùng tuyến và tàu tuyến cha theo khoảng cách thời gian gần hơn. Tàu tuyến cha cũng thông qua ga ta đỗ ở đường tránh (hiện ở màn thông báo "thông qua" và cảnh tàu vượt). Chỉ áp dụng cho tàu của người chơi và tàu chạy trước, chưa cho chế độ điều độ.
 
 ## 4. Hạn chế đã biết
