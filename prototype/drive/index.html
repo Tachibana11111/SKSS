@@ -192,7 +192,7 @@ const act = {
   power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, setpw(n) { Sim.setPower(T, n); }, setbk(n) { Sim.setBrake(T, n); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
   door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, csAdj(d) { Sim.adjustCS(T, d); },
   ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', 'Không có lệnh nào cần nhắc lại.'); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
-  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, atcsw() { Sim.toggleATC(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
 };
 function doAct(name, arg) { if (!W || replaying) return; recActs.push([tickCount, name, arg]); act[name](arg); }
 addEventListener('keydown', e => {
@@ -218,7 +218,7 @@ addEventListener('keydown', e => {
   else if (k === 'Enter') { document.activeElement.blur(); doAct('door'); }
   else if (k === 'c' || k === 'C') doAct('cs'); else if (k === '[') doAct('csAdj', -5); else if (k === ']') doAct('csAdj', 5);
   else if (k === 'y' || k === 'Y') doAct('ack'); else if (k === 'n' || k === 'N') doAct('no');
-  else if (k === 'v' || k === 'V') doAct('wiper'); else if (k === 'l' || k === 'L') doAct('lamp'); else if (k === 'a' || k === 'A') doAct('atcsw');
+  else if (k === 'v' || k === 'V') doAct('wiper'); else if (k === 'l' || k === 'L') doAct('lamp'); else if (k === 'a' || k === 'A') doAct('atcsw'); else if (k === 'g' || k === 'G') doAct('pan');
   else if (k === 'm' || k === 'M') doAct('pa'); else if (k === 't' || k === 'T') doAct('auto');
   else return;
   e.preventDefault();

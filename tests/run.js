@@ -264,6 +264,9 @@ section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đ�
   { const W = mk(), T = W.player; ok(W.dead.length === 3 && W.dead[0].hzA === 50 && W.dead[0].hzB === 60, 'hok xuống: đoạn đầu 50→60 Hz'); Sim.requestClose(T); let n = 0;
     while (n++ < 4000 && T.x < W.dead[0].s1 + 100) { Sim.tick(W, 0.05, {}, false); T.pw = 13; }
     ok(T.deadViol === 1 && T.vcbUntil > W.t - 12, 'kéo lực vào đoạn cách điện: hồ quang, mất lực 12 s', T.deadViol); }
+  { const W = mk(), T = W.player; Sim.requestClose(T); ok(T.pan === true, 'cần vẹt mặc định nâng'); let n = 0; while (n++ < 4000 && T.x < W.dead[0].s0 - 1000) { Sim.tick(W, 0.05, {}, false); T.pw = 13; }
+    Sim.togglePan(T); ok(T.pan === false, 'hạ cần vẹt'); while (n++ < 4000 && T.x < W.dead[0].s1 + 100) { T.pw = 13; Sim.tick(W, 0.05, {}, false); }
+    ok(T.deadViol === 0 && T.f <= 0, 'hạ cần vẹt: qua đoạn cách điện không lỗi, không có lực kéo', T.deadViol); }
   { const W = mk(), T = W.player; Sim.requestClose(T); let n = 0; while (n++ < 4000 && T.x < W.dead[0].s0 - 1000) { Sim.tick(W, 0.05, {}, false); T.pw = 13; }
     while (n++ < 4000 && T.x < W.dead[0].s1 + 100) { T.pw = 0; Sim.tick(W, 0.05, {}, false); }
     ok(T.deadViol === 0, 'về N trước đoạn cách điện: không lỗi'); }

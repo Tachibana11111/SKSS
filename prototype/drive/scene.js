@@ -247,6 +247,15 @@
         const tc = scene._tint.getContext('2d'); tc.clearRect(0, 0, scene._tint.width, scene._tint.height); tc.drawImage(img, spr.width - srcW, 0, srcW, spr.height, 0, 0, srcW * f, dh); tc.globalCompositeOperation = 'source-atop'; tc.fillStyle = 'rgba(6,10,24,' + (0.5 * night) + ')'; tc.fillRect(0, 0, ow, oh); tc.globalCompositeOperation = 'source-over';
         ctx.drawImage(scene._tint, 0, 0, ow, oh, fx - srcW * f, base - (spr.railY * f * SV) + 2, ow, oh);
       } else ctx.drawImage(img, spr.width - srcW, 0, srcW, spr.height, fx - srcW * f, base - (spr.railY * f * SV) + 2, srcW * f, dh);
+      { // cần vẹt (パンタグラフ): đặt đúng chỗ nắp cần vẹt trên nóc từng mẫu tàu (đọc từ ảnh: [số toa, vị trí px trong toa]); nâng thì chạm dây điện, hạ thì gập sát nóc
+        const PAN = { n700: [[5, 264], [12, 85]], n700s: [[5, 260], [12, 87]], e5: [[3, 293], [7, 293]], h5: [[3, 293], [7, 293]], e6: [[2, 242], [6, 42]], e8: [[2, 242], [6, 42]], e7: [[5, 277], [7, 285]], t4: [[3, 78], [5, 258]], s800: [[2, 170], [5, 170]], kamome: [[2, 175], [5, 175]], e926: [[2, 140], [5, 140]] };
+        const nm = SMAP[key] || 'n700', roofY = base - spr.railY * f * SV + 2, wy = base - 60; scene._pa = (scene._pa === undefined ? 1 : scene._pa) + ((T.pan === false ? 0 : 1) - (scene._pa === undefined ? 1 : scene._pa)) * 0.12;
+        for (const [ci, ox] of PAN[nm] || []) { const car = spr.cars && spr.cars[ci - 1]; if (!car) continue; const x0 = fx - (spr.width - car.x - ox) * f; if (x0 < fx - srcW * f + 10) continue;
+          const topY = roofY - 3 - (roofY - wy - 3) * scene._pa, kx = 8 + 5 * (1 - scene._pa), mid = (roofY + topY) / 2; ctx.strokeStyle = night > 0.3 ? '#8d98a6' : '#cfd6de'; ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.moveTo(x0 - kx, roofY); ctx.lineTo(x0 + 1, mid - 3 * scene._pa); ctx.lineTo(x0 - kx * 0.3, topY); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x0 + kx, roofY); ctx.lineTo(x0 + 1, mid - 3 * scene._pa); ctx.stroke();
+          ctx.fillStyle = '#2b3138'; ctx.fillRect(x0 - kx * 0.3 - 9, topY - 2, 18, 3);
+          if (scene._pa > 0.95 && lead && T.v > 5 && Math.floor(now / 90) % 9 === 0) { ctx.fillStyle = '#ffe9a0'; ctx.fillRect(x0 - 3 + Math.random() * 6, topY - 4 - Math.random() * 4, 2, 2); } }
+      }
       if (lead && root.Sim.lampOn(W, T)) { ctx.fillStyle = 'rgba(255,245,190,' + (0.16 + 0.12 * night + 0.05 * Math.sin(now / 120)) + ')'; ctx.beginPath(); ctx.moveTo(fx - 2, base - 22); ctx.lineTo(fx + 100 + 60 * night, base - 32); ctx.lineTo(fx + 100 + 60 * night, base - 3); ctx.closePath(); ctx.fill(); }
     } else trainProc(ctx, fx, base, (root.Sim.VEH[key] || T.veh).len * K, 26, key, 1, false);
     };

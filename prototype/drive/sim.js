@@ -209,7 +209,7 @@
     const veh = cpDone ? VEH[opts.cp[1]] : (VEH[opts.veh] || VEH['N700']), downTrip = M[M.length - 1].i >= M[0].i;
     const T = { M, W, veh, load: opts.load != null ? opts.load : 0.7, k: 0, x: M[0].s, v: 0, f: 0, cmd: 0, pw: 0, bk: 0, notch: 0, a: 0, phase: 'dwell', dwellT: 0, started: false, atc: false, atcCount: 0, atcOk: 0, confirmed: false, needConfirm: false,
       allowed: 0, why: '', results: [], log: [], comfort: 0, jerkTime: 0, earlyDep: 0, excused: 0, holds: {}, forced: -1, cut: false, arrT: 0, free: 0,
-      lamp: 'auto', lampBad: 0, atcOn: true, atcArm: -1e9, atcOffBad: 0, atcCuts: 0, door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, animalHit: 0,
+      lamp: 'auto', lampBad: 0, atcOn: true, pan: true, atcArm: -1e9, atcOffBad: 0, atcCuts: 0, door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, animalHit: 0,
       xingHit: 0, cp: opts.cp ? { i: opts.cp[0], v: opts.cp[1], done: cpDone, kind: downTrip ? 'split' : 'join' } : null, coup: null, gapX: 0, deadViol: 0, vcbUntil: -1e9, bt: 0, kwh: 0, regen: 0, grade: 0, anx: 0, anxMax: 0, paAt: -999, fireTunnel: 0, waitFor: null, blockedT: 0, trace: [],
       isLead: !!opts.lead, label: opts.label || '', id: opts.id || '' };
     // chuyến mini-Shinkansen xuất phát từ Tokyo: bắt đầu bằng cảnh ghép với đoàn Tohoku ở sân ga (khoảng cách thu lại rồi nối)
@@ -297,6 +297,8 @@
     if (W.t - T.atcArm <= 4) { T.atcOn = false; T.atcArm = -1e9; T.atc = false; T.needConfirm = false; if (T.phase === 'run' && T.v > 1) T.atcCuts++; W.say('bad', 'ATC: ĐÃ CẮT. KHÔNG còn phanh tự động bảo vệ. Chỉ cắt khi có lệnh; giữ tốc độ ≤ 30 km/h theo quy định [I]. Bấm lại để bật ATC.'); return 'off'; }
     T.atcArm = W.t; W.say('warn', 'CẮT ATC? Bấm A (hoặc nút ATC) lần nữa trong 4 giây để xác nhận.'); return 'arm';
   }
+  // Cần vẹt: hạ thì mất điện lưới (không kéo, không hoàn năng); qua đoạn cách điện nên hạ hoặc về N [N: JR hạ cần/ chạy trôi qua đoạn cách điện] [I]
+  function togglePan(T) { const W = T.W; T.pan = T.pan === false; W.say('info', T.pan ? 'Cần vẹt: NÂNG.' : 'Cần vẹt: HẠ. Không còn điện lưới: không kéo, không hoàn năng.'); return T.pan; }
   function confirmATC(T) { if (T.atc) T.confirmed = true; }
   // phát thanh trấn an hành khách (giảm bất an); hồi lại sau 45 s
   function announcePA(T) {
@@ -379,7 +381,7 @@
       if (T.phase !== 'run' || T.atc || T.cut) cancelCS(T, T.atc ? 'ATC phanh' : '');
       else { const vset = Math.min(T.csSet, Math.max(0, T.allowed - 3 / 3.6)), err = vset - T.v; cmd = clamp((resistOf(T, T.v) + mass * 9.81 * T.grade / 1000) / tractiveOf(T, T.v) + 0.6 * err, -0.25, 1); }
     }
-    if (T.vcbUntil > W.t && cmd > 0) cmd = 0;                                    // máy cắt chính nhảy: mất lực kéo
+    if ((T.vcbUntil > W.t || T.pan === false) && cmd > 0) cmd = 0;                                    // máy cắt chính nhảy: mất lực kéo
     if (T.cut) { cmd = EBCMD(T); T.atc = false; }
     else if (T.atcOn === false) { T.atc = false; T.needConfirm = false; }      // ATC đang cắt: không có phanh tự động
     else {
@@ -417,7 +419,7 @@
     const prevA = T.a, v0 = T.v;
     T.v = Math.max(0, T.v + a * dt); T.x += T.v * dt; T.a = a;
     // nhiệt phanh (má phanh nóng khi dùng phanh đĩa; tái sinh chia bớt ở tốc độ cao; phanh khẩn không tái sinh) và điện năng
-    if (aBr > 0 && T.v > 0.2) { const rg = T.f < -1.05 ? 0 : (T.v > 25 ? 0.7 : T.v > 12 ? 0.35 : 0.05); T.bt += 0.0004 * (1 - rg) * aBr * T.v * dt; T.regen += aBr * mass * T.v * rg * 0.75 * dt / 3.6e6; }
+    if (aBr > 0 && T.v > 0.2) { const rg = T.f < -1.05 || T.pan === false ? 0 : (T.v > 25 ? 0.7 : T.v > 12 ? 0.35 : 0.05); T.bt += 0.0004 * (1 - rg) * aBr * T.v * dt; T.regen += aBr * mass * T.v * rg * 0.75 * dt / 3.6e6; }
     T.bt = Math.max(0, T.bt - 0.003 * (1 + T.v / 30) * T.bt * dt); if (T.bt > (T.btMax || 0)) T.btMax = T.bt;
     if (Ft > 0) T.kwh += Ft * T.v / 0.9 * dt / 3.6e6;
     if (T.horn > 0) T.horn = Math.max(0, T.horn - dt);
@@ -584,7 +586,7 @@
     const W = T.W; if (T.isLead) return;
     for (const d of W.dead || []) {
       if (!d.warned && T.x >= d.s0 - 2500 && T.x < d.s0) { d.warned = true; W.say('warn', `Phía trước: đoạn cách điện đổi tần số ${d.hzA}→${d.hzB} Hz (${d.label}). Về N (cắt lực kéo) trước vạch và chạy trôi qua.`); }
-      if (T.x >= d.s0 && T.x <= d.s1 && !d.hit && T.f > 0.05 && !T.cut) {
+      if (T.x >= d.s0 && T.x <= d.s1 && !d.hit && T.f > 0.05 && !T.cut && T.pan !== false) {
         d.hit = true; T.deadViol++; T.vcbUntil = W.t + 12; W.shakeAt = W.t; W.shakeAmp = 2;
         W.say('bad', `Vào đoạn cách điện (${d.label}) khi đang kéo lực: hồ quang, máy cắt chính nhảy. Mất lực kéo 12 s. Lần sau về N trước vạch.`);
       }
@@ -978,7 +980,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;
