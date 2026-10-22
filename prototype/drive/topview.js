@@ -43,7 +43,7 @@
     // đường: đá dăm + hai ray, theo đường cong
     const line = (xf, z0, z1, w, col) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); const stp = z1 - z0 > 300 ? 20 : 8; let z = z0; for (;;) { const zz = Math.min(z, z1), x = X(xf(zz), zz), y = Y(zz); if (zz === z0) ctx.moveTo(x, y); else ctx.lineTo(x, y); if (zz >= z1) break; z += stp; } ctx.stroke(); };
     const tracks = [[() => 0, zLo, zHi], [oppAt, zLo, zHi]];
-    if (L.meta.junction) { const sj = S.sOfKm(L.meta.junction.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 1600, b = W.dir === 'down' ? sj + 1600 : sj; if (b > zLo && a < zHi) tracks.push([z => S.trunkOff(W, T.x + z), Math.max(zLo, a), Math.min(zHi, b)]); }       // đường chính Tohoku tách khỏi tuyến mini
+    if (L.meta.junction) { const sj = S.sOfKm(L.meta.junction.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj; if (b > zLo && a < zHi) tracks.push([z => S.trunkOff(W, T.x + z), Math.max(zLo, a), Math.min(zHi, b)]); }       // đường chính Tohoku tách khỏi tuyến mini
     for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; tracks.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), Math.max(zLo, q.d - 1150), Math.min(zHi, q.d + 630)]); }
     for (const [xf, z0, z1] of tracks) if (z1 > z0) line(xf, z0, z1, Math.max(3, kx * 2.6), dark ? '#1b2229' : '#464b4d');
     for (const q of sts) { const z0 = q.d - 420, z1 = q.d + 20; if (z1 < zLo || z0 > zHi) continue; for (const p of q.st.plats) { const za = Math.min(z1, zHi), zb = Math.max(z0, zLo), n = Math.max(2, Math.ceil((za - zb) / 20)), zs = Array.from({ length: n + 1 }, (_, i) => zb + (za - zb) * i / n);   // sân ga uốn theo đường cong: mỗi mép là một đường gấp khúc

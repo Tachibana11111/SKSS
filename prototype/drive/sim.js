@@ -596,9 +596,14 @@
     return W.dir === 'down' ? 'E5+' + mini : mini + '+E5';          // ta xuống thì tàu ngược chiều đi lên: mini ở đuôi; ta lên thì ngược lại
   }
   // độ lệch ngang của đường chính Tohoku so với đường ta khi tuyến mini rẽ ra (hoặc nhập vào) ở gần ga ghép/tách
+  // đường chính Tohoku (đi thẳng) so với đường ta (rẽ sang tuyến mini, bị cong): độ lệch ngang = −(độ lệch của ta so với tiếp tuyến tại ngã rẽ)
+  const trunkCache = new Map();
   function trunkOff(W, s) {
-    const j = W.line.meta.junction; if (!j) return 0; const sj = sOfKm(j.km, W.dir, W.line.kmEnd), d = W.dir === 'down' ? s - sj : sj - s;
-    return d > 0 ? j.side * 32 * smooth01(0, 1600, d) : 0;
+    const j = W.line.meta.junction; if (!j) return 0; const key = W.lineId + W.dir; let tb = trunkCache.get(key);
+    const Ly = root.Layout, L = W.line, sj = sOfKm(j.km, W.dir, L.kmEnd);
+    if (!tb) { tb = W.dir === 'down' ? Ly.lateralTable(L, root.Sim || api, W.dir, sj, 3200, 10) : Ly.lateralTableBack(L, root.Sim || api, W.dir, sj, 3200, 10); trunkCache.set(key, tb); }
+    const d = W.dir === 'down' ? s - sj : sj - s; if (d <= 0) return 0; const f = Math.min(d, 3190) / 10, i = Math.floor(f);
+    return -(tb[i] + (tb[i + 1] - tb[i]) * (f - i));
   }
   // tàu chạy trước trên đường Tohoku có thể là đoàn ghép (Hayabusa + Komachi, Yamabiko + Tsubasa): thêm đơn vị mini và ga tách/ghép cho nó
   function withMini(L, rec, dir, seed) {

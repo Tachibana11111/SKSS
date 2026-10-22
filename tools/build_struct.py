@@ -67,6 +67,7 @@ SEED = {'tsk': (20261021, 777), 'toh': (20261022, 778), 'jts': (20261023, 779), 
 # đoạn dùng chung đường với tuyến khác: sao chép kết cấu/đường cong của tuyến cha cho km < ngưỡng (để Tokyo–Omiya... giống nhau ở mọi tuyến)
 SHARE_FROM = {'jts': ('toh', 30.3), 'hok': ('jts', 105.0), 'yam': ('toh', 255.1), 'aki': ('toh', 496.5)}
 BASE_CURVE = {'jts': 4000, 'hok': 4000, 'nks': 4000}
+JUNC = {'yam': (256.0, 1.2, 1500, -1), 'aki': (497.4, 1.2, 1500, -1)}      # (km, chiều dài km, R m, dấu: -1 = rẽ trái khi đi xuống)
 MINI = {'yam': 255.1, 'aki': 496.5}                                    # km bắt đầu phần đường sắt thường (mini-Shinkansen)
 SINGLE = {'yam': [(255.1 + 7.0, 311.2), (313.5, 322.0), (342.2, 392.0), (400.0, 403.7)], 'aki': [(496.5, 623.8)]}     # đường đơn; đoạn đôi: Fukushima–Sekine, Akayu–Kita-Akayu, Uzen-Nakayama–Yamagata, Ashizawa–Funagata [N tên đoạn, km là I]
 XING = {'yam': (41, 12), 'aki': (45, 0)}                                # số đường ngang: (Yamagata–Shinjo [N: 41 sau năm 1999]; phần Fukushima–Yamagata [I]) và Akita [I]
@@ -122,6 +123,7 @@ def gen_curves(lid, ln):
     rnd = random.Random(SEED[lid][1]); km = 2.0; out = []; kmEnd = ln['kmEnd']
     if lid in SHARE_FROM:                                                  # đoạn dùng chung: sao chép đường cong của tuyến cha
         par, kp = SHARE_FROM[lid]; out = [c[:] for c in DONE[par]['curves'] if c[1] <= kp]; km = out[-1][1] + 0.0 if out else 2.0
+        if lid in JUNC: jk, jl, jr, jsg = JUNC[lid]; out.append([jk, round(jk + jl, 2), jr, jsg]); km = jk + jl         # đường mini rẽ khỏi trục Tohoku ngay sau ga ghép/tách: cong trái ~46° [I]
     def base(k):
         if lid == 'tsk':
             if k < 515.4: return 2500 if (k < 40 or 167 < k < 215 or 300 < k < 380 or k > 440) else 3000   # Tokaido: 2.500 m (Tokyo, đông Shizuoka, Aichi, Kyoto, Osaka) / 3.000 m (nơi khác) [N, chia theo km là I]

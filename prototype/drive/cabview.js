@@ -133,7 +133,7 @@
     };
     const drawTracks = (zFrom) => {
       const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]];
-      if (L.meta.junction) { const jc = L.meta.junction, sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 1600, b = W.dir === 'down' ? sj + 1600 : sj; if (b > zf && a < ZF) parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95]); }       // đường chính Tohoku
+      if (L.meta.junction) { const jc = L.meta.junction, sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj; if (b > zf && a < ZF) parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95]); }       // đường chính Tohoku
       for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + FB < ZN || q.d - FA > ZF) continue; parts.push([z => lerp(t.plain, t.x, spreadF(T.x + z, q.m.s)), Math.max(zf, q.d - FA), q.d + FB, 0.95]); }
       for (const [xf, z0, z1, a] of parts) ballastStrip(xf, z0, z1, a);       // đá dăm trước: đường nhánh không còn đè lên ray đường chính
       for (const [xf, z0, z1] of parts) railStrip(xf, z0, z1, true);
@@ -213,6 +213,10 @@
     // ---- dây điện trên cao (mỗi đường) và trụ điện giữa hai đường chính
     const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
     ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; wire(() => 0, ZN, ZF); wire(oppAt, ZN, ZF);
+    if (L.meta.junction) { const jc = L.meta.junction, sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = Math.max(ZN, W.dir === 'down' ? sj : sj - 3200), b = Math.min(ZF, W.dir === 'down' ? sj + 3200 : sj), tx = z => S.trunkOff(W, T.x + z);
+      if (b > a) { wire(tx, a, b); ctx.strokeStyle = 'rgba(214,222,232,.9)'; ctx.lineWidth = 1.5; for (const sx of [-0.72, 0.72]) { ctx.beginPath(); for (let z = a, f = true; z <= b; z += z < 400 ? 10 : 40, f = false) { const p = P(tx(z) + sx, 0.15, z); f ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); } ctx.stroke(); }       // ray đường Tohoku luôn thấy được dù ở xa
+        for (let k = Math.ceil((T.x + a) / 60), z = k * 60 - T.x; z < b; k++, z = k * 60 - T.x) items.push({ z, fn: () => { const X = tx(z) + 3.0, p0 = P(X, 0, z), p1 = P(X, 7.0, z), e = P(tx(z), 5.5, z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = Math.max(1, 0.32 * c.f / z); ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, 0.16 * c.f / z); ctx.beginPath(); ctx.moveTo(p1[0], p1[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } }); }
+      ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; }
     for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; wire(z => lerp(t.plain, t.x, spreadF(T.x + z, q.m.s)), q.d - FA, q.d + FB); }
     for (let k = Math.ceil((T.x + ZN) / 50), z = k * 50 - T.x; z < Math.min(1600, zLim); k++, z = k * 50 - T.x) items.push({ z, fn: () => { const oz = oppAt(z), X = oz / 2 + (hasSingle ? 2.8 * S.singleEff(W, T.x + z) : 0), a = P(X, 0, z), b = P(X, 7.0, z), w = Math.max(1, 0.32 * c.f / z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, w * 0.5); for (const XX of [0, oz]) { const e = P(XX, 5.5, z); ctx.beginPath(); ctx.moveTo(b[0], b[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(b[0] - w, b[1] - 1, w * 2, 2); } } });
 
@@ -246,8 +250,8 @@
         const xo = Math.min(oppAt(zc), 0) - 3.4, zz = Math.max(zc - 3.8, ZN + 0.2), sc = Math.max(1, c.f / Math.max(zz, 2));
         for (const [Xp, side] of [[3.5, 1], [xo, -1]]) { const a = P(Xp, 0, zz), b = P(Xp, 2.0, zz); ctx.strokeStyle = '#d8dde3'; ctx.lineWidth = Math.max(1, 0.12 * sc); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
           if (closing) { for (const lk of [0, 1]) { const q = P(Xp + side * (lk ? -0.5 : 0.5) * 0.0, 1.7 - lk * 0.45, zz); ctx.fillStyle = (flash ^ lk) ? 'rgba(255,50,40,1)' : 'rgba(110,20,20,1)'; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(1.2, 0.2 * sc), 0, 7); ctx.fill(); } } }
-        // thanh chắn của ta: hạ ngang qua hai đường khi tàu tới; nâng thẳng đứng khi chưa
-        { const xa = 3.5, xb = xo; const A = closing ? P(xa, 1.1, zz) : P(xa, 1.9, zz), B = closing ? P(xb, 1.1, zz) : P(xa, 3.6, zz); const n = closing ? 10 : 1; ctx.lineWidth = Math.max(1.4, 0.16 * sc);
+        // thanh chắn: nằm trên ĐƯỜNG BỘ (vuông góc với ray), mỗi bên một thanh đưa từ trụ ra phía ngoài; hạ ngang khi tàu tới, dựng đứng khi chưa
+        for (const zz2 of [Math.max(zc - 3.8, ZN + 0.2), zc + 3.8]) for (const [Xp, dirx] of [[3.5, 1], [xo, -1]]) { const A = closing ? P(Xp, 1.1, zz2) : P(Xp, 1.9, zz2), B = closing ? P(Xp + dirx * 6.0, 1.1, zz2) : P(Xp, 3.6, zz2), n = closing ? 8 : 1; ctx.lineWidth = Math.max(1.4, 0.16 * Math.max(1, c.f / Math.max(zz2, 2)));
           for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n; ctx.strokeStyle = i % 2 ? '#f2f2f2' : '#d63a2f'; ctx.beginPath(); ctx.moveTo(A[0] + (B[0] - A[0]) * t0, A[1] + (B[1] - A[1]) * t0); ctx.lineTo(A[0] + (B[0] - A[0]) * t1, A[1] + (B[1] - A[1]) * t1); ctx.stroke(); } }
         if (g.blocked) { const zq = Math.max(zc - 0.9, ZN + 0.3), a = P(-2.2, 0.25, zq), b = P(2.2, 0.25, zq), d = P(2.2, 1.5, zq), e = P(-2.2, 1.5, zq); quad(a, b, d, e, '#b3322d'); const w1 = P(-1.7, 0.95, zq), w2 = P(1.7, 0.95, zq), w3 = P(1.7, 1.4, zq), w4 = P(-1.7, 1.4, zq); quad(w1, w2, w3, w4, 'rgba(20,28,38,.85)'); }
       } });
