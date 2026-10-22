@@ -43,6 +43,7 @@
         g.beginPath(); g.moveTo(x0, Y(0)); g.lineTo(x0, Y(9)); g.stroke(); g.beginPath(); g.moveTo(x0 - 0.9 * ppm, Y(9)); g.lineTo(x0 + 0.9 * ppm, Y(9)); g.stroke();
         g.lineWidth = Math.max(0.7, 0.08 * ppm); for (const dy of [0, 0.7, 1.4]) { g.beginPath(); g.moveTo(x0, Y(9 - dy)); g.quadraticCurveTo((x0 + x1) / 2, Y(9 - dy) + 2.2 * ppm, x1, Y(9 - dy)); g.stroke(); } g.lineWidth = Math.max(1, 0.28 * ppm); }
     }
+    { const d = g.getImageData(0, 0, w, h).data; let top = 0; scan: for (; top < h; top++) for (let x = 0; x < w; x += 2) if (d[(top * w + x) * 4 + 3] > 8) break scan; cv.top = Math.max(0, top - 1); }      // hàng đầu tiên có nội dung: không vẽ phần trong suốt phía trên (đỡ tốn điểm ảnh)
     return cv;
   }
 
@@ -80,7 +81,7 @@
   //      tunnel(z), alpha(z), t (độ sáng 0..1), c (camera: cx, hy, f, pitch, camX, lane, off(z)), el(z) (độ cao ray so với mặt đất), CAMH, MIR }
   function draw(ctx, o) {
     frameNo++; const WD = o.WD, lvl = Math.max(0, Math.min(3, Math.round(o.t * 3))), t0 = performance.now(), want = [];
-    for (let k = 1; k >= 0; k--) for (const side of [1, -1]) { const L = LAYERS[k], ze = Math.min(o.zEnd, L.range);
+    for (let k = o.lite ? 0 : 1; k >= 0; k--) for (const side of [1, -1]) { const L = LAYERS[k], ze = Math.min(o.zEnd, L.range);
       for (let ti = Math.floor((o.Tx + o.zStart) / TILE); ti <= Math.floor((o.Tx + ze) / TILE); ti++) want.push({ layer: k, side, ti, lvl }); }
     // sinh các tấm còn thiếu (gần trước) trong ngân sách thời gian; khi thiếu nhiều (vừa vào tuyến) thì cho phép lâu hơn
     const missing = want.filter(w => !cache.has(keyOf(o, w))); missing.sort((a, b) => (a.ti - b.ti) || (a.layer - b.layer));
@@ -90,15 +91,15 @@
     const px0 = o.px - 24, px1 = o.px + o.pw + 24, c = o.c, f = c.f, cx = c.cx, hy = c.hy + c.pitch, camX = c.camX, lane = c.lane || 0, CAMH = o.CAMH, MIR = o.MIR;
     const sx_ = (e, z) => cx + f * (MIR * (e - lane + c.off(z)) - camX) / z;                     // x màn hình của điểm cách tim đường e (m) ở độ sâu z, không cấp phát
     const sy_ = (y, z) => hy + f * (CAMH - (y - o.el(z))) / z;                                  // y màn hình của điểm ở độ cao y trên mặt đất (mặt đất thấp hơn ray khi đi trên cao)
-    for (let k = 1; k >= 0; k--) for (const side of [1, -1]) {
+    for (let k = o.lite ? 0 : 1; k >= 0; k--) for (const side of [1, -1]) {
       const L = LAYERS[k]; let z = Math.max(o.zStart, 4); const ze = Math.min(o.zEnd, L.range);
       while (z < ze) {
         const e = side * Math.max(L.base, o.edge(side, z) + L.gap), dxdz = f * Math.abs(e) / (z * z), tb = (Math.floor((o.Tx + z) / TILE) + 1) * TILE - o.Tx;
         const z2 = Math.min(z + Math.max(0.05, Math.min(60, 9 / Math.max(dxdz, 0.02))), ze, tb), x0 = sx_(e, z), x1 = sx_(e, z2);
         if ((x0 < px0 && x1 < px0) || (x0 > px1 && x1 > px1) || o.tunnel(z)) { z = z2 > z ? z2 : z + 0.05; continue; }
         const ti = Math.floor((o.Tx + z + 0.001) / TILE), ent = cache.get(keyOf(o, { layer: k, side, ti, lvl })) || cache.get(keyOf(o, { layer: k, side, ti, lvl: lvl + 1 })) || cache.get(keyOf(o, { layer: k, side, ti, lvl: lvl - 1 }));
-        if (ent) { ent.used = frameNo; const cv = ent.cv, zm = (z + z2) / 2, yb = sy_(0, zm), yt = sy_(L.H, zm), sx = (o.Tx + z - ti * TILE) * L.ppm, sw = Math.min(Math.max(0.6, (z2 - z) * L.ppm), cv.width - sx), xa = Math.min(x0, x1), wd = Math.abs(x1 - x0) + 0.8;
-          if (yb - yt > 0.5 && sx >= 0 && sw > 0) { ctx.globalAlpha = o.alpha(zm); ctx.drawImage(cv, sx, 0, sw, cv.height, xa, yt, wd, yb - yt); } }
+        if (ent) { ent.used = frameNo; const cv = ent.cv, zm = (z + z2) / 2, yb = sy_(0, zm), top = cv.top || 0, yt = sy_(L.H - top / L.ppm, zm), sx = (o.Tx + z - ti * TILE) * L.ppm, sw = Math.min(Math.max(0.6, (z2 - z) * L.ppm), cv.width - sx), xa = Math.min(x0, x1), wd = Math.abs(x1 - x0) + 0.8;
+          if (yb - yt > 0.5 && sx >= 0 && sw > 0) { ctx.globalAlpha = o.alpha(zm); ctx.drawImage(cv, sx, top, sw, cv.height - top, xa, yt, wd, yb - yt); } }
         z = z2 > z ? z2 : z + 0.05;
       }
     }
