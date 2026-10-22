@@ -117,8 +117,8 @@
     };
     // mặt cầu rộng thêm để chứa đường nhánh / đường chính của tuyến cha khi còn sát đường ta (< 28 m), thu lại êm khi chúng tách xa
     const jw = o => Math.max(0, Math.min(1, (28 - Math.abs(o)) / 6));
-    const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
-    const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
+    const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) { x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main) x = Math.max(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) + 2.9); } const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
+    const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) { x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main) x = Math.min(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) - 2.9); } const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
     if (zExit === null) backdrop();
     // ---- dải tranh phong cảnh OSM hai bên (strips.js): thay các khối nhà 3D rời rạc; chỉ vẽ khi đã có dữ liệu và không ở trong hầm
     const useStrips = wdOn && !!root.Strips;
