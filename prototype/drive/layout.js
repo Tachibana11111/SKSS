@@ -15,8 +15,8 @@
     return s;
   }
   // pick: chọn đường dừng khi có nhiều đường (số nguyên). Trả về {tracks, plats, ref, opp, stops, ours}
-  function station(code, dir, pick) {
-    const s = tokens(code, dir), n = s.length, isT = i => s[i] !== 'P', width = i => (i > 0 && i < n - 1 && isT(i - 1) && isT(i + 1)) ? ISLAND : (i === 0 || i === n - 1) ? SIDE : ISLAND;
+  function station(code, dir, pick, rev) {      // rev: nhìn NGƯỢC chiều chạy (camera sau): đảo thứ tự trái-phải, giữ nguyên vai trò đường ta / đường ngược chiều
+    const s = rev ? tokens(code, dir).split('').reverse().join('') : tokens(code, dir), n = s.length, isT = i => s[i] !== 'P', width = i => (i > 0 && i < n - 1 && isT(i - 1) && isT(i + 1)) ? ISLAND : (i === 0 || i === n - 1) ? SIDE : ISLAND;
     const c = [0];
     for (let i = 1; i < n; i++) c[i] = c[i - 1] + (isT(i) && isT(i - 1) ? TRK_GAP : EDGE + width(isT(i) ? i - 1 : i) / 2);
     const idxT = []; for (let i = 0; i < n; i++) if (isT(i)) idxT.push(i);
@@ -26,12 +26,12 @@
     if (ref === undefined) ref = ownIdx.reduce((b, i) => Math.min(...oppIdx.map(o => Math.abs(c[o] - c[i]))) < Math.min(...oppIdx.map(o => Math.abs(c[o] - c[b]))) ? i : b, ownIdx[0]);
     const opp = idxT.find(i => s[i] === 'U') !== undefined ? idxT.find(i => s[i] === 'U') : oppIdx.reduce((b, i) => Math.abs(c[i] - c[ref]) < Math.abs(c[b] - c[ref]) ? i : b, oppIdx[0]);
     const X = i => -(c[i] - c[ref]);                           // X dương = bên trái màn hình (trước khi lật)
-    const tracks = idxT.map(i => ({ i, x: X(i), c: s[i], own: lc(s[i]) === 'd', thr: s[i] === 'D' || s[i] === 'U', plain: lc(s[i]) === 'd' ? 0 : ADJ, main: i === ref || i === opp }));
+    const tracks = idxT.map(i => ({ i, x: X(i), c: s[i], own: lc(s[i]) === 'd', thr: s[i] === 'D' || s[i] === 'U', plain: lc(s[i]) === 'd' ? 0 : (rev ? -ADJ : ADJ), main: i === ref || i === opp }));
     const plats = []; for (let i = 0; i < n; i++) if (!isT(i)) { const w = width(i); plats.push({ xa: X(i) - w / 2, xb: X(i) + w / 2, side: i === 0 || i === n - 1 }); }
     // đường dừng của ta: đường chiều ta (d) có sân ga kề bên
     const stops = tracks.filter(t => t.own && !t.thr && plats.some(p => Math.abs(Math.min(Math.abs(p.xa - t.x), Math.abs(p.xb - t.x)) - EDGE) < 0.01));
     if (!stops.length) tracks.filter(t => t.own).forEach(t => stops.push(t));
-    const ours = stops[Math.abs(pick | 0) % stops.length];
+    const ours = pick && typeof pick === 'object' ? (tracks.find(t => t.i === pick.i) || stops[0]) : stops[Math.abs(pick | 0) % stops.length];       // pick là đối tượng {i}: ép chọn đúng đường theo chỉ số trong chuỗi bố trí (camera sau)
     // sân ga kề đường dừng của ta
     const plat = plats.find(p => Math.abs(Math.min(Math.abs(p.xa - ours.x), Math.abs(p.xb - ours.x)) - EDGE) < 0.01) || null;
     const platSign = plat ? ((plat.xa + plat.xb) / 2 > ours.x ? 1 : -1) : 1;

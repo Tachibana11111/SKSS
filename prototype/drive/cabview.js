@@ -3,7 +3,7 @@
 // Toạ độ mô hình: Z = khoảng cách phía trước (m, theo chiều chạy), X = ngang (m), Y = cao (m). Nhật chạy bên TRÁI: proj() lật X (MIR=-1) nên X dương hiện bên trái màn hình.
 // Đường thông qua của ta ở X=0, đường thông qua ngược chiều ở X=-4,3 (ADJ); bố trí từng ga (số đường, sân đảo/hai bên) lấy từ layout.js; đường cong và cao độ (nền/cầu cạn/cầu/hầm) từ dữ liệu tuyến.
 (function (root) {
-  const CAMH = 2.9, GAUGE = 1.435, MIR = -1, ADJ = -4.3, PEDGE = 1.75, PH = 1.25, ZN = 3.5, ZF = 2600, STEP = 10;
+  const CAMH = 2.9, GAUGE = 1.435, MIR = -1, ADJ = -4.3, ADJ0 = -4.3, PEDGE = 1.75, PH = 1.25, ZN = 3.5, ZF = 2600, STEP = 10;
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const lerp = (a, b, t) => a + (b - a) * t;
   const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -30,6 +30,9 @@
   function draw(ctx, px, py, pw, ph, W, T, R) {
     const now = performance.now(), v = T.v, items = [];
     const L = W.line, S = root.Sim, M = T.M, LAY = root.Layout;
+    // camera sau: toạ độ phản chiếu nên vùng toả đường của ga (trước vạch 1150 m, sau vạch 630 m) và ghi chữ X đảo phía; spread phải tính trong hệ toạ độ gốc
+    const ADJ = W.rear ? -ADJ0 : ADJ0;       // nhìn lùi: ta chạy làn trái nên đường ngược chiều nằm bên TRÁI của camera
+    const rr = !!W.rear, Lm2 = L.kmEnd * 1000, spreadF = rr ? (a, b) => LAY.spread(Lm2 - a, Lm2 - b) : LAY.spread, FA = rr ? 630 : 1150, FB = rr ? 1150 : 630, XA = rr ? 720 : 1300, XB = rr ? 1300 : 720;
     const hour = ((W.trip.t0 + W.t) % 86400 + 86400) % 86400 / 3600;
     const day = smooth(5.3, 7.3, hour) * (1 - smooth(16.8, 19.0, hour)), night = 1 - day, dusk = Math.max(0, 1 - Math.abs(hour - 6.3) / 1.2) + Math.max(0, 1 - Math.abs(hour - 17.8) / 1.3);
     const inSnow = W.zones.some(z => z.kind === 'snow' && T.x >= z.s0 - 3000 && T.x < z.s1), rain = W.rainHere;
@@ -52,12 +55,12 @@
     const target = S.nextTarget(T), tIdx = T.phase === 'dwell' ? T.k : target;
     const sts = [];
     M.forEach((m, i) => { const d = m.s - T.x; if (d < -1000 || d > 3600) return;      // giữ ga tới 1 km phía sau để ghi chữ X lúc rời ga không biến mất sớm
-       const key = W.lineId + ':' + m.i + ':' + W.dir; const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, m.i)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')),   // ga vừa dừng (kể cả dừng khẩn không có lịch) vẫn giữ đường sân ga cho tới khi tàu rời hẳn
+       const key = W.lineId + ':' + m.i + ':' + W.dir + (W.rearPick ? ':r' : ''); const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.rearOf || W.dir, W.rearPick ? W.rearPick(m.i) : m.i, !!W.rearOf)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')),   // ga vừa dừng (kể cả dừng khẩn không có lịch) vẫn giữ đường sân ga cho tới khi tàu rời hẳn
          isT: i === tIdx }); });
-    for (const q of sts) if (q.stopHere && !q.m.mainStop) { const w = LAY.spread(T.x, q.m.s); if (w > 0) c.lane = q.st.ours.x * w; }      // mainStop: dừng khẩn quá gần để rẽ ghi -> ở lại đường chính
+    for (const q of sts) if (q.stopHere && !q.m.mainStop) { const w = spreadF(T.x, q.m.s); if (w > 0) c.lane = q.st.ours.x * w; }      // mainStop: dừng khẩn quá gần để rẽ ghi -> ở lại đường chính
     const hasSingle = !!(L.single && L.single.length);
-    const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * LAY.spread(T.x + z, q.m.s); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };   // đoạn đường đơn: đường ngược chiều nhập vào đường ta   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
-    const inStationZone = (za, zb) => { const qs = sts.filter(q => zb > q.d - 1200 && za < q.d + 650); return qs.length ? { st: { extent: [Math.min(...qs.map(q => q.st.extent[0])), Math.max(...qs.map(q => q.st.extent[1]))] } } : null; };   // hợp các ga trong tầm (ga vừa qua và ga sắp tới)
+    const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * spreadF(T.x + z, q.m.s); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };   // đoạn đường đơn: đường ngược chiều nhập vào đường ta   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
+    const inStationZone = (za, zb) => { const qs = sts.filter(q => zb > q.d - (FA + 50) && za < q.d + (FB + 20)); return qs.length ? { st: { extent: [Math.min(...qs.map(q => q.st.extent[0])), Math.max(...qs.map(q => q.st.extent[1]))] } } : null; };   // hợp các ga trong tầm (ga vừa qua và ga sắp tới)
 
     const inTun = S.inTunnel(W, T.x);
     ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
@@ -111,8 +114,8 @@
     if (zExit === null) {
       const runs = []; let prev = null; for (let z = 0; z <= ZF; z += 20) { const k = S.structAt(L, km(z)); if (k === prev) runs[runs.length - 1][1] = z + 20; else { runs.push([z, z + 20, k]); prev = k; } }
       const colTop = mixc([22, 26, 32], [150, 156, 160], day * (1 - wx * 0.35)), colSide = mixc([14, 16, 20], [104, 110, 116], day * (1 - wx * 0.35)), colDeck = mixc([20, 24, 28], [112, 116, 118], day * (1 - wx * 0.35));
-      const xr = z => { let x = 2.9; for (const q of sts) x += Math.max(0, q.st.extent[1] + 0.4 - 2.9) * LAY.spread(T.x + z, q.m.s); return x; };
-      const xl = z => { const base = oppAt(z) - 2.9; let x = base; for (const q of sts) x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, LAY.spread(T.x + z, q.m.s))); return x; };
+      const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); return x; };
+      const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); return x; };
       for (const [za, zb, k] of runs) {
         if (k === 'b') strip(() => -70, () => 70, -LAY.ELEV.b, za, zb, mixc([10, 22, 34], [66, 104, 132], day * (1 - wx * 0.4)));
         if (k === 'v' || k === 'b') { strip(xl, xr, -0.02, za, zb, colDeck); for (const xf of [xr, xl]) { wall(xf, 0, 1.0, za, zb, colTop); wall(xf, -1.4, 0, za, zb, colSide); } }
@@ -130,11 +133,11 @@
     const drawTracks = (zFrom) => {
       const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]];
       if (L.meta.junction) { const jc = L.meta.junction, sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 1600, b = W.dir === 'down' ? sj + 1600 : sj; if (b > zf && a < ZF) parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95]); }       // đường chính Tohoku
-      for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + 630 < ZN || q.d - 1150 > ZF) continue; parts.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), Math.max(zf, q.d - 1150), q.d + 630, 0.95]); }
+      for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + FB < ZN || q.d - FA > ZF) continue; parts.push([z => lerp(t.plain, t.x, spreadF(T.x + z, q.m.s)), Math.max(zf, q.d - FA), q.d + FB, 0.95]); }
       for (const [xf, z0, z1, a] of parts) ballastStrip(xf, z0, z1, a);       // đá dăm trước: đường nhánh không còn đè lên ray đường chính
       for (const [xf, z0, z1] of parts) railStrip(xf, z0, z1, true);
       // ghi chữ X (hai ghi bắt chéo) nối đường ta và đường ngược chiều ở hai đầu mỗi ga
-      for (const q of sts) for (const zc of [q.d - 1300, q.d + 720]) { if (zc + 150 < zf || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); };
+      for (const q of sts) for (const zc of [q.d - XA, q.d + XB]) { if (zc + 150 < zf || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); };
         railStrip(z => lerp(0, oppAt(z), sm((z - zc) / 150)), zc, zc + 150, false); railStrip(z => lerp(oppAt(z), 0, sm((z - zc) / 150)), zc, zc + 150, false); }
     };
     // khung cửa ra hầm: hầm thường là vòm; ga ngầm (Tokyo, Ueno của Tohoku) mở rộng bằng cả bề ngang sân ga
@@ -208,7 +211,7 @@
     // ---- dây điện trên cao (mỗi đường) và trụ điện giữa hai đường chính
     const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
     ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; wire(() => 0, ZN, ZF); wire(oppAt, ZN, ZF);
-    for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; wire(z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), q.d - 1150, q.d + 630); }
+    for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; wire(z => lerp(t.plain, t.x, spreadF(T.x + z, q.m.s)), q.d - FA, q.d + FB); }
     for (let k = Math.ceil((T.x + ZN) / 50), z = k * 50 - T.x; z < Math.min(1600, zLim); k++, z = k * 50 - T.x) items.push({ z, fn: () => { const oz = oppAt(z), X = oz / 2 + (hasSingle ? 2.8 * S.singleEff(W, T.x + z) : 0), a = P(X, 0, z), b = P(X, 7.0, z), w = Math.max(1, 0.32 * c.f / z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, w * 0.5); for (const XX of [0, oz]) { const e = P(XX, 5.5, z); ctx.beginPath(); ctx.moveTo(b[0], b[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(b[0] - w, b[1] - 1, w * 2, 2); } } });
 
     // ---- phong cảnh hai bên (không vẽ trong hầm); giữ hành lang đường sắt và sân ga
@@ -218,7 +221,7 @@
       for (const [za, zb, step, bi] of bands) for (let ci = Math.floor((T.x + za) / step); ci * step - T.x < zb; ci++) {
         const z = ci * step - T.x; if (z < za * 0.9) continue; const bio = biomeAt(z);
         for (const side of [-1, 1]) { const o = cellObject(ci + bi * 100000, bio, side); if (!o) continue; const zz = z + (hash(ci * 3 + side) - 0.5) * step * 0.6; if (zz < zMin) continue; if (S.structAt(L, km(zz)) === 'b' || S.structAt(L, km(zz + (o.d || 0))) === 'b') continue;      // trên sông không có nhà, ruộng, cây
-          const half = o.w / 2, qz = inStationZone(zz, zz + (o.d || 0)), ext = qz ? qz.st.extent : [Math.min(ADJ, oppAt(zz)), 0];
+          const half = o.w / 2, qz = inStationZone(zz, zz + (o.d || 0)), ext = qz ? qz.st.extent : [Math.min(0, oppAt(zz)), Math.max(0, oppAt(zz))];
           const margin = qz ? (o.kind === 'building' ? 14 : 12) : (o.kind === 'building' ? 12 : o.kind === 'field' ? 14 : 8), off = half + o.lat * 0.5, X = side > 0 ? Math.max(ext[1], 0) + margin + off : Math.min(ext[0], ADJ) - margin - off;
           tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) }); } }
     }
@@ -236,8 +239,8 @@
     for (const g of W.xings || []) {       // đường ngang: mặt đường nhựa cắt qua ray, rào chắn hạ khi tàu tới gần, đèn đỏ nhấp nháy, xe kẹt và đèn tín hiệu đặc biệt (特殊信号発光機)
       const zc = g.s - T.x; if (zc < ZN - 6 || zc > 1800) continue; const closing = zc < 750 || g.blocked, flash = Math.floor(now / 450) % 2;
       items.push({ z: Math.max(zc, ZN + 0.5), fn: () => {
-        strip(z => Math.min(oppAt(z), 0) - 3.6, () => 3.6, 0.03, zc - 3.2, zc + 3.2, mixc([22, 24, 28], [74, 76, 80], day * (1 - wx * 0.3)));
-        railStrip(() => 0, zc - 3.2, zc + 3.2, false); if (oppAt(zc) < -1) railStrip(oppAt, zc - 3.2, zc + 3.2, false);
+        strip(z => Math.min(oppAt(z), 0) - 3.6, z => Math.max(oppAt(z), 0) + 3.6, 0.03, zc - 3.2, zc + 3.2, mixc([22, 24, 28], [74, 76, 80], day * (1 - wx * 0.3)));
+        railStrip(() => 0, zc - 3.2, zc + 3.2, false); if (Math.abs(oppAt(zc)) > 1) railStrip(oppAt, zc - 3.2, zc + 3.2, false);
         const xo = Math.min(oppAt(zc), 0) - 3.4, zz = Math.max(zc - 3.8, ZN + 0.2), sc = Math.max(1, c.f / Math.max(zz, 2));
         for (const [Xp, side] of [[3.5, 1], [xo, -1]]) { const a = P(Xp, 0, zz), b = P(Xp, 2.0, zz); ctx.strokeStyle = '#d8dde3'; ctx.lineWidth = Math.max(1, 0.12 * sc); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
           if (closing) { for (const lk of [0, 1]) { const q = P(Xp + side * (lk ? -0.5 : 0.5) * 0.0, 1.7 - lk * 0.45, zz); ctx.fillStyle = (flash ^ lk) ? 'rgba(255,50,40,1)' : 'rgba(110,20,20,1)'; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(1.2, 0.2 * sc), 0, 7); ctx.fill(); } } }
@@ -275,6 +278,10 @@
     if (T.v > 20 && !S.oppHidden(W, T)) for (const t0 of W.opposing || []) { const VR = 200, zN = (t0 - W.t) * VR, key = S.oppKey(W, T, t0), veh = S.VEH[key] || S.VEH.N700; if (zN > 900 || zN < -veh.len - 20) continue;
       const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), oic = iconFor(veh.parts ? veh.parts[0] : key);
       items.push({ z: Math.max(zN, ZN + 1), fn: () => { if (zN > ZN && oic) drawFront(oic, oppAt(zN), zN, 1); if (zN < 60) slicesVeh(veh, zN, fxp, 1); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
+    // camera sau: tàu ngược chiều đã lướt qua đầu tàu ta, chạy dọc thân rồi xa dần ra phía sau (mũi tàu ở xa, thân kéo về phía camera)
+    if (W.rear && T.v > 20 && !S.oppHidden(W, T)) for (const o of W.oppRear || []) { const VR = 200, veh = S.VEH[o.key] || S.VEH.N700, zN = (W.t - o.t0) * VR - W.rearLen; if (zN < -veh.len - 20 || zN > 900) continue;
+      const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), ric = iconFor(veh.parts ? veh.parts[veh.parts.length - 1] : o.key), zTail = zN - veh.len;
+      items.push({ z: Math.max(zN, ZN + 1), fn: () => { slicesVeh(veh, zN, fxp, -1); if (zTail > ZN && ric) drawFront(ric, oppAt(zTail), zTail, 1); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
     function slicesVeh(veh, zRef, fxp, sign) {      // đoàn ghép: vẽ lần lượt từng đoàn, đoàn sau cách đoàn trước một khe nối
       if (!veh.parts) { slices(R.sprites && R.sprites[SMAP[veh.key] || 'n700'], veh.len, zRef, fxp, sign); return; }
       let off = 0; for (const pk of veh.parts) { const pv = S.VEH[pk]; slices(R.sprites && R.sprites[SMAP[pk] || 'n700'], pv.len, zRef + sign * -1 * 0 + (sign < 0 ? -off : off), fxp, sign); off += pv.len + veh.gap; }
@@ -298,7 +305,7 @@
     // ---- cửa hầm phía trước: mặt cửa (toà nhà ở đô thị / sườn đồi), khung cửa chữ nhật hoặc vòm, nhìn thấy ray, đèn trần và sân ga ngầm bên trong
     if (entryZ !== null) {
       const ent = entryZ, urbanEnt = biomeAt(ent) === 'urban', stIn = sts.filter(q => q.d > ent - 50 && q.d < ent + 700), wide = urbanEnt || stIn.length > 0;
-      const ex0 = Math.min(ADJ - 3.6, ...stIn.map(q => q.st.extent[0] - 0.8)), ex1 = Math.max(3.6, ...stIn.map(q => q.st.extent[1] + 0.8)), xc0 = (ex0 + ex1) / 2, hw = (ex1 - ex0) / 2;
+      const ex0 = Math.min(Math.min(0, ADJ) - 3.6, ...stIn.map(q => q.st.extent[0] - 0.8)), ex1 = Math.max(Math.max(0, ADJ) + 3.6, ...stIn.map(q => q.st.extent[1] + 0.8)), xc0 = (ex0 + ex1) / 2, hw = (ex1 - ex0) / 2;
       const poly = []; if (wide) { for (const [x, y] of [[ex1, 0], [ex1, 6.6], [ex1 - 1.4, 8.0], [ex0 + 1.4, 8.0], [ex0, 6.6], [ex0, 0]]) poly.push(P(x, y, ent)); } else { for (let i = 0; i <= 28; i++) { const th = Math.PI * i / 28; poly.push(P(xc0 + hw * Math.cos(th), 0.1 + 7.8 * Math.sin(th), ent)); } poly.push(P(xc0 - hw, 0, ent)); poly.unshift(P(xc0 + hw, 0, ent)); }
       // mặt cửa
       if (urbanEnt || stIn.length) {          // toà nhà bê tông nhiều tầng có cửa sổ, ban công, mái, biển hiệu; cửa hầm là ô chữ nhật ở tầng trệt
@@ -378,13 +385,14 @@
   // Camera ở buồng lái CUỐI đoàn nhìn ngược về phía sau: dựng một "thế giới phản chiếu" (hướng chạy đảo, toạ độ s' = chiều dài tuyến − s) rồi vẽ bằng cùng hàm draw
   function drawRear(ctx, px, py, pw, ph, W, T, R) {
     const L = W.line, Lm = L.kmEnd * 1000, W2 = Object.create(W), T2 = Object.create(T), mz = z => Object.assign({}, z, { s0: Lm - z.s1, s1: Lm - z.s0 });
-    W2.dir = W.dir === 'down' ? 'up' : 'down'; W2.zones = (W.zones || []).map(mz); W2.workers = []; W2.wires = []; W2.animals = []; W2.opposing = []; W2.passers = {};
+    W2.dir = W.dir === 'down' ? 'up' : 'down'; W2.zones = (W.zones || []).map(mz); W2.workers = []; W2.wires = []; W2.animals = []; W2.opposing = []; W2.rearLen = T.veh.len; W2.oppRear = (W.opposing || []).map(t0 => ({ t0, key: root.Sim.oppKey(W, T, t0) })); W2.passers = {};
     W2.dead = (W.dead || []).map(d => Object.assign({}, d, { s0: Lm - d.s1, s1: Lm - d.s0, hzA: d.hzB, hzB: d.hzA })); W2.xings = (W.xings || []).map(g => Object.assign({}, g, { s: Lm - g.s })).sort((a, b) => a.s - b.s);
     W2.parked = (W.parked || []).filter(p => p.kind === 'left').map(p => ({ key: p.key, front: Lm - (p.front - root.Sim.VEH[p.key].len), kind: 'wait' }));
-    W2.stabled = []; W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => Object.assign({}, m, { s: Lm - m.s })); T2.k = T.M.length - 1 - T.k; T2.forced = -1; W2.player = T2;
-    // nhìn ngược về sau: trái phải đảo so với nhìn về phía trước (ta chạy làn TRÁI thì khi nhìn lùi, đường của ta nằm bên PHẢI, đường ngược chiều bên trái)
-    ctx.save(); ctx.translate(2 * px + pw, 0); ctx.scale(-1, 1); const ft = CanvasRenderingContext2D.prototype.fillText; ctx.fillText = function (s2, x, y, mw) { this.save(); this.translate(x, y); this.scale(-1, 1); ft.call(this, s2, 0, 0, mw); this.restore(); };
-    try { draw(ctx, px, py, pw, ph, W2, T2, R); } finally { delete ctx.fillText; ctx.restore(); }
+    W2.rear = true; W2.rearOf = W.dir; const LAY = root.Layout;
+    W2.rearPick = mi => { const code = L.stations[mi].lay || '2-2-0', N = LAY.tokens(code, W.dir).length; return { i: N - 1 - LAY.station(code, W.dir, mi).ours.i }; };      // camera ở đúng đường vật lý của ta (chỉ số đảo vì chuỗi bố trí đảo thứ tự)
+    W2.stabled = (W.stabled || []).map(sb => { const code = L.stations[sb.i].lay || '2-2-0', N = LAY.tokens(code, W.dir).length, st2 = LAY.station(code, W.dir, W2.rearPick(sb.i), true), t2 = st2.tracks.find(t => t.i === N - 1 - sb.track.i); return t2 ? { key: sb.key, i: sb.i, front: Lm - (sb.front - root.Sim.VEH[sb.key].len), track: t2 } : null; }).filter(Boolean);      // cùng một đường vật lý: chỉ số trong chuỗi bố trí đảo ngược
+    W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => Object.assign({}, m, { s: Lm - m.s })); T2.k = T.M.length - 1 - T.k; T2.forced = -1; W2.player = T2;
+    draw(ctx, px, py, pw, ph, W2, T2, R);
   }
   root.CabView = { draw, drawRear, proj, cellObject, hash, CAMH, PEDGE, PH, ADJ };
 })(typeof window !== 'undefined' ? window : globalThis);
