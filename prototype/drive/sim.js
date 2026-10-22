@@ -642,6 +642,12 @@
       const seq = trainSeq(leadRec);
       const LM = fillPlan(seq.map(e => ({ name: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, trip.dir, L.kmEnd), stop: e.stop, arr: e.arr != null ? e.arr - trip.t0 : null, dep: e.dep != null ? e.dep - trip.t0 : null })));
       LM[0].arr = null; LM[LM.length - 1].dep = null; W.leadLabel = leadRec.t + ' ' + leadRec.n;
+      if (opts.events !== false && L.single && L.single.length) {      // tàu chạy trước cũng dừng tránh tàu ngược chiều trên đường đơn
+        const rr = rng((opts.seed || 1) * 977 + 3), inS = km => L.single.some(([a, b]) => km > a && km < b), cpI = leadRec.cp ? leadRec.cp[0] : -1;
+        const cand = LM.map((m, k) => k).filter(k => k > 0 && k < LM.length - 1 && !LM[k].stop && LM[k].pt != null && LM[k].i !== cpI && inS(L.stations[LM[k].i].km));
+        for (let q = 0, n = Math.min(cand.length, 1 + Math.floor(rr() * 2)); q < n; q++) { const j = cand.splice(Math.floor(rr() * cand.length), 1)[0], dw = 70 + Math.floor(rr() * 5) * 25; LM[j].stop = true; LM[j].arr = LM[j].pt; LM[j].dep = LM[j].pt + dw; }
+        fillPlan(LM);
+      }
       W.lead = newTrain(LM, W, { lead: true, veh: leadRec.v, label: W.leadLabel, load: 0.6, cp: leadRec.cp });
       W.leadStartT = LM[0].dep != null ? LM[0].dep : -600;
     }
