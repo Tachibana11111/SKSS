@@ -32,7 +32,8 @@
     const L = W.line, S = root.Sim, M = T.M, LAY = root.Layout;
     // camera sau: toạ độ phản chiếu nên vùng toả đường của ga (trước vạch 1150 m, sau vạch 630 m) và ghi chữ X đảo phía; spread phải tính trong hệ toạ độ gốc
     const ADJ = W.rear ? -ADJ0 : ADJ0;       // nhìn lùi: ta chạy làn trái nên đường ngược chiều nằm bên TRÁI của camera
-    const rr = !!W.rear, Lm2 = L.kmEnd * 1000, spreadF = rr ? (a, b) => LAY.spread(Lm2 - a, Lm2 - b) : LAY.spread, FA = rr ? 630 : 1150, FB = rr ? 1150 : 630, XA = rr ? 720 : 1300, XB = rr ? 1300 : 720;
+    // camera sau rẽ sớm hơn thực tế một đoạn rearShift (m) cho dễ nhìn
+    const rr = !!W.rear, Lm2 = L.kmEnd * 1000, spreadF = rr ? (a, b) => LAY.spread(Lm2 - a + (W.rearShift || 0), Lm2 - b) : LAY.spread,FA = rr ? 630 : 1150, FB = rr ? 1150 : 630, XA = rr ? 720 : 1300, XB = rr ? 1300 : 720;
     const hour = ((W.trip.t0 + W.t) % 86400 + 86400) % 86400 / 3600;
     const day = smooth(5.3, 7.3, hour) * (1 - smooth(16.8, 19.0, hour)), night = 1 - day, dusk = Math.max(0, 1 - Math.abs(hour - 6.3) / 1.2) + Math.max(0, 1 - Math.abs(hour - 17.8) / 1.3);
     const inSnow = W.zones.some(z => z.kind === 'snow' && T.x >= z.s0 - 3000 && T.x < z.s1), rain = W.rainHere;
@@ -389,7 +390,7 @@
     W2.dir = W.dir === 'down' ? 'up' : 'down'; W2.zones = (W.zones || []).map(mz); W2.workers = []; W2.wires = []; W2.animals = []; W2.opposing = []; W2.rearLen = T.veh.len; W2.oppRear = (W.opposing || []).map(t0 => ({ t0, key: root.Sim.oppKey(W, T, t0) })); W2.passers = {};
     W2.dead = (W.dead || []).map(d => Object.assign({}, d, { s0: Lm - d.s1, s1: Lm - d.s0, hzA: d.hzB, hzB: d.hzA })); W2.xings = (W.xings || []).map(g => Object.assign({}, g, { s: Lm - g.s })).sort((a, b) => a.s - b.s);
     W2.parked = (W.parked || []).filter(p => p.kind === 'left').map(p => ({ key: p.key, front: Lm - (p.front - root.Sim.VEH[p.key].len), kind: 'wait' }));
-    W2.rear = true; W2.rearOf = W.dir; const LAY = root.Layout;
+    W2.rear = true; W2.rearOf = W.dir; W2.rearShift = 0.85 * T.veh.len; const LAY = root.Layout;
     W2.rearPick = mi => { const code = L.stations[mi].lay || '2-2-0', N = LAY.tokens(code, W.dir).length; return { i: N - 1 - LAY.station(code, W.dir, mi).ours.i }; };      // camera ở đúng đường vật lý của ta (chỉ số đảo vì chuỗi bố trí đảo thứ tự)
     W2.stabled = (W.stabled || []).map(sb => { const code = L.stations[sb.i].lay || '2-2-0', N = LAY.tokens(code, W.dir).length, st2 = LAY.station(code, W.dir, W2.rearPick(sb.i), true), t2 = st2.tracks.find(t => t.i === N - 1 - sb.track.i); return t2 ? { key: sb.key, i: sb.i, front: Lm - (sb.front - root.Sim.VEH[sb.key].len), track: t2 } : null; }).filter(Boolean);      // cùng một đường vật lý: chỉ số trong chuỗi bố trí đảo ngược
     W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => Object.assign({}, m, { s: Lm - m.s })); T2.k = T.M.length - 1 - T.k; T2.forced = T.forced >= 0 ? T.M.length - 1 - T.forced : -1;      // dừng khẩn ở ga không có lịch dừng cũng phải rẽ vào đường nhánh trong camera sau W2.player = T2;
