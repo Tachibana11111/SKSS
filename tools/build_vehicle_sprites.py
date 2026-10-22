@@ -101,6 +101,11 @@ def white_bands(im, thr=212, minpix=250):
             st = None
     return runs, white
 
+def skirt_down(im, c):
+    a, b, x0, x1 = c; seg = im[a:a + 260, x0:x1]
+    red = (seg[:, :, 0] > 150) & (seg[:, :, 1] < 70) & (seg[:, :, 2] < 70); rows = np.where(red.sum(axis=1) > (x1 - x0) * 0.25)[0]
+    return int(rows.max()) if len(rows) else 150                # hàng cuối của váy đỏ (so với mép trên dải thân)
+
 def build_ref(name):
     """Dành cho ảnh có nền chuyển sắc phức tạp: tìm dải thân trắng, ước lượng nền bằng dải trống phía trên mái + chênh lệch dọc ở lề."""
     src, ncars, carlen, flip, SCALE = SPECS[name]
@@ -159,7 +164,7 @@ def main(names):
         if name in ('n700s', 'kamome'):
             im, cars = build_ref(name)
             if len(cars) != ncars: print(name, 'cảnh báo:', len(cars), 'dải', cars); continue
-            imgs = [car_image_ref(im, c, cut_top=(name == 'n700s'), white_fill=(name == 'n700s')) for c in cars]
+            imgs = [car_image_ref(im, c, down=(190 if name == 'kamome' else 150), cut_top=(name == 'n700s'), white_fill=(name == 'n700s')) for c in cars]
         else:
             im, B, diff, mask, cars = build(name)
             if len(cars) != ncars: continue
@@ -169,8 +174,16 @@ def main(names):
         # căn đáy các toa theo cùng đường ray (đáy ảnh toa)
         OVER = 2; x = 0; xs = []
         for k, i in enumerate(imgs): xs.append(x); x += i.width - (OVER if k < len(imgs) - 1 else 0)
-        strip = Image.new('RGBA', (x, H), (0, 0, 0, 0))
-        for i, px in zip(imgs, xs): strip.alpha_composite(i, (px, H - i.height))
+        if name == 'kamome':           # căn đường ray theo mép dưới váy đỏ của từng toa (toa mũi và toa có chắn mái có chiều cao ảnh khác nhau)
+            def skirt_row(i):
+                a_ = np.asarray(i); red = (a_[:, :, 0] > 150) & (a_[:, :, 1] < 70) & (a_[:, :, 2] < 70) & (a_[:, :, 3] > 128); lo = a_.shape[0] // 2
+                rows = [r for r in range(lo, a_.shape[0]) if red[r].sum() > a_.shape[1] * 0.2]; return max(rows)
+            sk = [skirt_row(i) for i in imgs]; below = max(i.height - 1 - r for i, r in zip(imgs, sk)); up = max(sk)
+            H = up + 1 + below; strip = Image.new('RGBA', (x, H), (0, 0, 0, 0))
+            for i, px, r in zip(imgs, xs, sk): strip.alpha_composite(i, (px, up - r))
+        else:
+            strip = Image.new('RGBA', (x, H), (0, 0, 0, 0))
+            for i, px in zip(imgs, xs): strip.alpha_composite(i, (px, H - i.height))
         w2, h2 = int(strip.width * SCALE), int(H * SCALE)
         strip = strip.resize((w2, h2), Image.LANCZOS)
         out = os.path.join(ROOT, name + '_strip.png'); strip.save(out, optimize=True)
