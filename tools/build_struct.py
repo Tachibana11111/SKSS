@@ -67,7 +67,7 @@ SEED = {'tsk': (20261021, 777), 'toh': (20261022, 778), 'jts': (20261023, 779), 
 # đoạn dùng chung đường với tuyến khác: sao chép kết cấu/đường cong của tuyến cha cho km < ngưỡng (để Tokyo–Omiya... giống nhau ở mọi tuyến)
 SHARE_FROM = {'jts': ('toh', 30.3), 'hok': ('jts', 105.0), 'yam': ('toh', 255.1), 'aki': ('toh', 496.5)}
 BASE_CURVE = {'jts': 4000, 'hok': 4000, 'nks': 4000}
-JUNC = {'yam': (257.1, 1.2, 1500, -1), 'aki': (498.5, 1.2, 1500, -1)}      # (km, chiều dài km, R m, dấu: -1 = rẽ trái khi đi xuống)
+JUNC = {'yam': (257.1, 1.2, 1500, -1), 'aki': (498.5, 1.2, 1500, -1), 'jts': (32.3, 1.5, 4000, -1), 'hok': (107.0, 1.5, 4000, -1)}      # (km, chiều dài km, R m, dấu: -1 = rẽ trái khi đi xuống)
 MINI = {'yam': 255.1, 'aki': 496.5}                                    # km bắt đầu phần đường sắt thường (mini-Shinkansen)
 SINGLE = {'yam': [(255.1 + 7.0, 311.2), (313.5, 322.0), (342.2, 392.0), (400.0, 403.7)], 'aki': [(498.5, 586.0), (600.0, 623.8)]}     # đường đơn (Akita: đoạn Jingūji–Mineyoshikawa là đường đôi [N tên đoạn], km 586–600 là I); đoạn đôi: Fukushima–Sekine, Akayu–Kita-Akayu, Uzen-Nakayama–Yamagata, Ashizawa–Funagata [N tên đoạn, km là I]
 XING = {'yam': (41, 12), 'aki': (45, 0)}                                # số đường ngang: (Yamagata–Shinjo [N: 41 sau năm 1999]; phần Fukushima–Yamagata [I]) và Akita [I]

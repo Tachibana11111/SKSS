@@ -63,6 +63,14 @@ Mọi tuyến chỉ dùng cá nhân. Dữ liệu sinh bằng `tools/build_lines.
 - **Dừng tránh tàu ngược chiều** (運転停車, đường đơn): sự kiện điều độ tự sinh khoảng 1 lần mỗi 45 km đường đơn (1–4 lần/chuyến), tàu dừng 70–170 s ở ga (kể cả ga không có lịch dừng), tàu ngược chiều vào ga rồi mới chạy tiếp; thời gian chờ được miễn trừ khi tính trễ giờ.
 - Akita: mọi chuyến đều ghép cả hai chiều (đúng như người dùng nêu). Yamagata: một số chuyến chạy một mình (121, 129, 158, 160) [D].
 
+## 3c. Ngã rẽ của Joetsu / Hokuriku và tàu chạy chung đường
+
+Người dùng nêu (2026-10-22): Joetsu và Hokuriku đi chung đường với Tohoku từ Tokyo tới Omiya, rồi rẽ trái; tới Takasaki hai tuyến tách nhau; mọi đoạn đều là đường đôi; đoạn chung có thể phải nhường nhau nhiều.
+
+- **Hình học [I]:** Joetsu rẽ trái khỏi Tohoku sau Omiya (km 32,3; cong R 4.000 m dài 1,5 km), Hokuriku rẽ trái khỏi Joetsu sau Takasaki (km 107,0, cùng thông số) và vẫn rẽ trái khỏi Tohoku ở Omiya. Góc rẽ và km là suy luận; chỉ có thứ tự và hướng rẽ lấy từ bản đồ người dùng cung cấp. Đường của tuyến cha vẽ ở buồng lái, bản đồ nhỏ và camera sau như ngã rẽ của mini-Shinkansen (dùng chung `meta.junctions`).
+- **Chưa làm:** ghi chữ X (đường chéo) ở Takasaki, không giới hạn tốc độ qua ghi rẽ; tuyến Tohoku không vẽ nhánh Joetsu tách ra bên trái.
+- **Tàu đi trước thuộc tuyến cha [D]:** tàu Tohoku chạy trước Joetsu/Hokuriku trên Tokyo–Omiya, tàu Joetsu chạy trước Hokuriku trên Omiya–Takasaki, lấy từ lịch thật (nội suy theo km). Chiều xuống: tàu đó chạy thông qua ngã rẽ rồi sang đường chính (vẽ lệch ngang theo ngã rẽ), hết cản đường ta. Chiều lên: tàu xuất hiện đang chạy trên đường chính, nhập vào trước ngã rẽ. Giãn cách 90–1.500 s, không để tàu ta vượt. Chọn giữa tàu cùng tuyến và tàu tuyến cha theo khoảng cách thời gian gần hơn. Tàu tuyến cha cũng thông qua ga ta đỗ ở đường tránh (hiện ở màn thông báo "thông qua" và cảnh tàu vượt). Chỉ áp dụng cho tàu của người chơi và tàu chạy trước, chưa cho chế độ điều độ.
+
 ## 4. Hạn chế đã biết
 
 - **Hình tàu:** E7, E6, E8, H5 dùng tạm mô hình E5 (xanh lá), Kamome dùng ảnh N700S-8000 đã có. Cần tải thêm ảnh từ rail.kychung.com cho E7/W7, E6, E8, H5 (xin phép người dùng trước khi tải).

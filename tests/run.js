@@ -345,4 +345,32 @@ section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đ�
   for (const ln of ['jts', 'hok', 'nks', 'yam', 'aki']) { const L2 = Sim.lineOf(ln); ok(L2.trains.some(t => t.d === 'down') && L2.trains.some(t => t.d === 'up'), `${ln}: có cả hai chiều`); ok(L2.stations.every(st => st.lat && st.lon), `${ln}: ga có toạ độ`); ok(L2.meta.pa && L2.meta.defVeh && Sim.VEH[L2.meta.defVeh], `${ln}: có thông số tuyến`); }
 }
 
+section('16. Joetsu/Hokuriku tách khỏi Tohoku ở Omiya, Hokuriku tách khỏi Joetsu ở Takasaki; tàu tuyến cha chạy chung');
+{
+  const J = Sim.lineOf('jts'), H = Sim.lineOf('hok');
+  ok(J.meta.junctions.length === 1 && H.meta.junctions.length === 2, 'jts có 1 ngã rẽ (Omiya), hok có 2 (Omiya, Takasaki)');
+  ok(J.curves.some(c => c[0] === 32.3 && c[3] === -1) && H.curves.some(c => c[0] === 107 && c[3] === -1) && H.curves.some(c => c[0] === 32.3), 'đường cong ngã rẽ trong dữ liệu (rẽ trái)');
+  const W0 = { line: J, lineId: 'jts', dir: 'down' }, sj = 32300;
+  ok(Sim.trunkOff(W0, sj - 500) === 0 && Math.abs(Sim.trunkOff(W0, sj + 1500)) > 5 && Math.abs(Sim.trunkOff(W0, sj + 3000)) > Math.abs(Sim.trunkOff(W0, sj + 1500)), 'đường chính tách dần khỏi tuyến sau ngã rẽ (jts xuống)');
+  { const Wh = { line: H, lineId: 'hok', dir: 'down' }; ok(Math.abs(Sim.trunkOff(Wh, 33800)) > 5 && Math.abs(Sim.trunkOff(Wh, 108500)) > 5 && Sim.trunkOff(Wh, 70000) === 0, 'hok xuống: hai ngã rẽ, đoạn giữa (Omiya–Takasaki) đi thẳng'); }
+  { const Wu = { line: J, lineId: 'jts', dir: 'up' }, s0 = (J.kmEnd - 32.3) * 1000; ok(Sim.trunkOff(Wu, s0 + 500) === 0 && Math.abs(Sim.trunkOff(Wu, s0 - 1500)) > 5, 'jts lên: đường chính nhập vào ở Omiya'); }
+  // tàu tuyến cha đi trước
+  const gapMin = (W, T) => { let g = 1e9, n = 0; while (!T.finished && n++ < 4e6 && W.t < 60000) { Sim.tick(W, 0.05, {}, true); const Ld = W.lead; if (Ld && Ld.phase === 'run' && Ld.v > 8 && T.v > 5 && Ld.x > T.x && !(Ld.fj !== undefined && W.dir === 'down' && Ld.x - Ld.veh.len > W.line.meta.junctions[Ld.fj].km * 1000 + 60)) g = Math.min(g, Ld.x - Ld.veh.len - T.x); } return g; };      // tàu tuyến cha đã qua ngã rẽ thì ở đường khác; tàu đỗ ở ga (ta chạy thông qua đường chính) không tính
+  for (const [ln, dir] of [['jts', 'down'], ['jts', 'up'], ['hok', 'down'], ['hok', 'up']]) {
+    const L = Sim.lineOf(ln); let nf = 0, tot = 0;
+    for (const rec of L.trains.filter(t => t.d === dir)) { const trip = Sim.makeTrip(ln, rec, rec.s[0][0], rec.s[rec.s.length - 1][0]); if (!trip) continue; const W = Sim.createWorld(ln, trip, { diff: 'easy', seed: 1, lead: true, events: false }); tot++; if (W.leadForeign) nf++; }
+    ok(nf > 0 && nf < tot + 1, `${ln} ${dir}: có chuyến lấy tàu tuyến cha làm tàu đi trước`, `${nf}/${tot}`);
+  }
+  for (const [ln, dir, ty] of [['jts', 'down', 'Toki'], ['jts', 'up', 'Toki'], ['hok', 'down', 'Kagayaki'], ['hok', 'up', 'Kagayaki']]) {
+    const L = Sim.lineOf(ln); let done = 0;
+    for (const rec of L.trains.filter(t => t.d === dir && t.t === ty).slice(0, 12)) {
+      const trip = Sim.makeTrip(ln, rec, rec.s[0][0], rec.s[rec.s.length - 1][0]); if (!trip) continue; const W = Sim.createWorld(ln, trip, { diff: 'easy', seed: 1, lead: true, events: false }); if (!W.leadForeign) continue;
+      const g = gapMin(W, W.player); done++; ok(W.player.finished && g > 5, `${ln} ${dir} ${rec.t} ${rec.n}: chạy sau ${W.leadLabel} (${W.leadForeign}) không đâm đuôi`, `gap ${g.toFixed(0)}`); if (done >= 2) break;
+    }
+    ok(done > 0, `${ln} ${dir}: kiểm tra được ít nhất 1 chuyến có tàu tuyến cha đi trước`);
+  }
+  { const L = Sim.lineOf('jts'), rec = L.trains.find(t => t.d === 'down' && t.s[0][0] === 0), trip = Sim.makeTrip('jts', rec, 0, rec.s[rec.s.length - 1][0]), W = Sim.createWorld('jts', trip, { diff: 'easy', seed: 1, lead: true, events: false });
+    const hasPass = Object.values(W.passers).some(a => a.some(p => p)); ok(typeof hasPass === 'boolean', 'passers chạy được với tàu tuyến cha'); }
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

@@ -53,7 +53,7 @@
       pa: '山形', defVeh: 'E8', flipDown: false,
       snow: [[262, 300, 100, 'tuyết đèo Itaya'], [300, 403.7, 110, 'tuyết Yamagata–Shinjo']],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 255.1, 300], [255.1, 403.7, 130]],        // Fukushima–Shinjo là đường sắt thường khổ chuẩn: tối đa 130 km/h [N]
-      curveA: 1.3, curveFrom: 255.1, tunnels: [], coupleMini: { maxKm: 255.1, p: 0.55, mini: 'E8' }, junction: { km: 257.1, side: -1, stationKm: 255.1 },
+      curveA: 1.3, curveFrom: 255.1, tunnels: [], coupleMini: { maxKm: 255.1, p: 0.55, mini: 'E8' }, junctions: [{ km: 257.1, side: -1, line: 'toh' }],
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [208, 220, 'urban'], [250, 262, 'urban'], [262, 292, 'mountain'], [292, 300, 'urban'], [336, 348, 'urban'], [348, 400, 'field'], [400, 403.7, 'urban']],
       grade: [[0, 36, 15, 25], [36, 255.1, 7, 15], [255.1, 296, 26, 37.5], [296, 403.7, 9, 20]],   // dốc tối đa 37,5‰ (đèo Itaya) [N]
       notes: [{ km: 255.1, dir: 'down', text: 'Rời Shinkansen thật, vào đường sắt thường Ou (khổ chuẩn): ≤ 130 km/h, đường đơn gần hết chặng, nhiều đường ngang, cong gắt và dốc tới 37,5‰ ở đèo Itaya.' },
@@ -64,14 +64,14 @@
       pa: '秋田', defVeh: 'E6', flipDown: false,
       snow: [[330, 400, 230, 'tuyết Sendai–Morioka'], [496.5, 545, 95, 'tuyết Sengan-toge'], [545, 623.8, 110, 'tuyết Akita']],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 623.8, 130]],
-      curveA: 1.3, curveFrom: 496.5, tunnels: [], coupleMini: { maxKm: 496.5, p: 0.6, mini: 'E6' }, junction: { km: 498.5, side: -1, stationKm: 496.5 },
+      curveA: 1.3, curveFrom: 496.5, tunnels: [], coupleMini: { maxKm: 496.5, p: 0.6, mini: 'E6' }, junctions: [{ km: 498.5, side: -1, line: 'toh' }],
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [515, 548, 'mountain'], [548, 616, 'field'], [616, 623.8, 'urban']],
       grade: [[0, 36, 15, 25], [36, 496.5, 7, 15], [496.5, 545, 22, 37], [545, 623.8, 8, 18]],
       notes: [{ km: 496.5, dir: 'down', text: 'Rời Shinkansen thật tại Morioka, vào Tazawako Line (đường sắt thường khổ chuẩn): ≤ 130 km/h, đường đơn, đường ngang, đèo Sengan-toge cong và dốc.' },
               { km: 572.1, dir: 'down', text: 'Tại Omagari tàu đổi chiều chạy (switchback): từ đây tới Akita ghế quay ngược chiều. (Mô hình giữ nguyên hướng nhìn.)' }]
     },
     jts: {
-      pa: '上越', defVeh: 'E7', flipDown: false, snow: [[151, 272, 200, 'tuyết Jomo-Kogen–Nagaoka']],
+      pa: '上越', defVeh: 'E7', flipDown: false, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }], snow: [[151, 272, 200, 'tuyết Jomo-Kogen–Nagaoka']],
       limits: [[0, 30.3, 110], [30.3, 113, 275], [113, 127.9, 260], [127.9, 333.9, 275]],       // hầm Nakayama có cong R=1.500 m: trang Wikipedia JP ghi 160 km/h (số cũ); lịch 2026 chạy nhanh hơn nhiều nên dùng 260 km/h [I]
       tunnels: [[113, 127.9, 'Nakayama'], [164, 186.2, 'Oshimizu']],
       biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [112, 262, 'mountain'], [262, 275, 'urban'], [318, 333.9, 'urban']],
@@ -85,7 +85,7 @@
       grade: [[0, 66.0, 12, 30]]
     },
     hok: {
-      pa: '北陸', defVeh: 'E7', flipDown: true, snow: [[140, 300, 200, 'tuyết Karuizawa–Joetsu-Myoko'], [300, 575.6, 180, 'tuyết Itoigawa–Tsuruga']],
+      pa: '北陸', defVeh: 'E7', flipDown: true, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, line: 'jts', shared: true }], snow: [[140, 300, 200, 'tuyết Karuizawa–Joetsu-Myoko'], [300, 575.6, 180, 'tuyết Itoigawa–Tsuruga']],
       limits: [[0, 30.3, 110], [30.3, 105, 275], [105, 575.6, 260]],
       tunnels: [[254, 276.2, 'Iiyama'], [284, 295, 'Kubiki']],
       biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [120, 160, 'mountain'], [218, 228, 'urban'], [240, 335, 'mountain'], [386, 398, 'urban'], [445, 458, 'urban'], [575.6 - 10, 575.6, 'urban']],
@@ -191,6 +191,14 @@
         const t = timeAt(L, rec, m.i); if (t == null) continue;
         if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: rec.t + ' ' + rec.n, t: t - trip.t0, v: rec.v });
       }
+      for (const sh of shareInfo(L)) {            // tàu của tuyến cha chạy chung đường (trước ngã rẽ) thông qua ga ta đang đỗ ở đường tránh
+        if (!sh.j.shared || m.i > sh.maxI) continue;
+        for (const rec of sh.LF.trains) {
+          if (rec.d !== trip.dir) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
+          const t = timeAt(sh.LF, rec, m.i); if (t == null) continue;
+          if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: rec.t + ' ' + rec.n, t: t - trip.t0, v: rec.v });
+        }
+      }
     });
     return out;
   }
@@ -217,6 +225,10 @@
   const allTrains = W => [W.player, W.lead].concat(W.net ? W.net.trains : []).filter(Boolean);
   // tàu sắp rẽ vào đường tránh ở ga có đường thông qua (trong 2,5 km) coi như rời đường chính: tàu sau vẫn chạy thẳng
   function offMain(O) { if (O.phase !== 'run') return false; const j = nextTarget(O), m = O.M[j]; return !!(m && m.loop && m.stop && Math.abs(m.s - O.x) < 2500); }
+  // tàu chạy trước thuộc tuyến cha đã qua hẳn ngã rẽ (chiều xuống): nó đi đường chính, không còn cản đường ta
+  function leadDiverged(W, Ld) {
+    if (Ld.fj === undefined || W.dir !== 'down') return false; return Ld.x - Ld.veh.len > sOfKm(W.line.meta.junctions[Ld.fj].km, 'down', W.line.kmEnd) + 60;
+  }
   function leaderOf(T) {
     const W = T.W; if (!W.net) return T.isLead ? null : W.lead;
     let best = null; for (const O of W.net.trains) { if (O === T || O.phase === 'end' || O.phase === 'dwell' || offMain(O)) continue; if (O.x > T.x && (!best || O.x < best.x)) best = O; } return best;
@@ -248,9 +260,9 @@
     }
     T.free = a;
     const j = nextTarget(T), tgt = T.M[j].s, d = tgt + G.stopTol - x, q = d > 0 ? Math.sqrt(2 * G.aATC * d) : 0;
-    if (q < a) { a = q; why = 'stop'; }
+    if (q < a && !T.M[j].thru) { a = q; why = 'stop'; }
     const L = leaderOf(T);
-    if (L && L.phase !== 'end' && !(L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L)) && !offMain(L)) {
+    if (L && L.phase !== 'end' && !leadDiverged(W, L) && !(L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L)) && !offMain(L)) {
       const gap = L.x - L.veh.len - x - G.atcBuf;
       if (gap < 15000) { const qq = gap > 0 ? Math.sqrt(2 * G.aATC * gap) : 0; if (qq < a) { a = qq; why = 'lead'; } }
     }
@@ -514,10 +526,10 @@
     const arr = mk.arr != null ? mk.arr : (mk.pt != null && mk.stop ? mk.pt : null), remT = arr != null ? arr - W.t : 0;
     const ai = T.isLead && W.net, slack = ai ? 50 : 20, fac = ai ? 1.12 : 1.06;
     if (arr != null && remT > slack && T.forced < 0 && !(ai && W.net.catchUp)) { const vNeed = (d + 600) / Math.max(remT - slack, 1); const vN = Math.max(vNeed * fac, 15); if (vN < vT) soft = true; vT = Math.min(vT, vN); }
-    const lead = Math.max(d - v * 1.6, 0);
-    const vL = Math.sqrt(2 * 0.55 * lead) + 0.5, curveLim = vL < vT; if (curveLim) soft = true; vT = Math.min(vT, vL);
-    if (d < 400 && v * v / (2 * Math.max(d - v * 1.2, 0.3)) > 0.35) { const need = (v * v) / (2 * Math.max(d - v * 1.2, 0.3)); return -Math.min(1, Math.max(0.03, need / T.veh.aB7)); }
-    if (d < 60) { if (v < 0.25 && d > 0.8) return 0.04; const need = (v * v) / (2 * Math.max(d, 0.15)); return -Math.min(1, Math.max(v < 0.25 ? 0.01 : 0.05, need / T.veh.aB7)); }
+    const lead = Math.max(d - v * 1.6, 0), thru = !!mk.thru;
+    const vL = thru ? 1e9 : Math.sqrt(2 * 0.55 * lead) + 0.5, curveLim = vL < vT; if (curveLim) soft = true; vT = Math.min(vT, vL);
+    if (!thru && d < 400 && v * v / (2 * Math.max(d - v * 1.2, 0.3)) > 0.35) { const need = (v * v) / (2 * Math.max(d - v * 1.2, 0.3)); return -Math.min(1, Math.max(0.03, need / T.veh.aB7)); }
+    if (!thru && d < 60) { if (v < 0.25 && d > 0.8) return 0.04; const need = (v * v) / (2 * Math.max(d, 0.15)); return -Math.min(1, Math.max(v < 0.25 ? 0.01 : 0.05, need / T.veh.aB7)); }
     const err = vT - v;
     if (curveLim && v > vL - 0.5) return -Math.min(0.9, 0.12 + 0.6 * (v - vL + 0.5));        // bám đường cong phanh về ga: phanh liên tục theo độ lệch, không nhấp nhả
     if (err < (soft ? -0.8 : -0.15)) { T._apBrk = 1; return -Math.min(0.9, (-err) * 0.6 + 0.05); }
@@ -600,12 +612,16 @@
   // độ lệch ngang của đường chính Tohoku so với đường ta khi tuyến mini rẽ ra (hoặc nhập vào) ở gần ga ghép/tách
   // đường chính Tohoku (đi thẳng) so với đường ta (rẽ sang tuyến mini, bị cong): độ lệch ngang = −(độ lệch của ta so với tiếp tuyến tại ngã rẽ)
   const trunkCache = new Map();
-  function trunkOff(W, s) {
-    const j = W.line.meta.junction; if (!j) return 0; const key = W.lineId + W.dir; let tb = trunkCache.get(key);
-    const Ly = root.Layout, L = W.line, sj = sOfKm(j.km, W.dir, L.kmEnd);
-    if (!tb) { tb = W.dir === 'down' ? Ly.lateralTable(L, root.Sim || api, W.dir, sj, 3200, 10) : Ly.lateralTableBack(L, root.Sim || api, W.dir, sj, 3200, 10); trunkCache.set(key, tb); }
-    const d = W.dir === 'down' ? s - sj : sj - s; if (d <= 0) return 0; const f = Math.min(d, 3190) / 10, i = Math.floor(f);
-    return -(tb[i] + (tb[i + 1] - tb[i]) * (f - i));
+  // jn: chỉ số ngã rẽ trong meta.junctions (bỏ trống = ngã rẽ nào đang trong tầm 3,2 km); các ngã rẽ không chồng lên nhau
+  function trunkOff(W, s, jn) {
+    const js = W.line.meta.junctions; if (!js) return 0; const Ly = root.Layout, L = W.line;
+    for (let q = 0; q < js.length; q++) {
+      if (jn !== undefined && jn !== q) continue; const sj = sOfKm(js[q].km, W.dir, L.kmEnd), d = W.dir === 'down' ? s - sj : sj - s; if (d <= 0 || (d > 3200 && jn === undefined)) continue;
+      const key = W.lineId + W.dir + q; let tb = trunkCache.get(key);
+      if (!tb) { tb = W.dir === 'down' ? Ly.lateralTable(L, root.Sim || api, W.dir, sj, 3200, 10) : Ly.lateralTableBack(L, root.Sim || api, W.dir, sj, 3200, 10); trunkCache.set(key, tb); }
+      const f = Math.min(d, 3190) / 10, i = Math.floor(f); return -(tb[i] + (tb[i + 1] - tb[i]) * (f - i));
+    }
+    return 0;
   }
   // tàu chạy trước trên đường Tohoku có thể là đoàn ghép (Hayabusa + Komachi, Yamabiko + Tsubasa): thêm đơn vị mini và ga tách/ghép cho nó
   function withMini(L, rec, dir, seed) {
@@ -625,6 +641,46 @@
       W.stabled.push({ k, i: m.i, track: t, key, face, front: geoS(m) + (r() * 100 - 30) });
     });
   }
+  // ---- Tàu của tuyến cha chạy chung đường trước ngã rẽ (Tohoku trên Tokyo–Omiya; Joetsu trên Omiya–Takasaki): đi trước ta, buộc ta giữ giãn cách
+  // thời điểm (s) tàu rec của tuyến LF ở km (nội suy giữa các ga dừng); null nếu km nằm ngoài hành trình
+  function tAtKm(LF, rec, km) {
+    const st = rec.s.filter(e => !e[3]); if (st.length < 2) return null;
+    for (let q = 0; q < st.length - 1; q++) {
+      const a = LF.stations[st[q][0]].km, b = LF.stations[st[q + 1][0]].km; if ((km - a) * (km - b) > 0) continue;
+      const ta = st[q][2] != null ? st[q][2] : st[q][1], tb = st[q + 1][1] != null ? st[q + 1][1] : st[q + 1][2];
+      return a === b ? ta : ta + (tb - ta) * (km - a) / (b - a);
+    }
+    return null;
+  }
+  function shareInfo(L) {       // các ngã rẽ nơi tuyến này tách khỏi tuyến cha; chỉ số ga trùng nhau (cùng danh sách ga đầu tuyến)
+    if (L._share) return L._share; L._share = [];
+    (L.meta.junctions || []).forEach((j, q) => {
+      let maxI = -1; L.stations.forEach((st, i) => { if (st.km <= j.km) maxI = i; }); const LF = j.shared ? lineOf(j.line) : null;
+      if (LF && maxI >= 0 && L.stations.slice(0, maxI + 1).every((st, i) => LF.stations[i] && LF.stations[i].en === st.en)) L._share.push({ q, j, LF, maxI });
+    });
+    return L._share;
+  }
+  function pickForeign(L, trip) {
+    const M = trip.M, down = trip.dir === 'down', ka = L.stations[M[0].i].km, kb = L.stations[M[M.length - 1].i].km, lo = Math.min(ka, kb), hi = Math.max(ka, kb); let best = null;
+    for (const sh of shareInfo(L)) {
+      const hi2 = Math.min(hi, sh.j.km); if (hi2 - lo < 1) continue;
+      const kref = down ? lo : hi2, tOur = tAtKm(L, trip.rec, kref); if (tOur == null) continue;
+      for (const rec of sh.LF.trains) {
+        if (rec.d !== trip.dir) continue; const tf = tAtKm(sh.LF, rec, kref); if (tf == null) continue; const gap = tOur - tf; if (gap < 90 || gap > 1500) continue;
+        let ok = true; for (let k = lo; k <= hi2 && ok; k += 2) { const a = tAtKm(sh.LF, rec, k), b = tAtKm(L, trip.rec, k); if (a != null && b != null && a > b + 5) ok = false; }      // không để tàu ta vượt tàu kia
+        if (ok && (!best || gap < best.gap)) best = { rec, gap, sh };
+      }
+    }
+    return best;
+  }
+  // lịch của tàu chạy trước thuộc tuyến cha: cắt ở ngã rẽ; sau ngã rẽ (chiều xuống) chạy thẳng "thông qua" rồi biến mất, chiều lên xuất hiện đang chạy ngay trước ngã rẽ
+  function foreignLeadM(L, trip, f) {
+    const { rec, sh } = f, LF = sh.LF, down = trip.dir === 'down', t0 = trip.t0, seq = trainSeq(rec).filter(e => e.i <= sh.maxI);
+    const mk = e => ({ name: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, trip.dir, L.kmEnd), stop: e.stop, arr: e.arr != null ? e.arr - t0 : null, dep: e.dep != null ? e.dep - t0 : null });
+    const kx = down ? sh.j.km + 10 : sh.j.km + 3, tx = tAtKm(LF, rec, kx), LM = seq.map(mk), mid = { name: sh.j.line, jp: '', i: sh.maxI + 1, s: sOfKm(kx, trip.dir, L.kmEnd), stop: false };
+    if (tx != null) { if (down) { LM.push(Object.assign(mid, { thru: true, arr: tx - t0, dep: null })); } else { LM.unshift(Object.assign(mid, { fly: true, arr: null, dep: tx - t0 })); } }
+    return fillPlan(LM);
+  }
   function createWorld(lineId, trip, opts) {
     opts = opts || {};
     const rnd = rng(opts.seed || 1), W = baseWorld(lineId, trip.dir, opts.diff, opts.seed, opts.weather), L = W.line;
@@ -637,11 +693,12 @@
         if (j >= 0) { M[j].sOrig = M[j].s; M[j].s -= pv.len + COUPLE_GAP; W.parked.push({ key: 'E5', front: M[j].sOrig, kind: 'wait', i: P.cp.i }); } } }
     { const P = W.player; if (P.cp && P.cp.done && P.cp.kind === 'split' && M[0].i === P.cp.i) W.parked.push({ key: 'E5', front: M[0].s - P.veh.len - COUPLE_GAP, kind: 'left' }); }      // xuất phát đúng ga tách: phần Tohoku còn đứng ở sân ga phía sau
     if (opts.stabled !== false) genStabled(W, M);
-    let leadRec = opts.lead === false ? null : pickLead(L, W.catalog, trip);
-    if (leadRec) leadRec = withMini(L, leadRec, trip.dir, opts.seed || 1);
+    let leadRec = opts.lead === false ? null : pickLead(L, W.catalog, trip), fgn = opts.lead === false ? null : pickForeign(L, trip);
+    if (fgn && leadRec && timeAt(L, trip.rec, trip.M[0].i) - timeAt(L, leadRec, trip.M[0].i) <= fgn.gap) fgn = null;       // chọn tàu đi trước sát hơn (cùng tuyến hay tuyến cha)
+    if (fgn) leadRec = fgn.rec; else if (leadRec) leadRec = withMini(L, leadRec, trip.dir, opts.seed || 1);
     if (leadRec) {
       const seq = trainSeq(leadRec);
-      const LM = fillPlan(seq.map(e => ({ name: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, trip.dir, L.kmEnd), stop: e.stop, arr: e.arr != null ? e.arr - trip.t0 : null, dep: e.dep != null ? e.dep - trip.t0 : null })));
+      const LM = fgn ? foreignLeadM(L, trip, fgn) : fillPlan(seq.map(e => ({ name: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, trip.dir, L.kmEnd), stop: e.stop, arr: e.arr != null ? e.arr - trip.t0 : null, dep: e.dep != null ? e.dep - trip.t0 : null })));
       LM[0].arr = null; LM[LM.length - 1].dep = null; W.leadLabel = leadRec.t + ' ' + leadRec.n;
       if (opts.events !== false && L.single && L.single.length) {      // tàu chạy trước cũng dừng tránh tàu ngược chiều trên đường đơn
         const rr = rng((opts.seed || 1) * 977 + 3), inS = km => L.single.some(([a, b]) => km > a && km < b), cpI = leadRec.cp ? leadRec.cp[0] : -1;
@@ -649,8 +706,13 @@
         for (let q = 0, n = Math.min(cand.length, 1 + Math.floor(rr() * 2)); q < n; q++) { const j = cand.splice(Math.floor(rr() * cand.length), 1)[0], dw = 70 + Math.floor(rr() * 5) * 25; LM[j].stop = true; LM[j].arr = LM[j].pt; LM[j].dep = LM[j].pt + dw; }
         fillPlan(LM);
       }
-      W.lead = newTrain(LM, W, { lead: true, veh: leadRec.v, label: W.leadLabel, load: 0.6, cp: leadRec.cp });
+      W.lead = newTrain(LM, W, { lead: true, veh: leadRec.v, label: W.leadLabel, load: 0.6, cp: fgn ? null : leadRec.cp });
       W.leadStartT = LM[0].dep != null ? LM[0].dep : -600;
+      if (fgn) {
+        W.lead.fj = fgn.sh.q; W.leadForeign = fgn.sh.j.line;
+        if (LM[0].fly) { const Ld = W.lead, j1 = LM.findIndex((m, q) => q > 0 && m.stop), ds = j1 < 0 ? 1e9 : LM[j1].s - LM[0].s;      // xuất hiện đang chạy trên đường chính, trước ngã rẽ
+          Ld.started = true; Ld.phase = 'run'; Ld.door = 'closed'; Ld.x = LM[0].s; Ld.v = Math.min(limitKm(L, kmOfS(Ld.x, trip.dir, L.kmEnd)) / 3.6, Ld.veh.vmax, Math.sqrt(2 * G.aATC * 0.7 * Math.max(ds - 300, 0))); }
+      }
     }
     if (opts.events === false) { W.weatherKind = 'clear'; W.opposing = []; } else genEvents(W, M, rnd);
     W.t = W.lead ? W.leadStartT - 5 : 0;
@@ -913,7 +975,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { oppKey, trunkOff, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;
