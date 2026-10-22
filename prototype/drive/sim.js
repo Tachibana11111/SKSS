@@ -53,7 +53,7 @@
       pa: '山形', defVeh: 'E8', flipDown: false,
       snow: [[262, 300, 100, 'tuyết đèo Itaya'], [300, 403.7, 110, 'tuyết Yamagata–Shinjo']],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 255.1, 300], [255.1, 403.7, 130]],        // Fukushima–Shinjo là đường sắt thường khổ chuẩn: tối đa 130 km/h [N]
-      curveA: 1.3, curveFrom: 255.1, tunnels: [], coupleMini: { maxKm: 255.1, p: 0.55, mini: 'E8' }, junction: { km: 256.0, side: -1 },
+      curveA: 1.3, curveFrom: 255.1, tunnels: [], coupleMini: { maxKm: 255.1, p: 0.55, mini: 'E8' }, junction: { km: 257.1, side: -1, stationKm: 255.1 },
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [208, 220, 'urban'], [250, 262, 'urban'], [262, 292, 'mountain'], [292, 300, 'urban'], [336, 348, 'urban'], [348, 400, 'field'], [400, 403.7, 'urban']],
       grade: [[0, 36, 15, 25], [36, 255.1, 7, 15], [255.1, 296, 26, 37.5], [296, 403.7, 9, 20]],   // dốc tối đa 37,5‰ (đèo Itaya) [N]
       notes: [{ km: 255.1, dir: 'down', text: 'Rời Shinkansen thật, vào đường sắt thường Ou (khổ chuẩn): ≤ 130 km/h, đường đơn gần hết chặng, nhiều đường ngang, cong gắt và dốc tới 37,5‰ ở đèo Itaya.' },
@@ -64,7 +64,7 @@
       pa: '秋田', defVeh: 'E6', flipDown: false,
       snow: [[330, 400, 230, 'tuyết Sendai–Morioka'], [496.5, 545, 95, 'tuyết Sengan-toge'], [545, 623.8, 110, 'tuyết Akita']],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 623.8, 130]],
-      curveA: 1.3, curveFrom: 496.5, tunnels: [], coupleMini: { maxKm: 496.5, p: 0.6, mini: 'E6' }, junction: { km: 497.4, side: -1 },
+      curveA: 1.3, curveFrom: 496.5, tunnels: [], coupleMini: { maxKm: 496.5, p: 0.6, mini: 'E6' }, junction: { km: 498.5, side: -1, stationKm: 496.5 },
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [515, 548, 'mountain'], [548, 616, 'field'], [616, 623.8, 'urban']],
       grade: [[0, 36, 15, 25], [36, 496.5, 7, 15], [496.5, 545, 22, 37], [545, 623.8, 8, 18]],
       notes: [{ km: 496.5, dir: 'down', text: 'Rời Shinkansen thật tại Morioka, vào Tazawako Line (đường sắt thường khổ chuẩn): ≤ 130 km/h, đường đơn, đường ngang, đèo Sengan-toge cong và dốc.' },
@@ -508,7 +508,7 @@
     if (deadAt(W, T.x, 450, 30) && d > 600) return 0;                           // đoạn cách điện: trôi
     const m = (margin === undefined ? (T.isLead ? 4 : (W.diff.atcOver * 3.6 < 1 ? 9 : 4)) : margin) / 3.6;
     let vT = Math.max(0, T.allowed - m);
-    { const xg = xingAhead(W, T, 2500); if (xg) { const vx = Math.sqrt(2 * 0.45 * Math.max(0, xg.s - 90 - T.x)); if (v > vx) return -0.9; vT = Math.min(vT, vx); } }          // xe kẹt ở đường ngang: dừng trước đường ngang
+    { const xg = xingAhead(W, T, 2500); if (xg) { const vx = Math.sqrt(2 * 0.45 * Math.max(0, xg.s - 90 - T.x)); if (v < 0.6 && xg.s - T.x < 700) return -0.3; if (v > vx) return -0.9; vT = Math.min(vT, vx); } }      // đã dừng (hoặc gần dừng) trước đường ngang có xe kẹt: giữ phanh ổn định B1          // xe kẹt ở đường ngang: dừng trước đường ngang
     let soft = false;                                                    // giới hạn do kế hoạch đúng giờ (không phải an toàn): chỉ trôi/phanh nhẹ khi vượt đáng kể
     const arr = mk.arr != null ? mk.arr : (mk.pt != null && mk.stop ? mk.pt : null), remT = arr != null ? arr - W.t : 0;
     const ai = T.isLead && W.net, slack = ai ? 50 : 20, fac = ai ? 1.12 : 1.06;
@@ -598,6 +598,11 @@
   }
   // độ lệch ngang của đường chính Tohoku so với đường ta khi tuyến mini rẽ ra (hoặc nhập vào) ở gần ga ghép/tách
   // đường chính Tohoku (đi thẳng) so với đường ta (rẽ sang tuyến mini, bị cong): độ lệch ngang = −(độ lệch của ta so với tiếp tuyến tại ngã rẽ)
+  // chiều lên (từ tuyến mini vào ga ghép): tàu nhập vào đường PHẢI của đôi Tohoku rồi chuyển sang đường TRÁI bằng ghi chữ X trước ga. rightLaneW = 1 khi đang chạy trên đường phải
+  function rightLaneW(W, s) {
+    const j = W.line.meta.junction; if (!j || W.dir !== 'up') return 0; const sj = sOfKm(j.km, 'up', W.line.kmEnd), sM = sOfKm(j.stationKm, 'up', W.line.kmEnd);
+    return smooth01(sj, sj + 300, s) * (1 - smooth01(sM - 1300, sM - 1150, s));
+  }
   const trunkCache = new Map();
   function trunkOff(W, s) {
     const j = W.line.meta.junction; if (!j) return 0; const key = W.lineId + W.dir; let tb = trunkCache.get(key);
@@ -912,7 +917,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { oppKey, trunkOff, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { rightLaneW, oppKey, trunkOff, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;
