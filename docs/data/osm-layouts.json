@@ -1,0 +1,986 @@
+{
+ "東京|tsk": {
+  "tok": "DDUP",
+  "tracks": 3,
+  "plats": 1,
+  "conf": 0.0,
+  "old": "3-6-0",
+  "en": "Tokyo"
+ },
+ "品川|tsk": {
+  "tok": "PDuPddUPUU",
+  "tracks": 7,
+  "plats": 3,
+  "conf": 1.0,
+  "old": "2-4-0",
+  "en": "Shinagawa"
+ },
+ "新横浜|tsk": {
+  "tok": "DDDUU",
+  "tracks": 5,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Shin-Yokohama"
+ },
+ "小田原|tsk": {
+  "tok": "DUU",
+  "tracks": 3,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Odawara"
+ },
+ "熱海|tsk": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Atami"
+ },
+ "三島|tsk": {
+  "tok": "PduUPuu",
+  "tracks": 5,
+  "plats": 4,
+  "conf": 1.0,
+  "old": "1-2-1",
+  "en": "Mishima"
+ },
+ "新富士|tsk": {
+  "tok": "PdDUuP",
+  "tracks": 4,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Shin-Fuji"
+ },
+ "静岡|tsk": {
+  "tok": "PddDuuP",
+  "tracks": 5,
+  "plats": 4,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Shizuoka"
+ },
+ "掛川|tsk": {
+  "tok": "DDDUU",
+  "tracks": 5,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Kakegawa"
+ },
+ "浜松|tsk": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Hamamatsu"
+ },
+ "豊橋|tsk": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-1",
+  "en": "Toyohashi"
+ },
+ "三河安城|tsk": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Mikawa-Anjo"
+ },
+ "名古屋|tsk": {
+  "tok": "DDDUUUUUUP",
+  "tracks": 9,
+  "plats": 1,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Nagoya"
+ },
+ "岐阜羽島|tsk": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-1",
+  "en": "Gifu-Hashima"
+ },
+ "米原|tsk": {
+  "tok": "PdDUPU",
+  "tracks": 4,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-3-1",
+  "en": "Maibara"
+ },
+ "京都|tsk": {
+  "tok": "DDDUU",
+  "tracks": 5,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Kyoto"
+ },
+ "新大阪|tsk": {
+  "tok": "DDDDUUUU",
+  "tracks": 8,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "5-8-0",
+  "en": "Shin-Osaka"
+ },
+ "新神戸|tsk": {
+  "tok": "PDU",
+  "tracks": 2,
+  "plats": 1,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Shin-Kobe"
+ },
+ "西明石|tsk": {
+  "tok": "PdDuP",
+  "tracks": 3,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Nishi-Akashi"
+ },
+ "姫路|tsk": {
+  "tok": "UDUDUUUDP",
+  "tracks": 8,
+  "plats": 4,
+  "conf": 0.0,
+  "old": "2-3-1",
+  "en": "Himeji"
+ },
+ "相生|tsk": {
+  "tok": "dDPdPdUUPuU",
+  "tracks": 8,
+  "plats": 4,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Aioi"
+ },
+ "岡山|tsk": {
+  "tok": "DDDDUUUU",
+  "tracks": 8,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Okayama"
+ },
+ "新倉敷|tsk": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Shin-Kurashiki"
+ },
+ "福山|tsk": {
+  "tok": "DDDUU",
+  "tracks": 5,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Fukuyama"
+ },
+ "新尾道|tsk": {
+  "tok": "DDU",
+  "tracks": 3,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Shin-Onomichi"
+ },
+ "三原|tsk": {
+  "tok": "PdduUP",
+  "tracks": 4,
+  "plats": 4,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Mihara"
+ },
+ "東広島|tsk": {
+  "tok": "PddDuuP",
+  "tracks": 5,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Higashi-Hiroshima"
+ },
+ "広島|tsk": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Hiroshima"
+ },
+ "新岩国|tsk": {
+  "tok": "DDDuPU",
+  "tracks": 5,
+  "plats": 1,
+  "conf": 1.0,
+  "old": "2-3-1",
+  "en": "Shin-Iwakuni"
+ },
+ "徳山|tsk": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Tokuyama"
+ },
+ "新山口|tsk": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Shin-Yamaguchi"
+ },
+ "厚狭|tsk": {
+  "tok": "PDdUuP",
+  "tracks": 4,
+  "plats": 5,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Asa"
+ },
+ "新下関|tsk": {
+  "tok": "DPdDuuP",
+  "tracks": 5,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-3-1",
+  "en": "Shin-Shimonoseki"
+ },
+ "小倉|tsk": {
+  "tok": "DDDDUUU",
+  "tracks": 7,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Kokura"
+ },
+ "博多|tsk": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "3-6-0",
+  "en": "Hakata"
+ },
+ "新鳥栖|tsk": {
+  "tok": "DDDUU",
+  "tracks": 5,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Shin-Tosu"
+ },
+ "久留米|tsk": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Kurume"
+ },
+ "筑後船小屋|tsk": {
+  "tok": "DDU",
+  "tracks": 3,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Chikugo-Funagoya"
+ },
+ "新大牟田|tsk": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Shin-Omuta"
+ },
+ "新玉名|tsk": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Shin-Tamana"
+ },
+ "熊本|tsk": {
+  "tok": "DDU",
+  "tracks": 3,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Kumamoto"
+ },
+ "新八代|tsk": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Shin-Yatsushiro"
+ },
+ "新水俣|tsk": {
+  "tok": "DDU",
+  "tracks": 3,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Shin-Minamata"
+ },
+ "出水|tsk": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Izumi"
+ },
+ "川内|tsk": {
+  "tok": "PDdduUP",
+  "tracks": 5,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-2-0",
+  "en": "Sendai"
+ },
+ "鹿児島中央|tsk": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Kagoshima-Chuo"
+ },
+ "東京|toh": {
+  "tok": "PDU",
+  "tracks": 2,
+  "plats": 4,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Tokyo"
+ },
+ "上野|toh": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Ueno"
+ },
+ "大宮|toh": {
+  "tok": "DDDUUUUU",
+  "tracks": 8,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "3-6-0",
+  "en": "Omiya"
+ },
+ "小山|toh": {
+  "tok": "PdUP",
+  "tracks": 2,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-3-1",
+  "en": "Oyama"
+ },
+ "宇都宮|toh": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Utsunomiya"
+ },
+ "那須塩原|toh": {
+  "tok": "DPdduUP",
+  "tracks": 5,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-3-1",
+  "en": "Nasushiobara"
+ },
+ "新白河|toh": {
+  "tok": "PdDUuP",
+  "tracks": 4,
+  "plats": 3,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Shin-Shirakawa"
+ },
+ "郡山|toh": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-1",
+  "en": "Koriyama"
+ },
+ "福島|toh": {
+  "tok": "DDDUDU",
+  "tracks": 6,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-1",
+  "en": "Fukushima"
+ },
+ "白石蔵王|toh": {
+  "tok": "DDUUUU",
+  "tracks": 6,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-1",
+  "en": "Shiroishi-Zao"
+ },
+ "仙台|toh": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Sendai"
+ },
+ "古川|toh": {
+  "tok": "",
+  "tracks": 0,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Furukawa"
+ },
+ "くりこま高原|toh": {
+  "tok": "PduP",
+  "tracks": 2,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-2-0",
+  "en": "Kurikoma-Kogen"
+ },
+ "一ノ関|toh": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Ichinoseki"
+ },
+ "水沢江刺|toh": {
+  "tok": "PduP",
+  "tracks": 2,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-2-0",
+  "en": "Mizusawa-Esashi"
+ },
+ "北上|toh": {
+  "tok": "PDdDuUP",
+  "tracks": 5,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-3-1",
+  "en": "Kitakami"
+ },
+ "新花巻|toh": {
+  "tok": "PduP",
+  "tracks": 2,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-2-0",
+  "en": "Shin-Hanamaki"
+ },
+ "盛岡|toh": {
+  "tok": "PDPDuPU",
+  "tracks": 4,
+  "plats": 6,
+  "conf": 1.0,
+  "old": "2-4-0",
+  "en": "Morioka"
+ },
+ "いわて沼宮内|toh": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Iwate-Numakunai"
+ },
+ "二戸|toh": {
+  "tok": "PduP",
+  "tracks": 2,
+  "plats": 4,
+  "conf": 1.0,
+  "old": "2-2-0",
+  "en": "Ninohe"
+ },
+ "八戸|toh": {
+  "tok": "DPduPU",
+  "tracks": 4,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-4-0",
+  "en": "Hachinohe"
+ },
+ "七戸十和田|toh": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Shichinohe-Towada"
+ },
+ "新青森|toh": {
+  "tok": "PduuP",
+  "tracks": 3,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-4-0",
+  "en": "Shin-Aomori"
+ },
+ "奥津軽いまべつ|toh": {
+  "tok": "PdduuP",
+  "tracks": 4,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Okutsugaru-Imabetsu"
+ },
+ "木古内|toh": {
+  "tok": "DDU",
+  "tracks": 3,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Kikonai"
+ },
+ "新函館北斗|toh": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Shin-Hakodate-Hokuto"
+ },
+ "大宮|jts": {
+  "tok": "DDDDDUUUUU",
+  "tracks": 10,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "3-6-0",
+  "en": "Omiya"
+ },
+ "熊谷|jts": {
+  "tok": "PduP",
+  "tracks": 2,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-3-1",
+  "en": "Kumagaya"
+ },
+ "本庄早稲田|jts": {
+  "tok": "",
+  "tracks": 0,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Honjo-Waseda"
+ },
+ "高崎|jts": {
+  "tok": "PdDDUUU",
+  "tracks": 6,
+  "plats": 4,
+  "conf": 1.0,
+  "old": "2-4-1",
+  "en": "Takasaki"
+ },
+ "上毛高原|jts": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Jomo-Kogen"
+ },
+ "越後湯沢|jts": {
+  "tok": "DDDUUU",
+  "tracks": 6,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-1",
+  "en": "Echigo-Yuzawa"
+ },
+ "浦佐|jts": {
+  "tok": "DDDUU",
+  "tracks": 5,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Urasa"
+ },
+ "長岡|jts": {
+  "tok": "PdduPuP",
+  "tracks": 4,
+  "plats": 5,
+  "conf": 1.0,
+  "old": "2-2-1",
+  "en": "Nagaoka"
+ },
+ "燕三条|jts": {
+  "tok": "PddDDuUPu",
+  "tracks": 7,
+  "plats": 2,
+  "conf": 1.0,
+  "old": "2-3-1",
+  "en": "Tsubame-Sanjo"
+ },
+ "新潟|jts": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "3-4-0",
+  "en": "Niigata"
+ },
+ "高崎|hok": {
+  "tok": "PdPdduuPU",
+  "tracks": 6,
+  "plats": 6,
+  "conf": 1.0,
+  "old": "2-4-1",
+  "en": "Takasaki"
+ },
+ "安中榛名|hok": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Annaka-Haruna"
+ },
+ "軽井沢|hok": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Karuizawa"
+ },
+ "佐久平|hok": {
+  "tok": "DDU",
+  "tracks": 3,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Sakudaira"
+ },
+ "上田|hok": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Ueda"
+ },
+ "長野|hok": {
+  "tok": "DDDUU",
+  "tracks": 5,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Nagano"
+ },
+ "飯山|hok": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Iiyama"
+ },
+ "上越妙高|hok": {
+  "tok": "",
+  "tracks": 0,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Joetsu-Myoko"
+ },
+ "糸魚川|hok": {
+  "tok": "PduP",
+  "tracks": 2,
+  "plats": 4,
+  "conf": 1.0,
+  "old": "2-2-0",
+  "en": "Itoigawa"
+ },
+ "黒部宇奈月温泉|hok": {
+  "tok": "",
+  "tracks": 0,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Kurobe-Unazuki-Onsen"
+ },
+ "富山|hok": {
+  "tok": "DDU",
+  "tracks": 3,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Toyama"
+ },
+ "新高岡|hok": {
+  "tok": "",
+  "tracks": 0,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Shin-Takaoka"
+ },
+ "金沢|hok": {
+  "tok": "DPDduuPUP",
+  "tracks": 6,
+  "plats": 5,
+  "conf": 1.0,
+  "old": "2-4-0",
+  "en": "Kanazawa"
+ },
+ "小松|hok": {
+  "tok": "P",
+  "tracks": 0,
+  "plats": 4,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Komatsu"
+ },
+ "加賀温泉|hok": {
+  "tok": "",
+  "tracks": 0,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Kagaonsen"
+ },
+ "芦原温泉|hok": {
+  "tok": "P",
+  "tracks": 0,
+  "plats": 3,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Awara-Onsen"
+ },
+ "福井|hok": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "1-2-0",
+  "en": "Fukui"
+ },
+ "越前たけふ|hok": {
+  "tok": "",
+  "tracks": 0,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-1",
+  "en": "Echizen-Takefu"
+ },
+ "敦賀|hok": {
+  "tok": "DDUU",
+  "tracks": 4,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Tsuruga"
+ },
+ "武雄温泉|nks": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Takeo-Onsen"
+ },
+ "嬉野温泉|nks": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Ureshino-Onsen"
+ },
+ "新大村|nks": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Shin-Omura"
+ },
+ "諫早|nks": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-2-0",
+  "en": "Isahaya"
+ },
+ "長崎|nks": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Nagasaki"
+ },
+ "福島|yam": {
+  "tok": "DDDDDUUUD",
+  "tracks": 9,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-1",
+  "en": "Fukushima"
+ },
+ "米沢|yam": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Yonezawa"
+ },
+ "高畠|yam": {
+  "tok": "",
+  "tracks": 0,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "1-2-0",
+  "en": "Takahata"
+ },
+ "赤湯|yam": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Akayu"
+ },
+ "かみのやま温泉|yam": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Kaminoyama-Onsen"
+ },
+ "山形|yam": {
+  "tok": "PdDPdDuUU",
+  "tracks": 7,
+  "plats": 3,
+  "conf": 1.0,
+  "old": "2-4-0",
+  "en": "Yamagata"
+ },
+ "天童|yam": {
+  "tok": "DU",
+  "tracks": 2,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Tendo"
+ },
+ "さくらんぼ東根|yam": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "1-2-0",
+  "en": "Sakuranbo-Higashine"
+ },
+ "村山|yam": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Murayama"
+ },
+ "大石田|yam": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "1-2-0",
+  "en": "Oishida"
+ },
+ "新庄|yam": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Shinjo"
+ },
+ "盛岡|aki": {
+  "tok": "PDPDuPU",
+  "tracks": 4,
+  "plats": 6,
+  "conf": 1.0,
+  "old": "2-4-0",
+  "en": "Morioka"
+ },
+ "雫石|aki": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "1-2-0",
+  "en": "Shizukuishi"
+ },
+ "田沢湖|aki": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Tazawako"
+ },
+ "角館|aki": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Kakunodate"
+ },
+ "大曲|aki": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-3-0",
+  "en": "Omagari"
+ },
+ "秋田|aki": {
+  "tok": "D",
+  "tracks": 1,
+  "plats": 0,
+  "conf": 0.0,
+  "old": "2-4-0",
+  "en": "Akita"
+ }
+}

@@ -22,12 +22,12 @@
     const km = z => S.kmOfS(T.x + z, W.dir, L.kmEnd);
     const heading = LAY.bearingAt(L, S, W.dir, T.x);
     const sts = []; M.forEach((m0, i) => { const gs = m0.sOrig !== undefined ? m0.sOrig : m0.s, m = gs === m0.s ? m0 : Object.assign({}, m0, { s: gs }), d = gs - T.x, dm = m0.s - T.x; if (d < -1300 || d > 1900) return; const key = W.lineId + ':' + m.i + ':' + W.dir; const st = cache[key] || (cache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, LAY.pickOf(L.stations[m.i], m.i))); sts.push({ m, i, d, dm, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')) }); });
-    const ourPath = z => { let x = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) x += q.st.ours.x * LAY.spread(T.x + z, q.m.s); return x; };
+    const ourPath = z => { let x = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) x += q.st.ours.x * LAY.trackW(q.st.ours, T.x + z, q.m.s); return x; };
     const lane = ourPath(0);
     const latT = LAY.lateralTable(L, S, W.dir, T.x, VIEW_R + 400, 10), latB = LAY.lateralTableBack(L, S, W.dir, T.x, len + VIEW_R + 400, 10);
     const off = z => { const tab = z >= 0 ? latT : latB, f = Math.abs(z) / 10, i = Math.min(tab.length - 2, Math.floor(f)); return tab[i] + (tab[i + 1] - tab[i]) * (f - i); };      // z<0: đường phía sau tàu cũng cong khi tàu đang trong đường cong
     const hasSingle = !!(W.line.single && W.line.single.length);
-    const oppAt = z => { let x = LAY.ADJ; for (const q of sts) x += (q.st.opp - LAY.ADJ) * LAY.spread(T.x + z, q.m.s); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };       // đường đơn: đường ngược chiều nhập vào đường ta
+    const oppAt = z => { let x = LAY.ADJ; for (const q of sts) x += (q.st.opp - LAY.ADJ) * (q.st.oppT ? LAY.trackW(q.st.oppT, T.x + z, q.m.s) : 1); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };       // đường đơn: đường ngược chiều nhập vào đường ta
     const Y = z => cy - (z - zOff) * ky, X = (xm, z) => cx - ((xm - lane) * kx + off(z) * kc);
     const zLo = zOff - VIEW_R - 40, zHi = zOff + VIEW_R + 40;
 
@@ -47,8 +47,11 @@
     const line = (xf, z0, z1, w, col) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); const stp = z1 - z0 > 300 ? 20 : 8; let z = z0; for (;;) { const zz = Math.min(z, z1), x = X(xf(zz), zz), y = Y(zz); if (zz === z0) ctx.moveTo(x, y); else ctx.lineTo(x, y); if (zz >= z1) break; z += stp; } ctx.stroke(); };
     const tracks = [[() => 0, zLo, zHi], [oppAt, zLo, zHi]];
     for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj; if (b > zLo && a < zHi) tracks.push([z => S.trunkOff(W, T.x + z), Math.max(zLo, a), Math.min(zHi, b)], [z => S.trunkOff(W, T.x + z) + LAY.ADJ, Math.max(zLo, a), Math.min(zHi, b)]); }       // đường chính Tohoku tách khỏi tuyến mini
-    for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; tracks.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), Math.max(zLo, q.d - 1150), Math.min(zHi, q.d + 630)]); }
+    for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; tracks.push([z => lerp(t.plain, t.x, LAY.trackW(t, T.x + z, q.m.s)), Math.max(zLo, q.d - 1150), Math.min(zHi, q.d + 630)]); }
     for (const [xf, z0, z1] of tracks) if (z1 > z0) line(xf, z0, z1, Math.max(3, kx * 2.6), dark ? '#1b2229' : '#464b4d');
+    // tường bao quanh ga (bê tông + tấm chắn): hai bên phạm vi sân ga; đoạn cổ ga là hàng rào mảnh hơn
+    for (const q of sts) { const ex = q.st.extent, w = z => LAY.spread(T.x + z, q.m.s), eL = z => lerp(Math.max(0, oppAt(z)) + 2.9, ex[1] + 1.4, w(z)), eR = z => lerp(Math.min(0, oppAt(z)) - 2.9, ex[0] - 1.4, w(z));
+      for (const f of [eL, eR]) { line(f, Math.max(zLo, q.d - 1150), Math.min(zHi, q.d + 630), 2, dark ? 'rgba(120,130,140,.55)' : 'rgba(150,158,166,.7)'); line(f, Math.max(zLo, q.d - 450), Math.min(zHi, q.d + 60), 4, dark ? '#59626d' : '#8d96a0'); } }
     for (const q of sts) { const z0 = q.d - 420, z1 = q.d + 20; if (z1 < zLo || z0 > zHi) continue; for (const p of q.st.plats) { const za = Math.min(z1, zHi), zb = Math.max(z0, zLo), n = Math.max(2, Math.ceil((za - zb) / 20)), zs = Array.from({ length: n + 1 }, (_, i) => zb + (za - zb) * i / n);   // sân ga uốn theo đường cong: mỗi mép là một đường gấp khúc
         const edge = e => zs.map(z => [cx - (e - lane) * kx - off(z) * kc, Y(z)]); ctx.fillStyle = dark ? '#3a4658' : '#8c98a6'; ctx.beginPath(); edge(p.xb).forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); edge(p.xa).reverse().forEach(([x, y]) => ctx.lineTo(x, y)); ctx.closePath(); ctx.fill();
         ctx.strokeStyle = '#d8b838'; ctx.lineWidth = 1.4; for (const e of [p.xa, p.xb]) if (q.st.tracks.some(t => Math.abs(Math.abs(t.x - e) - 1.75) < 0.01)) { ctx.beginPath(); edge(e).forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); } }
@@ -74,7 +77,7 @@
         ctx.restore(); }
       if (head) { const xh = X(pathFn(zFront), zFront), yh = Y(zFront); ctx.fillStyle = '#ffd24a'; ctx.beginPath(); ctx.moveTo(xh, yh - 7); ctx.lineTo(xh - 4, yh); ctx.lineTo(xh + 4, yh); ctx.closePath(); ctx.fill(); } };
     const Ld = W.lead; if (Ld && Ld.phase !== 'end') { const zf = Ld.x - T.x;
-      const leadPath = z => { let x = Ld.fj !== undefined ? S.trunkOff(W, T.x + z, Ld.fj) : 0; for (const q of sts) { const stops = Ld.M.some(m => m.i === q.m.i && (m.stop || Ld.phase === 'dwell' && Math.abs(m.s - Ld.x) < 60)); if (!stops) continue; const other = q.st.tracks.find(t => t.own && !t.thr && t !== q.st.ours && q.st.stops.includes(t)); x += (other || q.st.ours).x * LAY.spread(T.x + z, q.m.s); } return x; };
+      const leadPath = z => { let x = Ld.fj !== undefined ? S.trunkOff(W, T.x + z, Ld.fj) : 0; for (const q of sts) { const stops = Ld.M.some(m => m.i === q.m.i && (m.stop || Ld.phase === 'dwell' && Math.abs(m.s - Ld.x) < 60)); if (!stops) continue; const other = q.st.tracks.find(t => t.own && !t.thr && t !== q.st.ours && q.st.stops.includes(t)); x += (other || q.st.ours).x * LAY.trackW(other || q.st.ours, T.x + z, q.m.s); } return x; };
       if (zf > zLo && zf - Ld.veh.len < zHi) consist(leadPath, zf, Ld.veh, false, false); }
     if (T.v > 20 && !S.oppHidden(W, T)) for (const t0 of W.opposing || []) { const zN = (t0 - W.t) * 200, ov = S.VEH[S.oppKey(W, T, t0)]; if (zN < zHi && zN + ov.len > zLo) consist(z => oppAt(Math.max(0, z)), zN + ov.len, ov, true, false); }
     for (const pk of W.parked || []) { const pv = S.VEH[pk.key], zf = pk.front - T.x; if (zf > zLo && zf - pv.len < zHi) { const qL = sts.find(q => Math.abs(q.m.s - pk.front) < 400), px0 = qL ? qL.st.ours.x : 0; consist(() => px0, zf, pv, false, false); } }      // đoàn Tohoku đợi ghép / phần đã tách ở lại

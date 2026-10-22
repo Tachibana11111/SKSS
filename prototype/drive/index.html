@@ -556,6 +556,19 @@ function showProfile() {
   $('mClose').onclick = () => setMode('drive'); $('mReset').onclick = () => { if (confirm('Xoá toàn bộ hồ sơ, thành tích và bản ghi?')) { Store.reset(); showProfile(); } };
 }
 window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({ kind: 'dispatch', line: o.lineId, trainLabel: Sim.lineOf(o.lineId).name + ' ' + (o.dir === 'down' ? 'xuống' : 'lên') + ' ' + hhmm(o.t0), diff: o.diff, weather: o.weather, seed: o.seed, score: r.score, finished: true, scenario: { kind: 'dispatch', line: o.lineId, dir: o.dir, train: o.t0, from: '', to: o.span, diff: o.diff, weather: o.weather, seed: o.seed } }); };
+// ---- bảng đo hiệu năng (phím F3): fps thật và thời gian từng thành phần (ms/khung) để tìm chỗ giật
+(function () {
+  const box = document.createElement('div'); box.id = 'perf'; box.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99999;background:rgba(0,0,0,.75);color:#9fe3a8;font:12px/1.35 monospace;padding:6px 8px;border-radius:6px;display:none;white-space:pre;pointer-events:none';
+  document.body.appendChild(box); const acc = {}; let on = false, last = performance.now(), frames = 0, worst = 0, tAcc = 0, tShow = performance.now();
+  const wrap = (obj, fn, key) => { if (!obj || !obj[fn] || obj[fn].__w) return; const o = obj[fn]; const w = function (...a) { if (!on) return o.apply(this, a); const t0 = performance.now(); try { return o.apply(this, a); } finally { acc[key] = (acc[key] || 0) + performance.now() - t0; } }; w.__w = 1; obj[fn] = w; };
+  wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', 'bản đồ nhỏ'); wrap(window.Strips, 'draw', 'dải tranh'); wrap(window.Scene, 'draw', 'cảnh 2D');
+  const f0 = window.frame; let rafPrev = performance.now();
+  const tick = t => { if (on) { const dt = t - rafPrev; frames++; tAcc += dt; worst = Math.max(worst, dt); if (t - tShow > 700) { const fps = 1000 * frames / tAcc; let txt = `FPS ${fps.toFixed(0)}  (khung chậm nhất ${worst.toFixed(0)} ms)
+`; for (const k in acc) txt += `${k.padEnd(12)} ${(acc[k] / frames).toFixed(1)} ms
+`; box.textContent = txt; frames = 0; tAcc = 0; worst = 0; for (const k in acc) acc[k] = 0; tShow = t; } } rafPrev = t; requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+  addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); on = !on; box.style.display = on ? 'block' : 'none'; wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', 'bản đồ nhỏ'); wrap(window.Strips, 'draw', 'dải tranh'); wrap(window.Scene, 'draw', 'cảnh 2D'); } }, true);
+})();
 trainList(); $('from').onchange(); setMode('drive'); startDrive(); requestAnimationFrame(frame);
 </script>
 </body>

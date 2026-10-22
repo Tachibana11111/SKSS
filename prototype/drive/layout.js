@@ -27,6 +27,10 @@
     const opp = idxT.find(i => s[i] === 'U') !== undefined ? idxT.find(i => s[i] === 'U') : oppIdx.reduce((b, i) => Math.abs(c[i] - c[ref]) < Math.abs(c[b] - c[ref]) ? i : b, oppIdx[0]);
     const X = i => -(c[i] - c[ref]);                           // X dương = bên trái màn hình (trước khi lật)
     const tracks = idxT.map(i => ({ i, x: X(i), c: s[i], own: lc(s[i]) === 'd', thr: s[i] === 'D' || s[i] === 'U', plain: lc(s[i]) === 'd' ? 0 : (rev ? -ADJ : ADJ), main: i === ref || i === opp }));
+    // ghi thật: mỗi đường rẽ khỏi cặp đường chính bằng một ghi riêng, lần lượt từ đường gần ra đường xa (cách nhau ~85 m); dịch ngang 1 m mất ~13 m chiều dài (ghi #12), nên đường ga thoát ra nhanh và gọn
+    { const outer = tracks.filter(t => !t.main).sort((a, b) => Math.abs(a.x - a.plain) - Math.abs(b.x - b.plain));
+      outer.forEach((t, k) => { const dx = Math.abs(t.x - t.plain); t.len = clamp(13 * dx + 25, 40, 300); t.in0 = 1130 - 85 * k; t.out0 = 40 + 70 * (outer.length - 1 - k); t.rank = k; }); }
+    const oppT = tracks.find(t => t.i === opp);
     const plats = []; for (let i = 0; i < n; i++) if (!isT(i)) { const w = width(i); plats.push({ xa: X(i) - w / 2, xb: X(i) + w / 2, side: i === 0 || i === n - 1 }); }
     // đường dừng của ta: đường chiều ta (d) có sân ga kề bên
     const stops = tracks.filter(t => t.own && !t.thr && plats.some(p => Math.abs(Math.min(Math.abs(p.xa - t.x), Math.abs(p.xb - t.x)) - EDGE) < 0.01));
@@ -35,10 +39,12 @@
     // sân ga kề đường dừng của ta
     const plat = plats.find(p => Math.abs(Math.min(Math.abs(p.xa - ours.x), Math.abs(p.xb - ours.x)) - EDGE) < 0.01) || null;
     const platSign = plat ? ((plat.xa + plat.xb) / 2 > ours.x ? 1 : -1) : 1;
-    return { code, dir, tracks, plats, stops, ref, opp: X(opp), ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
+    return { code, dir, tracks, plats, stops, ref, opp: X(opp), oppT, ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
   }
   // trọng số "đã chia ra các đường của ga" tại vị trí s (m): 0 ở xa, 1 trong phạm vi sân ga; sM = vị trí vạch dừng
-  const spread = (s, sM) => smooth(sM - 1150, sM - 450, s) * (1 - smooth(sM + 30, sM + 630, s));
+  // mức "đã toả hết" của cả ga (theo đường ngoài cùng): dùng cho bề rộng hành lang; từng đường có trackW riêng (ghi riêng)
+  const spread = (s, sM) => smooth(sM - 760, sM - 430, s) * (1 - smooth(sM + 40, sM + 380, s));
+  const trackW = (t, s, sM) => t.in0 === undefined ? 1 : smooth(sM - t.in0, sM - t.in0 + t.len, s) * (1 - smooth(sM + t.out0, sM + t.out0 + t.len, s));
 
   // đường cong: bảng [km0, km1, R, sg] theo km; trả về độ cong (1/m, dương = rẽ phải theo chiều chạy) tại s (m dọc tuyến theo chiều chạy)
   function curvatureAt(L, Sim, dir, s) {
@@ -46,26 +52,42 @@
     for (const [a, b, R, sg] of L.curves || []) if (km >= a && km < b) return (dir === 'up' ? -sg : sg) / R;
     return 0;
   }
+  // ---- Hồ sơ hình học tính MỘT LẦN cho cả tuyến theo từng chiều (ô 10 m): hướng θ(s), tích phân Θ(s) và cao độ; mọi bảng ngang/cao độ lấy từ đây
+  // (trước đây mỗi khung hình dò lại danh sách đường cong/kết cấu hàng trăm lần: tốn vài ms và là một nguồn giật ở đoạn cong)
+  const _prof = new WeakMap(), CELL = 10;
+  function profile(L, Sim, dir) {
+    let m = _prof.get(L); if (!m) _prof.set(L, m = {}); if (m[dir]) return m[dir];
+    const Lm = L.kmEnd * 1000, n = Math.ceil(Lm / CELL) + 8, kc = new Float64Array(n), th = new Float64Array(n + 1), Th = new Float64Array(n + 1), raw = new Float64Array(n), el = new Float64Array(n);
+    raw.fill(ELEV.g);
+    const rng = (a, b) => dir === 'up' ? [(L.kmEnd - b) * 1000, (L.kmEnd - a) * 1000] : [a * 1000, b * 1000];
+    for (const [a, b, R, sg] of L.curves || []) { const [s0, s1] = rng(a, b), v = (dir === 'up' ? -sg : sg) / R; for (let j = Math.max(0, Math.floor(s0 / CELL)); j < Math.min(n, Math.ceil(s1 / CELL)); j++) { const ov = Math.min(s1, (j + 1) * CELL) - Math.max(s0, j * CELL); if (ov > 0) kc[j] += v * ov / CELL; } }      // độ cong trung bình trong ô (đường cong không trùng biên ô)
+    for (const [a, b, k] of L.struct || []) { const [s0, s1] = rng(a, b), v = ELEV[k] || 0; for (let j = Math.max(0, Math.floor(s0 / CELL)); j < Math.min(n, Math.ceil(s1 / CELL)); j++) raw[j] = v; }
+    for (let j = 0; j < n; j++) { th[j + 1] = th[j] + kc[j] * CELL; Th[j + 1] = Th[j] + th[j] * CELL + 0.5 * kc[j] * CELL * CELL; }
+    const pre = new Float64Array(n + 1); for (let j = 0; j < n; j++) pre[j + 1] = pre[j] + raw[j]; const r = 8;
+    for (let j = 0; j < n; j++) { const a = Math.max(0, j - r), b = Math.min(n - 1, j + r); el[j] = (pre[b + 1] - pre[a]) / (b - a + 1); }
+    return (m[dir] = { th, Th, kc, el, n });
+  }
+  const at = (arr, s) => { const f = Math.max(0, s) / CELL, j = Math.min(arr.length - 2, Math.floor(f)), t = f - j; return arr[j] + (arr[j + 1] - arr[j]) * t; };
+  const atTh = (P, s) => { s = Math.max(0, s); const j = Math.min(P.n - 1, Math.floor(s / CELL)), d = s - j * CELL; return P.th[j] + P.kc[j] * d; };                                  // hướng θ(s) (chính xác trong ô)
+  const atThh = (P, s) => { s = Math.max(0, s); const j = Math.min(P.n - 1, Math.floor(s / CELL)), d = s - j * CELL; return P.Th[j] + P.th[j] * d + 0.5 * P.kc[j] * d * d; };    // Θ(s)
   // độ lệch ngang (m, dương = sang TRÁI màn hình: cùng dấu X mô hình) của đường tại khoảng cách z phía trước so với phương nhìn hiện tại, bảng mỗi `step` m
   function lateralTable(L, Sim, dir, x, zmax, step) {
-    const n = Math.ceil(zmax / step) + 1, out = new Float32Array(n); let th = 0, lat = 0;
-    for (let i = 1; i < n; i++) { const k = curvatureAt(L, Sim, dir, x + (i - 0.5) * step); th += k * step; lat -= th * step; out[i] = lat; }
+    const P = profile(L, Sim, dir), n = Math.ceil(zmax / step) + 1, out = new Float32Array(n), t0 = at(P.th, x), T0 = at(P.Th, x);
+    for (let i = 1; i < n; i++) { const z = i * step, s = x + z; out[i] = -(at(P.Th, s) - T0 - t0 * z); }
     return out;
   }
   // độ lệch ngang của đường PHÍA SAU tàu (khoảng cách z = i·step phía sau đầu tàu), cùng quy ước dấu với lateralTable (dương = bên trái hướng đi).
-  // Tàu đang trong đường cong thì đoạn đường phía sau cũng cong: lệch ngang = tổng của (độ cong tích luỹ trên u mét gần nhất) theo u.
+  // Tàu đang trong đường cong thì đoạn đường phía sau cũng cong.
   function lateralTableBack(L, Sim, dir, x, zmax, step) {
-    const n = Math.ceil(zmax / step) + 1, out = new Float32Array(n); let K = 0, r = 0;
-    for (let i = 1; i < n; i++) { K += curvatureAt(L, Sim, dir, x - (i - 0.5) * step) * step; r += K * step; out[i] = -r; }
+    const P = profile(L, Sim, dir), n = Math.ceil(zmax / step) + 1, out = new Float32Array(n), t0 = at(P.th, x), T0 = at(P.Th, x);
+    for (let i = 1; i < n; i++) { const u = i * step, s = x - u; out[i] = -(t0 * u - (T0 - at(P.Th, s))); }
     return out;
   }
   // cao độ tuyến so với mặt đất quanh đó (m): nền 2, cầu cạn 9, cầu 13, hầm 0; chuyển tiếp mượt
   const ELEV = { g: 2, v: 9, b: 13, t: 0 };
   function elevTable(L, Sim, dir, x, zmax, step) {
-    const n = Math.ceil(zmax / step) + 1, raw = new Float32Array(n);
-    for (let i = 0; i < n; i++) raw[i] = ELEV[Sim.structAt(L, Sim.kmOfS(x + i * step, dir, L.kmEnd))] || 0;
-    const out = new Float32Array(n), r = Math.max(1, Math.round(80 / step));
-    for (let i = 0; i < n; i++) { let a = 0, c = 0; for (let j = Math.max(0, i - r); j <= Math.min(n - 1, i + r); j++) { a += raw[j]; c++; } out[i] = a / c; }
+    const P = profile(L, Sim, dir), n = Math.ceil(zmax / step) + 1, out = new Float32Array(n);
+    for (let i = 0; i < n; i++) out[i] = at(P.el, x + i * step);
     return out;
   }
   // tàu dừng ở ga này phải rẽ ghi sang đường sân ga (đường dừng khác đường chính)? [I theo bố trí]
@@ -88,6 +110,6 @@
     return ((b + clamp(dev, -35, 35)) % 360 + 360) % 360;
   }
   const lerp = (a, b, t) => a + (b - a) * t;
-  root.Layout = { pickOf: (st, i) => st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { pickOf: (st, i) => st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);

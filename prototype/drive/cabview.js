@@ -33,7 +33,7 @@
     // camera sau: toạ độ phản chiếu nên vùng toả đường của ga (trước vạch 1150 m, sau vạch 630 m) và ghi chữ X đảo phía; spread phải tính trong hệ toạ độ gốc
     const ADJ = W.rear ? -ADJ0 : ADJ0;       // nhìn lùi: ta chạy làn trái nên đường ngược chiều nằm bên TRÁI của camera
     // camera sau rẽ sớm hơn thực tế một đoạn rearShift (m) cho dễ nhìn
-    const rr = !!W.rear, Lm2 = L.kmEnd * 1000, spreadF = rr ? (a, b) => { const so = Lm2 - a, sm = Lm2 - b, se = so <= sm + 30 ? Math.min(so + (W.rearShift || 0), sm + 30) : so; return LAY.spread(se, sm); } : LAY.spread,FA = rr ? 630 : 1150, FB = rr ? 1150 : 630, XA = rr ? 720 : 1300, XB = rr ? 1300 : 720;
+    const rr = !!W.rear, Lm2 = L.kmEnd * 1000, spreadF = rr ? (a, b) => { const so = Lm2 - a, sm = Lm2 - b, se = so <= sm + 30 ? Math.min(so + (W.rearShift || 0), sm + 30) : so; return LAY.spread(se, sm); } : LAY.spread, trackWF = rr ? (t, a, b) => { const so = Lm2 - a, sm = Lm2 - b, se = so <= sm + 30 ? Math.min(so + (W.rearShift || 0), sm + 30) : so; return LAY.trackW(t, se, sm); } : (t, a, b) => LAY.trackW(t, a, b), FA = rr ? 630 : 1150, FB = rr ? 1150 : 630, XA = rr ? 720 : 1300, XB = rr ? 1300 : 720;
     const hour = ((W.trip.t0 + W.t) % 86400 + 86400) % 86400 / 3600;
     const day = smooth(5.3, 7.3, hour) * (1 - smooth(16.8, 19.0, hour)), night = 1 - day, dusk = Math.max(0, 1 - Math.abs(hour - 6.3) / 1.2) + Math.max(0, 1 - Math.abs(hour - 17.8) / 1.3);
     const inSnow = W.zones.some(z => z.kind === 'snow' && T.x >= z.s0 - 3000 && T.x < z.s1), rain = W.rainHere;
@@ -58,9 +58,9 @@
     M.forEach((m0, i) => { const gs = m0.sOrig !== undefined ? m0.sOrig : m0.s, m = gs === m0.s ? m0 : Object.assign({}, m0, { s: gs }), d = gs - T.x, dm = m0.s - T.x; if (d < -1000 || d > 3600) return;      // d: hình học ga (sân ga, toả đường) theo vị trí GỐC; dm: vạch dừng thật của tàu (có thể lùi lại khi chờ ghép)      // giữ ga tới 1 km phía sau để ghi chữ X lúc rời ga không biến mất sớm
        const key = W.lineId + ':' + m.i + ':' + W.dir + (W.rearPick ? ':r' : ''); const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.rearOf || W.dir, W.rearPick ? W.rearPick(m.i) : LAY.pickOf(L.stations[m.i], m.i), !!W.rearOf)); sts.push({ m, i, d, dm, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')),   // ga vừa dừng (kể cả dừng khẩn không có lịch) vẫn giữ đường sân ga cho tới khi tàu rời hẳn
          isT: i === tIdx }); });
-    for (const q of sts) if (q.stopHere && !q.m.mainStop) { const w = spreadF(T.x, q.m.s); if (w > 0) c.lane = q.st.ours.x * w; }
+    for (const q of sts) if (q.stopHere && !q.m.mainStop) { const w = trackWF(q.st.ours, T.x, q.m.s); if (w > 0) c.lane = q.st.ours.x * w; }
     const hasSingle = !!(L.single && L.single.length);
-    const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * spreadF(T.x + z, q.m.s); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };   // đoạn đường đơn: đường ngược chiều nhập vào đường ta   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
+    const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * (q.st.oppT ? trackWF(q.st.oppT, T.x + z, q.m.s) : 1); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };   // đoạn đường đơn: đường ngược chiều nhập vào đường ta   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
     const inStationZone = (za, zb) => { const qs = sts.filter(q => zb > q.d - (FA + 50) && za < q.d + (FB + 20)); return qs.length ? { st: { extent: [Math.min(...qs.map(q => q.st.extent[0])), Math.max(...qs.map(q => q.st.extent[1]))] } } : null; };   // hợp các ga trong tầm (ga vừa qua và ga sắp tới)
 
     const inTun = S.inTunnel(W, T.x);
@@ -131,7 +131,10 @@
       const colTop = mixc([22, 26, 32], [150, 156, 160], day * (1 - wx * 0.35)), colSide = mixc([14, 16, 20], [104, 110, 116], day * (1 - wx * 0.35)), colDeck = mixc([20, 24, 28], [112, 116, 118], day * (1 - wx * 0.35));
       for (const [za, zb, k] of runs) {
         if (k === 'b') strip(() => -70, () => 70, -LAY.ELEV.b, za, zb, mixc([10, 22, 34], [66, 104, 132], day * (1 - wx * 0.4)));
-        if (k === 'v' || k === 'b') { strip(xl, xr, -0.02, za, zb, colDeck); for (const xf of [xr, xl]) { wall(xf, 0, 1.0, za, zb, colTop); wall(xf, -1.4, 0, za, zb, colSide); } }
+        if (k === 'v' || k === 'b') { strip(xl, xr, -0.02, za, zb, colDeck); for (const xf of [xr, xl]) { wall(xf, 0, 1.0, za, zb, colTop); wall(xf, -1.4, 0, za, zb, colSide); }
+          const zmid = (za + zb) / 2, urban = wdOn ? [landCls(zmid, 40), landCls(zmid, -40)].some(v => 'hci'.includes(String.fromCharCode(v || 0)) && v) : biomeAt(zmid) === 'urban';
+          if (k === 'v' && urban) for (const xf of [xr, xl]) wall(xf, 1.0, 3.4, za, zb, day > 0.4 ? 'rgba(190,212,226,.20)' : 'rgba(80,110,140,.2)');      // tấm chắn ồn trong suốt trên cầu cạn khu dân cư
+        }
       }
     }
 
@@ -146,7 +149,7 @@
     const drawTracks = (zFrom) => {
       const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]];
       for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj; if (b > zf && a < ZF) parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95], [z => S.trunkOff(W, T.x + z) + ADJ, Math.max(zf, a), Math.min(ZF, b), 0.95]); }       // đường chính của tuyến cha (Tohoku / Joetsu)
-      for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + FB < ZN || q.d - FA > ZF) continue; parts.push([z => lerp(t.plain, t.x, spreadF(T.x + z, q.m.s)), Math.max(zf, q.d - FA), q.d + FB, 0.95]); }
+      for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + FB < ZN || q.d - FA > ZF) continue; parts.push([z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), Math.max(zf, q.d - FA), q.d + FB, 0.95]); }
       for (const [xf, z0, z1, a] of parts) ballastStrip(xf, z0, z1, a);       // đá dăm trước: đường nhánh không còn đè lên ray đường chính
       for (const [xf, z0, z1] of parts) railStrip(xf, z0, z1, true);
       // ghi chữ X (hai ghi bắt chéo) nối đường ta và đường ngược chiều ở hai đầu mỗi ga
@@ -178,6 +181,21 @@
 
     // ---- sân ga theo bố trí thật của từng ga (hàm: vẽ được cả bên ngoài lẫn nhìn qua cửa hầm vào ga ngầm)
     sink = items;
+    // ---- tường bao quanh ga: hai bên phạm vi sân ga là tường bê tông + tấm chắn trong suốt cao (không còn hở ra ngoài), đoạn cổ ga (đường toả ra) là hàng rào thấp hơn;
+    //      tường bám theo mép hành lang xr/xl (đã gồm các đường của ga đang toả ra), nên ga đỗ ở đường rìa nhánh cũng được bọc kín
+    const enclose = (q, z0, z1) => {
+      const concrete = mixc([22, 26, 30], [170, 174, 174], day * (1 - wx * 0.3)), concrete2 = mixc([18, 22, 26], [150, 154, 156], day * (1 - wx * 0.3)), cap = mixc([30, 34, 40], [206, 210, 210], day * (1 - wx * 0.3)), glass = day > 0.4 ? 'rgba(150,205,235,.16)' : 'rgba(60,90,120,.18)';
+      const za = z0 - 25, zb = z1 + 25, ta = Math.max(q.d - FA, ZN), tb = Math.min(q.d + FB, ZF);
+      for (const side of [1, -1]) {
+        const e = z => side > 0 ? xr(z) + 1.2 : xl(z) - 1.2, th = 0.3 * side;
+        for (let a = Math.max(ta, ZN); a < tb; a += 12) { const b = Math.min(tb, a + 12), inSt = b > za && a < zb, h = inSt ? 4.4 : 1.9, zm = (a + b) / 2, odd = Math.floor((T.x + a) / 12) % 2;
+          sink.push({ z: zm, fn: () => { const ea = e(a), eb = e(b);
+            quad(P(ea, 0, a), P(eb, 0, b), P(eb, h, b), P(ea, h, a), odd ? concrete : concrete2);
+            quad(P(ea, h, a), P(eb, h, b), P(eb + th, h, b), P(ea + th, h, a), cap);
+            if (inSt) { quad(P(ea, h, a), P(eb, h, b), P(eb, h + 2.2, b), P(ea, h + 2.2, a), glass); const pa = P(ea, 0, a), pb = P(ea, h + 2.2, a), w = Math.max(1, 0.18 * c.f / a); ctx.strokeStyle = 'rgba(70,80,92,.7)'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke(); }
+          } }); }
+      }
+    };
     const drawStations = () => {
     for (const q of sts) {
       const { m, i, d, st } = q;
@@ -185,6 +203,14 @@
       const z0 = Math.max(zMin, rr ? d - 20 : d - 420), z1 = rr ? d + 420 : d + 20; if (z1 <= zMin || z0 > ZF) continue;
       const dwellHere = T.phase === 'dwell' && T.k === i, openDoors = dwellHere && T.door === 'open';
       const topc = mixc([40, 52, 68], [120, 134, 150], day * (1 - wx * 0.3));
+      if (zExit === null) enclose(q, z0, z1);
+      if (zExit === null) for (const t of st.tracks) {        // ghi: thanh nối lưỡi ghi, hộp máy chuyển ghi và đèn báo ở chỗ đường ga rẽ khỏi đường chính
+        if (t.main || t.in0 === undefined) continue; const zs = rr ? d + t.in0 : d - t.in0, sgn = t.x >= t.plain ? 1 : -1; if (zs < ZN + 1 || zs > 700) continue;
+        sink.push({ z: zs, fn: () => { const xs = lerp(t.plain, t.x, 0.0), steel = mixc([40, 44, 50], [196, 202, 208], day * (1 - wx * 0.3)), box = mixc([20, 30, 24], [70, 98, 78], day * (1 - wx * 0.3));
+          quad(P(xs - 1.05, 0.1, zs), P(xs + 1.05, 0.1, zs), P(xs + 1.05, 0.16, zs), P(xs - 1.05, 0.16, zs), steel);
+          quad(P(xs + sgn * 1.7, 0, zs), P(xs + sgn * 2.4, 0, zs), P(xs + sgn * 2.4, 0.8, zs), P(xs + sgn * 1.7, 0.8, zs), box);
+          const lp = P(xs + sgn * 2.05, 1.05, zs), s = c.f / zs; ctx.fillStyle = night > 0.3 ? '#9fe8a8' : '#58b86a'; ctx.beginPath(); ctx.arc(lp[0], lp[1], Math.max(1, 0.1 * s), 0, 7); ctx.fill(); } });
+      }
       for (const p of st.plats) {
         const isOurs = q.stopHere && st.plat === p;
         // mặt trên, mặt đứng hai mép, vạch vàng an toàn ở mép kề đường
@@ -202,9 +228,31 @@
         // cột mái
         const xc = (p.xa + p.xb) / 2; for (let zz = Math.ceil((z0 - d) / 30) * 30 + d; zz < z1; zz += 30) if (zz >= ZN) sink.push({ z: zz, fn: () => { const a = P(xc, PH, zz), b = P(xc, 5.6, zz); ctx.strokeStyle = '#2c3d52'; ctx.lineWidth = Math.max(1, 0.35 * c.f / zz); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } });
         // hành khách trên sân ga (vơi dần khi lên tàu)
-        const gone = dwellHere && isOurs ? clamp(T.dwellT / 22, 0, 1) : 0, count = Math.round((isOurs ? 30 : q.stopHere ? 14 : 5) * (p.xb - p.xa) / 9), sd = Math.round(p.xa);
+        const gone = dwellHere && isOurs ? clamp(T.dwellT / 22, 0, 1) : 0, count = Math.round((isOurs ? 30 : q.stopHere ? 14 : 5) * (p.xb - p.xa) / 9 * clamp(0.5 + st.tracks.length * 0.28, 0.6, 2.4)), sd = Math.round(p.xa);       // ga lớn (nhiều đường) đông người hơn ga nhỏ
         for (let k = 0; k < count; k++) { if (hash(i * 977 + k * 13 + 5 + sd) < gone) continue; const zz = (rr ? d - 10 : d - 400) + hash(i * 131 + k * 7 + 1 + sd) * 410, X = lerp(p.xa + 1.0, p.xb - 1.0, hash(i * 53 + k * 11 + 3 + sd)); if (zz < ZN || zz > 700) continue;
           sink.push({ z: zz, fn: () => { const s = c.f / zz, a = P(X, PH, zz); ctx.fillStyle = personColor(k + i); ctx.fillRect(a[0] - 0.22 * s, a[1] - 1.45 * s, 0.44 * s, 0.75 * s); ctx.strokeStyle = '#1a2230'; ctx.lineWidth = Math.max(1, 0.1 * s); ctx.beginPath(); ctx.moveTo(a[0] - 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] - 0.1 * s, a[1]); ctx.moveTo(a[0] + 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] + 0.1 * s, a[1]); ctx.stroke(); ctx.fillStyle = '#d9b99b'; ctx.beginPath(); ctx.arc(a[0], a[1] - 1.58 * s, 0.12 * s, 0, 7); ctx.fill(); } }); }
+        // ---- chi tiết sân ga: gạch nổi ở mép, đèn cột, ghế, máy bán hàng, cầu thang, số toa trên nền, đồng hồ (chỉ vẽ khi ở gần để nhẹ)
+        { const adjs = [p.xa, p.xb].filter(e => st.tracks.some(t => Math.abs(Math.abs(t.x - e) - PEDGE) < 0.01)), xm = (p.xa + p.xb) / 2, wdt = p.xb - p.xa, zA = Math.max(z0, ZN), zB = Math.min(z1, 260), litA = night > 0.25 ? 1 : 0;
+          const grey = mixc([40, 44, 50], [150, 152, 150], day * (1 - wx * 0.3)), dark = mixc([14, 16, 20], [60, 64, 70], day * (1 - wx * 0.3));
+          for (const e of adjs) { const inward = e === p.xa ? 1 : -1;       // gạch cảnh báo nổi ở mép (hàng chấm) và số toa trên nền
+            for (let zz = Math.ceil(zA / 0.9) * 0.9; zz < Math.min(zB, 70); zz += 0.9) { const zq = zz; sink.push({ z: zq, fn: () => { const a = P(e + inward * 0.12, PH, zq), b = P(e + inward * 0.5, PH, zq + 0.35); ctx.fillStyle = 'rgba(150,118,20,.75)'; ctx.fillRect(Math.min(a[0], b[0]), b[1], Math.max(1, Math.abs(b[0] - a[0])), Math.max(1, a[1] - b[1])); } }); }
+            if (isOurs) for (let car = 1; car <= 16; car++) { const zz = q.dm - sgR * ((car - 0.5) * 25) + 0; if (zz < ZN || zz > 150) continue; sink.push({ z: zz, fn: () => { const a = P(e + inward * 1.4, PH, zz), s = c.f / zz; if (s < 1.2) return; ctx.fillStyle = 'rgba(240,240,240,.85)'; ctx.font = 'bold ' + Math.min(40, 0.9 * s) + 'px system-ui'; ctx.textAlign = 'center'; ctx.fillText(String(car), a[0], a[1]); } }); } }
+          for (let zz = Math.ceil((zA - d) / 15) * 15 + d; zz < zB; zz += 15) { const zq = zz, lampX = xm; sink.push({ z: zq, fn: () => { const b = P(lampX, PH, zq), t = P(lampX, 5.0, zq), s = c.f / zq; ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, 0.12 * s); ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.lineTo(t[0], t[1]); ctx.stroke(); if (litA) { const g = ctx.createRadialGradient(t[0], t[1], 0, t[0], t[1], 1.6 * s); g.addColorStop(0, 'rgba(255,236,170,.9)'); g.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = g; ctx.fillRect(t[0] - 1.6 * s, t[1] - 1.6 * s, 3.2 * s, 3.2 * s); } else { ctx.fillStyle = '#f2f0e4'; ctx.fillRect(t[0] - 0.25 * s, t[1] - 0.1 * s, 0.5 * s, 0.2 * s); } } }); }
+          for (let zz = Math.ceil((zA - d) / 38) * 38 + d + 9; zz < zB; zz += 38) { const zq = zz, bx = xm + (hash(Math.round(zq) + sd * 3) < 0.5 ? -1 : 1) * Math.min(wdt * 0.28, 1.9);       // ghế dài hoặc máy bán hàng
+            const kind = hash(Math.round(zq / 38) + sd) < 0.55 ? 'bench' : 'vend', hue = hash(Math.round(zq / 38) * 7 + sd) < 0.5 ? [200, 50, 50] : [50, 100, 190];
+            sink.push({ z: zq, fn: () => { if (kind === 'bench') { const a = P(bx - 0.35, PH + 0.45, zq), b = P(bx + 0.35, PH, zq + 2.2); ctx.fillStyle = grey; ctx.fillRect(Math.min(a[0], b[0]), a[1], Math.abs(b[0] - a[0]), Math.max(1, b[1] - a[1])); } else { const a = P(bx - 0.4, PH + 1.9, zq), b = P(bx + 0.4, PH, zq); ctx.fillStyle = grey; ctx.fillRect(Math.min(a[0], b[0]), a[1], Math.abs(b[0] - a[0]), b[1] - a[1]); ctx.fillStyle = mixc(hue.map(v => v * 0.25), hue, litA ? 1 : day); ctx.fillRect(Math.min(a[0], b[0]) + 1, a[1] + 1, Math.max(1, Math.abs(b[0] - a[0]) - 2), (b[1] - a[1]) * 0.6); } } }); }
+          for (let zz = Math.ceil((zA - d) / 95) * 95 + d + 40; zz < zB; zz += 95) { const zq = zz, sx = xm + (wdt > 9 ? 0 : (hash(Math.round(zq) + sd) < 0.5 ? -1 : 1) * wdt * 0.25);       // cầu thang / thang cuốn
+            sink.push({ z: zq, fn: () => { const a = P(sx - 1.6, PH + 3.0, zq), b = P(sx + 1.6, PH, zq), c2 = P(sx + 1.6, PH + 3.0, zq + 3.5); ctx.fillStyle = grey; ctx.fillRect(Math.min(a[0], b[0]), a[1], Math.abs(b[0] - a[0]), b[1] - a[1]); ctx.fillStyle = dark; const pa = P(sx - 1.0, PH + 2.5, zq), pb = P(sx + 1.0, PH, zq); ctx.fillRect(Math.min(pa[0], pb[0]), pa[1], Math.abs(pb[0] - pa[0]), pb[1] - pa[1]); ctx.fillStyle = grey; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], a[1]); ctx.lineTo(c2[0], c2[1]); ctx.lineTo(P(sx - 1.6, PH + 3.0, zq + 3.5)[0], c2[1]); ctx.closePath(); ctx.fill(); } }); }
+          if (isOurs) {                // biển số đường (番線) treo dưới mái và nhân viên sân ga (đồng phục xanh, găng trắng, giơ tay chỉ tay xác nhận khi tàu vào)
+            const zb = Math.max(q.dm - sgR * 140, ZN + 3), nth = Math.max(1, st.stops.indexOf(st.ours) + 1) + (hash(i * 31) < 0.5 ? 0 : 1);
+            if (zb > ZN + 2 && zb < 420) sink.push({ z: zb, fn: () => { const a = P(xm - 1.6, 4.9, zb), b = P(xm + 1.6, 4.0, zb), w2 = Math.abs(b[0] - a[0]); if (w2 < 6) return; const hh = b[1] - a[1]; ctx.fillStyle = '#103a6a'; ctx.fillRect(Math.min(a[0], b[0]), a[1], w2, hh); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = 'bold ' + hh * 0.6 + 'px system-ui'; ctx.fillText(nth + '番線', (a[0] + b[0]) / 2, a[1] + hh * 0.72); } });
+            const zs = Math.max(q.dm - sgR * 10, ZN + 2), zs2 = Math.max(q.dm - sgR * 180, ZN + 3);
+            for (const [zz, pt] of [[zs, 1], [zs2, 0]]) if (zz > ZN + 1 && zz < 320) { const ex = adjs[0] === undefined ? xm : adjs[0] + (adjs[0] === p.xa ? 1 : -1) * 1.1;
+              sink.push({ z: zz, fn: () => { const s = c.f / zz, a = P(ex, PH, zz), arm = T.v > 0.5 || T.phase === 'run' ? 1 : 0; ctx.fillStyle = '#1b2f55'; ctx.fillRect(a[0] - 0.24 * s, a[1] - 1.45 * s, 0.48 * s, 0.78 * s); ctx.strokeStyle = '#141f38'; ctx.lineWidth = Math.max(1, 0.12 * s); ctx.beginPath(); ctx.moveTo(a[0] - 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] - 0.1 * s, a[1]); ctx.moveTo(a[0] + 0.1 * s, a[1] - 0.7 * s); ctx.lineTo(a[0] + 0.1 * s, a[1]); ctx.stroke(); ctx.fillStyle = '#d9b99b'; ctx.beginPath(); ctx.arc(a[0], a[1] - 1.6 * s, 0.13 * s, 0, 7); ctx.fill(); ctx.fillStyle = '#f2f2f2'; ctx.fillRect(a[0] - 0.15 * s, a[1] - 1.78 * s, 0.3 * s, 0.1 * s);
+                ctx.strokeStyle = '#1b2f55'; ctx.lineWidth = Math.max(1, 0.12 * s); ctx.beginPath(); ctx.moveTo(a[0] + 0.22 * s, a[1] - 1.35 * s); const ang = arm && pt ? (-0.9 + 0.12 * Math.sin(now / 250)) : 0.5; ctx.lineTo(a[0] + 0.22 * s + Math.sin(ang) * 0.6 * s, a[1] - 1.35 * s - Math.cos(ang) * 0.6 * s * (arm && pt ? 1 : -1)); ctx.stroke(); ctx.fillStyle = '#fff'; const gx = a[0] + 0.22 * s + Math.sin(ang) * 0.6 * s, gy = a[1] - 1.35 * s - Math.cos(ang) * 0.6 * s * (arm && pt ? 1 : -1); ctx.fillRect(gx - 0.07 * s, gy - 0.07 * s, 0.14 * s, 0.14 * s); } }); }
+          }
+          if (isOurs) { const zq = Math.max(q.dm - sgR * 60, ZN + 2); if (zq > ZN) sink.push({ z: zq, fn: () => { const x0 = xm - 0.2, b = P(x0, PH, zq), t = P(x0, 3.1, zq), s = c.f / zq; ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, 0.12 * s); ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.lineTo(t[0], t[1]); ctx.stroke(); const cx2 = t[0], cy2 = t[1] - 0.45 * s; ctx.fillStyle = '#f4f4ee'; ctx.beginPath(); ctx.arc(cx2, cy2, 0.42 * s, 0, 7); ctx.fill(); ctx.strokeStyle = '#222'; ctx.lineWidth = Math.max(1, 0.05 * s); ctx.beginPath(); ctx.arc(cx2, cy2, 0.42 * s, 0, 7); ctx.moveTo(cx2, cy2); ctx.lineTo(cx2 + 0.25 * s * Math.sin(now / 60000 * 6.283), cy2 - 0.25 * s * Math.cos(now / 60000 * 6.283)); ctx.stroke(); } }); }       // đồng hồ cột
+        }
       }
       // cửa chắn kính, cửa tàu, tên ga, vạch dừng và biển khoảng cách ở sân ga kề đường dừng của ta
       if (st.plat && !m.mainStop) {
@@ -229,7 +277,7 @@
       if (b > a) { wire(tx, a, b); wire(z => tx(z) + ADJ, a, b); ctx.strokeStyle = 'rgba(214,222,232,.9)'; ctx.lineWidth = 1.5; for (const sx of [-0.72, 0.72, ADJ - 0.72, ADJ + 0.72]) { ctx.beginPath(); for (let z = a, f = true; z <= b; z += z < 400 ? 10 : 40, f = false) { const p = P(tx(z) + sx, 0.15, z); f ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); } ctx.stroke(); }       // ray đường Tohoku luôn thấy được dù ở xa
         for (let k = Math.ceil((T.x + a) / 60), z = k * 60 - T.x; z < b; k++, z = k * 60 - T.x) items.push({ z, fn: () => { const X = tx(z) + 3.0, p0 = P(X, 0, z), p1 = P(X, 7.0, z), e = P(tx(z), 5.5, z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = Math.max(1, 0.32 * c.f / z); ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, 0.16 * c.f / z); ctx.beginPath(); ctx.moveTo(p1[0], p1[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } }); }
       ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; }
-    for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; wire(z => lerp(t.plain, t.x, spreadF(T.x + z, q.m.s)), q.d - FA, q.d + FB); }
+    for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; wire(z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), q.d - FA, q.d + FB); }
     for (let k = Math.ceil((T.x + ZN) / 50), z = k * 50 - T.x; z < Math.min(1600, zLim); k++, z = k * 50 - T.x) items.push({ z, fn: () => { const oz = oppAt(z), X = oz / 2 + (hasSingle ? 2.8 * S.singleEff(W, T.x + z) : 0), a = P(X, 0, z), b = P(X, 7.0, z), w = Math.max(1, 0.32 * c.f / z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, w * 0.5); for (const XX of [0, oz]) { const e = P(XX, 5.5, z); ctx.beginPath(); ctx.moveTo(b[0], b[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(b[0] - w, b[1] - 1, w * 2, 2); } } });
 
     // ---- phong cảnh hai bên (không vẽ trong hầm); giữ hành lang đường sắt và sân ga
@@ -267,6 +315,14 @@
           const half = o.w / 2, qz = inStationZone(zz, zz + (o.d || 0)), ext = qz ? qz.st.extent : [Math.min(0, oppAt(zz)), Math.max(0, oppAt(zz))];
           const margin = qz ? (o.kind === 'building' ? 14 : 12) : (o.kind === 'building' ? 12 : o.kind === 'field' ? 14 : 8), off = half + o.lat * 0.5, X = side > 0 ? Math.max(ext[1], 0) + margin + off : Math.min(ext[0], ADJ) - margin - off;
           tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) }); } }
+    }
+    // ---- cổng đỡ dây điện (hai cột + xà ngang) ở cổ ga và trong ga, mỗi 48 m; mốc km mỗi 1 km
+    if (zExit === null) {
+      for (const q of sts) { const ta = Math.max(q.d - FA, ZN + 4), tb = Math.min(q.d + FB, 1400);
+        for (let gz = Math.ceil((T.x + ta) / 48) * 48 - T.x; gz < tb; gz += 48) { const zq = gz; items.push({ z: zq, fn: () => { const xa = xr(zq) + 1.0, xb = xl(zq) - 1.0, s = c.f / zq, a0 = P(xa, 0, zq), a1 = P(xa, 7.8, zq), b0 = P(xb, 0, zq), b1 = P(xb, 7.8, zq); ctx.strokeStyle = mixc([20, 24, 30], [90, 98, 108], day * (1 - wx * 0.3)); ctx.lineWidth = Math.max(1, 0.28 * s); ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, 0.16 * s); ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.moveTo(a1[0], a1[1] + 0.7 * s); ctx.lineTo(b1[0], b1[1] + 0.7 * s); ctx.stroke(); } }); } }
+      const k0 = Math.ceil(Math.min(km(0), km(1500))), k1 = Math.floor(Math.max(km(0), km(1500)));
+      for (let kk = k0; kk <= k1; kk++) { const zq = (S.sOfKm(kk, W.dir, L.kmEnd)) - T.x; if (zq < ZN + 5 || zq > 1500 || S.structAt(L, kk) === 't') continue;
+        items.push({ z: zq, fn: () => { const X = xl(zq) - 0.9, b = P(X, 0, zq), t = P(X, 1.5, zq), s = c.f / zq; ctx.strokeStyle = '#6a7684'; ctx.lineWidth = Math.max(1, 0.1 * s); ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.lineTo(t[0], t[1]); ctx.stroke(); ctx.fillStyle = '#f4f4ee'; ctx.fillRect(t[0] - 0.4 * s, t[1] - 0.55 * s, 0.8 * s, 0.6 * s); if (s > 3) { ctx.fillStyle = '#10151c'; ctx.textAlign = 'center'; ctx.font = 'bold ' + Math.min(30, 0.36 * s) + 'px system-ui'; ctx.fillText(String(kk), t[0], t[1] - 0.15 * s); } } }); }
     }
     // ---- biển chạy chậm, công nhân, hươu, dây điện hỏng
     for (const zn of W.zones.concat(S.turnoutZones(T).map(z => ({ s0: z.s0, s1: z.s1, v: z.v, tA: -1e9, tB: 1e9 })))) {   // gồm biển tốc độ qua ghi vào/ra đường sân ga
