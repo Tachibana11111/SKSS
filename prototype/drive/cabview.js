@@ -49,8 +49,8 @@
     const latT = LAY.lateralTable(L, S, W.dir, T.x, ZF, STEP), elvT = LAY.elevTable(L, S, W.dir, T.x, ZF, STEP);
     const tab = (a, z) => { const f = Math.max(0, z) / STEP, i = Math.min(a.length - 2, Math.floor(f)); return a[i] + (a[i + 1] - a[i]) * (f - i); };
     c.off = z => tab(latT, z); const elAt = z => tab(elvT, z);
-    const kapNow = LAY.curvatureAt(L, S, W.dir, T.x);
-    const roll = v > 5 ? clamp(-kapNow * v * v / 9.8 * 0.5, -0.03, 0.03) : 0;      // nghiêng thân tàu khi vào cong
+    // lực ly tâm khi vào cong: camera dịch ngang nhẹ ra phía ngoài (độ cong làm mượt trên ±90 m nên vào/ra cong không bị giật). Không còn xoay cả khung hình (ctx.rotate khiến mọi nét vẽ ở đoạn cong chậm hẳn trên máy yếu)
+    { const kapS = LAY.curvatureSmooth(L, S, W.dir, T.x, 90); c.camX -= clamp(kapS * v * v / 9.8 * 0.6, -0.35, 0.35); }
 
     // ---- các ga trong tầm nhìn: bố trí đường, vị trí đường dừng của ta
     const target = S.nextTarget(T), tIdx = T.phase === 'dwell' ? T.k : target;
@@ -65,7 +65,7 @@
 
     const inTun = S.inTunnel(W, T.x);
     ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
-    ctx.save(); if (Math.abs(roll) > 0.001) { ctx.translate(c.cx, c.hy); ctx.rotate(roll); ctx.translate(-c.cx, -c.hy); }
+    ctx.save();
     const P = (X, Y, Z) => proj(c, X, Y, Z), PG = (X, Y, Z) => proj(c, X, Y - elAt(Z), Z);     // PG: vật nằm trên mặt đất (thấp hơn mặt ray khi tuyến đi trên cao)
     const quad = (a, b, d, e, fill) => { ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(d[0], d[1]); ctx.lineTo(e[0], e[1]); ctx.closePath(); ctx.fill(); };
     // lưới điểm lấy mẫu chung theo khoảng cách: mọi dải/tường dùng cùng điểm nên khớp nhau kể cả ở đường cong gấp (không lệch hàng mét như khi mỗi dải tự chia)

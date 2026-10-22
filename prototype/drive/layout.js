@@ -70,6 +70,8 @@
   const at = (arr, s) => { const f = Math.max(0, s) / CELL, j = Math.min(arr.length - 2, Math.floor(f)), t = f - j; return arr[j] + (arr[j + 1] - arr[j]) * t; };
   const atTh = (P, s) => { s = Math.max(0, s); const j = Math.min(P.n - 1, Math.floor(s / CELL)), d = s - j * CELL; return P.th[j] + P.kc[j] * d; };                                  // hướng θ(s) (chính xác trong ô)
   const atThh = (P, s) => { s = Math.max(0, s); const j = Math.min(P.n - 1, Math.floor(s / CELL)), d = s - j * CELL; return P.Th[j] + P.th[j] * d + 0.5 * P.kc[j] * d * d; };    // Θ(s)
+  // độ cong trung bình trong cửa sổ ±half quanh s (1/m): làm mượt chỗ vào/ra cong (đường cong là cung tròn nên độ cong nhảy bậc; ngoài đời có đoạn chuyển tiếp)
+  function curvatureSmooth(L, Sim, dir, s, half) { const P = profile(L, Sim, dir); return (atTh(P, s + half) - atTh(P, s - half)) / (2 * half); }
   // độ lệch ngang (m, dương = sang TRÁI màn hình: cùng dấu X mô hình) của đường tại khoảng cách z phía trước so với phương nhìn hiện tại, bảng mỗi `step` m
   function lateralTable(L, Sim, dir, x, zmax, step) {
     const P = profile(L, Sim, dir), n = Math.ceil(zmax / step) + 1, out = new Float32Array(n), t0 = at(P.th, x), T0 = at(P.Th, x);
@@ -110,6 +112,6 @@
     return ((b + clamp(dev, -35, 35)) % 360 + 360) % 360;
   }
   const lerp = (a, b, t) => a + (b - a) * t;
-  root.Layout = { pickOf: (st, i) => st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { pickOf: (st, i) => st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);
