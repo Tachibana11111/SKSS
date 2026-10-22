@@ -39,7 +39,7 @@
       grade: [[0, 515.4, 8, 20], [515.4, 1069.1, 9, 18], [1069.1, 1325.9, 13, 35]]   // [km0, km1, điển hình ‰, tối đa ‰]; hình dạng giả lập, tối đa theo docs/02
     },
     toh: {
-      pa: '東北・北海道', defVeh: 'E5', flipDown: false, coupleMini: { maxKm: 496.5, p: 0.4, mini: 'E6' }, snow: [[330, 400, 230, 'tuyết Sendai–Morioka'], [520, 674, 200, 'tuyết Morioka–Shin-Aomori']],
+      pa: '東北・北海道', defVeh: 'E5', flipDown: false, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata' }, { km: 498.5, side: -1, branch: true, R: 1500, len: 1.2, to: 'Akita' }], coupleMini: { maxKm: 496.5, p: 0.4, mini: 'E6' }, snow: [[330, 400, 230, 'tuyết Sendai–Morioka'], [520, 674, 200, 'tuyết Morioka–Shin-Aomori']],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 703.8, 260], [703.8, 715.9, 140], [715.9, 769.8, 160], [769.8, 786.3, 140], [786.3, 823.7, 260]],   // Hokkaido: đoạn dùng chung ray ba với tàu hàng (Shin-Nakaoguni–Kikonai) 140 km/h ngoài hầm, 160 km/h trong hầm Seikan [N]
       tunnels: [[533, 559, 'Iwate-Ichinohe'], [641, 667, 'Hakkoda'], [715.9, 769.8, 'Seikan']],
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [520, 565, 'mountain'], [636, 674.9, 'mountain'], [674.9, 715, 'mountain'], [769.8, 823.7, 'field']],
@@ -71,7 +71,7 @@
               { km: 572.1, dir: 'down', text: 'Tại Omagari tàu đổi chiều chạy (switchback): từ đây tới Akita ghế quay ngược chiều. (Mô hình giữ nguyên hướng nhìn.)' }]
     },
     jts: {
-      pa: '上越', defVeh: 'E7', flipDown: false, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }], snow: [[151, 272, 200, 'tuyết Jomo-Kogen–Nagaoka']],
+      pa: '上越', defVeh: 'E7', flipDown: false, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, branch: true, R: 4000, len: 1.5, to: 'Hokuriku' }], snow: [[151, 272, 200, 'tuyết Jomo-Kogen–Nagaoka']],
       limits: [[0, 30.3, 110], [30.3, 113, 275], [113, 127.9, 260], [127.9, 333.9, 275]],       // hầm Nakayama có cong R=1.500 m: trang Wikipedia JP ghi 160 km/h (số cũ); lịch 2026 chạy nhanh hơn nhiều nên dùng 260 km/h [I]
       tunnels: [[113, 127.9, 'Nakayama'], [164, 186.2, 'Oshimizu']],
       biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [112, 262, 'mountain'], [262, 275, 'urban'], [318, 333.9, 'urban']],
@@ -612,14 +612,17 @@
   // độ lệch ngang của đường chính Tohoku so với đường ta khi tuyến mini rẽ ra (hoặc nhập vào) ở gần ga ghép/tách
   // đường chính Tohoku (đi thẳng) so với đường ta (rẽ sang tuyến mini, bị cong): độ lệch ngang = −(độ lệch của ta so với tiếp tuyến tại ngã rẽ)
   const trunkCache = new Map();
-  // jn: chỉ số ngã rẽ trong meta.junctions (bỏ trống = ngã rẽ nào đang trong tầm 3,2 km); các ngã rẽ không chồng lên nhau
+  // jn: chỉ số ngã rẽ trong meta.junctions (bỏ trống = ngã rẽ nào đang trong tầm 3,2 km); các ngã rẽ không chồng lên nhau.
+  // Tuyến con: đường chính của tuyến cha lệch ngang so với đường ta. Tuyến cha (branch: true): đường nhánh sang tuyến con lệch sang bên `side`.
   function trunkOff(W, s, jn) {
     const js = W.line.meta.junctions; if (!js) return 0; const Ly = root.Layout, L = W.line;
     for (let q = 0; q < js.length; q++) {
       if (jn !== undefined && jn !== q) continue; const sj = sOfKm(js[q].km, W.dir, L.kmEnd), d = W.dir === 'down' ? s - sj : sj - s; if (d <= 0 || (d > 3200 && jn === undefined)) continue;
-      const key = W.lineId + W.dir + q; let tb = trunkCache.get(key);
-      if (!tb) { tb = W.dir === 'down' ? Ly.lateralTable(L, root.Sim || api, W.dir, sj, 3200, 10) : Ly.lateralTableBack(L, root.Sim || api, W.dir, sj, 3200, 10); trunkCache.set(key, tb); }
-      const f = Math.min(d, 3190) / 10, i = Math.floor(f); return -(tb[i] + (tb[i + 1] - tb[i]) * (f - i));
+      const key = W.lineId + W.dir + q, jq = js[q]; let tb = trunkCache.get(key);
+      if (!tb) {       // nhánh rẽ ra từ tuyến cha: dùng đường cong ảo của tuyến con (R, dài) bắt đầu ở ngã rẽ
+        const LL = jq.branch ? { curves: [[jq.km, jq.km + jq.len, jq.R, jq.side]], kmEnd: L.kmEnd } : L;
+        tb = W.dir === 'down' ? Ly.lateralTable(LL, root.Sim || api, W.dir, sj, 3200, 10) : Ly.lateralTableBack(LL, root.Sim || api, W.dir, sj, 3200, 10); trunkCache.set(key, tb); }
+      const f = Math.min(d, 3190) / 10, i = Math.floor(f), v = tb[i] + (tb[i + 1] - tb[i]) * (f - i); return jq.branch ? (W.dir === 'down' ? -jq.side : jq.side) * Math.abs(v) : -v;      // nhánh rẽ trái (khi đi xuống) thì khi đi lên nằm bên PHẢI
     }
     return 0;
   }

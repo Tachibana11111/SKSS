@@ -77,6 +77,10 @@
     const wall = (xf, Y0, Y1, z0, z1, fill) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), Y1, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xf(zs[k]), Y0, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
     const fadeA = Z => clamp(1.15 - Z / fogZ, 0.12, 1);
     const km = z => S.kmOfS(T.x + z, W.dir, L.kmEnd), biomeAt = z => S.biomeAt(L, km(z));
+    // cảnh thật OpenStreetMap (world.js) nếu đã có dữ liệu tại đây: toà nhà đúng vị trí, rừng/ruộng/nước theo lớp phủ đất; không thì phong cảnh sinh ngẫu nhiên theo vùng
+    const WD = root.World, wdOurs = (W.rearOf || W.dir) === 'up' ? -4.3 : 0, wdOn = !!(WD && WD.has(W.lineId, W.dir, L.kmEnd, T.x));
+    const landCls = (z, e) => { const sd = WD.toSD(W.dir, L.kmEnd, T.x, z, e, wdOurs); return WD.landAt(W.lineId, sd[0], sd[1]); };
+    const CLS_TREE = 'fsep', CLS_FIELD = 'a', CLS_NONE = 'hcizwmr';
     const rgbOf = s => s.match(/\d+/g).map(Number);
 
     // trạng thái hầm: zExit = khoảng cách tới cửa ra khi đang ở trong hầm; zLim = chân trời vẽ hiện tại (trong hầm cắt ở cửa ra, phần ngoài hầm vẽ riêng trong khung cửa ra)
@@ -86,7 +90,9 @@
     let entryZ = null, entryEnd = ZF; if (zExit === null) for (const [k0, k1] of L.meta.tunnels) { const a = S.sOfKm(k0, W.dir, L.kmEnd), b = S.sOfKm(k1, W.dir, L.kmEnd), z = Math.min(a, b) - T.x; if (z > ZN && z < ZF && (entryZ === null || z < entryZ)) { entryZ = z; entryEnd = Math.max(a, b) - T.x; } }
     if (entryZ !== null) zLim = entryZ;
     const top = mixc([6, 12, 24], [92, 160, 224], day), hor = mixc([14, 24, 42], [183, 214, 240], day);
-    const gb = biomeAt(60); const gcol = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
+    let gb = biomeAt(60);
+    if (wdOn) { const cl = [landCls(60, 40), landCls(60, -40), landCls(150, 60)].map(x => String.fromCharCode(x || 0)); const ct = k => cl.filter(x => k.includes(x) && x !== ' ').length; if (ct('hci') >= 2) gb = 'urban'; else if (ct('fsepw') >= 2) gb = 'mountain'; else if (ct('aog') >= 1) gb = 'field'; }
+    const gcol = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
     // ---- nền: bầu trời, núi, mặt đất, sương mù (dùng cho phong cảnh thường và cho phần nhìn ra ngoài qua cửa hầm)
     const backdrop = () => {
     const g = ctx.createLinearGradient(0, py - 40, 0, c.hy + 4); g.addColorStop(0, mixc(rgbOf(top), [70, 78, 90], wx)); g.addColorStop(1, mixc(rgbOf(hor), [110, 118, 128], wx));
@@ -115,8 +121,10 @@
     if (zExit === null) {
       const runs = []; let prev = null; for (let z = 0; z <= ZF; z += 20) { const k = S.structAt(L, km(z)); if (k === prev) runs[runs.length - 1][1] = z + 20; else { runs.push([z, z + 20, k]); prev = k; } }
       const colTop = mixc([22, 26, 32], [150, 156, 160], day * (1 - wx * 0.35)), colSide = mixc([14, 16, 20], [104, 110, 116], day * (1 - wx * 0.35)), colDeck = mixc([20, 24, 28], [112, 116, 118], day * (1 - wx * 0.35));
-      const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); return x; };
-      const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); return x; };
+      // mặt cầu rộng thêm để chứa đường nhánh / đường chính của tuyến cha khi còn sát đường ta (< 28 m), thu lại êm khi chúng tách xa
+      const jw = o => Math.max(0, Math.min(1, (28 - Math.abs(o)) / 6));
+      const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
+      const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
       for (const [za, zb, k] of runs) {
         if (k === 'b') strip(() => -70, () => 70, -LAY.ELEV.b, za, zb, mixc([10, 22, 34], [66, 104, 132], day * (1 - wx * 0.4)));
         if (k === 'v' || k === 'b') { strip(xl, xr, -0.02, za, zb, colDeck); for (const xf of [xr, xl]) { wall(xf, 0, 1.0, za, zb, colTop); wall(xf, -1.4, 0, za, zb, colSide); } }
@@ -224,9 +232,22 @@
     {
       const zMin = zExit === null ? 6 : zExit + 2, tgt = zExit === null ? items : outItems;
       const bands = [[10, 160, 16, 0], [160, 760, 38, 1], [760, 2400, 120, 2]];
+      if (wdOn) {                              // toà nhà thật (lọc theo khoảng cách và kích thước để giữ tốc độ vẽ)
+        let rb = WD.buildings(W.lineId, W.dir, L.kmEnd, T.x, zMin, 2400, 420, wdOurs).filter(b => b.z >= zMin && (b.z < 700 || b.h > 18 || b.w * b.dz > 700) && (b.z < 1500 || b.h > 30));
+        rb.sort((a, b) => a.z - b.z); if (rb.length > 650) rb.length = 650;
+        for (const b of rb) {
+          const qz = inStationZone(b.z, b.z + b.dz), ext = qz ? qz.st.extent : [Math.min(0, oppAt(b.z)), Math.max(0, oppAt(b.z))];
+          if (b.e > 0 ? b.e - b.w / 2 < ext[1] + 8 : b.e + b.w / 2 > ext[0] - 8) continue;
+          const o = { kind: b.lev >= 3 || b.t === 1 || b.t === 2 ? 'building' : 'house', w: Math.max(4, b.w), d: Math.max(4, b.dz), h: b.h, tone: hash(Math.round(b.z * 7 + b.e * 3)), lat: 0 }, X = b.e, zz = b.z;
+          tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) });
+        }
+      }
       for (const [za, zb, step, bi] of bands) for (let ci = Math.floor((T.x + za) / step); ci * step - T.x < zb; ci++) {
         const z = ci * step - T.x; if (z < za * 0.9) continue; const bio = biomeAt(z);
-        for (const side of [-1, 1]) { const o = cellObject(ci + bi * 100000, bio, side); if (!o) continue; const zz = z + (hash(ci * 3 + side) - 0.5) * step * 0.6; if (zz < zMin) continue; if (S.structAt(L, km(zz)) === 'b' || S.structAt(L, km(zz + (o.d || 0))) === 'b') continue;      // trên sông không có nhà, ruộng, cây
+        for (const side of [-1, 1]) { let o = cellObject(ci + bi * 100000, bio, side); if (wdOn) o = null; for (const bw of wdOn ? ['mountain', 'field'] : []) { const o2 = cellObject(ci + bi * 100000, bw, side); if (!o2 || o2.kind === 'building' || o2.kind === 'house') continue;      // có dữ liệu thật: cây ở rừng/công viên, ruộng và cây thưa ở đất nông nghiệp; nhà đã lấy từ toà nhà thật
+            const zq = z + (hash(ci * 3 + side) - 0.5) * step * 0.6, ofs = o2.w / 2 + o2.lat * 0.5 + 8, Xq = (side > 0 ? 1 : -1) * (Math.abs(side > 0 ? Math.max(0, oppAt(zq)) : Math.min(0, oppAt(zq), ADJ)) + ofs + 12), cls = String.fromCharCode(landCls(zq, Xq) || 0);
+            if (bw === 'mountain' ? CLS_TREE.includes(cls) : (o2.kind === 'field' ? cls === CLS_FIELD : (cls === CLS_FIELD || cls === 'g' || cls === 'o' || cls === ' '))) { o = o2; break; } }
+          if (!o) continue; const zz = z + (hash(ci * 3 + side) - 0.5) * step * 0.6; if (zz < zMin) continue; if (S.structAt(L, km(zz)) === 'b' || S.structAt(L, km(zz + (o.d || 0))) === 'b') continue;      // trên sông không có nhà, ruộng, cây
           const half = o.w / 2, qz = inStationZone(zz, zz + (o.d || 0)), ext = qz ? qz.st.extent : [Math.min(0, oppAt(zz)), Math.max(0, oppAt(zz))];
           const margin = qz ? (o.kind === 'building' ? 14 : 12) : (o.kind === 'building' ? 12 : o.kind === 'field' ? 14 : 8), off = half + o.lat * 0.5, X = side > 0 ? Math.max(ext[1], 0) + margin + off : Math.min(ext[0], ADJ) - margin - off;
           tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) }); } }

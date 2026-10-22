@@ -348,7 +348,10 @@ section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đ�
 section('16. Joetsu/Hokuriku tách khỏi Tohoku ở Omiya, Hokuriku tách khỏi Joetsu ở Takasaki; tàu tuyến cha chạy chung');
 {
   const J = Sim.lineOf('jts'), H = Sim.lineOf('hok');
-  ok(J.meta.junctions.length === 1 && H.meta.junctions.length === 2, 'jts có 1 ngã rẽ (Omiya), hok có 2 (Omiya, Takasaki)');
+  ok(J.meta.junctions.length === 2 && H.meta.junctions.length === 2 && J.meta.junctions[0].line === 'toh' && J.meta.junctions[1].branch, 'jts: nhập vào Tohoku ở Omiya + nhánh Hokuriku ở Takasaki; hok có 2 ngã rẽ (Omiya, Takasaki)');
+  { const T0 = Sim.lineOf('toh'), Wt = k => ({ line: T0, lineId: 'toh', dir: k }), br = T0.meta.junctions; ok(br.length === 3 && br.every(j => j.branch), 'toh có 3 nhánh rẽ ra (Joetsu/Hokuriku, Yamagata, Akita)');
+    for (const [q, km] of [[0, 32.3], [1, 257.1], [2, 498.5]]) { const sj = km * 1000; ok(Sim.trunkOff(Wt('down'), sj - 200) === 0 && Sim.trunkOff(Wt('down'), sj + 1800) > 5 && Sim.trunkOff(Wt('down'), sj + 1800, q) > 5, `toh xuống: nhánh tại km ${km} tách sang trái`); const su = (T0.kmEnd - km) * 1000; ok(Sim.trunkOff(Wt('up'), su + 200) === 0 && Sim.trunkOff(Wt('up'), su - 1800) < -5, `toh lên: nhánh nhập tại km ${km}`); }
+    const Wj = { line: J, lineId: 'jts', dir: 'down' }; ok(Sim.trunkOff(Wj, 107500) > 5 && Math.abs(Sim.trunkOff(Wj, 33800)) > 5, 'jts xuống: nhánh Hokuriku ở Takasaki, đường Tohoku ở Omiya'); }
   ok(J.curves.some(c => c[0] === 32.3 && c[3] === -1) && H.curves.some(c => c[0] === 107 && c[3] === -1) && H.curves.some(c => c[0] === 32.3), 'đường cong ngã rẽ trong dữ liệu (rẽ trái)');
   const W0 = { line: J, lineId: 'jts', dir: 'down' }, sj = 32300;
   ok(Sim.trunkOff(W0, sj - 500) === 0 && Math.abs(Sim.trunkOff(W0, sj + 1500)) > 5 && Math.abs(Sim.trunkOff(W0, sj + 3000)) > Math.abs(Sim.trunkOff(W0, sj + 1500)), 'đường chính tách dần khỏi tuyến sau ngã rẽ (jts xuống)');

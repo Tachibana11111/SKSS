@@ -22,3 +22,9 @@ prototype/drive/assets/h5.png
 prototype/drive/assets/e7 w7.png
 prototype/drive/assets/doctor yellow.png
 prototype/drive/assets/east-i.png
+
+# dữ liệu OpenStreetMap tải về (ODbL, lớn): không đưa vào repo
+data-osm/
+
+# dữ liệu OSM đã biên dịch (phái sinh, ODbL): không đưa vào repo
+prototype/drive/world/

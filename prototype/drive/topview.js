@@ -36,6 +36,9 @@
     ctx.fillStyle = dark ? '#0b1118' : '#1c2a22'; ctx.fillRect(cx - Rr, cy - Rr, 2 * Rr, 2 * Rr);
     const runs = []; { let prev = null; for (let z = zLo - 20; z <= zHi + 20; z += 20) { const k = S.structAt(L, km(z)); if (k === prev) runs[runs.length - 1][1] = z + 20; else { runs.push([z, z + 20, k]); prev = k; } } }
     for (const [za, zb, k] of runs) { const y0 = Y(zb), y1 = Y(za); ctx.fillStyle = k === 'b' ? (dark ? '#0d2234' : '#2a4a66') : k === 'v' ? (dark ? '#161d26' : '#2c3640') : (dark ? '#0f1a14' : '#27402f'); ctx.fillRect(cx - Rr, y0, 2 * Rr, y1 - y0); }
+    // cảnh vật thật OpenStreetMap (world.js): cách tàu ≤ ~8 m dùng tỉ lệ ngang phóng đại như đường ray, xa hơn dùng đúng tỉ lệ thật để toà nhà không bị kéo dãn
+    if (root.World) { const D0 = 9, u = e => Math.abs(e) <= D0 ? e * kx : Math.sign(e) * (D0 * kx + (Math.abs(e) - D0) * ky);
+      root.World.drawTop(ctx, { lid: W.lineId, dir: W.dir, kmEnd: L.kmEnd, Tx: T.x, zLo, zHi, X: (e, z) => cx - (u(e - lane) + off(z) * kc), Y, ky, dark }); }
     // lưới theo hướng địa lý (mỗi 100 m, song song Bắc-Nam và Đông-Tây): xoay cùng bản đồ để thấy hướng đi thay đổi
     { const [E0, N0] = enAt(L, km(0)), g = 100; ctx.save(); ctx.translate(cx, cy); ctx.rotate(-heading * Math.PI / 180); ctx.strokeStyle = dark ? 'rgba(120,150,180,.12)' : 'rgba(255,255,255,.08)'; ctx.lineWidth = 1;
       for (let e = Math.ceil((E0 - 2 * Rr / ky) / g) * g; e < E0 + 2 * Rr / ky; e += g) { const x = (e - E0) * ky; ctx.beginPath(); ctx.moveTo(x, -2 * Rr); ctx.lineTo(x, 2 * Rr); ctx.stroke(); }
