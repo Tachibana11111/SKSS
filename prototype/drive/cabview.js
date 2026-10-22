@@ -392,7 +392,7 @@
     W2.rear = true; W2.rearOf = W.dir; const LAY = root.Layout;
     W2.rearPick = mi => { const code = L.stations[mi].lay || '2-2-0', N = LAY.tokens(code, W.dir).length; return { i: N - 1 - LAY.station(code, W.dir, mi).ours.i }; };      // camera ở đúng đường vật lý của ta (chỉ số đảo vì chuỗi bố trí đảo thứ tự)
     W2.stabled = (W.stabled || []).map(sb => { const code = L.stations[sb.i].lay || '2-2-0', N = LAY.tokens(code, W.dir).length, st2 = LAY.station(code, W.dir, W2.rearPick(sb.i), true), t2 = st2.tracks.find(t => t.i === N - 1 - sb.track.i); return t2 ? { key: sb.key, i: sb.i, front: Lm - (sb.front - root.Sim.VEH[sb.key].len), track: t2 } : null; }).filter(Boolean);      // cùng một đường vật lý: chỉ số trong chuỗi bố trí đảo ngược
-    W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => Object.assign({}, m, { s: Lm - m.s })); T2.k = T.M.length - 1 - T.k; T2.forced = -1; W2.player = T2;
+    W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => Object.assign({}, m, { s: Lm - m.s })); T2.k = T.M.length - 1 - T.k; T2.forced = T.forced >= 0 ? T.M.length - 1 - T.forced : -1;      // dừng khẩn ở ga không có lịch dừng cũng phải rẽ vào đường nhánh trong camera sau W2.player = T2;
     draw(ctx, px, py, pw, ph, W2, T2, R);
   }
   root.CabView = { draw, drawRear, proj, cellObject, hash, CAMH, PEDGE, PH, ADJ };
