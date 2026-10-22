@@ -15,7 +15,6 @@
     { id: 'hokuriku', name: 'Trôi qua đoạn cách điện', desc: 'Hoàn thành một chuyến Hokuriku mà không bị hồ quang ở đoạn đổi tần số', test: (c) => c.kind === 'drive' && c.line === 'hok' && c.finished && !c.deadViol },
     { id: 'kamome', name: 'Kamome', desc: 'Hoàn thành một chuyến Nishi-Kyushu', test: (c) => c.kind === 'drive' && c.line === 'nks' && c.finished },
     { id: 'mini', name: 'Mini-Shinkansen', desc: 'Hoàn thành một chuyến Yamagata hoặc Akita mà không va chạm ở đường ngang', test: (c) => c.kind === 'drive' && ['yam', 'aki'].includes(c.line) && c.finished && !c.xingHit },
-    { id: 'disp80', name: 'Điều độ viên giỏi', desc: 'Đạt ≥ 80 điểm ở chế độ điều độ', test: (c) => c.kind === 'dispatch' && c.score >= 80 },
     { id: 'tutorial', name: 'Học xong', desc: 'Hoàn thành mọi bài hướng dẫn', test: (c) => c.kind === 'tutorial' && c.allDone }
   ];
   function empty() { return { v: 1, settings: { vol: 60, snd: true, ann: 'ja', pax: true, diff: 'normal' }, history: [], best: {}, ach: {}, replays: {}, tutorial: {}, lastSetup: null }; }

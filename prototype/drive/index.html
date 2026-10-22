@@ -36,7 +36,7 @@
 <header>
   <div class="row">
     <strong>Lái Shinkansen · bản thử 0.4</strong>
-    <button class="tab on" id="tabDrive">Lái tàu</button><button class="tab" id="tabDisp">Điều độ</button><button class="tab" id="tabTut">Hướng dẫn</button><button class="tab" id="tabProf">Hồ sơ</button>
+    <button class="tab on" id="tabDrive">Lái tàu</button><button class="tab" id="tabTut">Hướng dẫn</button><button class="tab" id="tabProf">Hồ sơ</button>
   </div>
   <div class="row" id="rowDrive1">
     <label>Tuyến <select id="line"></select></label>
@@ -141,7 +141,7 @@ $('dice').onclick = () => { $('seed').value = Math.floor(Math.random() * 99999);
 // ---- chế độ
 function setMode(m) {
   mode = m; closeModal();
-  for (const [id, mm] of [['tabDrive', 'drive'], ['tabDisp', 'dispatch'], ['tabTut', 'tutorial'], ['tabProf', 'profile']]) $(id).classList.toggle('on', mm === m);
+  for (const [id, mm] of [['tabDrive', 'drive'], ['tabTut', 'tutorial'], ['tabProf', 'profile']]) $(id).classList.toggle('on', mm === m);
   $('rowDrive1').style.display = (m === 'drive' || m === 'dispatch') ? 'flex' : 'none'; $('rowDrive2').style.display = m === 'drive' ? 'flex' : 'none';
   $('rowDisp').style.display = m === 'dispatch' ? 'flex' : 'none'; $('rowTut').style.display = m === 'tutorial' ? 'flex' : 'none';
   if (m === 'dispatch') { $('train').parentElement.style.display = 'none'; $('from').parentElement.style.display = 'none'; $('to').parentElement.style.display = 'none'; } else { $('train').parentElement.style.display = ''; $('from').parentElement.style.display = ''; $('to').parentElement.style.display = ''; }
@@ -149,7 +149,7 @@ function setMode(m) {
   tutorialRun = m === 'tutorial' && tutorialRun;
 }
 $('layoutBtn').onclick = () => { ui.layout = ui.layout === 'full' ? 'classic' : 'full'; $('layoutBtn').textContent = 'Bố cục: ' + (ui.layout === 'full' ? 'toàn màn hình' : 'cổ điển'); syncLayout(); };
-$('tabDrive').onclick = () => { tutorialRun = false; setMode('drive'); if (!W) startDrive(); }; $('tabDisp').onclick = () => setMode('dispatch'); $('tabTut').onclick = () => setMode('tutorial'); $('tabProf').onclick = () => setMode('profile');
+$('tabDrive').onclick = () => { tutorialRun = false; setMode('drive'); if (!W) startDrive(); }; $('tabTut').onclick = () => setMode('tutorial'); $('tabProf').onclick = () => setMode('profile');
 // ---- lưu cài đặt
 const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('diff').value = S.diff || 'normal';
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
@@ -332,7 +332,7 @@ function draw() {
   if (ui.cur === 'full' && mode === 'drive') { drawFull(); return; }
   btns = []; ctx.clearRect(0, 0, W_, H_);
   if (mode === 'profile') { return; }
-  if (!W) { txt('Chọn chuyến và nhấn "Bắt đầu / chạy lại", hoặc mở tab Hướng dẫn / Điều độ.', W_ / 2, H_ / 2, '#8aa0b5', '20px system-ui', 'center'); return; }
+  if (!W) { txt('Chọn chuyến và nhấn "Bắt đầu / chạy lại", hoặc mở tab Hướng dẫn.', W_ / 2, H_ / 2, '#8aa0b5', '20px system-ui', 'center'); return; }
   ctx.save(); ctx.translate(OX, 0); curOX = OX;
   const L = W.line, M = T.M, s0 = M[0].s, s1 = M[M.length - 1].s, span = s1 - s0, pos = s => 40 + (CW - 80) * (s - s0) / span;
   const blink = Math.floor(performance.now() / 400) % 2 === 0;
