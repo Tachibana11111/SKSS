@@ -104,6 +104,7 @@ def main():
     files = [os.path.join(OSM, os.environ['IN'])] if os.environ.get('IN') else sorted(glob.glob(os.path.join(OSM, 'feat_*.pkl')))
     res = {}
     for fn in files:                                                      # gộp kết quả các vùng (mỗi vùng một tệp)
+        if os.path.getsize(fn) == 0: continue                              # vùng chưa xong (tệp giữ chỗ)
         part = pickle.load(open(fn, 'rb'))
         for lid, F in part.items():
             r = res.setdefault(lid, {k: [] for k in F})

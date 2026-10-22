@@ -8,10 +8,12 @@
   const srcOf = (lid, s) => { for (;;) { const sh = SHARE[lid]; if (sh && s < sh[1]) lid = sh[0]; else return lid; } };
 
   // tệp world/<tuyến>/<k>.js gọi World._r(tuyến, k, base64)
+  let ver = 0;
   function reg(lid, k, b64) {
-    try { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const d = parse(u.buffer); cache.set(lid + '/' + k, d); if (d) have[lid] = true; } catch (e) { cache.set(lid + '/' + k, null); }
+    ver++;
+    try { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const d = parse(u.buffer, k * CH); cache.set(lid + '/' + k, d); if (d) have[lid] = true; } catch (e) { cache.set(lid + '/' + k, null); }
   }
-  function parse(buf) {
+  function parse(buf, s0) {
     const dv = new DataView(buf); if (dv.getUint8(0) !== 87 || dv.getUint8(1) !== 49) return null; let p = 2;
     const nb = dv.getUint32(p, true), na = dv.getUint32(p + 4, true), nr = dv.getUint32(p + 8, true), nw = dv.getUint32(p + 12, true), nx = dv.getUint32(p + 16, true); p += 20;
     const o = { b: [], a: [], r: [], w: [], x: [] };
@@ -21,6 +23,7 @@
     for (const [k, cnt] of [['r', nr], ['w', nw], ['x', nx]]) for (let i = 0; i < cnt; i++) { const cl = dv.getUint8(p), br = dv.getUint8(p + 1), n = dv.getUint16(p + 2, true); p += 4; o[k].push({ cl, br, ...pts(n) }); }
     if (p + 4 <= buf.byteLength) { const n = dv.getUint32(p, true); o.g = new Uint8Array(buf, p + 4, n); }
     o.b.sort((u, v) => u.s - v.s);                                   // tòa nhà theo s: tìm nhị phân đoạn đang nhìn thấy
+    for (const B of o.b) { const ca = Math.abs(Math.cos(B.a)), sa = Math.abs(Math.sin(B.a)); B.ds = B.w * ca + B.l * sa; B.dd = B.w * sa + B.l * ca; B.tone = Math.abs(Math.sin((s0 + B.s) * 12.9898 + B.d * 78.233) * 43758.5453) % 1; B.lv = B.lev || (B.t === 1 ? 4 : B.t === 2 ? 2 : B.t === 3 ? 1 : B.t === 4 ? 1.5 : 2); }       // đặc điểm suy ra một lần khi nạp (màu/kiểu nhà cố định theo vị trí thật)
     for (const k of ['a', 'r', 'w', 'x']) for (const f of o[k]) { let lo = 1e9, hi = -1e9; for (let i = 0; i < f.s.length; i++) { if (f.s[i] < lo) lo = f.s[i]; if (f.s[i] > hi) hi = f.s[i]; } f.lo = lo; f.hi = hi; }
     return o;
   }
@@ -95,7 +98,8 @@
       const ca = Math.abs(Math.cos(B.a)), sa = Math.abs(Math.sin(B.a)), ds = B.w * ca + B.l * sa, dd = B.w * sa + B.l * ca;      // hộp bao theo trục s và trục d
       const z = (up ? Lm - s - Tx : s - Tx) - ds / 2;
       const lev = B.lev || (B.t === 1 ? 4 : B.t === 2 ? 2 : B.t === 3 ? 1 : B.t === 4 ? 1.5 : 2);
-      out.push({ z, e, w: dd, dz: ds, h: lev * 3.2 + 1.5, t: B.t, lev: B.lev });
+      const tn = Math.abs(Math.sin(s * 12.9898 + B.d * 78.233) * 43758.5453) % 1;      // màu/kiểu nhà cố định theo vị trí thật (không đổi khi tàu chạy)
+      out.push({ z, e, w: dd, dz: ds, h: lev * 3.2 + 1.5, t: B.t, lev: B.lev, tone: tn });
     } }
     return out;
   }
@@ -110,9 +114,21 @@
         polesCache.set(c.d, P); }
       for (const g of P) { const sm = Math.max(g[0], g[2]), sn = Math.min(g[0], g[2]); if (sm < a - 20 || sn > b + 20) continue;
         const e0 = up ? (dOurs || 0) - g[1] : g[1] - (dOurs || 0), e1 = up ? (dOurs || 0) - g[3] : g[3] - (dOurs || 0); if (Math.abs(e0) > lat || Math.abs(e1) > lat) continue;
-        out.push({ z0: up ? Lm - g[0] - Tx : g[0] - Tx, e0, z1: up ? Lm - g[2] - Tx : g[2] - Tx, e1 }); }
+        out.push({ id: Math.round(g[0] * 4) + ':' + Math.round(g[1] * 4), z0: up ? Lm - g[0] - Tx : g[0] - Tx, e0, z1: up ? Lm - g[2] - Tx : g[2] - Tx, e1 }); }
     }
     return out;
   }
-  root.World = { _r: reg, poles, parse, drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
+  // duyệt các toà nhà thật trong khoảng z [za, zb] phía trước (không cấp phát): cb(z, e, w, dz, h, t, lev, tone), z tăng dần; cb trả false để dừng
+  function forBuildings(lid, dir, kmEnd, Tx, za, zb, lat, dOurs, cb) {
+    const up = dir === 'up', Lm = kmEnd * 1000, a = up ? Lm - (Tx + zb) : Tx + za, b = up ? Lm - (Tx + za) : Tx + zb, cs = chunks(lid, a - 40, b + 40); if (up) cs.reverse();
+    for (const c of cs) {
+      const arr = c.d.b; let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (c.s0 + arr[m].s < a - 40) lo = m + 1; else hi = m; }
+      let end = lo; while (end < arr.length && c.s0 + arr[end].s <= b + 40) end++;
+      for (let q = up ? end - 1 : lo; up ? q >= lo : q < end; q += up ? -1 : 1) {
+        const B = arr[q], s = c.s0 + B.s, e = up ? (dOurs || 0) - B.d : B.d - (dOurs || 0); if (Math.abs(e) > lat) continue;
+        const z = (up ? Lm - s - Tx : s - Tx) - B.ds / 2; if (cb(z, e, B.dd, B.ds, B.lv * 3.2 + 1.5, B.t, B.lev, B.tone) === false) return;
+      }
+    }
+  }
+  root.World = { forBuildings, version: () => ver, _r: reg, poles, parse, drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
 })(typeof window !== 'undefined' ? window : globalThis);

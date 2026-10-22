@@ -233,21 +233,23 @@
       const zMin = zExit === null ? 6 : zExit + 2, tgt = zExit === null ? items : outItems;
       const bands = [[10, 160, 16, 0], [160, 760, 38, 1], [760, 2400, 120, 2]];
       if (wdOn) {                              // toà nhà thật (lọc theo khoảng cách và kích thước để giữ tốc độ vẽ)
-        let rb = WD.buildings(W.lineId, W.dir, L.kmEnd, T.x, zMin, 2400, 420, wdOurs).filter(b => b.z >= zMin && (b.z < 150 || (b.z < 500 && b.w * b.dz > 80) || (b.z < 1000 && (b.h > 14 || b.w * b.dz > 500)) || b.h > 28));
-        rb.sort((a, b) => a.z - b.z); if (rb.length > 400) rb.length = 400;
-        for (const b of rb) {
+        let cnt = 0;                           // duyệt trực tiếp dữ liệu (không cấp phát, thứ tự cố định theo vị trí => không nhấp nháy)
+        WD.forBuildings(W.lineId, W.dir, L.kmEnd, T.x, zMin, 2400, 420, wdOurs, (bz, be, bw, bdz, bh, bt, blev, btone) => {
+          if (bz < zMin) return; if (bz > 2400 || cnt >= 420) return false;
+          if (!(bz < 150 || (bz < 500 && bw * bdz > 80) || (bz < 1000 && (bh > 14 || bw * bdz > 500)) || bh > 28)) return; cnt++;
+          const b = { z: bz, e: be, w: bw, dz: bdz, h: bh, t: bt, lev: blev, tone: btone };
           const qz = inStationZone(b.z, b.z + b.dz), ext = qz ? qz.st.extent : [Math.min(0, oppAt(b.z)), Math.max(0, oppAt(b.z))];
-          if (b.e > 0 ? b.e - b.w / 2 < ext[1] + 8 : b.e + b.w / 2 > ext[0] - 8) continue;
-          const o = { kind: 'jp', t: b.t, lev: b.lev, w: Math.max(4, b.w), d: Math.max(4, b.dz), h: b.h, tone: hash(Math.round(b.z * 7 + b.e * 3)), lat: 0 }, X = b.e, zz = b.z;
+          if (b.e > 0 ? b.e - b.w / 2 < ext[1] + 8 : b.e + b.w / 2 > ext[0] - 8) return;
+          const o = { kind: 'jp', t: b.t, lev: b.lev, w: Math.max(4, b.w), d: Math.max(4, b.dz), h: b.h, tone: b.tone, lat: 0 }, X = b.e, zz = b.z;
           tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) });
-        }
+        });
       }
       if (wdOn) {                              // cột điện và dây điện dọc phố
         const seen = new Set();
         for (const g of WD.poles(W.lineId, W.dir, L.kmEnd, T.x, Math.max(zMin, 4), 420, 150, wdOurs)) {
           if (g.z0 < zMin || g.z1 < zMin) continue; const qz = inStationZone(g.z0, g.z1), ext = qz ? qz.st.extent : [Math.min(0, oppAt(g.z0)), Math.max(0, oppAt(g.z0))];
           if (g.e0 > ext[0] - 6 && g.e0 < ext[1] + 6) continue;
-          const key = Math.round(g.z0) + ':' + Math.round(g.e0); if (seen.has(key)) continue; seen.add(key);
+          if (seen.has(g.id)) continue; seen.add(g.id);
           tgt.push({ z: Math.min(g.z0, g.z1), fn: () => { const A = fadeA(g.z0); ctx.globalAlpha = A; const b0 = P(g.e0, 0, g.z0), t0 = P(g.e0, 9, g.z0), t1 = P(g.e1, 9, g.z1); ctx.strokeStyle = night > 0.35 ? '#1c1c20' : '#5d5a55'; ctx.lineWidth = Math.max(1, 0.28 * c.f / g.z0); ctx.beginPath(); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(t0[0], t0[1]); ctx.stroke();
             ctx.lineWidth = Math.max(0.6, 0.07 * c.f / g.z0); ctx.strokeStyle = night > 0.35 ? '#26262a' : '#4a4743'; for (const dy of [0, -0.7, -1.4]) { const q0 = P(g.e0, 9 + dy, g.z0), q1 = P(g.e1, 9 + dy, g.z1); ctx.beginPath(); ctx.moveTo(q0[0], q0[1]); ctx.quadraticCurveTo((q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2 + 3 * c.f / g.z0, q1[0], q1[1]); ctx.stroke(); } ctx.globalAlpha = 1; } });
         }
