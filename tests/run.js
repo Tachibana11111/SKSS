@@ -336,6 +336,11 @@ section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đ�
   { const A3 = Sim.lineOf('aki'), recL = A3.trains.filter(t => t.d === 'down' && t.cp && t.s[0][0] === 0)[3], tripL = Sim.makeTrip('aki', recL, recL.cp[0], A3.stations.length - 1);
     let leadStops = 0, base = 0; for (const sd of [1, 2, 3]) { const Wl = Sim.createWorld('aki', tripL, { diff: 'easy', seed: sd, weather: 'clear' }); if (!Wl.lead) continue; const Wn = Sim.createWorld('aki', tripL, { diff: 'easy', seed: sd, weather: 'clear', events: false }); leadStops += Wl.lead.M.filter(m => m.stop).length; base += Wn.lead ? Wn.lead.M.filter(m => m.stop).length : 0; }
     ok(leadStops > base, 'tàu chạy trước trên đường đơn có thêm lần dừng tránh', [leadStops, base]); }
+  // --- đường ngang chỉ sau ngã rẽ khỏi Tohoku; ga ghép/tách dùng đường tránh
+  { for (const [ln, jk] of [['aki', 498.5], ['yam', 257.1]]) { const Lx = Sim.lineOf(ln); ok(Lx.xings.length > 30 && Lx.xings.every(k => k > jk), `${ln}: đường ngang chỉ ở phần đường sắt thường (sau ngã rẽ km ${jk})`); }
+    for (const ln of ['tsk', 'toh', 'jts', 'hok', 'nks']) ok(!(Sim.lineOf(ln).xings || []).length && !(Sim.lineOf(ln).single || []).length, `${ln}: Shinkansen thật, không có đường ngang / đường đơn`);
+    const Lm = Sim.lineOf('aki'), sMor = Lm.stations.find(x => x.en === 'Morioka'), Ly = global.Layout || window.Layout, iM = Lm.stations.indexOf(sMor);
+    for (const dir of ['down', 'up']) ok(sMor.side === 1 && Ly.station(sMor.lay, dir, Ly.pickOf(sMor, iM)).ours.x !== 0 && Ly.diverts(sMor.lay, dir, Ly.pickOf(sMor, iM)), `Morioka (${dir}): dừng ở đường tránh, không phải đường thông qua`); }
   // --- dữ liệu các tuyến mới
   for (const ln of ['jts', 'hok', 'nks', 'yam', 'aki']) { const L2 = Sim.lineOf(ln); ok(L2.trains.some(t => t.d === 'down') && L2.trains.some(t => t.d === 'up'), `${ln}: có cả hai chiều`); ok(L2.stations.every(st => st.lat && st.lon), `${ln}: ga có toạ độ`); ok(L2.meta.pa && L2.meta.defVeh && Sim.VEH[L2.meta.defVeh], `${ln}: có thông số tuyến`); }
 }

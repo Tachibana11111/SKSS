@@ -222,11 +222,12 @@
     let best = null; for (const O of W.net.trains) { if (O === T || O.phase === 'end' || O.phase === 'dwell' || offMain(O)) continue; if (O.x > T.x && (!best || O.x < best.x)) best = O; } return best;
   }
   // ---- Ghi (đường rẽ vào đường sân ga): giới hạn 80 km/h [I] từ 1.150 m trước vạch tới 630 m sau vạch, chỉ với ga có đường dừng khác đường chính
-  function stationDiverts(L, i, dir) { const Ly = root.Layout; if (!Ly || !L.stations[i] || !L.stations[i].lay) return false; return Ly.diverts(L.stations[i].lay, dir, i); }
+  function stationDiverts(L, i, dir) { const Ly = root.Layout; if (!Ly || !L.stations[i] || !L.stations[i].lay) return false; return Ly.diverts(L.stations[i].lay, dir, Ly.pickOf(L.stations[i], i)); }
   const divertsAt = (T, j) => { const m = T.M[j]; return !!(m && (m.stop || T.forced === j || (j === T.k && T.phase !== 'end')) && !m.mainStop && stationDiverts(T.W.line, m.i, T.W.dir)); };
-  function turnoutZones(T) { const out = []; for (let j = 0; j < T.M.length; j++) if (divertsAt(T, j)) out.push({ s0: T.M[j].s - G.turnoutIn, s1: T.M[j].s + G.turnoutOut, v: G.turnoutV, j }); return out; }
+  const geoS = m => m.sOrig !== undefined ? m.sOrig : m.s;      // vị trí gốc của ga (hình học sân ga/ghi); m.s có thể lùi lại khi chờ ghép
+  function turnoutZones(T) { const out = []; for (let j = 0; j < T.M.length; j++) if (divertsAt(T, j)) out.push({ s0: geoS(T.M[j]) - G.turnoutIn, s1: geoS(T.M[j]) + G.turnoutOut, v: G.turnoutV, j }); return out; }
   // vị trí các ghi và ghi chéo (chữ X) mà đoàn tàu đi qua quanh một ga: dùng cho âm thanh
-  function switchPoints(T) { const pts = []; for (let j = 0; j < T.M.length; j++) { const m = T.M[j], sM = m.s, dv = divertsAt(T, j);
+  function switchPoints(T) { const pts = []; for (let j = 0; j < T.M.length; j++) { const m = T.M[j], sM = geoS(m), dv = divertsAt(T, j);
     pts.push(sM - 1300 + 35, sM - 1300 + 115, sM + 720 + 35, sM + 720 + 115); if (dv) pts.push(sM - G.turnoutIn, sM + G.turnoutOut); } return pts.sort((a, b) => a - b); }
   // ga có từ 2 đường dừng cùng chiều: hai tàu có thể đỗ cùng lúc (mỗi tàu một đường); chỉ 1 đường: tàu sau phải chờ phía sau
   function sharesPlatformLane(W, Ld) { const Ly = root.Layout, m = Ld.M[Ld.k], st = m && W.line.stations[m.i]; return !!(Ly && st && st.lay && Ly.stopCount(st.lay, W.dir) >= 2); }
@@ -332,7 +333,7 @@
     if (c.kind === 'split') {
       if (!T.isLead) W.parked.push({ key: from.parts.find(k => k !== c.to.key), front: T.x - c.to.len - COUPLE_GAP, kind: 'left' });          // phần Tohoku ở lại sân ga
     } else {
-      const m = T.M[T.k]; if (m.sOrig !== undefined) { T.x += m.sOrig - m.s; m.s = m.sOrig; delete m.sOrig; }                              // đầu đoàn mới = đầu tàu Tohoku đã chờ
+      const m = T.M[T.k]; if (m.sOrig !== undefined) { if (!T.isLead) { W.cabSwitchAt = W.t; W.say('info', 'Chuyển sang buồng lái đầu đoàn (đầu tàu Tohoku). Đoàn đã nối xong, không dịch chuyển: chỉ đổi vị trí lái.'); } T.x += m.sOrig - m.s; m.s = m.sOrig; delete m.sOrig; }                              // đầu đoàn mới = đầu tàu Tohoku đã chờ
       W.parked = W.parked.filter(p => p.kind !== 'wait');
     }
     if (!T.isLead) W.say('stop', T.veh.parts ? `Ghép xong: đoàn ${T.veh.name} (${T.veh.cars} toa, ${Math.round(T.veh.len)} m). Được khởi hành.` : `Tách xong: còn ${T.veh.name} (${T.veh.cars} toa, ${Math.round(T.veh.len)} m) chạy tiếp. Được khởi hành.`);
@@ -618,10 +619,10 @@
     const Ly = root.Layout, L = W.line; W.stabled = []; if (!Ly) return; const r = rng((W.seed || 1) * 131 + 5);
     M.forEach((m, k) => {
       const st = L.stations[m.i]; if (!st || !st.lay || (k === 0 && m.s === M[0].s && false)) return;
-      const sc = Ly.station(st.lay, W.dir, m.i), cand = sc.tracks.filter(t => !t.main && t !== sc.ours); if (!cand.length || r() > 0.3) return;
+      const sc = Ly.station(st.lay, W.dir, Ly.pickOf(st, m.i)), cand = sc.tracks.filter(t => !t.main && t !== sc.ours); if (!cand.length || r() > 0.3) return;
       const t = cand[Math.floor(r() * cand.length)], face = t.own ? 1 : -1; let key = L.meta.defVeh;      // face = 1: đỗ quay đầu theo chiều chạy của ta; -1: quay ngược lại (đường chiều kia)
       if (L.meta.coupleMini && st.km <= L.meta.coupleMini.maxKm && r() < 0.5) { const north = (W.dir === 'down') === (face === 1), mini = r() < 0.5 ? 'E6' : 'E8'; key = r() < 0.4 ? 'E5' : (north ? mini + '+E5' : 'E5+' + mini); }      // mini luôn ở phía bắc đoàn
-      W.stabled.push({ k, i: m.i, track: t, key, face, front: m.s + (r() * 100 - 30) });
+      W.stabled.push({ k, i: m.i, track: t, key, face, front: geoS(m) + (r() * 100 - 30) });
     });
   }
   function createWorld(lineId, trip, opts) {

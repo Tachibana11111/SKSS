@@ -21,7 +21,7 @@
     const len = T.veh.len, zOff = -len / 2;      // tâm đoàn tàu (zOff so với đầu tàu) ở giữa khung
     const km = z => S.kmOfS(T.x + z, W.dir, L.kmEnd);
     const heading = LAY.bearingAt(L, S, W.dir, T.x);
-    const sts = []; M.forEach((m, i) => { const d = m.s - T.x; if (d < -1300 || d > 1900) return; const key = W.lineId + ':' + m.i + ':' + W.dir; const st = cache[key] || (cache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, m.i)); sts.push({ m, i, d, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')) }); });
+    const sts = []; M.forEach((m0, i) => { const gs = m0.sOrig !== undefined ? m0.sOrig : m0.s, m = gs === m0.s ? m0 : Object.assign({}, m0, { s: gs }), d = gs - T.x, dm = m0.s - T.x; if (d < -1300 || d > 1900) return; const key = W.lineId + ':' + m.i + ':' + W.dir; const st = cache[key] || (cache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, LAY.pickOf(L.stations[m.i], m.i))); sts.push({ m, i, d, dm, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')) }); });
     const ourPath = z => { let x = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) x += q.st.ours.x * LAY.spread(T.x + z, q.m.s); return x; };
     const lane = ourPath(0);
     const latT = LAY.lateralTable(L, S, W.dir, T.x, VIEW_R + 400, 10), latB = LAY.lateralTableBack(L, S, W.dir, T.x, len + VIEW_R + 400, 10);
@@ -49,7 +49,7 @@
     for (const q of sts) { const z0 = q.d - 420, z1 = q.d + 20; if (z1 < zLo || z0 > zHi) continue; for (const p of q.st.plats) { const za = Math.min(z1, zHi), zb = Math.max(z0, zLo), n = Math.max(2, Math.ceil((za - zb) / 20)), zs = Array.from({ length: n + 1 }, (_, i) => zb + (za - zb) * i / n);   // sân ga uốn theo đường cong: mỗi mép là một đường gấp khúc
         const edge = e => zs.map(z => [cx - (e - lane) * kx - off(z) * kc, Y(z)]); ctx.fillStyle = dark ? '#3a4658' : '#8c98a6'; ctx.beginPath(); edge(p.xb).forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); edge(p.xa).reverse().forEach(([x, y]) => ctx.lineTo(x, y)); ctx.closePath(); ctx.fill();
         ctx.strokeStyle = '#d8b838'; ctx.lineWidth = 1.4; for (const e of [p.xa, p.xb]) if (q.st.tracks.some(t => Math.abs(Math.abs(t.x - e) - 1.75) < 0.01)) { ctx.beginPath(); edge(e).forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); } }
-      const ys = Y(q.d); if (ys > cy - Rr && ys < cy + Rr) { ctx.fillStyle = '#4cd68a'; ctx.fillRect(cx - (q.st.ours.x - lane) * kx - off(q.d) * kc - 9, ys - 1, 18, 2); } }
+      const ys = Y(q.dm); if (ys > cy - Rr && ys < cy + Rr) { ctx.fillStyle = '#4cd68a'; ctx.fillRect(cx - (q.st.ours.x - lane) * kx - off(q.d) * kc - 9, ys - 1, 18, 2); } }
     const rail = (xf, z0, z1, col) => { for (const sx of [-0.72, 0.72]) line(z => xf(z) + sx, z0, z1, 1.2, col); };
     for (const [xf, z0, z1] of tracks) if (z1 > z0) rail(xf, z0, z1, dark ? '#7a8594' : '#d2d9e0');
     rail(ourPath, zOff - len, zHi, '#4aa3ff');

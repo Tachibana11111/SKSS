@@ -209,7 +209,7 @@
   // bên cửa mở ở ga j: theo sân ga kề đường dừng của ta (bên trái/phải theo chiều đi); không có sân ga (dừng đường chính) thì không thông báo
   GameAudio.prototype.doorSide = function (W, T, j) {
     const m = T.M[j], Ly = root.Layout, ls = W.line.stations[m.i]; if (!Ly || !ls || !ls.lay || m.mainStop) return null;
-    const st = Ly.station(ls.lay, W.dir, m.i); if (!st.plat) return null;
+    const st = Ly.station(ls.lay, W.dir, Ly.pickOf(ls, m.i)); if (!st.plat) return null;
     return st.platSign > 0 ? { ja: '左側', en: 'left', vi: 'trái' } : { ja: '右側', en: 'right', vi: 'phải' };
   };
   GameAudio.prototype.announce = function (W, T, p) {

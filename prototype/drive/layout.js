@@ -31,7 +31,7 @@
     // đường dừng của ta: đường chiều ta (d) có sân ga kề bên
     const stops = tracks.filter(t => t.own && !t.thr && plats.some(p => Math.abs(Math.min(Math.abs(p.xa - t.x), Math.abs(p.xb - t.x)) - EDGE) < 0.01));
     if (!stops.length) tracks.filter(t => t.own).forEach(t => stops.push(t));
-    const ours = pick && typeof pick === 'object' ? (tracks.find(t => t.i === pick.i) || stops[0]) : stops[Math.abs(pick | 0) % stops.length];       // pick là đối tượng {i}: ép chọn đúng đường theo chỉ số trong chuỗi bố trí (camera sau)
+    const ours = pick === -1 ? (stops.find(t => !t.main) || stops[0]) : pick && typeof pick === 'object' ? (tracks.find(t => t.i === pick.i) || stops[0]) : stops[Math.abs(pick | 0) % stops.length];       // pick là đối tượng {i}: ép chọn đúng đường theo chỉ số trong chuỗi bố trí (camera sau)
     // sân ga kề đường dừng của ta
     const plat = plats.find(p => Math.abs(Math.min(Math.abs(p.xa - ours.x), Math.abs(p.xb - ours.x)) - EDGE) < 0.01) || null;
     const platSign = plat ? ((plat.xa + plat.xb) / 2 > ours.x ? 1 : -1) : 1;
@@ -88,6 +88,6 @@
     return ((b + clamp(dev, -35, 35)) % 360 + 360) % 360;
   }
   const lerp = (a, b, t) => a + (b - a) * t;
-  root.Layout = { lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { pickOf: (st, i) => st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, curvatureAt, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -151,7 +151,8 @@ def gen_curves(lid, ln):
 def gen_single_xing(lid, ln):
     # đường đơn và đường ngang (chỉ có ở phần đường sắt thường của mini-Shinkansen); đường ngang không nằm trong hầm hoặc sát ga
     if lid not in MINI: return [], []
-    rnd = random.Random(SEED[lid][1] + 5); k0 = MINI[lid]; stk = [s['km'] for s in ln['stations']]; out = []
+    rnd = random.Random(SEED[lid][1] + 5); k0 = JUNC[lid][0];       # đường ngang chỉ có SAU ngã rẽ khỏi Tohoku (đoạn Tohoku là Shinkansen thật: tuyệt đối không có)
+    stk = [s['km'] for s in ln['stations']]; out = []
     for key, (a, b) in (('x1', (342.2, 403.7)), ('x2', (k0, 342.2))) if lid == 'yam' else (('x1', (k0, ln['kmEnd'])),):
         n = XING[lid][0] if key == 'x1' else XING[lid][1]; tries = 0; part = []
         while len(part) < n and tries < 5000:
@@ -168,6 +169,7 @@ def apply(LINES):
         for st in ln['stations']:
             code = LAY.get(st['jp'] + ':' + lid) or LAY.get(st['jp']) or LAY[st['jp'] + ':toh']
             st['lay'] = code; st['loop'] = int(code.endswith('-1'))     # có đường thông qua => ga tránh được
+            if st['jp'] in ('盛岡', '福島'): st['side'] = 1                  # ga ghép/tách đoàn: tàu dừng ở đường TRÁNH (không phải đường thông qua)
             st['lat'], st['lon'] = COORD[st['jp']]
         ln['struct'] = gen_struct(lid, ln); ln['curves'] = gen_curves(lid, ln); DONE[lid] = ln
         ln['single'], ln['xings'] = gen_single_xing(lid, ln)
