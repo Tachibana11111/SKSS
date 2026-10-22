@@ -47,7 +47,7 @@ Mọi tuyến chỉ dùng cá nhân. Dữ liệu sinh bằng `tools/build_lines.
   - **Đường ngang** (Yamagata 53, Akita 45; số lượng Yamagata–Shinjo 41 là [N], còn lại [I]): chuông, rào chắn, đèn đỏ. Sự kiện hiếm: xe kẹt trên đường ngang, đèn tín hiệu đặc biệt (特殊信号発光機) nhấp nháy 600 m trước; không phanh kịp = va chạm (phạt 25 điểm). ATC không bảo vệ trường hợp này [I].
   - **Tốc độ qua đường cong:** v = √(1,3 · R) (đường sắt thường, chưa có nghiêng thân) [I]; chỉ áp dụng ở phần đường sắt thường.
   - **Omagari:** tàu đổi chiều chạy (switchback) [N]; game chỉ có thông báo, giữ nguyên hướng nhìn [I].
-- **Tàu (VEH):** E7 12 toa 300 m, 9,6 MW; E6/E8 7 toa 148,7 m ~5 MW, ~336 t; ghép E5 + E6/E8 17 toa 404 m. Số công suất/khối lượng là [I]; chiều dài E6/E8 là xấp xỉ [K].
+- **Tàu (VEH):** E7 12 toa 300 m, 9,6 MW; E6/E8 7 toa 152,8 m (theo dải ảnh) ~5 MW, ~336 t; ghép E5 + E6/E8 17 toa 404 m. Số công suất/khối lượng là [I]; chiều dài E6/E8 lấy theo dải ảnh (152,8 m) [I].
 
 ## 3b. Ghép / tách đoàn có cảnh (2026-10-22)
 

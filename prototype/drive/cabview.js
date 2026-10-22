@@ -382,7 +382,9 @@
     W2.dead = (W.dead || []).map(d => Object.assign({}, d, { s0: Lm - d.s1, s1: Lm - d.s0, hzA: d.hzB, hzB: d.hzA })); W2.xings = (W.xings || []).map(g => Object.assign({}, g, { s: Lm - g.s })).sort((a, b) => a.s - b.s);
     W2.parked = (W.parked || []).filter(p => p.kind === 'left').map(p => ({ key: p.key, front: Lm - (p.front - root.Sim.VEH[p.key].len), kind: 'wait' }));
     W2.stabled = []; W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => Object.assign({}, m, { s: Lm - m.s })); T2.k = T.M.length - 1 - T.k; T2.forced = -1; W2.player = T2;
-    draw(ctx, px, py, pw, ph, W2, T2, R);
+    // nhìn ngược về sau: trái phải đảo so với nhìn về phía trước (ta chạy làn TRÁI thì khi nhìn lùi, đường của ta nằm bên PHẢI, đường ngược chiều bên trái)
+    ctx.save(); ctx.translate(2 * px + pw, 0); ctx.scale(-1, 1); const ft = CanvasRenderingContext2D.prototype.fillText; ctx.fillText = function (s2, x, y, mw) { this.save(); this.translate(x, y); this.scale(-1, 1); ft.call(this, s2, 0, 0, mw); this.restore(); };
+    try { draw(ctx, px, py, pw, ph, W2, T2, R); } finally { delete ctx.fillText; ctx.restore(); }
   }
   root.CabView = { draw, drawRear, proj, cellObject, hash, CAMH, PEDGE, PH, ADJ };
 })(typeof window !== 'undefined' ? window : globalThis);

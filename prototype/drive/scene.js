@@ -250,7 +250,7 @@
       if (lead && root.Sim.lampOn(W, T)) { ctx.fillStyle = 'rgba(255,245,190,' + (0.16 + 0.12 * night + 0.05 * Math.sin(now / 120)) + ')'; ctx.beginPath(); ctx.moveTo(fx - 2, base - 22); ctx.lineTo(fx + 100 + 60 * night, base - 32); ctx.lineTo(fx + 100 + 60 * night, base - 3); ctx.closePath(); ctx.fill(); }
     } else trainProc(ctx, fx, base, (root.Sim.VEH[key] || T.veh).len * K, 26, key, 1, false);
     };
-    { const parts = T.veh.parts; if (parts) { let off = 0; parts.forEach((pk, qi) => { const pxF = fx - off * K; if (pxF > px - 20) drawOwn(pxF, pk, qi === 0); off += root.Sim.VEH[pk].len + T.veh.gap + (T.gapX || 0); }); } else drawOwn(fx, T.veh.key, true); }
+    { const parts = T.veh.parts; if (parts) { let off = 0; parts.forEach((pk, qi) => { const pxF = fx - off * K; if (pxF > px - 20) drawOwn(pxF, pk, qi === 0); const ps = sprOf(R, pk); off += (ps ? ps.meta.width / ps.meta.pxPerMeter : root.Sim.VEH[pk].len) + (T.gapX || 0); }); } else drawOwn(fx, T.veh.key, true); }      // nối mũi chạm mũi: dùng chiều dài thật của dải ảnh để hai đoàn không đè lên nhau
     // phần đoàn đã tách ở lại sân ga phía sau (hoặc đoàn Tohoku đang chờ ở phía trước để ghép)
     for (const pk of W.parked || []) { const pv = root.Sim.VEH[pk.key], dl = pk.front - T.x; if (dl > -pv.len - 20 && dl < 1800) { const xf = fx + dl * K, wv = pv.len * K; if (xf - wv < px + pw + 50 && xf > px - 50) fleet(ctx, R, pk.key, xf, base, wv, hOf(R, pk.key, K) * SV, 1); } }
     if (!flipX) drawOpp();

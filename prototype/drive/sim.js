@@ -18,8 +18,8 @@
     'E5':     { name: 'E5',     len: 253,   m: 453.5e3, a0: 0.475, P: 9.2e6, vmax: 320 / 3.6, aB7: 0.75, aEB: 1.04, cap: 723, cd: 0.55, cars: 10 }
   };
   // mini-Shinkansen: E6 (Komachi) và E8 (Tsubasa) 7 toa, khổ thân hẹp; số liệu công suất/khối lượng là [I]
-  VEH['E6'] = { name: 'E6', len: 148.7, m: 335e3, a0: 0.5, P: 5.0e6, vmax: 320 / 3.6, aB7: 0.75, aEB: 1.04, cap: 338, cd: 0.6, cars: 7 };
-  VEH['E8'] = { name: 'E8', len: 148.7, m: 336e3, a0: 0.5, P: 5.0e6, vmax: 300 / 3.6, aB7: 0.75, aEB: 1.04, cap: 355, cd: 0.6, cars: 7 };
+  VEH['E6'] = { name: 'E6', len: 152.8, m: 335e3, a0: 0.5, P: 5.0e6, vmax: 320 / 3.6, aB7: 0.75, aEB: 1.04, cap: 338, cd: 0.6, cars: 7 };
+  VEH['E8'] = { name: 'E8', len: 152.8, m: 336e3, a0: 0.5, P: 5.0e6, vmax: 300 / 3.6, aB7: 0.75, aEB: 1.04, cap: 355, cd: 0.6, cars: 7 };
   VEH['T4'] = { name: '923 Doctor Yellow', len: 177.1, m: 360e3, a0: 0.72, P: 6.0e6, vmax: 270 / 3.6, aB7: 0.75, aEB: 1.04, cap: 0, cd: 1.0, cars: 7 };          // tàu kiểm tra Tokaido/Sanyo; số liệu [K]
   VEH['E926'] = { name: 'E926 East i', len: 135.0, m: 300e3, a0: 0.5, P: 4.8e6, vmax: 275 / 3.6, aB7: 0.75, aEB: 1.04, cap: 0, cd: 0.6, cars: 6 };               // tàu kiểm tra JR East; số liệu [K]
   // tàu ghép hai đoàn (Hayabusa + Komachi, Yamabiko + Tsubasa): đoàn đầu + đoàn sau; parts dùng để vẽ từng đoạn
@@ -600,6 +600,14 @@
     const j = W.line.meta.junction; if (!j) return 0; const sj = sOfKm(j.km, W.dir, W.line.kmEnd), d = W.dir === 'down' ? s - sj : sj - s;
     return d > 0 ? j.side * 32 * smooth01(0, 1600, d) : 0;
   }
+  // tàu chạy trước trên đường Tohoku có thể là đoàn ghép (Hayabusa + Komachi, Yamabiko + Tsubasa): thêm đơn vị mini và ga tách/ghép cho nó
+  function withMini(L, rec, dir, seed) {
+    const cm = L.meta.coupleMini; if (!cm || rec.cp || rec.t === 'Nasuno' || hash01(seed * 7 + (+rec.n || 0), 11) > 0.5) return rec;
+    const stops = new Set(rec.s.filter(e => !e[3]).map(e => e[0])), cand = rec.t === 'Yamabiko' ? [['Fukushima', 'E8']] : [['Morioka', 'E6'], ['Fukushima', 'E8']];
+    for (const [nm, mini] of cand) { const i = L.stations.findIndex(x => x.en === nm); if (i < 0 || !stops.has(i)) continue;
+      return Object.assign({}, rec, dir === 'down' ? { v: mini + '+E5', cp: [i, 'E5'] } : { v: 'E5', cp: [i, 'E5+' + mini] }); }
+    return rec;
+  }
   function genStabled(W, M) {
     const Ly = root.Layout, L = W.line; W.stabled = []; if (!Ly) return; const r = rng((W.seed || 1) * 131 + 5);
     M.forEach((m, k) => {
@@ -622,7 +630,8 @@
         if (j >= 0) { M[j].sOrig = M[j].s; M[j].s -= pv.len + COUPLE_GAP; W.parked.push({ key: 'E5', front: M[j].sOrig, kind: 'wait', i: P.cp.i }); } } }
     { const P = W.player; if (P.cp && P.cp.done && P.cp.kind === 'split' && M[0].i === P.cp.i) W.parked.push({ key: 'E5', front: M[0].s - P.veh.len - COUPLE_GAP, kind: 'left' }); }      // xuất phát đúng ga tách: phần Tohoku còn đứng ở sân ga phía sau
     if (opts.stabled !== false) genStabled(W, M);
-    const leadRec = opts.lead === false ? null : pickLead(L, W.catalog, trip);
+    let leadRec = opts.lead === false ? null : pickLead(L, W.catalog, trip);
+    if (leadRec) leadRec = withMini(L, leadRec, trip.dir, opts.seed || 1);
     if (leadRec) {
       const seq = trainSeq(leadRec);
       const LM = fillPlan(seq.map(e => ({ name: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, trip.dir, L.kmEnd), stop: e.stop, arr: e.arr != null ? e.arr - trip.t0 : null, dep: e.dep != null ? e.dep - trip.t0 : null })));
