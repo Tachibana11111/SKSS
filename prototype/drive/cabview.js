@@ -238,8 +238,18 @@
         for (const b of rb) {
           const qz = inStationZone(b.z, b.z + b.dz), ext = qz ? qz.st.extent : [Math.min(0, oppAt(b.z)), Math.max(0, oppAt(b.z))];
           if (b.e > 0 ? b.e - b.w / 2 < ext[1] + 8 : b.e + b.w / 2 > ext[0] - 8) continue;
-          const o = { kind: b.lev >= 3 || b.t === 1 || b.t === 2 ? 'building' : 'house', w: Math.max(4, b.w), d: Math.max(4, b.dz), h: b.h, tone: hash(Math.round(b.z * 7 + b.e * 3)), lat: 0 }, X = b.e, zz = b.z;
+          const o = { kind: 'jp', t: b.t, lev: b.lev, w: Math.max(4, b.w), d: Math.max(4, b.dz), h: b.h, tone: hash(Math.round(b.z * 7 + b.e * 3)), lat: 0 }, X = b.e, zz = b.z;
           tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) });
+        }
+      }
+      if (wdOn) {                              // cột điện và dây điện dọc phố
+        const seen = new Set();
+        for (const g of WD.poles(W.lineId, W.dir, L.kmEnd, T.x, Math.max(zMin, 4), 420, 150, wdOurs)) {
+          if (g.z0 < zMin || g.z1 < zMin) continue; const qz = inStationZone(g.z0, g.z1), ext = qz ? qz.st.extent : [Math.min(0, oppAt(g.z0)), Math.max(0, oppAt(g.z0))];
+          if (g.e0 > ext[0] - 6 && g.e0 < ext[1] + 6) continue;
+          const key = Math.round(g.z0) + ':' + Math.round(g.e0); if (seen.has(key)) continue; seen.add(key);
+          tgt.push({ z: Math.min(g.z0, g.z1), fn: () => { const A = fadeA(g.z0); ctx.globalAlpha = A; const b0 = P(g.e0, 0, g.z0), t0 = P(g.e0, 9, g.z0), t1 = P(g.e1, 9, g.z1); ctx.strokeStyle = night > 0.35 ? '#1c1c20' : '#5d5a55'; ctx.lineWidth = Math.max(1, 0.28 * c.f / g.z0); ctx.beginPath(); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(t0[0], t0[1]); ctx.stroke();
+            ctx.lineWidth = Math.max(0.6, 0.07 * c.f / g.z0); ctx.strokeStyle = night > 0.35 ? '#26262a' : '#4a4743'; for (const dy of [0, -0.7, -1.4]) { const q0 = P(g.e0, 9 + dy, g.z0), q1 = P(g.e1, 9 + dy, g.z1); ctx.beginPath(); ctx.moveTo(q0[0], q0[1]); ctx.quadraticCurveTo((q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2 + 3 * c.f / g.z0, q1[0], q1[1]); ctx.stroke(); } ctx.globalAlpha = 1; } });
         }
       }
       for (const [za, zb, step, bi] of bands) for (let ci = Math.floor((T.x + za) / step); ci * step - T.x < zb; ci++) {
@@ -384,6 +394,54 @@
     ctx.restore();
   }
 
+  // ---- nhà cửa kiểu Nhật: nhà ở 2 tầng mái ngói thấp, chung cư (mansion) nhiều tầng có dải ban công, toà văn phòng nhỏ, nhà kho tôn, đền chùa
+  const WALLS = [[236, 230, 216], [222, 216, 202], [208, 203, 194], [243, 241, 235], [199, 208, 198], [224, 208, 186], [214, 196, 176]];
+  const ROOFS = [[72, 78, 88], [92, 88, 84], [62, 68, 84], [108, 76, 60], [76, 94, 100], [84, 66, 62]];
+  function drawJP(ctx, c, o, X, z, day, wx, night, quad, P) {
+    const t = day * (1 - wx * 0.4), M = (col, k) => { const dk = col.map(v => v * (k || 1)); return mixc(dk.map(v => v * 0.13), dk, t); };
+    const tone = o.tone, ty = o.t || 0, lev = o.lev || (ty === 1 ? 4 : 2), mansion = (ty === 1 || ty === 0) && lev >= 3, w = o.w, d = o.d, x0 = X - w / 2, x1 = X + w / 2, za = z, zb = z + d, xin = X > 0 ? x0 : x1, near = z < 230;
+    let wall = ty === 1 ? (tone < 0.4 ? [188, 198, 210] : [226, 222, 212]) : ty === 2 ? [168, 172, 170] : ty === 3 ? [150, 158, 150] : ty === 4 ? [236, 230, 220] : WALLS[Math.floor(tone * 997) % WALLS.length];
+    const roof = ty === 4 ? [48, 52, 58] : ty === 3 ? [118, 128, 134] : ty === 2 ? [140, 146, 150] : ROOFS[Math.floor(tone * 1531) % ROOFS.length];
+    const flat = mansion || ty === 1 || ty === 2, h = flat ? (ty === 2 ? Math.min(o.h, 9) : Math.max(o.h, 6)) : Math.max(5.2, Math.min(o.h, 7)), wallC = M(wall), sideC = M(wall, 0.82), topC = M(wall, 0.94);
+    // thân nhà: mặt bên hướng đường ray, mặt trước, mặt trên (mái bằng) hoặc mái dốc
+    quad(P(xin, 0, za), P(xin, 0, zb), P(xin, h, zb), P(xin, h, za), sideC);
+    if (flat) {
+      quad(P(x0, h, za), P(x1, h, za), P(x1, h, zb), P(x0, h, zb), M([150, 154, 156]));
+      quad(P(x0, 0, za), P(x1, 0, za), P(x1, h, za), P(x0, h, za), wallC);
+      if (lev >= 5) { const bx = X - w * 0.2, bw = w * 0.4, bz = za + d * 0.3, bd = d * 0.4; quad(P(bx, h, bz), P(bx + bw, h, bz), P(bx + bw, h + 2.6, bz), P(bx, h + 2.6, bz), M(wall, 0.9)); }       // phòng kỹ thuật trên mái
+      if (near) {                          // dải ban công và cửa sổ theo tầng
+        const fl = ty === 2 ? 1 : Math.min(lev, 12), fh = h / fl;
+        for (let f = 0; f < fl; f++) { const y = f * fh;
+          if (ty === 2 && f === 0) continue; quad(P(xin, y + fh * 0.18, za), P(xin, y + fh * 0.18, zb), P(xin, y + fh * 0.30, zb), P(xin, y + fh * 0.30, za), M(wall, 0.62));
+          const y0 = y + fh * 0.42, y1 = y + fh * 0.82, glass = M(ty === 1 && tone < 0.4 ? [96, 126, 156] : [88, 104, 124]);
+          quad(P(xin, y0, za + d * 0.06), P(xin, y0, zb - d * 0.06), P(xin, y1, zb - d * 0.06), P(xin, y1, za + d * 0.06), glass);
+          quad(P(x0 + w * 0.1, y0, za), P(x1 - w * 0.1, y0, za), P(x1 - w * 0.1, y1, za), P(x0 + w * 0.1, y1, za), glass);
+          if (night > 0.35 && Math.sin(f * 7.3 + tone * 31) > 0) { ctx.globalAlpha *= 0.6; quad(P(xin, y0, za + d * 0.3), P(xin, y0, za + d * 0.55), P(xin, y1, za + d * 0.55), P(xin, y1, za + d * 0.3), 'rgba(255,220,130,.9)'); ctx.globalAlpha /= 0.6; } }
+      }
+      if (ty === 1 && lev <= 4 && near) quad(P(x0, 0, za), P(x1, 0, za), P(x1, 2.6, za), P(x0, 2.6, za), M([tone > 0.5 ? 190 : 70, tone > 0.7 ? 60 : 110, tone > 0.3 ? 70 : 150]));      // biển hiệu tầng trệt
+    } else {                               // nhà dốc mái: ngói xám / xanh / nâu, mái đầu hồi hoặc mái hông
+      const rh = Math.max(0.9, Math.min(Math.min(w, d) * 0.3, ty === 4 ? 4 : 3.2)), oh = ty === 4 ? 1.3 : 0.45, ridgeZ = d >= w, roofC = M(roof), roofL = M(roof, 1.18), roofD = M(roof, 0.8);
+      if (ridgeZ) {
+        quad(P(x0 - oh, h - 0.15, za), P(X, h + rh, za), P(X, h + rh, zb), P(x0 - oh, h - 0.15, zb), X > 0 ? roofL : roofC);
+        quad(P(x1 + oh, h - 0.15, za), P(X, h + rh, za), P(X, h + rh, zb), P(x1 + oh, h - 0.15, zb), X > 0 ? roofC : roofL);
+        ctx.fillStyle = wallC; ctx.beginPath(); let p = P(x0, 0, za); ctx.moveTo(p[0], p[1]); for (const q of [P(x1, 0, za), P(x1, h, za), P(X, h + rh, za), P(x0, h, za)]) ctx.lineTo(q[0], q[1]); ctx.closePath(); ctx.fill();
+      } else {
+        const zm = za + d / 2;
+        quad(P(x0 - oh, h - 0.15, za - oh), P(x1 + oh, h - 0.15, za - oh), P(x1 + oh, h + rh, zm), P(x0 - oh, h + rh, zm), roofL);
+        quad(P(x0 - oh, h + rh, zm), P(x1 + oh, h + rh, zm), P(x1 + oh, h - 0.15, zb + oh), P(x0 - oh, h - 0.15, zb + oh), roofD);
+        quad(P(x0, 0, za), P(x1, 0, za), P(x1, h, za), P(x0, h, za), wallC);
+        ctx.fillStyle = sideC; ctx.beginPath(); let p = P(xin, h, za); ctx.moveTo(p[0], p[1]); for (const q of [P(xin, h, zb), P(xin, h + rh, zm)]) ctx.lineTo(q[0], q[1]); ctx.closePath(); ctx.fill();
+      }
+      if (near && ty !== 3) {               // cửa sổ tầng 1–2, ban công mảnh, cửa ra vào
+        const glass = M([88, 104, 124]), fl = h > 6 ? 2 : 1;
+        for (let f = 0; f < fl; f++) { const y0 = 0.9 + f * 2.7, y1 = y0 + 1.5; for (let k = 0; k < Math.max(1, Math.floor(d / 4)); k++) { const a = za + 1 + k * 4, b = a + 2.2; if (b > zb - 0.6) break; quad(P(xin, y0, a), P(xin, y0, b), P(xin, y1, b), P(xin, y1, a), glass);
+            if (night > 0.35 && Math.sin(k * 5.1 + f * 3 + tone * 40) > 0.1) quad(P(xin, y0, a + 0.2), P(xin, y0, b - 0.2), P(xin, y1 - 0.2, b - 0.2), P(xin, y1 - 0.2, a + 0.2), 'rgba(255,214,120,.9)'); } }
+        if (f1(w) > 0) for (let f = 0; f < fl; f++) { const y0 = 0.9 + f * 2.7; quad(P(x0 + w * 0.15, y0, za), P(x0 + w * 0.5, y0, za), P(x0 + w * 0.5, y0 + 1.5, za), P(x0 + w * 0.15, y0 + 1.5, za), glass); }
+        if (h > 6) quad(P(xin, 3.3, za), P(xin, 3.3, zb), P(xin, 3.6, zb), P(xin, 3.6, za), M([96, 96, 96]));       // dải ban công tầng 2
+      }
+    }
+  }
+  const f1 = w => w > 6 ? 1 : 0;
   function drawCell(ctx, c, o, X, z, day, wx, night, inSnow, windy, now, fadeA, quad, P) {
     const A = fadeA(z); ctx.globalAlpha = A;
     if (o.kind === 'building') {
@@ -394,7 +452,9 @@
       quad(near[0], near[1], near[2], near[3], body);
       quad(near[3], near[2], far[2], far[3], mixc([30, 38, 52], [120, 132, 150], day * (1 - wx * 0.4)));
       if (night > 0.35 || o.h > 30) { const lit = night > 0.35; const rows = Math.min(14, Math.floor(o.h / 3.2)), cols = Math.max(2, Math.floor(o.w / 4)); for (let r = 0; r < rows; r++) for (let q = 0; q < cols; q++) { if (hash(Math.floor(z) * 13 + r * 7 + q * 3 + (X | 0)) > (lit ? 0.45 : 0.9)) continue; const p = P(x0 + (q + 0.5) * o.w / cols, 2 + r * 3.2, za); const s = 1.1 * c.f / za; ctx.fillStyle = lit ? 'rgba(255,224,130,.9)' : 'rgba(40,60,90,.5)'; ctx.fillRect(p[0] - s / 2, p[1] - s / 2, s, s * 0.8); } }
-    } else if (o.kind === 'house') {
+    } else if (o.kind === 'jp' || o.kind === 'house') {
+      drawJP(ctx, c, o.kind === 'house' ? Object.assign({ t: 0, lev: 2 }, o) : o, X, z, day, wx, night, quad, P);
+    } else if (o.kind === 'house_old') {
       const x0 = X - o.w / 2, x1 = X + o.w / 2, near = [P(x0, 0, z), P(x1, 0, z), P(x1, o.h, z), P(x0, o.h, z)];
       quad(near[0], near[1], near[2], near[3], mixc([30, 30, 36], [170, 140, 120], day * (1 - wx * 0.4)));
       const rf = P(X, o.h + 2.5, z); ctx.fillStyle = mixc([20, 20, 28], [110, 60, 50], day * (1 - wx * 0.4)); ctx.beginPath(); ctx.moveTo(P(x0 - 0.5, o.h, z)[0], near[3][1]); ctx.lineTo(rf[0], rf[1]); ctx.lineTo(P(x1 + 0.5, o.h, z)[0], near[2][1]); ctx.closePath(); ctx.fill();

@@ -94,5 +94,20 @@
     } }
     return out;
   }
-  root.World = { parse, drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
+  // cột điện dọc đường bộ nhỏ (kiểu Nhật: cột bê tông cách ~35 m, dây chằng chịt): các đoạn cột liên tiếp [{z0, e0, z1, e1}] cho khoảng z [za, zb], |e| ≤ lat
+  const polesCache = new Map();
+  function poles(lid, dir, kmEnd, Tx, za, zb, lat, dOurs) {
+    const up = dir === 'up', Lm = kmEnd * 1000, a = up ? Lm - (Tx + zb) : Tx + za, b = up ? Lm - (Tx + za) : Tx + zb, out = [];
+    for (const c of chunks(lid, a - 60, b + 60)) {
+      let P = polesCache.get(c.d); if (!P) { P = []; for (const R of c.d.r) { if (R.cl < 2 || R.cl > 4 || R.br) continue; let carry = 17; const pts = [];
+          for (let i = 1; i < R.s.length; i++) { const x0 = R.s[i - 1], y0 = R.d[i - 1], x1 = R.s[i], y1 = R.d[i], L = Math.hypot(x1 - x0, y1 - y0); let t = carry; while (t < L) { pts.push([c.s0 + x0 + (x1 - x0) * t / L, y0 + (y1 - y0) * t / L]); t += 35; } carry = t - L; }
+          const seg = []; for (let i = 1; i < pts.length; i++) if (Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]) < 60) seg.push([pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]]); P.push(...seg); }
+        polesCache.set(c.d, P); }
+      for (const g of P) { const sm = Math.max(g[0], g[2]), sn = Math.min(g[0], g[2]); if (sm < a - 20 || sn > b + 20) continue;
+        const e0 = up ? (dOurs || 0) - g[1] : g[1] - (dOurs || 0), e1 = up ? (dOurs || 0) - g[3] : g[3] - (dOurs || 0); if (Math.abs(e0) > lat || Math.abs(e1) > lat) continue;
+        out.push({ z0: up ? Lm - g[0] - Tx : g[0] - Tx, e0, z1: up ? Lm - g[2] - Tx : g[2] - Tx, e1 }); }
+    }
+    return out;
+  }
+  root.World = { poles, parse, drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
 })(typeof window !== 'undefined' ? window : globalThis);
