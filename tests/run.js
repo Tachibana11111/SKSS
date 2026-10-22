@@ -326,6 +326,11 @@ section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đ�
   { const T1 = Sim.lineOf('toh'), iM = T1.stations.findIndex(x => x.en === 'Morioka'), recs8 = T1.trains.filter(t => t.t === 'Hayabusa' && t.d === 'down' && t.s.some(e => e[0] === 0 && !e[3]) && t.s.some(e => e[0] === iM && !e[3])).slice(1, 9);
     let found = null; for (const rec8 of recs8) for (let sd = 1; sd <= 8 && !found; sd++) { const W = Sim.createWorld('toh', Sim.makeTrip('toh', rec8, 0, iM), { diff: 'easy', seed: sd, events: false }); if (W.lead && W.lead.cp) found = W; }
     ok(!!found && found.lead.veh.parts && found.lead.veh.parts[1] === 'E5', 'tàu chạy trước trên Tohoku có khi là đoàn ghép (mini ở đầu khi đi xuống)'); }
+  // --- đường đơn mini-Shinkansen: dừng tránh tàu ngược chiều; Akita có đoạn đôi Jingūji–Mineyoshikawa
+  { const A2 = Sim.lineOf('aki'), Wd = { line: A2, dir: 'down', player: { M: [] } }; ok(Sim.singleW(Wd, 593 * 1000) === 0 && Sim.singleW(Wd, 550 * 1000) > 0.9, 'Akita: đoạn 586–600 km là đường đôi, còn lại đường đơn');
+    const recC = A2.trains.find(t => t.d === 'down' && t.cp), trip = Sim.makeTrip('aki', recC, recC.cp[0], A2.stations.length - 1);
+    let tot = 0; for (const sd of [1, 2, 3]) { const W = Sim.createWorld('aki', trip, { diff: 'easy', seed: sd, lead: false, weather: 'clear' }), T = W.player; let n = 0; while (!T.finished && n++ < 4e6 && W.t < 60000) Sim.tick(W, 0.05, {}, true); tot += W.msgs.filter(m => /DỪNG TRÁNH/.test(m.text)).length; ok(T.finished && Math.max(...T.results.map(r => Math.abs(r.delay))) < 200, `Akita seed ${sd}: có dừng tránh mà vẫn đúng giờ (thời gian chờ được miễn)`); }
+    ok(tot >= 3, 'đường đơn: có các lần dừng tránh tàu ngược chiều', tot); }
   // --- dữ liệu các tuyến mới
   for (const ln of ['jts', 'hok', 'nks', 'yam', 'aki']) { const L2 = Sim.lineOf(ln); ok(L2.trains.some(t => t.d === 'down') && L2.trains.some(t => t.d === 'up'), `${ln}: có cả hai chiều`); ok(L2.stations.every(st => st.lat && st.lon), `${ln}: ga có toạ độ`); ok(L2.meta.pa && L2.meta.defVeh && Sim.VEH[L2.meta.defVeh], `${ln}: có thông số tuyến`); }
 }

@@ -441,7 +441,8 @@
         } else if (W.net) { T.lastArrDelay = W.t - (mk.arr != null ? mk.arr : (mk.pt != null ? mk.pt : W.t)); T.results.push({ station: mk.name, delay: T.lastArrDelay, t: W.t }); }
         if (T.forced === j) T.forced = -1;
         if (j === M.length - 1) { T.phase = 'end'; if (!T.isLead) T.finished = true; }
-        else { T.phase = 'dwell'; T.dwellT = 0; startCoupling(T, mk); }
+        else { T.phase = 'dwell'; T.dwellT = 0; startCoupling(T, mk);
+          if (mk.xwait && !T.isLead) { W.passers = W.passers || {}; (W.passers[j] = W.passers[j] || []).push({ label: W.line.meta.defVeh + ' (ngược chiều)', t: W.t + Math.max(30, mk.xwait * 0.6), v: W.line.meta.defVeh }); T.holds[j] = Math.max(T.holds[j] || 0, W.t + mk.xwait); W.say('info', `${mk.name}: đang chờ tàu ngược chiều (đường đơn).`); } }
       } else if (T.x > mk.s + G.stopTol + 80) {
         T.phase = 'end';
         if (!T.isLead) { T.finished = true; T.failed = true; T.log.push(['FAIL', W.t, 'Chạy quá ga']); W.say('bad', 'Chạy quá ga ' + mk.name); T.results.push({ station: mk.name, err: T.x - mk.s, delay: NaN, overrun: true }); }
@@ -800,6 +801,19 @@
       } else if (kind === 'planned') {
         if (stopsIdx.length < 2) continue; const jEnd = stopsIdx[Math.floor(stopsIdx.length * 0.5) + Math.floor(rnd() * Math.floor(stopsIdx.length * 0.5))]; if (jEnd === undefined || jEnd >= M.length - 1) continue; const tNotice = Math.max(0, (M[jEnd - 1].arr || 0) - 900);
         ev(tNotice, w => { const T = w.player; if (T.k >= jEnd - 1) return; M.length = jEnd + 1; M[jEnd].stop = true; M[jEnd].dep = null; fillPlan(M); w.trip.truncated = true; w.say('warn', `KẾ HOẠCH NGỪNG CHẠY (計画運休): do thời tiết xấu, chuyến này KẾT THÚC tại ${M[jEnd].name}. Nhấn Y để nhắc lại lệnh.`, { ack: true }); });
+      }
+    }
+    // đường đơn (mini-Shinkansen): thêm các lần dừng tránh tàu ngược chiều ở ga (kể cả ga không có lịch dừng: 運転停車 [N: Wikipedia JP Akita Shinkansen])
+    if (W.line.single && W.line.single.length) {
+      const L = W.line, inSingle = km => L.single.some(([a, b]) => km > a && km < b);
+      const cand = M.map((m, k) => k).filter(k => k > 0 && k < M.length - 1 && !usedJ.has(k) && inSingle(L.stations[M[k].i].km) && !(W.player.cp && M[k].i === W.player.cp[0]));
+      const singleKm = L.single.reduce((a, [x, y]) => a + Math.max(0, Math.min(y, L.kmEnd) - x), 0), n = cand.length ? clamp(Math.round(span / 1000 / 45 * (0.7 + rnd() * 0.6)), 1, 4) : 0;
+      for (let q = 0; q < n && cand.length; q++) {
+        const j = cand.splice(Math.floor(rnd() * cand.length), 1)[0], dwell = 70 + Math.floor(rnd() * 5) * 25, tNotice = Math.max(0, (M[j].arr != null ? M[j].arr : (M[j].pt || 0)) - 700 - rnd() * 300);
+        ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || M[j].xwait) return; M[j].xwait = dwell;
+          if (!M[j].stop && M[j].pt != null) { M[j].stop = true; M[j].arr = M[j].pt; M[j].dep = M[j].pt + dwell; fillPlan(M); }
+          else T.holds[j] = Math.max(T.holds[j] || 0, (M[j].dep != null ? M[j].dep : (M[j].arr || 0)) + dwell);
+          T.orderAt = w.t; w.say('warn', `Điều độ: tuyến đường đơn, DỪNG TRÁNH tàu ngược chiều tại ${M[j].name} (~${dwell} s). Dừng đúng vạch, chờ tàu ngược chiều vào ga rồi mới chạy tiếp.`); });
       }
     }
     W.opposing = []; for (let t = 100 + rnd() * 120; t < planT + 900; t += 90 + rnd() * 140) W.opposing.push(Math.round(t));

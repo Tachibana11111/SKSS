@@ -58,6 +58,8 @@ Mọi tuyến chỉ dùng cá nhân. Dữ liệu sinh bằng `tools/build_lines.
 - **Đường chính Tohoku tách/nhập** cách ga ~0,9 km (`junction` trong `LINE_META`): vẽ trong khung buồng lái và bản đồ nhỏ. Hình học nhánh là [I].
 - **Camera cuối đoàn (phím B hoặc nút trên thanh trên):** dựng "thế giới phản chiếu" (hướng đảo, s' = chiều dài tuyến − s) rồi dùng lại bộ vẽ buồng lái.
 - **Tàu ngược chiều trên đoạn Tohoku** có xác suất là đoàn ghép (mini ở đuôi nếu ta đi xuống, ở đầu nếu ta đi lên); **tàu đỗ ở đường phụ** của ga (~30% ga có đường phụ). Tỉ lệ là [I].
+- **Đường đơn:** Yamagata có các đoạn đôi Fukushima–Sekine, Akayu–Kita-Akayu, Uzen-Nakayama–Yamagata, Ashizawa–Funagata [N tên đoạn, km là I]; Akita toàn đường đơn trừ Jingūji–Mineyoshikawa (km 586–600 là [I]; vị trí km chưa có nguồn). Đường ray ba (khổ kép) không làm đoạn đó thành đường đôi.
+- **Dừng tránh tàu ngược chiều** (運転停車, đường đơn): sự kiện điều độ tự sinh khoảng 1 lần mỗi 45 km đường đơn (1–4 lần/chuyến), tàu dừng 70–170 s ở ga (kể cả ga không có lịch dừng), tàu ngược chiều vào ga rồi mới chạy tiếp; thời gian chờ được miễn trừ khi tính trễ giờ.
 - Akita: mọi chuyến đều ghép cả hai chiều (đúng như người dùng nêu). Yamagata: một số chuyến chạy một mình (121, 129, 158, 160) [D].
 
 ## 4. Hạn chế đã biết
