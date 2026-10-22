@@ -4,16 +4,15 @@
 // Dữ liệu © OpenStreetMap contributors (ODbL 1.0), chỉ dùng cá nhân.
 (function (root) {
   const TILE = 250, CAP = 220;
-  const LAYERS = [                                   // base: khoảng cách ngang tối thiểu của tấm tranh so với tim đường; gap: cách mép hành lang
-    { eLo: 9, eHi: 34, ppm: 6, H: 34, base: 13, gap: 6, range: 1500 },
-    { eLo: 34, eHi: 90, ppm: 3, H: 56, base: 44, gap: 30, range: 2600 },
-    { eLo: 90, eHi: 320, ppm: 1.5, H: 120, base: 125, gap: 100, range: 3300 }
+  const LAYERS = [                                   // 2 lớp mỗi bên cho nhẹ (3 lớp gây giật): lớp gần là nhà sát phố, lớp xa là dãy nhà sau và toà cao
+    { eLo: 9, eHi: 60, ppm: 5, H: 40, base: 14, gap: 6, range: 1400 },
+    { eLo: 60, eHi: 320, ppm: 1.6, H: 120, base: 80, gap: 50, range: 3000 }
   ];
   const WALLS = [[236, 230, 216], [222, 216, 202], [208, 203, 194], [243, 241, 235], [199, 208, 198], [224, 208, 186], [214, 196, 176]];
   const ROOFS = [[72, 78, 88], [92, 88, 84], [62, 68, 84], [108, 76, 60], [76, 94, 100], [84, 66, 62]];
   const cache = new Map(); let frameNo = 0;
   const hash = (a, b) => { const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return x - Math.floor(x); };
-  const layerOf = (e, h) => { let k = e < 34 ? 0 : e < 90 ? 1 : 2; while (k < 2 && h > LAYERS[k].H * 0.96) k++; return k; };
+  const layerOf = (e, h) => { let k = e < 60 ? 0 : 1; while (k < 1 && h > LAYERS[k].H * 0.96) k++; return k; };
 
   // ---- vẽ một tấm tranh (một bên, một lớp, một đoạn 250 m) ở mức sáng lvl (0..3)
   function genTile(WD, k) {
@@ -25,11 +24,11 @@
     WD.collect(k.lid, k.dir, k.kmEnd, s0 - 14, s0 + TILE + 14, eLo, eHi, k.dO, (sg, e, bw, ds, hh, ty, lev, tone) => { const ae = Math.abs(e); if (layerOf(ae, hh) === k.layer) items.push({ sg, e: ae, bw, ds, h: hh, ty, lev, tone }); });
     items.sort((a, b) => b.e - a.e);
     // cây theo lớp phủ đất (rừng, công viên, vườn): thưa dần theo mật độ thật
-    { const mid = (L.eLo + L.eHi) / 2, step = k.layer === 0 ? 4 : k.layer === 1 ? 7 : 14;
+    { const mid = (L.eLo + L.eHi) / 2, step = k.layer === 0 ? 4 : 11;
       for (let sg = s0 - 8; sg < s0 + TILE + 8; sg += step) { const jit = hash(sg, 3 + k.layer) * step, e = sgn * (L.eLo + (L.eHi - L.eLo) * (0.2 + 0.6 * hash(sg, 11)));
         const cls = String.fromCharCode(WD.landG(k.lid, k.dir, k.kmEnd, sg + jit, e, k.dO) || 0), r = hash(sg + jit, 5);
         const dens = cls === 'f' ? 0.95 : cls === 's' ? 0.7 : cls === 'p' || cls === 'e' ? 0.5 : cls === 'o' ? 0.6 : cls === 'g' ? 0.12 : cls === 'a' ? 0.1 : 0;
-        if (r > dens) continue; const cr = (2.5 + 3.5 * hash(sg, 7)) * (k.layer === 2 ? 1.6 : 1), th = cr * (2.2 + hash(sg, 9)), x = X(sg + jit), conifer = cls === 'f' && hash(sg, 13) < 0.5;
+        if (r > dens) continue; const cr = (2.5 + 3.5 * hash(sg, 7)) * (k.layer === 1 ? 1.5 : 1), th = cr * (2.2 + hash(sg, 9)), x = X(sg + jit), conifer = cls === 'f' && hash(sg, 13) < 0.5;
         g.fillStyle = M([70, 52, 36]); g.fillRect(x - 0.25 * ppm, Y(th * 0.45), 0.5 * ppm, th * 0.45 * ppm);
         g.fillStyle = M(conifer ? [34, 72, 48] : [56 + 40 * hash(sg, 17), 108 + 24 * hash(sg, 19), 58]);
         if (conifer) { g.beginPath(); g.moveTo(x, Y(th)); g.lineTo(x - cr * 0.8 * ppm, Y(th * 0.3)); g.lineTo(x + cr * 0.8 * ppm, Y(th * 0.3)); g.closePath(); g.fill(); }
@@ -37,7 +36,7 @@
       } }
     for (const b of items) house(g, b, X(b.sg - b.ds / 2), Math.max(2, b.ds) * ppm, ppm, L.H, t, night, M, k.layer);
     // cột điện và dây dọc phố (chỉ lớp gần và giữa)
-    if (k.layer < 2) {
+    if (k.layer < 1) {
       const segs = WD.polesG(k.lid, k.dir, k.kmEnd, s0 - 40, s0 + TILE + 40, sgn > 0 ? L.eLo : -L.eHi, sgn > 0 ? L.eHi : -L.eLo, k.dO); const seen = new Set();
       g.strokeStyle = M([86, 82, 76]); g.lineWidth = Math.max(1, 0.28 * ppm);
       for (const q of segs) { const key = Math.round(q.s0 * 3) + ':' + Math.round(q.e0 * 3); if (seen.has(key)) continue; seen.add(key); const x0 = X(q.s0), x1 = X(q.s1);
@@ -53,7 +52,7 @@
     const hm = Math.min(b.h, H * 0.98), hp = hm * ppm, base = H * ppm, y0 = base - hp;
     const wall = ty === 1 ? (tone < 0.4 ? [188, 198, 210] : [226, 222, 212]) : ty === 2 ? [168, 172, 170] : ty === 3 ? [150, 158, 150] : ty === 4 ? [236, 230, 220] : WALLS[Math.floor(tone * 997) % WALLS.length];
     const roof = ty === 4 ? [48, 52, 58] : ty === 3 ? [118, 128, 134] : ty === 2 ? [140, 146, 150] : ROOFS[Math.floor(tone * 1531) % ROOFS.length];
-    const detail = layer < 2, wm = wpx / ppm;
+    const detail = layer < 1, wm = wpx / ppm;
     if (!flat) {
       const rh = Math.max(0.9, Math.min(wm * 0.22, 3.2)) * ppm, hh = hp - rh * 0.4;
       g.fillStyle = M(wall); g.fillRect(x, base - hh, wpx, hh);
@@ -78,26 +77,28 @@
   }
 
   // ---- chiếu dải tranh ra màn hình. o: { WD, lid, dir, kmEnd, dO, Tx, P (chiếu), PG (chiếu mặt đất), f, px, pw, zStart, zEnd, edge(side, z) (mép hành lang |e|),
-  //      tunnel(z), alpha(z), t (độ sáng 0..1), now }
+  //      tunnel(z), alpha(z), t (độ sáng 0..1), c (camera: cx, hy, f, pitch, camX, lane, off(z)), el(z) (độ cao ray so với mặt đất), CAMH, MIR }
   function draw(ctx, o) {
     frameNo++; const WD = o.WD, lvl = Math.max(0, Math.min(3, Math.round(o.t * 3))), t0 = performance.now(), want = [];
-    for (let k = 2; k >= 0; k--) for (const side of [1, -1]) { const L = LAYERS[k], ze = Math.min(o.zEnd, L.range);
+    for (let k = 1; k >= 0; k--) for (const side of [1, -1]) { const L = LAYERS[k], ze = Math.min(o.zEnd, L.range);
       for (let ti = Math.floor((o.Tx + o.zStart) / TILE); ti <= Math.floor((o.Tx + ze) / TILE); ti++) want.push({ layer: k, side, ti, lvl }); }
     // sinh các tấm còn thiếu (gần trước) trong ngân sách thời gian; khi thiếu nhiều (vừa vào tuyến) thì cho phép lâu hơn
     const missing = want.filter(w => !cache.has(keyOf(o, w))); missing.sort((a, b) => (a.ti - b.ti) || (a.layer - b.layer));
-    const budget = missing.length > 12 ? 30 : 7;
+    const budget = missing.length > 10 ? 22 : 4;
     for (const w of missing) { if (performance.now() - t0 > budget) break; if (!WD.loaded(o.lid, o.dir, o.kmEnd, w.ti * TILE - 60, (w.ti + 1) * TILE + 60)) continue; const key = keyOf(o, w); const cv = genTile(WD, { lid: o.lid, dir: o.dir, kmEnd: o.kmEnd, dO: o.dO, layer: w.layer, side: w.side, ti: w.ti, lvl }); cache.set(key, { cv, used: frameNo }); }
     if (cache.size > CAP) { const arr = [...cache.entries()].sort((a, b) => a[1].used - b[1].used); for (let i = 0; i < arr.length - CAP + 40; i++) cache.delete(arr[i][0]); }
-    const px0 = o.px - 24, px1 = o.px + o.pw + 24;
-    for (let k = 2; k >= 0; k--) for (const side of [1, -1]) {
+    const px0 = o.px - 24, px1 = o.px + o.pw + 24, c = o.c, f = c.f, cx = c.cx, hy = c.hy + c.pitch, camX = c.camX, lane = c.lane || 0, CAMH = o.CAMH, MIR = o.MIR;
+    const sx_ = (e, z) => cx + f * (MIR * (e - lane + c.off(z)) - camX) / z;                     // x màn hình của điểm cách tim đường e (m) ở độ sâu z, không cấp phát
+    const sy_ = (y, z) => hy + f * (CAMH - (y - o.el(z))) / z;                                  // y màn hình của điểm ở độ cao y trên mặt đất (mặt đất thấp hơn ray khi đi trên cao)
+    for (let k = 1; k >= 0; k--) for (const side of [1, -1]) {
       const L = LAYERS[k]; let z = Math.max(o.zStart, 4); const ze = Math.min(o.zEnd, L.range);
       while (z < ze) {
-        const e = side * Math.max(L.base, o.edge(side, z) + L.gap), dxdz = o.f * Math.abs(e) / (z * z), tb = (Math.floor((o.Tx + z) / TILE) + 1) * TILE - o.Tx;
-        const z2 = Math.min(z + Math.max(0.05, Math.min(40, 5 / Math.max(dxdz, 0.02))), ze, tb), x0 = o.P(e, 0, z)[0], x1 = o.P(e, 0, z2)[0];
+        const e = side * Math.max(L.base, o.edge(side, z) + L.gap), dxdz = f * Math.abs(e) / (z * z), tb = (Math.floor((o.Tx + z) / TILE) + 1) * TILE - o.Tx;
+        const z2 = Math.min(z + Math.max(0.05, Math.min(60, 9 / Math.max(dxdz, 0.02))), ze, tb), x0 = sx_(e, z), x1 = sx_(e, z2);
         if ((x0 < px0 && x1 < px0) || (x0 > px1 && x1 > px1) || o.tunnel(z)) { z = z2 > z ? z2 : z + 0.05; continue; }
         const ti = Math.floor((o.Tx + z + 0.001) / TILE), ent = cache.get(keyOf(o, { layer: k, side, ti, lvl })) || cache.get(keyOf(o, { layer: k, side, ti, lvl: lvl + 1 })) || cache.get(keyOf(o, { layer: k, side, ti, lvl: lvl - 1 }));
-        if (ent) { ent.used = frameNo; const cv = ent.cv, zm = (z + z2) / 2, yb = o.PG(e, 0, zm)[1], yt = o.PG(e, L.H, zm)[1], sx = (o.Tx + z - ti * TILE) * L.ppm, sw = Math.max(0.6, (z2 - z) * L.ppm), xa = Math.min(x0, x1), wd = Math.abs(x1 - x0) + 0.8;
-          if (yb - yt > 0.5 && sx >= 0 && sx + sw <= cv.width + 0.01) { ctx.globalAlpha = o.alpha(zm); ctx.drawImage(cv, sx, 0, sw, cv.height, xa, yt, wd, yb - yt); } }
+        if (ent) { ent.used = frameNo; const cv = ent.cv, zm = (z + z2) / 2, yb = sy_(0, zm), yt = sy_(L.H, zm), sx = (o.Tx + z - ti * TILE) * L.ppm, sw = Math.min(Math.max(0.6, (z2 - z) * L.ppm), cv.width - sx), xa = Math.min(x0, x1), wd = Math.abs(x1 - x0) + 0.8;
+          if (yb - yt > 0.5 && sx >= 0 && sw > 0) { ctx.globalAlpha = o.alpha(zm); ctx.drawImage(cv, sx, 0, sw, cv.height, xa, yt, wd, yb - yt); } }
         z = z2 > z ? z2 : z + 0.05;
       }
     }
