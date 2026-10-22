@@ -63,7 +63,7 @@
     ctx.restore();
   }
   // tên ảnh dùng cho từng loại tàu (N700-8 tạm dùng toa N700S; ảnh chỉ có ở rail.kychung.com)
-  const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', 'E5+E6': 'e5', 'E5+E8': 'e5', 'N700S-6': 'kamome' };
+  const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'kamome' };
   function sprOf(R, key) { const s = R.sprites && R.sprites[SMAP[key] || 'n700']; return s && s.ready ? s : null; }
   const hOf = (R, key, k) => { const s = sprOf(R, key); return s ? s.meta.height * (k / s.meta.pxPerMeter) : 24; };
   // vẽ cả đoàn có số toa đúng: ảnh thật ghép từ toa đuôi, toa giữa (lặp), toa mũi; nếu thiếu ảnh thì vẽ tạm bằng code
@@ -234,10 +234,11 @@
     const Ld = W.lead;
     if (Ld && Ld.phase !== 'end') { const lenL = Ld.veh.len, dl = Ld.x - T.x; if (dl > 0 && dl - lenL < 1800) { const xf = map(dl), xr = map(Math.max(dl - lenL, 0)), q = sc(Math.max(dl - lenL, 0)); if (xf - xr > 2) fleet(ctx, R, Ld.veh.key, xf, base, xf - xr, hOf(R, Ld.veh.key, K) * SV * q, 0.95); } }
     // tàu ngược chiều: đi sang phải (đông/bắc) thì được vẽ ĐÈ lên tàu của ta; đi sang trái thì nằm phía SAU tàu của ta
-    const drawOpp = () => { if (T.v > 20 && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 1) { const ok_ = W.line.meta.defVeh, wv = K * 0.8 * root.Sim.VEH[ok_].len, hh = hOf(R, ok_, K * 0.8) * SV, front = px + pw - u * (pw + wv); fleet(ctx, R, ok_, front, base - 4, wv, hh, 0.92, true); } } };
+    const drawOpp = () => { if (T.v > 20 && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 1) { const ok_ = root.Sim.oppKey(W, T, t0), wv = K * 0.8 * root.Sim.VEH[ok_].len, hh = hOf(R, ok_, K * 0.8) * SV, front = px + pw - u * (pw + wv); fleet(ctx, R, ok_, front, base - 4, wv, hh, 0.92, true); } } };
     if (flipX) drawOpp();
     // ---- đoàn tàu người lái
-    const psp = sprOf(R, T.veh.key);
+    const drawOwn = (fx, key, lead) => {
+    const psp = sprOf(R, key);
     if (psp) {
       const spr = psp.meta, img = psp.img, f = K / spr.pxPerMeter, srcW = Math.min(spr.width, Math.ceil((fx - px + 4) / f)), dh = spr.height * f * SV;
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(fx - srcW * f, base - 1, srcW * f, 3);
@@ -246,8 +247,12 @@
         const tc = scene._tint.getContext('2d'); tc.clearRect(0, 0, scene._tint.width, scene._tint.height); tc.drawImage(img, spr.width - srcW, 0, srcW, spr.height, 0, 0, srcW * f, dh); tc.globalCompositeOperation = 'source-atop'; tc.fillStyle = 'rgba(6,10,24,' + (0.5 * night) + ')'; tc.fillRect(0, 0, ow, oh); tc.globalCompositeOperation = 'source-over';
         ctx.drawImage(scene._tint, 0, 0, ow, oh, fx - srcW * f, base - (spr.railY * f * SV) + 2, ow, oh);
       } else ctx.drawImage(img, spr.width - srcW, 0, srcW, spr.height, fx - srcW * f, base - (spr.railY * f * SV) + 2, srcW * f, dh);
-      if (root.Sim.lampOn(W, T)) { ctx.fillStyle = 'rgba(255,245,190,' + (0.16 + 0.12 * night + 0.05 * Math.sin(now / 120)) + ')'; ctx.beginPath(); ctx.moveTo(fx - 2, base - 22); ctx.lineTo(fx + 100 + 60 * night, base - 32); ctx.lineTo(fx + 100 + 60 * night, base - 3); ctx.closePath(); ctx.fill(); }
-    } else trainProc(ctx, fx, base, T.veh.len * K, 26, T.veh.key, 1, false);
+      if (lead && root.Sim.lampOn(W, T)) { ctx.fillStyle = 'rgba(255,245,190,' + (0.16 + 0.12 * night + 0.05 * Math.sin(now / 120)) + ')'; ctx.beginPath(); ctx.moveTo(fx - 2, base - 22); ctx.lineTo(fx + 100 + 60 * night, base - 32); ctx.lineTo(fx + 100 + 60 * night, base - 3); ctx.closePath(); ctx.fill(); }
+    } else trainProc(ctx, fx, base, (root.Sim.VEH[key] || T.veh).len * K, 26, key, 1, false);
+    };
+    { const parts = T.veh.parts; if (parts) { let off = 0; parts.forEach((pk, qi) => { const pxF = fx - off * K; if (pxF > px - 20) drawOwn(pxF, pk, qi === 0); off += root.Sim.VEH[pk].len + T.veh.gap + (T.gapX || 0); }); } else drawOwn(fx, T.veh.key, true); }
+    // phần đoàn đã tách ở lại sân ga phía sau (hoặc đoàn Tohoku đang chờ ở phía trước để ghép)
+    for (const pk of W.parked || []) { const pv = root.Sim.VEH[pk.key], dl = pk.front - T.x; if (dl > -pv.len - 20 && dl < 1800) { const xf = fx + dl * K, wv = pv.len * K; if (xf - wv < px + pw + 50 && xf > px - 50) fleet(ctx, R, pk.key, xf, base, wv, hOf(R, pk.key, K) * SV, 1); } }
     if (!flipX) drawOpp();
     // tàu vượt qua đường thông qua khi ta đỗ ở ga tránh (quét qua màn hình ~ 9 giây)
     const pl = T.phase === 'dwell' ? (W.passers && W.passers[T.k]) : null;

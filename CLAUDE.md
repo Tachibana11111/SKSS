@@ -27,4 +27,5 @@
 
 ## Cập nhật 2026-10-22
 - Game có 7 tuyến: `tsk`, `toh` (+Hokkaido), `jts`, `hok`, `nks`, `yam`, `aki`. Tham số riêng từng tuyến nằm trong `LINE_META` (`sim.js`) và `tools/build_struct.py`; xem `docs/11-mo-rong-tuyen.md`. Thêm tuyến mới = thêm danh sách ga trong `build_lines.py`, cấu hình trong `build_struct.py`, `LINE_META`, rồi chạy lại `python -X utf8 tools/build_lines.py` và `node tests/run.js`.
-- Hình E7/E6/E8/H5 chưa có: đang dùng tạm mô hình E5. Không tải thêm ảnh khi chưa hỏi người dùng.
+- Hình E7/E6/E8/H5/923/E926 đã có (người dùng tự tải, xem `assets/NGUON.md`). Chưa có E2 và N700-8 thật. Không tải thêm ảnh khi chưa hỏi người dùng.
+- Mini-Shinkansen: mini luôn ở phía bắc đoàn ghép (đầu khi xuống, đuôi khi lên). Camera cuối đoàn: phím B.

@@ -9,7 +9,7 @@
   const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   const hash = n => { n = (n ^ 61) ^ (n >>> 16); n = n + (n << 3); n = n ^ (n >>> 4); n = Math.imul(n, 0x27d4eb2d); n = n ^ (n >>> 15); return (n >>> 0) / 4294967296; };
   const mixc = (c1, c2, t) => 'rgb(' + [0, 1, 2].map(i => Math.round(lerp(c1[i], c2[i], t))).join(',') + ')';
-  const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', 'E5+E6': 'e5', 'E5+E8': 'e5', 'N700S-6': 'kamome' };
+  const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'kamome' };
   const stCache = {};
 
   // chiếu điểm (X,Y,Z) lên màn hình; c = {cx, hy, f, camX, pitch, lane, off(Z)}
@@ -129,6 +129,7 @@
     };
     const drawTracks = (zFrom) => {
       const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]];
+      if (L.meta.junction) { const jc = L.meta.junction, sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 1600, b = W.dir === 'down' ? sj + 1600 : sj; if (b > zf && a < ZF) parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95]); }       // đường chính Tohoku
       for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + 630 < ZN || q.d - 1150 > ZF) continue; parts.push([z => lerp(t.plain, t.x, LAY.spread(T.x + z, q.m.s)), Math.max(zf, q.d - 1150), q.d + 630, 0.95]); }
       for (const [xf, z0, z1, a] of parts) ballastStrip(xf, z0, z1, a);       // đá dăm trước: đường nhánh không còn đè lên ray đường chính
       for (const [xf, z0, z1] of parts) railStrip(xf, z0, z1, true);
@@ -271,9 +272,19 @@
         z = z2;
       }
     };
-    if (T.v > 20 && !S.oppHidden(W, T)) for (const t0 of W.opposing || []) { const VR = 200, zN = (t0 - W.t) * VR, key = W.line.meta.defVeh, veh = S.VEH[key] || S.VEH.N700; if (zN > 900 || zN < -veh.len - 20) continue;
-      const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), sp = R.sprites && R.sprites[SMAP[key] || 'n700'];
-      items.push({ z: Math.max(zN, ZN + 1), fn: () => { if (zN > ZN && ricon) drawFront(ricon, oppAt(zN), zN, 1); if (zN < 60) slices(sp, veh.len, zN, fxp, 1); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
+    if (T.v > 20 && !S.oppHidden(W, T)) for (const t0 of W.opposing || []) { const VR = 200, zN = (t0 - W.t) * VR, key = S.oppKey(W, T, t0), veh = S.VEH[key] || S.VEH.N700; if (zN > 900 || zN < -veh.len - 20) continue;
+      const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), oic = iconFor(veh.parts ? veh.parts[0] : key);
+      items.push({ z: Math.max(zN, ZN + 1), fn: () => { if (zN > ZN && oic) drawFront(oic, oppAt(zN), zN, 1); if (zN < 60) slicesVeh(veh, zN, fxp, 1); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
+    function slicesVeh(veh, zRef, fxp, sign) {      // đoàn ghép: vẽ lần lượt từng đoàn, đoàn sau cách đoàn trước một khe nối
+      if (!veh.parts) { slices(R.sprites && R.sprites[SMAP[veh.key] || 'n700'], veh.len, zRef, fxp, sign); return; }
+      let off = 0; for (const pk of veh.parts) { const pv = S.VEH[pk]; slices(R.sprites && R.sprites[SMAP[pk] || 'n700'], pv.len, zRef + sign * -1 * 0 + (sign < 0 ? -off : off), fxp, sign); off += pv.len + veh.gap; }
+    }
+    // đoàn Tohoku đang chờ ở sân ga (phía trước, cùng đường): thấy đuôi nó; phần đã tách ở lại thì nằm sau lưng
+    for (const pk of W.parked || []) { const pv = S.VEH[pk.key], tail0 = pk.front - pv.len - T.x, tail = Math.max(tail0, 8); if (pk.kind !== 'wait' || tail0 < 0 || tail0 > 4000) continue;
+      const qL = sts.find(q => Math.abs(q.m.s - pk.front) < 400), X = qL ? qL.st.ours.x : 0, pic = iconFor(pk.key);
+      items.push({ z: tail, fn: () => { if (pic) drawFront(pic, X, tail, fadeA(tail)); else { const w = 3.4 * c.f / tail, a = P(X, 0.1, tail); ctx.fillStyle = '#d8dee6'; ctx.fillRect(a[0] - w / 2, a[1] - w * 1.1, w, w * 1.1); } } }); }
+    for (const sb of W.stabled || []) { const veh = S.VEH[sb.key], zN = sb.front - T.x; if (zN - veh.len > 1700 || zN < -20) continue; const X = sb.track.x;       // tàu đỗ ở đường phụ của ga
+      items.push({ z: Math.max(zN - veh.len, ZN + 1), fn: () => slicesVeh(veh, zN, X, -1) }); }
     const pl = T.phase === 'dwell' ? (W.passers && W.passers[T.k]) : null;
     if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const key = p.v || (W.line.meta.defVeh), veh = S.VEH[key] || S.VEH.N700, sp = R.sprites && R.sprites[SMAP[key] || 'n700'], zFront = -veh.len + u * (veh.len + 520), fxp = 0 + (c.lane > 0 ? 1.85 : -1.85);
       items.push({ z: Math.max(zFront, ZN + 2), fn: () => slices(sp, veh.len, zFront, fxp, -1) }); } }
@@ -364,5 +375,14 @@
     ctx.globalAlpha = 1;
   }
 
-  root.CabView = { draw, proj, cellObject, hash, CAMH, PEDGE, PH, ADJ };
+  // Camera ở buồng lái CUỐI đoàn nhìn ngược về phía sau: dựng một "thế giới phản chiếu" (hướng chạy đảo, toạ độ s' = chiều dài tuyến − s) rồi vẽ bằng cùng hàm draw
+  function drawRear(ctx, px, py, pw, ph, W, T, R) {
+    const L = W.line, Lm = L.kmEnd * 1000, W2 = Object.create(W), T2 = Object.create(T), mz = z => Object.assign({}, z, { s0: Lm - z.s1, s1: Lm - z.s0 });
+    W2.dir = W.dir === 'down' ? 'up' : 'down'; W2.zones = (W.zones || []).map(mz); W2.workers = []; W2.wires = []; W2.animals = []; W2.opposing = []; W2.passers = {};
+    W2.dead = (W.dead || []).map(d => Object.assign({}, d, { s0: Lm - d.s1, s1: Lm - d.s0, hzA: d.hzB, hzB: d.hzA })); W2.xings = (W.xings || []).map(g => Object.assign({}, g, { s: Lm - g.s })).sort((a, b) => a.s - b.s);
+    W2.parked = (W.parked || []).filter(p => p.kind === 'left').map(p => ({ key: p.key, front: Lm - (p.front - root.Sim.VEH[p.key].len), kind: 'wait' }));
+    W2.stabled = []; W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => Object.assign({}, m, { s: Lm - m.s })); T2.k = T.M.length - 1 - T.k; T2.forced = -1; W2.player = T2;
+    draw(ctx, px, py, pw, ph, W2, T2, R);
+  }
+  root.CabView = { draw, drawRear, proj, cellObject, hash, CAMH, PEDGE, PH, ADJ };
 })(typeof window !== 'undefined' ? window : globalThis);

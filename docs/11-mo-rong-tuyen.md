@@ -49,6 +49,17 @@ Mọi tuyến chỉ dùng cá nhân. Dữ liệu sinh bằng `tools/build_lines.
   - **Omagari:** tàu đổi chiều chạy (switchback) [N]; game chỉ có thông báo, giữ nguyên hướng nhìn [I].
 - **Tàu (VEH):** E7 12 toa 300 m, 9,6 MW; E6/E8 7 toa 148,7 m ~5 MW, ~336 t; ghép E5 + E6/E8 17 toa 404 m. Số công suất/khối lượng là [I]; chiều dài E6/E8 là xấp xỉ [K].
 
+## 3b. Ghép / tách đoàn có cảnh (2026-10-22)
+
+- **Vị trí mini trong đoàn [theo người dùng]:** mini luôn ở phía bắc đoàn: **đầu đoàn khi rời Tokyo** (E6 + E5, E8 + E5), **đuôi đoàn khi về Tokyo** (E5 + E6, E5 + E8). Tài liệu tìm được (shinkansenkenkyu.com, JR East) mô tả Hayabusa 1–10 / Komachi 11–17 nhưng không chốt rõ chiều gắn khi về Tokyo [?]; phần suy luận hình học dẫn tới cách bố trí trên.
+- **Xuất phát từ Tokyo (chuyến ghép):** đoàn Tohoku ở phía sau chạy tới nối vào trong ~30 s, nối xong ~45 s mới đóng cửa được.
+- **Chiều xuống tới Morioka/Fukushima:** mini tách khỏi đoàn Tohoku; phần Tohoku **ở lại sân ga** (hiện trong khung 2D, bản đồ nhỏ, camera cuối đoàn) rồi mini chạy tiếp sang tuyến riêng. Chuyến bắt đầu đúng ga tách cũng có phần Tohoku đứng phía sau.
+- **Chiều lên:** đoàn Tohoku chờ sẵn ở ga; vạch dừng của mini lùi về phía sau đúng chiều dài E5 + khe nối 2,5 m; nối xong đầu đoàn nhảy tới đầu tàu Tohoku.
+- **Đường chính Tohoku tách/nhập** cách ga ~0,9 km (`junction` trong `LINE_META`): vẽ trong khung buồng lái và bản đồ nhỏ. Hình học nhánh là [I].
+- **Camera cuối đoàn (phím B hoặc nút trên thanh trên):** dựng "thế giới phản chiếu" (hướng đảo, s' = chiều dài tuyến − s) rồi dùng lại bộ vẽ buồng lái.
+- **Tàu ngược chiều trên đoạn Tohoku** có xác suất là đoàn ghép (mini ở đuôi nếu ta đi xuống, ở đầu nếu ta đi lên); **tàu đỗ ở đường phụ** của ga (~30% ga có đường phụ). Tỉ lệ là [I].
+- Akita: mọi chuyến đều ghép cả hai chiều (đúng như người dùng nêu). Yamagata: một số chuyến chạy một mình (121, 129, 158, 160) [D].
+
 ## 4. Hạn chế đã biết
 
 - **Hình tàu:** E7, E6, E8, H5 dùng tạm mô hình E5 (xanh lá), Kamome dùng ảnh N700S-8000 đã có. Cần tải thêm ảnh từ rail.kychung.com cho E7/W7, E6, E8, H5 (xin phép người dùng trước khi tải).

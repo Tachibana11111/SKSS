@@ -1,7 +1,7 @@
 // Bố cục TOÀN MÀN HÌNH 16:9 (canvas 1920×1080): buồng lái phủ kín làm khung chính; bảng điều khiển ở đáy (cần kéo, đồng hồ phụ, đồng hồ tốc độ, nút + TIMS, cần phanh);
 // điện đàm trên trái; hai khung phụ (bản đồ nhỏ, 2D) trên phải, bấm vào để hoán đổi làm khung chính (Tab xoay vòng); H = chế độ tập trung; O = ẩn/hiện điện đàm; F11 = toàn màn hình.
 // File này dùng các hàm/biến toàn cục của index.html (ctx, txt, panel, button, lamp, btns, doAct, W, T, SPR, FR, TP, AUD, radio, wrapText, hhmm, fmt, Tutorial...).
-const ui = { layout: 'full', main: 'cab', focus: false, radio: true, cur: 'classic' };
+const ui = { layout: 'full', main: 'cab', focus: false, radio: true, cur: 'classic', rear: false };
 const FW = 1920, FH = 1080, TOPH = 58, DASH_Y = 676;
 const MAIN_R = [0, TOPH, FW, DASH_Y - TOPH];
 const SLOT_PIP = [1566, 74, 336, 212];                  // khung phụ góc trên phải
@@ -22,7 +22,7 @@ function cycleMain() { ui.main = VIEWS[(VIEWS.indexOf(ui.main) + 1) % 3]; }
 // vẽ một góc nhìn vào hình chữ nhật (x,y,w,h)
 function drawViewIn(kind, x, y, w, h) {
   ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-  if (kind === 'cab') CabView.draw(ctx, x, y, w, h, W, T, { sprites: SPR, fronts: FR, aud: AUD });
+  if (kind === 'cab') (ui.rear ? CabView.drawRear : CabView.draw)(ctx, x, y, w, h, W, T, { sprites: SPR, fronts: FR, aud: AUD });
   else if (kind === 'top') TopView.draw(ctx, x, y, w, h, W, T, { sprites: SPR, tops: TP, aud: AUD });
   else { Scene.draw(ctx, x, y, w, h, W, T, { sprites: SPR, nextTarget: Sim.nextTarget, aud: AUD }); if (Sim.inTunnel(W, T.x)) { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x, y, w, h); } }
   ctx.restore();
@@ -97,14 +97,15 @@ function drawTopBar(blink) {
     if (m.stop || showAll) txt(m.name, px, i % 2 ? 20 : 54, m.stop ? '#e8eef5' : '#7a8ea5', '10px system-ui', 'center'); });
   if (W.lead && W.lead.phase !== 'end') { const lx = pos(W.lead.x); if (lx > x0 - 6 && lx < x1 + 6) { ctx.fillStyle = '#ffa24a'; ctx.fillRect(lx - 4, ly - 8, 8, 16); } }
   ctx.fillStyle = '#4aa3ff'; ctx.fillRect(pos(T.x) - 6, ly - 9, 12, 18);
-  txt((delay >= 0 ? '+' : '') + Math.round(delay) + ' s' + (T.started ? '' : ' (chưa chạy)'), 1738, 30, Math.abs(delay) <= 15 ? '#4cd68a' : delay > 0 ? '#ff6464' : '#ffc247', 'bold 18px system-ui', 'right');
-  txt('lệch kế hoạch', 1738, 46, '#7a8ea5', '10px system-ui', 'right');
+  txt((delay >= 0 ? '+' : '') + Math.round(delay) + ' s' + (T.started ? '' : ' (chưa chạy)'), 1698, 30, Math.abs(delay) <= 15 ? '#4cd68a' : delay > 0 ? '#ff6464' : '#ffc247', 'bold 18px system-ui', 'right');
+  txt('lệch kế hoạch', 1698, 46, '#7a8ea5', '10px system-ui', 'right');
   // nút nhỏ: điện đàm, HUD, toàn màn hình
   // ba ô vuông biểu tượng cạnh nhau: điện đàm (O), HUD / tập trung (H), toàn màn hình (F11)
-  const SZ = 44, GAP = 6, bx0 = FW - 16 - 3 * SZ - 2 * GAP, by0 = 7;
-  iconBtn(bx0, by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
-  iconBtn(bx0 + SZ + GAP, by0, SZ, 'hud', !ui.focus, 'H', () => { ui.focus = !ui.focus; });
-  iconBtn(bx0 + 2 * (SZ + GAP), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
+  const SZ = 44, GAP = 6, bx0 = FW - 16 - 4 * SZ - 3 * GAP, by0 = 7;
+  iconBtn(bx0, by0, SZ, 'rear', ui.rear, 'B', () => { ui.rear = !ui.rear; });
+  iconBtn(bx0 + (SZ + GAP), by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
+  iconBtn(bx0 + 2 * (SZ + GAP), by0, SZ, 'hud', !ui.focus, 'H', () => { ui.focus = !ui.focus; });
+  iconBtn(bx0 + 3 * (SZ + GAP), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
 }
 
 // công tắc ATC lớn, nổi bật: xanh khi bật, vàng khi chờ xác nhận, đỏ nhấp nháy khi đang cắt
@@ -120,7 +121,8 @@ function atcButton(x0, y0, w0, h0, blink) {
 function iconBtn(x, y, sz, kind, on, key, fn) {
   ctx.fillStyle = on ? '#2a6fd6' : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.fill(); ctx.strokeStyle = on ? '#6fb0ff' : '#3b516a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.stroke();
   const cx = x + sz / 2, cy = y + sz / 2 - 2; ctx.strokeStyle = on ? '#fff' : '#9fb4c9'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  if (kind === 'radio') { ctx.beginPath(); ctx.roundRect(cx - 12, cy - 10, 24, 17, 4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 5, cy + 7); ctx.lineTo(cx - 8, cy + 13); ctx.lineTo(cx + 1, cy + 7); ctx.stroke(); for (const dy of [-4, 1]) { ctx.beginPath(); ctx.moveTo(cx - 7, cy + dy); ctx.lineTo(cx + 7, cy + dy); ctx.stroke(); } }
+  if (kind === 'rear') { ctx.beginPath(); ctx.roundRect(cx - 13, cy - 10, 26, 18, 3); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy - 1, 5, Math.PI * 0.2, Math.PI * 1.55); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 6, cy - 7); ctx.lineTo(cx - 3, cy - 1); ctx.lineTo(cx - 9, cy - 2); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(cx - 9, cy + 8); ctx.lineTo(cx - 9, cy + 13); ctx.moveTo(cx + 9, cy + 8); ctx.lineTo(cx + 9, cy + 13); ctx.stroke(); }
+  else if (kind === 'radio') { ctx.beginPath(); ctx.roundRect(cx - 12, cy - 10, 24, 17, 4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 5, cy + 7); ctx.lineTo(cx - 8, cy + 13); ctx.lineTo(cx + 1, cy + 7); ctx.stroke(); for (const dy of [-4, 1]) { ctx.beginPath(); ctx.moveTo(cx - 7, cy + dy); ctx.lineTo(cx + 7, cy + dy); ctx.stroke(); } }
   else if (kind === 'hud') { ctx.beginPath(); ctx.roundRect(cx - 13, cy - 10, 26, 20, 3); ctx.stroke(); ctx.fillRect(cx - 9, cy - 6, 10, 4); ctx.fillRect(cx - 9, cy + 1, 18, 3); }
   else { for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.moveTo(cx + sx * 4, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 4); ctx.stroke(); } }
   ctx.lineCap = 'butt'; txt(key, cx, y + sz - 3, on ? '#dbe9ff' : '#7a8ea5', 'bold 9px system-ui', 'center'); btns.push({ x, y, w: sz, h: sz, fn });

@@ -202,6 +202,7 @@ addEventListener('keydown', e => {
   if (k === 'Tab' && ui.cur === 'full') { cycleMain(); e.preventDefault(); return; }
   if ((k === 'h' || k === 'H') && ui.cur === 'full') { ui.focus = !ui.focus; return; }
   if ((k === 'o' || k === 'O') && ui.cur === 'full') { ui.radio = !ui.radio; return; }
+  if (k === 'b' || k === 'B') { ui.rear = !ui.rear; return; }
   if (k === 'F11') { toggleFullscreen(); e.preventDefault(); return; }
   if (k === 'F2') { ui.layout = ui.layout === 'full' ? 'classic' : 'full'; syncLayout(); e.preventDefault(); return; }
   if (k === 'r' || k === 'R') { if (replaying) { replaying = null; } if (tutLessonActive) { startLesson(Tutorial.S.lesson); } else startDrive(recipe); e.preventDefault(); return; }
@@ -311,7 +312,7 @@ function wrapText(str, maxW) {
 }
 const KEYS = {
   drive: [['Lái', null], ['W / S', 'cần gia tốc tăng / giảm'], ['↓ / ↑', 'cần phanh tăng / giảm (nhả về 0 mới kéo gia tốc)'], ['Space', 'về N (không kéo)'], ['Q', 'phanh khẩn'], ['Enter', 'đóng cửa (đèn sáng thì kéo cần để đi)'], ['C', 'tốc độ không đổi'], ['[ / ]', 'chỉnh tốc độ không đổi ∓5'],
-    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['Tab', 'đổi khung nhìn chính (buồng lái / bản đồ nhỏ / 2D)'], ['H', 'chế độ tập trung (ẩn bớt bảng)'], ['O', 'ẩn / hiện điện đàm'], ['F11', 'toàn màn hình'], ['F2', 'bố cục toàn màn hình ⇄ cổ điển'], ['P', 'tạm dừng'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
+    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['B', 'camera ở cuối đoàn (nhìn ngược về sau)'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['Tab', 'đổi khung nhìn chính (buồng lái / bản đồ nhỏ / 2D)'], ['H', 'chế độ tập trung (ẩn bớt bảng)'], ['O', 'ẩn / hiện điện đàm'], ['F11', 'toàn màn hình'], ['F2', 'bố cục toàn màn hình ⇄ cổ điển'], ['P', 'tạm dừng'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
   dispatch: [['Điều độ', null], ['Bấm vào tàu', 'chọn tàu, rồi dùng nút lệnh'], ['Tab', 'chọn tàu kế'], ['Space', 'dừng / chạy'], ['1 – 4', 'tốc độ mô phỏng'], ['Chung', null], ['P', 'tạm dừng'], ['R', 'chạy lại']]
 };
 function drawKeys(m) {
@@ -484,7 +485,7 @@ function draw() {
     ctx.fillStyle = '#243447'; ctx.beginPath(); ctx.roundRect(LX + LW - 14, VT, 8, viewH, 4); ctx.fill(); ctx.fillStyle = radio.drag ? '#6fb0ff' : '#4a6a8f'; ctx.beginPath(); ctx.roundRect(LX + LW - 14, ty, 8, th, 4); ctx.fill(); }
 }
 function drawCab(px, py, pw, ph) {
-  CabView.draw(ctx, px, py, pw, ph, W, T, { sprites: SPR, fronts: FR, aud: AUD });
+  (ui.rear ? CabView.drawRear : CabView.draw)(ctx, px, py, pw, ph, W, T, { sprites: SPR, fronts: FR, aud: AUD });
   const j = T.phase === 'dwell' ? T.k : Sim.nextTarget(T), d = T.M[j].s - T.x; ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
   const lines = T.phase === 'run' ? [(d >= 0 ? 'Còn ' + (d >= 100 ? Math.round(d) : d.toFixed(1)) + ' m tới vạch' : 'Quá vạch ' + (-d).toFixed(1) + ' m')] : T.phase === 'dwell' ? ['Lệch vạch ' + (-d >= 0 ? '+' : '') + (-d).toFixed(2) + ' m'] : [];
   if (lines.length && !tutLessonActive) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(px + 8, py + 8, 190, 26); txt(lines[0], px + 16, py + 26, Math.abs(d) < 60 ? '#fff' : '#c8d4e2', 'bold 14px system-ui'); }

@@ -278,7 +278,8 @@ for e in read_east_mini():
     seq = make_seq(line, raw)
     if not seq: continue
     d_ = 'down' if seq[-1][0] > seq[0][0] else 'up'
-    solo = {'yam': 'E8', 'aki': 'E6'}[line]; comb = {'yam': 'E5+E8', 'aki': 'E5+E6'}[line]; ci = IDX[line][cj]
+    solo = {'yam': 'E8', 'aki': 'E6'}[line]; ci = IDX[line][cj]
+    comb = (solo + '+E5') if d_ == 'down' else ('E5+' + solo)         # mini ở phía bắc đoàn: đầu đoàn khi rời Tokyo, đuôi đoàn khi về Tokyo [theo người dùng]
     rec = dict(t=e['typ'], n=e['no'], d=d_, v=(comb if d_ == 'down' else solo) if e['coupled'] else solo, s=seq, src='E', mir=0)
     if e['coupled']: rec['cp'] = [ci, solo if d_ == 'down' else comb]        # [chỉ số ga ghép/tách, loại tàu sau khi ghép/tách]
     trains[line][(e['typ'], e['no'], d_)] = rec

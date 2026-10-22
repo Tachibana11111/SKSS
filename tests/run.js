@@ -287,7 +287,7 @@ section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đ�
   { const r = runAuto('nks', N.trains.find(t => t.d === 'down' && t.s[0][0] === 0 && t.s[t.s.length - 1][0] === 4), 0, 4); ok(r.T.finished && Math.max(...r.T.results.map(x => Math.abs(x.delay))) < 90, 'nks: Takeo-Onsen → Nagasaki đúng giờ'); }
   // --- tàu ghép Komachi / Tsubasa
   const A = Sim.lineOf('aki'), iMor = A.stations.findIndex(s => s.en === 'Morioka'), iAk = A.stations.length - 1, recK = A.trains.find(t => t.d === 'down' && t.cp && t.s[0][0] === 0);
-  { const W = Sim.createWorld('aki', Sim.makeTrip('aki', recK, 0, iMor), { diff: 'easy', seed: 1, lead: false, events: false }); ok(W.player.veh.key === 'E5+E6' && W.player.veh.cars === 17, 'Komachi: xuất phát ghép Hayabusa + Komachi (17 toa)'); }
+  { const W = Sim.createWorld('aki', Sim.makeTrip('aki', recK, 0, iMor), { diff: 'easy', seed: 1, lead: false, events: false }); ok(W.player.veh.key === 'E6+E5' && W.player.veh.cars === 17 && W.player.veh.parts[0] === 'E6', 'Komachi chiều xuống: mini ở ĐẦU đoàn (E6 + E5, 17 toa)'); }
   { const trip = Sim.makeTrip('aki', recK, 0, iAk), W = Sim.createWorld('aki', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player; let n = 0, seen = null, early = false;
     while (!T.finished && n++ < 4e6 && W.t < 60000) { Sim.tick(W, 0.05, {}, true); if (T.coup) seen = seen || { t: W.t, k: T.k }; if (T.coup && T.phase === 'run') early = true; }
     ok(seen && T.veh.key === 'E6' && T.finished, 'Komachi chiều xuống: tách ở Morioka, chạy tiếp E6 tới Akita'); ok(!early, 'không chạy khi đang tách toa'); ok(Math.abs(T.veh.len - 148.7) < 0.1, 'E6 một mình dài 148,7 m');
@@ -304,6 +304,24 @@ section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đ�
     { const W = mkW(), T = W.player, g = W.xings[3]; g.blocked = true; g.until = 1e9; let n = 0; while (!T.finished && n++ < 4e6 && T.x < g.s + 100 && W.t < 6000) Sim.tick(W, 0.05, {}, true); ok(T.xingHit === 0 && T.x < g.s - 20, 'tự lái dừng trước đường ngang có xe kẹt', [T.x, g.s]); }
     { const W = mkW(), T = W.player, g = W.xings[3]; Sim.requestClose(T); let n = 0; while (n++ < 4000 && T.door !== 'closed') Sim.tick(W, 0.1, {}, true); g.blocked = true; g.until = 1e9; n = 0; while (n++ < 4e5 && T.x < g.s + 10) { T.pw = 8; Sim.tick(W, 0.05, {}, false); }
       ok(T.xingHit === 1 && T.cut, 'không phanh: va chạm tại đường ngang', T.xingHit); ok(Sim.score(T, W).xingPen === 25, 'phạt va chạm đường ngang −25'); } }
+  // --- cảnh ghép/tách: ghép ở Tokyo, tách ở Morioka (phần Tohoku ở lại), ghép lại khi về
+  { const W = Sim.createWorld('aki', Sim.makeTrip('aki', recK, 0, iAk), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+    ok(T.coup && T.coup.kind === 'join0' && T.gapX > 40, 'xuất phát từ Tokyo: đang ghép, đoàn sau còn cách xa'); ok(!Sim.requestClose(T), 'đang ghép ở Tokyo: chưa đóng cửa được');
+    for (let n = 0; n < 950; n++) Sim.tick(W, 0.05, {}, false); ok(!T.coup && T.gapX === 0, "ghép xong ở Tokyo sau ~45 s"); ok(Sim.requestClose(T), 'ghép xong: đóng cửa được');
+    let n = 0; while (!T.finished && n++ < 4e6 && W.t < 60000 && !(T.k === iMor && T.phase === 'dwell' && !T.coup && T.cp.done)) { if (T.phase === 'dwell' && !T.coup) Sim.requestClose(T); Sim.tick(W, 0.05, {}, true); }
+    ok(T.veh.key === 'E6' && W.parked.length === 1 && W.parked[0].key === 'E5' && W.parked[0].kind === 'left' && Math.abs(W.parked[0].front - (T.x - 148.7 - Sim.COUPLE_GAP)) < 0.5, 'tách ở Morioka: E5 ở lại sân ga ngay sau E6'); }
+  { const rec6 = A.trains.find(t => t.d === 'up' && t.cp), W = Sim.createWorld('aki', Sim.makeTrip('aki', rec6, rec6.s[0][0], 0), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, m = T.M.find(q => q.i === rec6.cp[0]);
+    ok(W.parked.length === 1 && W.parked[0].kind === 'wait' && m.sOrig !== undefined && Math.abs(m.sOrig - m.s - 253 - Sim.COUPLE_GAP) < 0.5, 'chiều lên: đoàn Tohoku chờ sẵn, vạch dừng lùi đúng chiều dài E5 + khe nối');
+    const s0 = m.sOrig; let n = 0; while (!T.finished && n++ < 4e6 && W.t < 60000 && !(T.cp.done && !T.coup)) Sim.tick(W, 0.05, {}, true);
+    ok(T.veh.key === 'E5+E6' && W.parked.length === 0 && Math.abs(T.x - s0) < 3 && T.veh.parts[0] === 'E5', 'ghép xong: đoàn E5 + E6 (mini ở đuôi), đầu đoàn nhảy tới vị trí tàu Tohoku', [T.x, s0]); }
+  // --- tàu ngược chiều là đoàn ghép, tàu đỗ ở đường phụ, nhánh Tohoku
+  { const Wd = { line: A, dir: 'down', seed: 1 }, Tt = { x: 100 * 1000 }, keys = new Set(); for (let t0 = 100; t0 < 2000; t0 += 37) keys.add(Sim.oppKey(Wd, Tt, t0));
+    ok(keys.has('E5') && [...keys].some(k => k.startsWith('E5+')), 'ngược chiều trên đoạn Tohoku: có E5 riêng và đoàn ghép (mini ở đuôi khi ta đi xuống)', [...keys].join());
+    const Wu = { line: A, dir: 'up', seed: 1 }, ku = new Set(); for (let t0 = 100; t0 < 2000; t0 += 37) ku.add(Sim.oppKey(Wu, { x: (A.kmEnd - 100) * 1000 }, t0)); ok([...ku].some(k => k.endsWith('+E5')), 'ta đi lên: tàu ngược chiều đi xuống có mini ở đầu');
+    ok(Sim.oppKey(Wd, { x: 560 * 1000 }, 123) === 'E6', 'trên đường mini: tàu ngược chiều là mini đi một mình'); }
+  { const W = { line: A, dir: 'down' }, sj = 497400; ok(Sim.trunkOff(W, sj - 500) === 0 && Math.abs(Sim.trunkOff(W, sj + 3000)) > 30, 'nhánh Tohoku tách ra sau ga Morioka (xuống)'); const Wu = { line: A, dir: 'up' }; const sju = (A.kmEnd - 497.4) * 1000; ok(Math.abs(Sim.trunkOff(Wu, sju - 3000)) > 30 && Sim.trunkOff(Wu, sju + 500) === 0, 'nhánh Tohoku nhập vào trước ga Morioka (lên)'); }
+  { let cnt = 0, tot = 0; for (const ln of ['tsk', 'toh', 'jts']) { const L2 = Sim.lineOf(ln), rec7 = L2.trains.find(t => t.d === 'down' && t.s.filter(e => !e[3]).length > 5), st = rec7.s.filter(e => !e[3]); for (const sd of [1, 2, 3, 4]) { const W = Sim.createWorld(ln, Sim.makeTrip(ln, rec7, st[0][0], st[st.length - 1][0]), { diff: 'easy', seed: sd, lead: false, events: false }); tot += W.player.M.length; cnt += W.stabled.length; } }
+    ok(cnt > 0 && cnt < tot * 0.5, 'tàu đỗ ở đường phụ: có nhưng ít', cnt + '/' + tot); }
   // --- dữ liệu các tuyến mới
   for (const ln of ['jts', 'hok', 'nks', 'yam', 'aki']) { const L2 = Sim.lineOf(ln); ok(L2.trains.some(t => t.d === 'down') && L2.trains.some(t => t.d === 'up'), `${ln}: có cả hai chiều`); ok(L2.stations.every(st => st.lat && st.lon), `${ln}: ga có toạ độ`); ok(L2.meta.pa && L2.meta.defVeh && Sim.VEH[L2.meta.defVeh], `${ln}: có thông số tuyến`); }
 }
