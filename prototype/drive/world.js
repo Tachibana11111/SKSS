@@ -16,6 +16,8 @@
     for (let i = 0; i < na; i++) { const c = String.fromCharCode(dv.getUint8(p)), n = dv.getUint16(p + 2, true); p += 4; o.a.push({ c, ...pts(n) }); }
     for (const [k, cnt] of [['r', nr], ['w', nw], ['x', nx]]) for (let i = 0; i < cnt; i++) { const cl = dv.getUint8(p), br = dv.getUint8(p + 1), n = dv.getUint16(p + 2, true); p += 4; o[k].push({ cl, br, ...pts(n) }); }
     if (p + 4 <= buf.byteLength) { const n = dv.getUint32(p, true); o.g = new Uint8Array(buf, p + 4, n); }
+    o.b.sort((u, v) => u.s - v.s);                                   // tòa nhà theo s: tìm nhị phân đoạn đang nhìn thấy
+    for (const k of ['a', 'r', 'w', 'x']) for (const f of o[k]) { let lo = 1e9, hi = -1e9; for (let i = 0; i < f.s.length; i++) { if (f.s[i] < lo) lo = f.s[i]; if (f.s[i] > hi) hi = f.s[i]; } f.lo = lo; f.hi = hi; }
     return o;
   }
   function chunk(lid, k) {
@@ -49,22 +51,24 @@
     const P = (s, d) => { const z = zOf(s); return [o.X(eOf(d), z), o.Y(z)]; };
     for (const cls of ORDER) {
       ctx.fillStyle = pal[cls]; ctx.beginPath();
-      for (const c of cs) for (const A of c.d.a) { if (A.c !== cls) continue; for (let i = 0; i < A.s.length; i++) { const [x, y] = P(c.s0 + A.s[i], A.d[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); }
+      for (const c of cs) for (const A of c.d.a) { if (A.c !== cls || c.s0 + A.hi < a - 60 || c.s0 + A.lo > b + 60) continue; for (let i = 0; i < A.s.length; i++) { const [x, y] = P(c.s0 + A.s[i], A.d[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); }
       ctx.fill();
     }
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    const strokeLines = (key, colf, wf) => { for (const c of cs) for (const R of c.d[key]) { ctx.strokeStyle = colf(R); ctx.lineWidth = Math.max(1, wf(R) * o.ky); ctx.beginPath(); for (let i = 0; i < R.s.length; i++) { const [x, y] = P(c.s0 + R.s[i], R.d[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); } };
+    const strokeLines = (key, colf, wf) => { for (const c of cs) for (const R of c.d[key]) { if (c.s0 + R.hi < a - 60 || c.s0 + R.lo > b + 60) continue; ctx.strokeStyle = colf(R); ctx.lineWidth = Math.max(1, wf(R) * o.ky); ctx.beginPath(); for (let i = 0; i < R.s.length; i++) { const [x, y] = P(c.s0 + R.s[i], R.d[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); } };
     strokeLines('w', R => pal.water, R => R.cl === 1 ? 2.5 : 8);
     strokeLines('x', R => pal.rail, R => 2.2);
     strokeLines('r', R => R.br === 2 ? pal.road[1] : pal.road[R.cl], R => ROAD_W[R.cl] + (R.br === 1 ? 1.5 : 0));
     // toà nhà: hình chữ nhật xoay; nhà cao tầng đậm hơn và có bóng đổ
     const fx = o.ky * 0; void fx;
-    for (const c of cs) for (const B of c.d.b) {
+    for (const c of cs) {
+      const arr = c.d.b; let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (c.s0 + arr[m].s < a - 60) lo = m + 1; else hi = m; }
+      for (let q = lo; q < arr.length; q++) { const B = arr[q]; if (c.s0 + B.s > b + 60) break; if (Math.abs(B.d) > 420) continue;
       const s = c.s0 + B.s, ca = Math.cos(B.a), sa = Math.sin(B.a), hw = B.w / 2, hl = B.l / 2, cor = [[-hw, -hl], [hw, -hl], [hw, hl], [-hw, hl]];
       ctx.fillStyle = pal.bldg[B.t] || pal.bldg[0]; ctx.beginPath();
       cor.forEach(([u, v], i) => { const [x, y] = P(s + u * ca - v * sa, B.d + u * sa + v * ca); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); ctx.fill();
       if (B.lev >= 6) { ctx.strokeStyle = o.dark ? 'rgba(0,0,0,.5)' : 'rgba(40,40,50,.45)'; ctx.lineWidth = 1; ctx.stroke(); }
-    }
+    } }
     return true;
   }
   // Lớp phủ đất tại (s, d) theo hệ chiều xuống: mã ký tự của lớp (f rừng, a ruộng, h nhà ở, w nước...) hoặc 0 nếu không có dữ liệu / đất trống
@@ -79,15 +83,16 @@
   // các toà nhà thật trong khoảng z [za, zb] phía trước và |e| ≤ lat: [{z, e, w (ngang), dz (dọc), h, t, lev}], z là mép gần
   function buildings(lid, dir, kmEnd, Tx, za, zb, lat, dOurs) {
     const up = dir === 'up', Lm = kmEnd * 1000, a = up ? Lm - (Tx + zb) : Tx + za, b = up ? Lm - (Tx + za) : Tx + zb, out = [];
-    for (const c of chunks(lid, a - 40, b + 40)) for (const B of c.d.b) {
-      const s = c.s0 + B.s; if (s < a - 40 || s > b + 40) continue;
+    for (const c of chunks(lid, a - 40, b + 40)) { const arr = c.d.b; let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (c.s0 + arr[m].s < a - 40) lo = m + 1; else hi = m; }
+     for (let q = lo; q < arr.length; q++) { const B = arr[q];
+      const s = c.s0 + B.s; if (s > b + 40) break;
       const e = up ? (dOurs || 0) - B.d : B.d - (dOurs || 0); if (Math.abs(e) > lat) continue;
       const ca = Math.abs(Math.cos(B.a)), sa = Math.abs(Math.sin(B.a)), ds = B.w * ca + B.l * sa, dd = B.w * sa + B.l * ca;      // hộp bao theo trục s và trục d
       const z = (up ? Lm - s - Tx : s - Tx) - ds / 2;
       const lev = B.lev || (B.t === 1 ? 4 : B.t === 2 ? 2 : B.t === 3 ? 1 : B.t === 4 ? 1.5 : 2);
       out.push({ z, e, w: dd, dz: ds, h: lev * 3.2 + 1.5, t: B.t, lev: B.lev });
-    }
+    } }
     return out;
   }
-  root.World = { drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
+  root.World = { parse, drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
 })(typeof window !== 'undefined' ? window : globalThis);

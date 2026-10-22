@@ -233,8 +233,8 @@
       const zMin = zExit === null ? 6 : zExit + 2, tgt = zExit === null ? items : outItems;
       const bands = [[10, 160, 16, 0], [160, 760, 38, 1], [760, 2400, 120, 2]];
       if (wdOn) {                              // toà nhà thật (lọc theo khoảng cách và kích thước để giữ tốc độ vẽ)
-        let rb = WD.buildings(W.lineId, W.dir, L.kmEnd, T.x, zMin, 2400, 420, wdOurs).filter(b => b.z >= zMin && (b.z < 700 || b.h > 18 || b.w * b.dz > 700) && (b.z < 1500 || b.h > 30));
-        rb.sort((a, b) => a.z - b.z); if (rb.length > 650) rb.length = 650;
+        let rb = WD.buildings(W.lineId, W.dir, L.kmEnd, T.x, zMin, 2400, 420, wdOurs).filter(b => b.z >= zMin && (b.z < 150 || (b.z < 500 && b.w * b.dz > 80) || (b.z < 1000 && (b.h > 14 || b.w * b.dz > 500)) || b.h > 28));
+        rb.sort((a, b) => a.z - b.z); if (rb.length > 400) rb.length = 400;
         for (const b of rb) {
           const qz = inStationZone(b.z, b.z + b.dz), ext = qz ? qz.st.extent : [Math.min(0, oppAt(b.z)), Math.max(0, oppAt(b.z))];
           if (b.e > 0 ? b.e - b.w / 2 < ext[1] + 8 : b.e + b.w / 2 > ext[0] - 8) continue;
