@@ -105,13 +105,17 @@
   }
   // cột điện dọc đường bộ nhỏ (kiểu Nhật: cột bê tông cách ~35 m, dây chằng chịt): các đoạn cột liên tiếp [{z0, e0, z1, e1}] cho khoảng z [za, zb], |e| ≤ lat
   const polesCache = new Map();
+  function polesFor(c) {
+    let P = polesCache.get(c.d); if (P) return P; P = [];
+    for (const R of c.d.r) { if (R.cl < 2 || R.cl > 4 || R.br) continue; let carry = 17; const pts = [];
+      for (let i = 1; i < R.s.length; i++) { const x0 = R.s[i - 1], y0 = R.d[i - 1], x1 = R.s[i], y1 = R.d[i], L = Math.hypot(x1 - x0, y1 - y0); let t = carry; while (t < L) { pts.push([c.s0 + x0 + (x1 - x0) * t / L, y0 + (y1 - y0) * t / L]); t += 35; } carry = t - L; }
+      for (let i = 1; i < pts.length; i++) if (Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]) < 60) P.push([pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]]); }
+    polesCache.set(c.d, P); return P;
+  }
   function poles(lid, dir, kmEnd, Tx, za, zb, lat, dOurs) {
     const up = dir === 'up', Lm = kmEnd * 1000, a = up ? Lm - (Tx + zb) : Tx + za, b = up ? Lm - (Tx + za) : Tx + zb, out = [];
     for (const c of chunks(lid, a - 60, b + 60)) {
-      let P = polesCache.get(c.d); if (!P) { P = []; for (const R of c.d.r) { if (R.cl < 2 || R.cl > 4 || R.br) continue; let carry = 17; const pts = [];
-          for (let i = 1; i < R.s.length; i++) { const x0 = R.s[i - 1], y0 = R.d[i - 1], x1 = R.s[i], y1 = R.d[i], L = Math.hypot(x1 - x0, y1 - y0); let t = carry; while (t < L) { pts.push([c.s0 + x0 + (x1 - x0) * t / L, y0 + (y1 - y0) * t / L]); t += 35; } carry = t - L; }
-          const seg = []; for (let i = 1; i < pts.length; i++) if (Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]) < 60) seg.push([pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]]); P.push(...seg); }
-        polesCache.set(c.d, P); }
+      const P = polesFor(c);
       for (const g of P) { const sm = Math.max(g[0], g[2]), sn = Math.min(g[0], g[2]); if (sm < a - 20 || sn > b + 20) continue;
         const e0 = up ? (dOurs || 0) - g[1] : g[1] - (dOurs || 0), e1 = up ? (dOurs || 0) - g[3] : g[3] - (dOurs || 0); if (Math.abs(e0) > lat || Math.abs(e1) > lat) continue;
         out.push({ id: Math.round(g[0] * 4) + ':' + Math.round(g[1] * 4), z0: up ? Lm - g[0] - Tx : g[0] - Tx, e0, z1: up ? Lm - g[2] - Tx : g[2] - Tx, e1 }); }
@@ -130,5 +134,30 @@
       }
     }
   }
-  root.World = { forBuildings, version: () => ver, _r: reg, poles, parse, drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
+  // Thu thập theo hệ toạ độ trò chơi (sg: s dọc chiều chạy; e: ngang, dương = trái đường ta) cho dải tranh phong cảnh (strips.js)
+  const dataS = (dir, Lm, sg) => dir === 'up' ? Lm - sg : sg;
+  function collect(lid, dir, kmEnd, sg0, sg1, eLo, eHi, dOurs, cb) {      // toà nhà trong [sg0, sg1] × [eLo, eHi]: cb(sg, e, w ngang, ds dọc, h, t, lev, tone)
+    const up = dir === 'up', Lm = kmEnd * 1000, a = up ? Lm - sg1 : sg0, b = up ? Lm - sg0 : sg1;
+    for (const c of chunks(lid, a - 40, b + 40)) {
+      const arr = c.d.b; let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (c.s0 + arr[m].s < a - 40) lo = m + 1; else hi = m; }
+      for (let q = lo; q < arr.length; q++) { const B = arr[q], s = c.s0 + B.s; if (s > b + 40) break;
+        const e = up ? (dOurs || 0) - B.d : B.d - (dOurs || 0); if (e < eLo || e > eHi) continue; const sg = up ? Lm - s : s; if (sg < sg0 || sg > sg1) continue;
+        cb(sg, e, B.dd, B.ds, B.lv * 3.2 + 1.5, B.t, B.lev, B.tone); }
+    }
+  }
+  function landG(lid, dir, kmEnd, sg, e, dOurs) { const s = dir === 'up' ? kmEnd * 1000 - sg : sg, d = dir === 'up' ? (dOurs || 0) - e : e + (dOurs || 0); return landAt(lid, s, d); }
+  function polesG(lid, dir, kmEnd, sg0, sg1, eLo, eHi, dOurs) {       // đoạn dây điện giữa các cột liền kề, trong hệ toạ độ trò chơi
+    const up = dir === 'up', Lm = kmEnd * 1000, a = up ? Lm - sg1 : sg0, b = up ? Lm - sg0 : sg1, out = [];
+    for (const c of chunks(lid, a - 60, b + 60)) { const P = polesFor(c); for (const g of P) { if (Math.max(g[0], g[2]) < a - 20 || Math.min(g[0], g[2]) > b + 20) continue;
+        const e0 = up ? (dOurs || 0) - g[1] : g[1] - (dOurs || 0), e1 = up ? (dOurs || 0) - g[3] : g[3] - (dOurs || 0); if (e0 < eLo || e0 > eHi) continue;
+        out.push({ s0: up ? Lm - g[0] : g[0], e0, s1: up ? Lm - g[2] : g[2], e1 }); } }
+    return out;
+  }
+  // đã nạp xong mọi đoạn dữ liệu phủ [sg0, sg1] (hệ trò chơi)? (gọi cũng kích hoạt nạp)
+  function loaded(lid, dir, kmEnd, sg0, sg1) {
+    const Lm = kmEnd * 1000, a = dir === 'up' ? Lm - sg1 : sg0, b = dir === 'up' ? Lm - sg0 : sg1; let ok = true;
+    for (let k = Math.floor((a - 60) / CH); k <= Math.floor((b + 60) / CH); k++) { if (k < 0) continue; const id = srcOf(lid, k * CH + CH / 2), key = id + '/' + k; if (cache.get(key) === undefined || cache.get(key) === 'loading') { chunk(id, k); ok = false; } }
+    return ok;
+  }
+  root.World = { loaded, collect, landG, polesG, forBuildings, version: () => ver, _r: reg, poles, parse, drawTop, chunks, srcOf, landAt, buildings, toSD, has, ready: () => Object.values(have).some(v => v) };
 })(typeof window !== 'undefined' ? window : globalThis);

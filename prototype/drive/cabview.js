@@ -115,16 +115,20 @@
     const fg = ctx.createLinearGradient(0, c.hy, 0, c.hy + 60); fg.addColorStop(0, mixc(rgbOf(hor), [110, 118, 128], wx)); fg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.globalAlpha = 0.55; ctx.fillStyle = fg; ctx.fillRect(px - 60, c.hy + 2, pw + 120, 60); ctx.globalAlpha = 1;
 
     };
+    // mặt cầu rộng thêm để chứa đường nhánh / đường chính của tuyến cha khi còn sát đường ta (< 28 m), thu lại êm khi chúng tách xa
+    const jw = o => Math.max(0, Math.min(1, (28 - Math.abs(o)) / 6));
+    const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
+    const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
     if (zExit === null) backdrop();
+    // ---- dải tranh phong cảnh OSM hai bên (strips.js): thay các khối nhà 3D rời rạc; chỉ vẽ khi đã có dữ liệu và không ở trong hầm
+    const useStrips = wdOn && !!root.Strips;
+    if (zExit === null && useStrips) root.Strips.draw(ctx, { WD, lid: W.lineId, dir: W.dir, kmEnd: L.kmEnd, dO: wdOurs, Tx: T.x, P, PG, f: c.f, px, pw, zStart: 4, zEnd: 3300, edge: (side, z) => side > 0 ? Math.max(xr(z), 0) : Math.max(-xl(z), 0),
+      tunnel: z => S.structAt(L, km(z)) === 't', alpha: z => fadeA(z), t: day * (1 - wx * 0.4) });
 
     // ---- cầu (sông bên dưới) và cầu cạn: bản mặt cầu bê tông rộng ra theo sân ga, lan can và gờ bệ
     if (zExit === null) {
       const runs = []; let prev = null; for (let z = 0; z <= ZF; z += 20) { const k = S.structAt(L, km(z)); if (k === prev) runs[runs.length - 1][1] = z + 20; else { runs.push([z, z + 20, k]); prev = k; } }
       const colTop = mixc([22, 26, 32], [150, 156, 160], day * (1 - wx * 0.35)), colSide = mixc([14, 16, 20], [104, 110, 116], day * (1 - wx * 0.35)), colDeck = mixc([20, 24, 28], [112, 116, 118], day * (1 - wx * 0.35));
-      // mặt cầu rộng thêm để chứa đường nhánh / đường chính của tuyến cha khi còn sát đường ta (< 28 m), thu lại êm khi chúng tách xa
-      const jw = o => Math.max(0, Math.min(1, (28 - Math.abs(o)) / 6));
-      const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
-      const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
       for (const [za, zb, k] of runs) {
         if (k === 'b') strip(() => -70, () => 70, -LAY.ELEV.b, za, zb, mixc([10, 22, 34], [66, 104, 132], day * (1 - wx * 0.4)));
         if (k === 'v' || k === 'b') { strip(xl, xr, -0.02, za, zb, colDeck); for (const xf of [xr, xl]) { wall(xf, 0, 1.0, za, zb, colTop); wall(xf, -1.4, 0, za, zb, colSide); } }
@@ -232,7 +236,7 @@
     {
       const zMin = zExit === null ? 6 : zExit + 2, tgt = zExit === null ? items : outItems;
       const bands = [[10, 160, 16, 0], [160, 760, 38, 1], [760, 2400, 120, 2]];
-      if (wdOn) {                              // toà nhà thật (lọc theo khoảng cách và kích thước để giữ tốc độ vẽ)
+      if (wdOn && !useStrips) {                // toà nhà thật 3D (chỉ khi không có dải tranh)
         let cnt = 0;                           // duyệt trực tiếp dữ liệu (không cấp phát, thứ tự cố định theo vị trí => không nhấp nháy)
         WD.forBuildings(W.lineId, W.dir, L.kmEnd, T.x, zMin, 2400, 420, wdOurs, (bz, be, bw, bdz, bh, bt, blev, btone) => {
           if (bz < zMin) return; if (bz > 2400 || cnt >= 420) return false;
@@ -244,7 +248,7 @@
           tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) });
         });
       }
-      if (wdOn) {                              // cột điện và dây điện dọc phố
+      if (wdOn && !useStrips) {                // cột điện và dây điện dọc phố 3D (chỉ khi không có dải tranh)
         const seen = new Set();
         for (const g of WD.poles(W.lineId, W.dir, L.kmEnd, T.x, Math.max(zMin, 4), 420, 150, wdOurs)) {
           if (g.z0 < zMin || g.z1 < zMin) continue; const qz = inStationZone(g.z0, g.z1), ext = qz ? qz.st.extent : [Math.min(0, oppAt(g.z0)), Math.max(0, oppAt(g.z0))];
@@ -254,7 +258,7 @@
             ctx.lineWidth = Math.max(0.6, 0.07 * c.f / g.z0); ctx.strokeStyle = night > 0.35 ? '#26262a' : '#4a4743'; for (const dy of [0, -0.7, -1.4]) { const q0 = P(g.e0, 9 + dy, g.z0), q1 = P(g.e1, 9 + dy, g.z1); ctx.beginPath(); ctx.moveTo(q0[0], q0[1]); ctx.quadraticCurveTo((q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2 + 3 * c.f / g.z0, q1[0], q1[1]); ctx.stroke(); } ctx.globalAlpha = 1; } });
         }
       }
-      for (const [za, zb, step, bi] of bands) for (let ci = Math.floor((T.x + za) / step); ci * step - T.x < zb; ci++) {
+      if (!useStrips) for (const [za, zb, step, bi] of bands) for (let ci = Math.floor((T.x + za) / step); ci * step - T.x < zb; ci++) {
         const z = ci * step - T.x; if (z < za * 0.9) continue; const bio = biomeAt(z);
         for (const side of [-1, 1]) { let o = cellObject(ci + bi * 100000, bio, side); if (wdOn) o = null; for (const bw of wdOn ? ['mountain', 'field'] : []) { const o2 = cellObject(ci + bi * 100000, bw, side); if (!o2 || o2.kind === 'building' || o2.kind === 'house') continue;      // có dữ liệu thật: cây ở rừng/công viên, ruộng và cây thưa ở đất nông nghiệp; nhà đã lấy từ toà nhà thật
             const zq = z + (hash(ci * 3 + side) - 0.5) * step * 0.6, ofs = o2.w / 2 + o2.lat * 0.5 + 8, Xq = (side > 0 ? 1 : -1) * (Math.abs(side > 0 ? Math.max(0, oppAt(zq)) : Math.min(0, oppAt(zq), ADJ)) + ofs + 12), cls = String.fromCharCode(landCls(zq, Xq) || 0);
