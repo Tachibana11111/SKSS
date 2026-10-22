@@ -28,3 +28,5 @@ data-osm/
 
 # dữ liệu OSM đã biên dịch (phái sinh, ODbL): không đưa vào repo
 prototype/drive/world/
+
+tools/_tmp/

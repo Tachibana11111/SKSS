@@ -9,7 +9,7 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const SPR = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'n700s' };
   const COL = { n700: '#e4eaf1', n700s: '#eaf0f6', s800: '#d9dde2', e5: '#27a07f' };
-  const cache = {};
+  const cache = {}, tvCache = {};
 
   // vị trí (đông, bắc) tính bằng mét của tàu, nội suy từ toạ độ ga theo km: dùng cho lưới Bắc-Nam / Đông-Tây
   function enAt(L, km) { const st = L.stations; let i = 0; while (i + 2 < st.length && st[i + 1].km < km) i++; const a = st[i], b = st[i + 1], t = clamp((km - a.km) / (b.km - a.km), -0.2, 1.2), lat = lerp(a.lat, b.lat, t), lon = lerp(a.lon, b.lon, t); return [lon * 111320 * Math.cos(lat * Math.PI / 180), lat * 110574]; }
@@ -38,7 +38,14 @@
     for (const [za, zb, k] of runs) { const y0 = Y(zb), y1 = Y(za); ctx.fillStyle = k === 'b' ? (dark ? '#0d2234' : '#2a4a66') : k === 'v' ? (dark ? '#161d26' : '#2c3640') : (dark ? '#0f1a14' : '#27402f'); ctx.fillRect(cx - Rr, y0, 2 * Rr, y1 - y0); }
     // cảnh vật thật OpenStreetMap (world.js): cách tàu ≤ ~8 m dùng tỉ lệ ngang phóng đại như đường ray, xa hơn dùng đúng tỉ lệ thật để toà nhà không bị kéo dãn
     if (root.World) { const D0 = 9, u = e => Math.abs(e) <= D0 ? e * kx : Math.sign(e) * (D0 * kx + (Math.abs(e) - D0) * ky);
-      root.World.drawTop(ctx, { lid: W.lineId, dir: W.dir, kmEnd: L.kmEnd, Tx: T.x, zLo, zHi, X: (e, z) => cx - (u(e - lane) + off(z) * kc), Y, ky, dark }); }
+      // lớp nền OSM chỉ vẽ lại khi tàu đi quá ~5 m (hoặc có dữ liệu mới / đổi cỡ): các khung ở giữa dùng lại ảnh đã vẽ, dịch theo quãng đường (đỡ vài ms mỗi khung ở khu đô thị)
+      const key = W.lineId + W.dir + (dark ? 'n' : 'd') + Math.round(Rr), M2 = 8, side = Math.ceil(2 * Rr + 2 * M2); let tc = tvCache[key];
+      if (!tc) tc = tvCache[key] = { cv: typeof document !== 'undefined' ? document.createElement('canvas') : null, x0: -1e9, ver: -1, lane: 0 };
+      if (tc.cv && (Math.abs(T.x - tc.x0) > 5 || tc.ver !== root.World.version() || tc.cv.width !== side || Math.abs(lane - tc.lane) > 0.4)) {
+        if (tc.cv.width !== side) { tc.cv.width = side; tc.cv.height = side; } const g = tc.cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, side, side); g.save(); g.translate(-(cx - Rr - M2), -(cy - Rr - M2));
+        root.World.drawTop(g, { lid: W.lineId, dir: W.dir, kmEnd: L.kmEnd, Tx: T.x, zLo, zHi, X: (e, z) => cx - (u(e - lane) + off(z) * kc), Y, ky, dark }); g.restore(); tc.x0 = T.x; tc.ver = root.World.version(); tc.lane = lane; tc.cx = cx; tc.cy = cy; }
+      if (tc.cv && tc.x0 > -1e8) ctx.drawImage(tc.cv, cx - Rr - M2, cy - Rr - M2 + (T.x - tc.x0) * ky);
+      else root.World.drawTop(ctx, { lid: W.lineId, dir: W.dir, kmEnd: L.kmEnd, Tx: T.x, zLo, zHi, X: (e, z) => cx - (u(e - lane) + off(z) * kc), Y, ky, dark }); }
     // lưới theo hướng địa lý (mỗi 100 m, song song Bắc-Nam và Đông-Tây): xoay cùng bản đồ để thấy hướng đi thay đổi
     { const [E0, N0] = enAt(L, km(0)), g = 100; ctx.save(); ctx.translate(cx, cy); ctx.rotate(-heading * Math.PI / 180); ctx.strokeStyle = dark ? 'rgba(120,150,180,.12)' : 'rgba(255,255,255,.08)'; ctx.lineWidth = 1;
       for (let e = Math.ceil((E0 - 2 * Rr / ky) / g) * g; e < E0 + 2 * Rr / ky; e += g) { const x = (e - E0) * ky; ctx.beginPath(); ctx.moveTo(x, -2 * Rr); ctx.lineTo(x, 2 * Rr); ctx.stroke(); }

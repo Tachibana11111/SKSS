@@ -376,4 +376,22 @@ section('16. Joetsu/Hokuriku tách khỏi Tohoku ở Omiya, Hokuriku tách khỏ
     const hasPass = Object.values(W.passers).some(a => a.some(p => p)); ok(typeof hasPass === 'boolean', 'passers chạy được với tàu tuyến cha'); }
 }
 
+section('17. Ga: ghi riêng từng đường, tường bao, hồ sơ hình học');
+{
+  const LAY = require(path.join(DRIVE, 'layout.js'));
+  for (const code of Object.keys(LAY.TOK)) for (const dir of ['down', 'up']) {
+    const st = LAY.station(code, dir, 0), outer = st.tracks.filter(t => !t.main);
+    ok(outer.every(t => t.in0 !== undefined && t.len >= 40 && t.len <= 300), `${code} ${dir}: mọi đường ngoài có ghi riêng (in0/len)`);
+    ok(outer.every(t => t.in0 - t.len >= 380), `${code} ${dir}: ghi cuối cùng xong trước khi vào sân ga (còn ≥ 380 m)`, outer.map(t => [t.in0, t.len]));
+    ok(st.tracks.filter(t => t.main).every(t => LAY.trackW(t, 0, 0) === 1), `${code} ${dir}: đường chính luôn trọng số 1`);
+    const rk = outer.map(t => t.rank).sort((a, b) => a - b); ok(rk.every((v, i) => v === i), `${code} ${dir}: thứ hạng ghi liên tục`);
+    for (const t of outer) { const sM = 10000; ok(LAY.trackW(t, sM - 1300, sM) === 0 && LAY.trackW(t, sM - 380, sM) === 1 && LAY.trackW(t, sM + 800, sM) === 0, `${code} ${dir}: đường ${t.c} toả ra rồi gom lại`); }
+  }
+  ok(LAY.spread(9000, 10000) === 0 && LAY.spread(9600, 10000) === 1 && LAY.spread(10600, 10000) === 0, 'spread cả ga: 0 xa, 1 trong ga');
+  // hồ sơ hình học: bảng ngang phía trước/sau khớp công thức z²/2R trong đường cong đều (đã có test 10), thêm: cao độ cầu cạn / nền đất
+  { const L = Sim.lineOf('toh'), vk = L.struct.find(g => g[2] === 'v' && g[1] - g[0] > 3), x = Sim.sOfKm((vk[0] + vk[1]) / 2, 'down', L.kmEnd), el = LAY.elevTable(L, Sim, 'down', x, 100, 10); ok(el[0] > 8 && el[0] <= 9.01, 'cao độ trên cầu cạn ≈ 9 m', el[0]); }
+  { const L = Sim.lineOf('toh'), gk = L.struct.find(g => g[2] === 'g' && g[1] - g[0] > 3); if (gk) { const x = Sim.sOfKm((gk[0] + gk[1]) / 2, 'down', L.kmEnd), el = LAY.elevTable(L, Sim, 'down', x, 100, 10); ok(Math.abs(el[0] - 2) < 0.1, 'cao độ trên nền đất ≈ 2 m', el[0]); } }
+  { const t0 = Date.now(); const L = Sim.lineOf('tsk'); for (let i = 0; i < 2000; i++) LAY.lateralTable(L, Sim, 'down', 100000 + i * 3, 2600, 10); ok(Date.now() - t0 < 400, 'bảng ngang 2000 lần < 0,4 s (hồ sơ tính trước)', Date.now() - t0); }
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
