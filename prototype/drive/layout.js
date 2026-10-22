@@ -44,7 +44,9 @@
   // trọng số "đã chia ra các đường của ga" tại vị trí s (m): 0 ở xa, 1 trong phạm vi sân ga; sM = vị trí vạch dừng
   // mức "đã toả hết" của cả ga (theo đường ngoài cùng): dùng cho bề rộng hành lang; từng đường có trackW riêng (ghi riêng)
   const spread = (s, sM) => smooth(sM - 760, sM - 430, s) * (1 - smooth(sM + 40, sM + 380, s));
-  const trackW = (t, s, sM) => t.in0 === undefined ? 1 : smooth(sM - t.in0, sM - t.in0 + t.len, s) * (1 - smooth(sM + t.out0, sM + t.out0 + t.len, s));
+  // ghi thật: dịch ngang tuyến tính (góc không đổi ~1:12), tách khỏi / nhập vào đường kia tại một điểm rõ ràng (hình chữ Y), không toả mượt mơ hồ
+  const ramp = (a, b, x) => clamp((x - a) / (b - a), 0, 1);
+  const trackW = (t, s, sM) => t.in0 === undefined ? 1 : ramp(sM - t.in0, sM - t.in0 + t.len, s) * (1 - ramp(sM + t.out0, sM + t.out0 + t.len, s));
 
   // đường cong: bảng [km0, km1, R, sg] theo km; trả về độ cong (1/m, dương = rẽ phải theo chiều chạy) tại s (m dọc tuyến theo chiều chạy)
   function curvatureAt(L, Sim, dir, s) {

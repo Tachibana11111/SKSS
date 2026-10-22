@@ -33,7 +33,7 @@
     // camera sau: toạ độ phản chiếu nên vùng toả đường của ga (trước vạch 1150 m, sau vạch 630 m) và ghi chữ X đảo phía; spread phải tính trong hệ toạ độ gốc
     const ADJ = W.rear ? -ADJ0 : ADJ0;       // nhìn lùi: ta chạy làn trái nên đường ngược chiều nằm bên TRÁI của camera
     // camera sau rẽ sớm hơn thực tế một đoạn rearShift (m) cho dễ nhìn
-    const rr = !!W.rear, Lm2 = L.kmEnd * 1000, spreadF = rr ? (a, b) => { const so = Lm2 - a, sm = Lm2 - b, se = so <= sm + 30 ? Math.min(so + (W.rearShift || 0), sm + 30) : so; return LAY.spread(se, sm); } : LAY.spread, trackWF = rr ? (t, a, b) => { const so = Lm2 - a, sm = Lm2 - b, se = so <= sm + 30 ? Math.min(so + (W.rearShift || 0), sm + 30) : so; return LAY.trackW(t, se, sm); } : (t, a, b) => LAY.trackW(t, a, b), FA = rr ? 630 : 1150, FB = rr ? 1150 : 630, XA = rr ? 720 : 1300, XB = rr ? 1300 : 720;
+    const rr = !!W.rear, Lm2 = L.kmEnd * 1000, physLoZ = (rr ? -15 : -440) - T.x, physHiZ = (rr ? Lm2 + 440 : Lm2 + 15) - T.x, spreadF = rr ? (a, b) => { const so = Lm2 - a, sm = Lm2 - b, se = so <= sm + 30 ? Math.min(so + (W.rearShift || 0), sm + 30) : so; return LAY.spread(se, sm); } : LAY.spread, trackWF = rr ? (t, a, b) => { const so = Lm2 - a, sm = Lm2 - b, se = so <= sm + 30 ? Math.min(so + (W.rearShift || 0), sm + 30) : so; return LAY.trackW(t, se, sm); } : (t, a, b) => LAY.trackW(t, a, b), FA = rr ? 630 : 1150, FB = rr ? 1150 : 630, XA = rr ? 720 : 1300, XB = rr ? 1300 : 720;
     const hour = ((W.trip.t0 + W.t) % 86400 + 86400) % 86400 / 3600;
     const day = smooth(5.3, 7.3, hour) * (1 - smooth(16.8, 19.0, hour)), night = 1 - day, dusk = Math.max(0, 1 - Math.abs(hour - 6.3) / 1.2) + Math.max(0, 1 - Math.abs(hour - 17.8) / 1.3);
     const inSnow = W.zones.some(z => z.kind === 'snow' && T.x >= z.s0 - 3000 && T.x < z.s1), rain = W.rainHere;
@@ -149,12 +149,20 @@
     const drawTracks = (zFrom) => {
       const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]];
       for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj; if (b > zf && a < ZF) parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95], [z => S.trunkOff(W, T.x + z) + ADJ, Math.max(zf, a), Math.min(ZF, b), 0.95]); }       // đường chính của tuyến cha (Tohoku / Joetsu)
-      for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; if (q.d + FB < ZN || q.d - FA > ZF) continue; parts.push([z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), Math.max(zf, q.d - FA), q.d + FB, 0.95]); }
-      for (const [xf, z0, z1, a] of parts) ballastStrip(xf, z0, z1, a);       // đá dăm trước: đường nhánh không còn đè lên ray đường chính
-      for (const [xf, z0, z1] of parts) railStrip(xf, z0, z1, true);
+      for (const q of sts) for (const t of q.st.tracks) { if (t.main || t.in0 === undefined) continue; const za = rr ? q.d - t.out0 - t.len : q.d - t.in0, zb = rr ? q.d + t.in0 : q.d + t.out0 + t.len; if (zb < ZN || za > ZF) continue; parts.push([z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), Math.max(zf, za), zb, 0.95]); }      // mỗi đường ga chỉ tồn tại giữa điểm tách và điểm nhập (hình chữ Y)
+      for (const [xf, z0, z1, a] of parts) ballastStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), a);       // đá dăm trước: đường nhánh không còn đè lên ray đường chính; đường ray dừng ở chắn cuối đường
+      for (const [xf, z0, z1] of parts) railStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), true);
       // ghi chữ X (hai ghi bắt chéo) nối đường ta và đường ngược chiều ở hai đầu mỗi ga
       for (const q of sts) for (const zc of [q.d - XA, q.d + XB]) { if (zc + 150 < zf || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); };
-        railStrip(z => lerp(0, oppAt(z), sm((z - zc) / 150)), zc, zc + 150, false); railStrip(z => lerp(oppAt(z), 0, sm((z - zc) / 150)), zc, zc + 150, false); }
+        railStrip(z => lerp(0, oppAt(z), sm((z - zc) / 150)), Math.max(zc, physLoZ), Math.min(zc + 150, physHiZ), false); railStrip(z => lerp(oppAt(z), 0, sm((z - zc) / 150)), Math.max(zc, physLoZ), Math.min(zc + 150, physHiZ), false); }
+      // chắn cuối đường (giảm chấn) và tường chắn ở hai đầu tuyến (ga cuối): mọi đường ray đều kết thúc ở đây
+      if (zExit === null) for (const zb of [physLoZ, physHiZ]) if (zb > ZN + 2 && zb < ZF) {
+        const near = sts.filter(q => Math.abs(q.d - zb) < 1600), xs = [0, oppAt(zb)]; for (const q of near) for (const t of q.st.tracks) if (!t.main) xs.push(lerp(t.plain, t.x, trackWF(t, T.x + zb, q.m.s)));
+        const uniq = []; for (const x of xs) if (!uniq.some(u => Math.abs(u - x) < 1.2)) uniq.push(x);
+        items.push({ z: zb, fn: () => { const steel = mixc([40, 30, 28], [150, 50, 40], day * (1 - wx * 0.3)), post = mixc([26, 28, 32], [96, 100, 104], day * (1 - wx * 0.3)), cb = mixc([22, 26, 30], [170, 174, 174], day * (1 - wx * 0.3));
+          const xl0 = Math.min(...uniq) - 3.2, xr0 = Math.max(...uniq) + 3.2; quad(P(xl0, 0, zb + 4), P(xr0, 0, zb + 4), P(xr0, 4.6, zb + 4), P(xl0, 4.6, zb + 4), cb); quad(P(xl0, 4.6, zb + 4), P(xr0, 4.6, zb + 4), P(xr0, 4.9, zb + 4), P(xl0, 4.9, zb + 4), mixc([30, 34, 40], [206, 210, 210], day));
+          for (const x of uniq) { quad(P(x - 1.1, 0.6, zb), P(x + 1.1, 0.6, zb), P(x + 1.1, 1.25, zb), P(x - 1.1, 1.25, zb), steel); quad(P(x - 1.05, 0, zb), P(x - 0.8, 0, zb), P(x - 0.8, 0.6, zb), P(x - 1.05, 0.6, zb), post); quad(P(x + 0.8, 0, zb), P(x + 1.05, 0, zb), P(x + 1.05, 0.6, zb), P(x + 0.8, 0.6, zb), post); quad(P(x - 1.1, 1.0, zb - 0.01), P(x + 1.1, 1.0, zb - 0.01), P(x + 1.1, 1.1, zb - 0.01), P(x - 1.1, 1.1, zb - 0.01), '#e8c93a'); } } });
+      }
     };
     // khung cửa ra hầm: hầm thường là vòm; ga ngầm (Tokyo, Ueno của Tohoku) mở rộng bằng cả bề ngang sân ga
     const openingPoly = () => { if (zExit === null || zExit <= ZN) return null; const z = zExit, near = sts.filter(q => Math.abs(q.d - z) < 150 && q.st.extent), wide = near.length ? [Math.min(...near.map(q => q.st.extent[0])) - 0.8, Math.max(...near.map(q => q.st.extent[1])) + 0.8] : null, pts = [];
@@ -201,10 +209,7 @@
     for (const q of sts) {
       const { m, i, d, st } = q;
       const sgR = rr ? -1 : 1;       // camera sau: sân ga nằm phía SAU vạch dừng của tàu ta nên khi nhìn lùi nó nằm xa hơn vạch (z lớn hơn), không phải gần hơn
-      const z0 = Math.max(zMin, rr ? d - 20 : d - 420), z1 = rr ? d + 420 : d + 20; if (z1 <= zMin || z0 > ZF) continue;
-      const dwellHere = T.phase === 'dwell' && T.k === i, openDoors = dwellHere && T.door === 'open';
-      const topc = mixc([40, 52, 68], [120, 134, 150], day * (1 - wx * 0.3));
-      if (zExit === null) enclose(q, z0, z1);
+      if (zExit === null) enclose(q, rr ? d - 20 : d - 420, rr ? d + 420 : d + 20);
       if (zExit === null) for (const t of st.tracks) {        // ghi: thanh nối lưỡi ghi, hộp máy chuyển ghi và đèn báo ở chỗ đường ga rẽ khỏi đường chính
         if (t.main || t.in0 === undefined) continue; const zs = rr ? d + t.in0 : d - t.in0, sgn = t.x >= t.plain ? 1 : -1; if (zs < ZN + 1 || zs > 700) continue;
         sink.push({ z: zs, fn: () => { const xs = lerp(t.plain, t.x, 0.0), steel = mixc([40, 44, 50], [196, 202, 208], day * (1 - wx * 0.3)), box = mixc([20, 30, 24], [70, 98, 78], day * (1 - wx * 0.3));
@@ -212,6 +217,9 @@
           quad(P(xs + sgn * 1.7, 0, zs), P(xs + sgn * 2.4, 0, zs), P(xs + sgn * 2.4, 0.8, zs), P(xs + sgn * 1.7, 0.8, zs), box);
           const lp = P(xs + sgn * 2.05, 1.05, zs), s = c.f / zs; ctx.fillStyle = night > 0.3 ? '#9fe8a8' : '#58b86a'; ctx.beginPath(); ctx.arc(lp[0], lp[1], Math.max(1, 0.1 * s), 0, 7); ctx.fill(); } });
       }
+      const z0 = Math.max(zMin, rr ? d - 20 : d - 420), z1 = rr ? d + 420 : d + 20; if (z1 <= zMin || z0 > ZF) continue;
+      const dwellHere = T.phase === 'dwell' && T.k === i, openDoors = dwellHere && T.door === 'open';
+      const topc = mixc([40, 52, 68], [120, 134, 150], day * (1 - wx * 0.3));
       for (const p of st.plats) {
         const isOurs = q.stopHere && st.plat === p;
         // mặt trên, mặt đứng hai mép, vạch vàng an toàn ở mép kề đường
@@ -273,12 +281,12 @@
 
     // ---- dây điện trên cao (mỗi đường) và trụ điện giữa hai đường chính
     // cổng đỡ dây điện: hai cột thép ở hai mép (xa trái dương, xb phải âm), xà ngang kép và dây treo xuống từng dây tiếp điện (heads: các X của dây)
-    const gantry = (zq, xa, xb, heads) => items.push({ z: zq, fn: () => { if (S.structAt(L, km(zq)) === 't') return; const s = c.f / zq, col = mixc([24, 30, 38], [96, 108, 122], day * (1 - wx * 0.3)), a0 = P(xa, 0, zq), a1 = P(xa, 7.6, zq), b0 = P(xb, 0, zq), b1 = P(xb, 7.6, zq), a2 = P(xa, 6.8, zq), b2 = P(xb, 6.8, zq);
+    const gantry = (zq, xa, xb, heads) => zq >= physLoZ && zq <= physHiZ && items.push({ z: zq, fn: () => { if (S.structAt(L, km(zq)) === 't') return; const s = c.f / zq, col = mixc([24, 30, 38], [96, 108, 122], day * (1 - wx * 0.3)), a0 = P(xa, 0, zq), a1 = P(xa, 7.6, zq), b0 = P(xb, 0, zq), b1 = P(xb, 7.6, zq), a2 = P(xa, 6.8, zq), b2 = P(xb, 6.8, zq);
       ctx.strokeStyle = col; ctx.lineWidth = Math.max(1, 0.3 * s); ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
       ctx.lineWidth = Math.max(1, 0.14 * s); ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.moveTo(a2[0], a2[1]); ctx.lineTo(b2[0], b2[1]); ctx.stroke();
       if (s > 2.2) { ctx.lineWidth = Math.max(1, 0.07 * s); ctx.beginPath(); for (const hx of heads) { const h0 = P(hx, 6.8, zq), h1 = P(hx, 5.3, zq); ctx.moveTo(h0[0], h0[1]); ctx.lineTo(h1[0], h1[1]); } ctx.stroke(); }
       if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(Math.min(a1[0], b1[0]), a1[1] - 1, Math.abs(b1[0] - a1[0]), 2); } } });
-    const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
+    const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, zMin, physLoZ), Math.min(z1, zLim, physHiZ)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
     ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; wire(() => 0, ZN, ZF); wire(oppAt, ZN, ZF);
     for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = Math.max(ZN, W.dir === 'down' ? sj : sj - 3200), b = Math.min(ZF, W.dir === 'down' ? sj + 3200 : sj), tx = z => S.trunkOff(W, T.x + z);
       if (b > a) { wire(tx, a, b); wire(z => tx(z) + ADJ, a, b); ctx.strokeStyle = 'rgba(214,222,232,.9)'; ctx.lineWidth = 1.5; for (const sx of [-0.72, 0.72, ADJ - 0.72, ADJ + 0.72]) { ctx.beginPath(); for (let z = a, f = true; z <= b; z += z < 400 ? 10 : 40, f = false) { const p = P(tx(z) + sx, 0.15, z); f ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); } ctx.stroke(); }       // ray đường Tohoku luôn thấy được dù ở xa
