@@ -271,14 +271,20 @@
     drawStations();
 
     // ---- dây điện trên cao (mỗi đường) và trụ điện giữa hai đường chính
+    // cổng đỡ dây điện: hai cột thép ở hai mép (xa trái dương, xb phải âm), xà ngang kép và dây treo xuống từng dây tiếp điện (heads: các X của dây)
+    const gantry = (zq, xa, xb, heads) => items.push({ z: zq, fn: () => { if (S.structAt(L, km(zq)) === 't') return; const s = c.f / zq, col = mixc([24, 30, 38], [96, 108, 122], day * (1 - wx * 0.3)), a0 = P(xa, 0, zq), a1 = P(xa, 7.6, zq), b0 = P(xb, 0, zq), b1 = P(xb, 7.6, zq), a2 = P(xa, 6.8, zq), b2 = P(xb, 6.8, zq);
+      ctx.strokeStyle = col; ctx.lineWidth = Math.max(1, 0.3 * s); ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
+      ctx.lineWidth = Math.max(1, 0.14 * s); ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.moveTo(a2[0], a2[1]); ctx.lineTo(b2[0], b2[1]); ctx.stroke();
+      if (s > 2.2) { ctx.lineWidth = Math.max(1, 0.07 * s); ctx.beginPath(); for (const hx of heads) { const h0 = P(hx, 6.8, zq), h1 = P(hx, 5.3, zq); ctx.moveTo(h0[0], h0[1]); ctx.lineTo(h1[0], h1[1]); } ctx.stroke(); }
+      if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(Math.min(a1[0], b1[0]), a1[1] - 1, Math.abs(b1[0] - a1[0]), 2); } } });
     const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); };
     ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; wire(() => 0, ZN, ZF); wire(oppAt, ZN, ZF);
     for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = Math.max(ZN, W.dir === 'down' ? sj : sj - 3200), b = Math.min(ZF, W.dir === 'down' ? sj + 3200 : sj), tx = z => S.trunkOff(W, T.x + z);
       if (b > a) { wire(tx, a, b); wire(z => tx(z) + ADJ, a, b); ctx.strokeStyle = 'rgba(214,222,232,.9)'; ctx.lineWidth = 1.5; for (const sx of [-0.72, 0.72, ADJ - 0.72, ADJ + 0.72]) { ctx.beginPath(); for (let z = a, f = true; z <= b; z += z < 400 ? 10 : 40, f = false) { const p = P(tx(z) + sx, 0.15, z); f ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); } ctx.stroke(); }       // ray đường Tohoku luôn thấy được dù ở xa
-        for (let k = Math.ceil((T.x + a) / 60), z = k * 60 - T.x; z < b; k++, z = k * 60 - T.x) items.push({ z, fn: () => { const X = tx(z) + 3.0, p0 = P(X, 0, z), p1 = P(X, 7.0, z), e = P(tx(z), 5.5, z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = Math.max(1, 0.32 * c.f / z); ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, 0.16 * c.f / z); ctx.beginPath(); ctx.moveTo(p1[0], p1[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } }); }
+        for (let k = Math.ceil((T.x + a) / 50), z = k * 50 - T.x; z < b; k++, z = k * 50 - T.x) if (Math.abs(tx(z)) >= 20) gantry(z, tx(z) + 3.9, tx(z) + ADJ - 3.9, [tx(z), tx(z) + ADJ]); }       // cặp đường nhánh / đường chính đã tách xa: cổng riêng; còn sát nhau thì dùng chung cổng của hành lang
       ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; }
     for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; wire(z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), q.d - FA, q.d + FB); }
-    for (let k = Math.ceil((T.x + ZN) / 50), z = k * 50 - T.x; z < Math.min(1600, zLim); k++, z = k * 50 - T.x) items.push({ z, fn: () => { const oz = oppAt(z), X = oz / 2 + (hasSingle ? 2.8 * S.singleEff(W, T.x + z) : 0), a = P(X, 0, z), b = P(X, 7.0, z), w = Math.max(1, 0.32 * c.f / z); ctx.strokeStyle = '#4a5c70'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, w * 0.5); for (const XX of [0, oz]) { const e = P(XX, 5.5, z); ctx.beginPath(); ctx.moveTo(b[0], b[1] + 0.5 * c.f / z); ctx.lineTo(e[0], e[1]); ctx.stroke(); } if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(b[0] - w, b[1] - 1, w * 2, 2); } } });
+    for (let k = Math.ceil((T.x + ZN) / 50), z = k * 50 - T.x; z < Math.min(1600, zLim); k++, z = k * 50 - T.x) gantry(z, xr(z) + 1.0, xl(z) - 1.0, [0, oppAt(z)]);       // cổng đỡ dây điện dùng chung cho mọi tuyến: hai cột ở hai mép hành lang (đã gồm đường ga và nhánh còn sát) + xà ngang
 
     // ---- phong cảnh hai bên (không vẽ trong hầm); giữ hành lang đường sắt và sân ga
     {
@@ -316,10 +322,8 @@
           const margin = qz ? (o.kind === 'building' ? 14 : 12) : (o.kind === 'building' ? 12 : o.kind === 'field' ? 14 : 8), off = half + o.lat * 0.5, X = side > 0 ? Math.max(ext[1], 0) + margin + off : Math.min(ext[0], ADJ) - margin - off;
           tgt.push({ z: zz, fn: () => drawCell(ctx, c, o, X, zz, day, wx, night, inSnow, windy, now, fadeA, quad, PG) }); } }
     }
-    // ---- cổng đỡ dây điện (hai cột + xà ngang) ở cổ ga và trong ga, mỗi 48 m; mốc km mỗi 1 km
+    // ---- mốc km mỗi 1 km (cổng đỡ dây điện dùng chung cho cả tuyến nằm ở phần dây điện bên dưới)
     if (zExit === null) {
-      for (const q of sts) { const ta = Math.max(q.d - FA, ZN + 4), tb = Math.min(q.d + FB, 1400);
-        for (let gz = Math.ceil((T.x + ta) / 48) * 48 - T.x; gz < tb; gz += 48) { const zq = gz; items.push({ z: zq, fn: () => { const xa = xr(zq) + 1.0, xb = xl(zq) - 1.0, s = c.f / zq, a0 = P(xa, 0, zq), a1 = P(xa, 7.8, zq), b0 = P(xb, 0, zq), b1 = P(xb, 7.8, zq); ctx.strokeStyle = mixc([20, 24, 30], [90, 98, 108], day * (1 - wx * 0.3)); ctx.lineWidth = Math.max(1, 0.28 * s); ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.moveTo(b0[0], b0[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke(); ctx.lineWidth = Math.max(1, 0.16 * s); ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.moveTo(a1[0], a1[1] + 0.7 * s); ctx.lineTo(b1[0], b1[1] + 0.7 * s); ctx.stroke(); } }); } }
       const k0 = Math.ceil(Math.min(km(0), km(1500))), k1 = Math.floor(Math.max(km(0), km(1500)));
       for (let kk = k0; kk <= k1; kk++) { const zq = (S.sOfKm(kk, W.dir, L.kmEnd)) - T.x; if (zq < ZN + 5 || zq > 1500 || S.structAt(L, kk) === 't') continue;
         items.push({ z: zq, fn: () => { const X = xl(zq) - 0.9, b = P(X, 0, zq), t = P(X, 1.5, zq), s = c.f / zq; ctx.strokeStyle = '#6a7684'; ctx.lineWidth = Math.max(1, 0.1 * s); ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.lineTo(t[0], t[1]); ctx.stroke(); ctx.fillStyle = '#f4f4ee'; ctx.fillRect(t[0] - 0.4 * s, t[1] - 0.55 * s, 0.8 * s, 0.6 * s); if (s > 3) { ctx.fillStyle = '#10151c'; ctx.textAlign = 'center'; ctx.font = 'bold ' + Math.min(30, 0.36 * s) + 'px system-ui'; ctx.fillText(String(kk), t[0], t[1] - 0.15 * s); } } }); }
