@@ -60,7 +60,7 @@
          isT: i === tIdx }); });
     for (const q of sts) if (q.stopHere && !q.m.mainStop) { const w = trackWF(q.st.ours, T.x, q.m.s); if (w > 0) c.lane = q.st.ours.x * w; }
     const hasSingle = !!(L.single && L.single.length);
-    const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * (q.st.oppT ? trackWF(q.st.oppT, T.x + z, q.m.s) : 1); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };   // đoạn đường đơn: đường ngược chiều nhập vào đường ta   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
+    const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * spreadF(T.x + z, q.m.s); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };   // đoạn đường đơn: đường ngược chiều nhập vào đường ta   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
     const inStationZone = (za, zb) => { const qs = sts.filter(q => zb > q.d - (FA + 50) && za < q.d + (FB + 20)); return qs.length ? { st: { extent: [Math.min(...qs.map(q => q.st.extent[0])), Math.max(...qs.map(q => q.st.extent[1]))] } } : null; };   // hợp các ga trong tầm (ga vừa qua và ga sắp tới)
 
     const inTun = S.inTunnel(W, T.x);

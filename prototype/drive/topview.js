@@ -27,7 +27,7 @@
     const latT = LAY.lateralTable(L, S, W.dir, T.x, VIEW_R + 400, 10), latB = LAY.lateralTableBack(L, S, W.dir, T.x, len + VIEW_R + 400, 10);
     const off = z => { const tab = z >= 0 ? latT : latB, f = Math.abs(z) / 10, i = Math.min(tab.length - 2, Math.floor(f)); return tab[i] + (tab[i + 1] - tab[i]) * (f - i); };      // z<0: đường phía sau tàu cũng cong khi tàu đang trong đường cong
     const hasSingle = !!(W.line.single && W.line.single.length);
-    const oppAt = z => { let x = LAY.ADJ; for (const q of sts) x += (q.st.opp - LAY.ADJ) * (q.st.oppT ? LAY.trackW(q.st.oppT, T.x + z, q.m.s) : 1); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };       // đường đơn: đường ngược chiều nhập vào đường ta
+    const oppAt = z => { let x = LAY.ADJ; for (const q of sts) x += (q.st.opp - LAY.ADJ) * LAY.spread(T.x + z, q.m.s); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };       // đường đơn: đường ngược chiều nhập vào đường ta
     const Y = z => cy - (z - zOff) * ky, X = (xm, z) => cx - ((xm - lane) * kx + off(z) * kc);
     const zLo = zOff - VIEW_R - 40, zHi = zOff + VIEW_R + 40;
 
