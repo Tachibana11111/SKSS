@@ -34,7 +34,7 @@
     // quạt gió/điều hoà: tiếng ù thấp liên tục
     this.hvacO = c.createOscillator(); this.hvacO.type = 'sine'; this.hvacO.frequency.value = 118; const hg = c.createGain(); hg.gain.value = 0; this.hvacO.connect(hg); hg.connect(this.master); this.hvac = { g: hg }; this.hvacO.start();
     // bản ghi thật: Odawara (Internet Archive, public domain): nền ga 10–118 s; tàu qua/rời ga ở các đoạn CLIPS
-    try { const mk2 = () => { const e = new Audio('assets/audio/odawara_leaving.mp3'); e.preload = 'auto'; e.volume = 0; return e; }; this.amb = mk2(); this.clipEl = mk2(); this.ambOn = false; this.clipT = 0; } catch (e) { this.amb = null; }
+    try { const mk2 = () => { const e = new Audio('assets/audio/odawara_leaving.mp3'); e.preload = 'metadata'; e.volume = 0; return e; }; this.amb = mk2(); this.clipEl = mk2(); this.ambOn = false; this.clipT = 0; } catch (e) { this.amb = null; }
     this.ready = true;
     this.rt = { comp: 20 + Math.random() * 30, oppose: 90 + Math.random() * 120, thunder: 40 + Math.random() * 50, last: performance.now() };
   };

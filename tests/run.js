@@ -16,7 +16,9 @@ function runAuto(ln, rec, a, b, o, maxT) {
   return { W, T, trip };
 }
 const ALL = Object.keys(window.LINES);
-const section = s => console.log('\n== ' + s);
+// chạy một phần: node tests/run.js --shard=2/4 (các phần 2..22 chia vòng tròn; phần 1 chạy ở mọi lô); --time in thời gian từng phần
+const SH = (process.argv.find(a => a.startsWith('--shard=')) || '').slice(8).split('/').map(Number), TIMED = process.argv.includes('--time'); let secN = 0, secT = Date.now(), secName = '';
+const section = s => { if (TIMED && secName) console.log('   (' + ((Date.now() - secT) / 1000).toFixed(1) + ' s)'); secT = Date.now(); secName = s; const n = secN++, run = n === 0 || !SH[1] || (n - 1) % SH[1] === SH[0] - 1; if (run) console.log('\n== ' + s); return run; };
 
 section('1. Dữ liệu tuyến và lịch tàu');
 for (const ln of ALL) {
@@ -36,8 +38,7 @@ for (const ln of ALL) {
   ok(L.trains.some(t => t.d === 'up' && !t.mir) && L.trains.some(t => t.d === 'down'), `${ln}: có cả hai chiều`);
 }
 
-section('2. Tự lái bám lịch trên mọi loại tàu (đơn độc, không sự kiện)');
-{
+if (section('2. Tự lái bám lịch trên mọi loại tàu (đơn độc, không sự kiện)')) {
   let worst = 0, cnt = 0;
   for (const ln of ALL) { const L = Sim.lineOf(ln); for (const rec of L.trains.filter((t, i) => i % 7 === 0)) {
     const st = rec.s.filter(e => !e[3]); const a = st[0][0], b = st[st.length - 1][0]; const r = runAuto(ln, rec, a, b); cnt++;
@@ -48,8 +49,7 @@ section('2. Tự lái bám lịch trên mọi loại tàu (đơn độc, không 
   ok(worst < 90, 'trễ/sớm tối đa của tự lái < 90 s', Math.round(worst)); console.log('  đã chạy', cnt, 'chuyến, lệch giờ lớn nhất', Math.round(worst), 's');
 }
 
-section('3. Vật lý: tốc độ tối đa, độ dốc, tải, phanh, nhiệt, điện');
-{
+if (section('3. Vật lý: tốc độ tối đa, độ dốc, tải, phanh, nhiệt, điện')) {
   const mk = veh => { const L = Sim.lineOf('tsk'); const rec = Object.assign({}, L.trains.find(t => t.d === 'down' && t.t === 'Nozomi')); rec.v = veh; return rec; };
   for (const [veh, vmin] of [['N700', 275], ['E5', 300], ['N700-8', 255], ['N700S', 275]]) {
     const ln = veh === 'E5' ? 'toh' : 'tsk', L = Sim.lineOf(ln), rec = Object.assign({}, L.trains.find(t => t.d === 'down' && t.s[0][0] === 0 && (veh === 'E5' ? t.t === 'Hayabusa' : t.t === 'Nozomi'))); rec.v = veh;
@@ -71,8 +71,7 @@ section('3. Vật lý: tốc độ tối đa, độ dốc, tải, phanh, nhiệt
   ok(T1.btMax > 0.8, 'một lần phanh khẩn từ 270 km/h làm má phanh nóng > 0.8', (T1.btMax || 0).toFixed(2)); ok(T1.kwh > 0, 'có tiêu hao điện'); ok(T1.regen >= 0, 'có số liệu tái sinh');
 }
 
-section('4. ATC, cửa, giữ tàu, khởi hành sớm');
-{
+if (section('4. ATC, cửa, giữ tàu, khởi hành sớm')) {
   const rec = find('tsk', 'Nozomi', 'down', 12, 15), trip = Sim.makeTrip('tsk', rec, 12, 15), W = Sim.createWorld('tsk', trip, { diff: 'normal', lead: false, events: false }), T = W.player;
   ok(!Sim.requestClose(T) === false, 'có thể đóng cửa ở ga đầu'); let n = 0; while (T.door !== 'closed' && n++ < 1000) Sim.tick(W, 0.05, {}, false); ok(T.door === 'closed' || T.door === 'open', 'cửa đóng xong hoặc kẹt', T.door);
   if (T.door === 'open') { Sim.requestClose(T); n = 0; while (T.door !== 'closed' && n++ < 1000) Sim.tick(W, 0.05, {}, false); }
@@ -86,8 +85,7 @@ section('4. ATC, cửa, giữ tàu, khởi hành sớm');
   n = 0; while (!T3.finished && n++ < 4e6) { Sim.tick(W3, 0.05, {}, true); } ok(T3.finished, 'chuyến có lệnh giữ vẫn hoàn thành'); ok(T3.excused > 300, 'thời gian bị giữ được miễn trừ', T3.excused.toFixed(0));
 }
 
-section('5. Sự kiện: tiêm từng loại và hậu quả');
-{
+if (section('5. Sự kiện: tiêm từng loại và hậu quả')) {
   const rec = find('tsk', 'Nozomi', 'down', 12, 16), mkw = (diff) => { const trip = Sim.makeTrip('tsk', rec, 12, 16); const W = Sim.createWorld('tsk', trip, { diff: diff || 'normal', lead: false, events: false, seed: 3 }); return W; };
   const run = (W, until) => { const T = W.player; let n = 0; while (!until(W, T) && !T.finished && n++ < 4e6) Sim.tick(W, 0.05, {}, true); return T; };
   let W = mkw(); Sim.inject(W, 'rain', { ahead: 3000 }); let T = run(W, w => w.rainHere); ok(W.rainHere, 'mưa: tàu vào vùng mưa'); T = run(W, (w, t) => !w.rainHere); ok(T.wiperBad >= 0, 'mưa: có theo dõi gạt mưa'); ok(W.ackCount >= 1, 'mưa: tự lái nhắc lại lệnh');
@@ -107,8 +105,7 @@ section('5. Sự kiện: tiêm từng loại và hậu quả');
   ok(a1.events.length === a2.events.length && a1.events.every((e, i) => e.at === a2.events[i].at), 'sự kiện ngẫu nhiên lặp lại theo seed'); ok(a1.events.length >= 4, 'độ khó Khó có ≥ 4 sự kiện', a1.events.length);
 }
 
-section('6. Xác định (replay) và chấm điểm');
-{
+if (section('6. Xác định (replay) và chấm điểm')) {
   const rec = find('tsk', 'Nozomi', 'down', 12, 16), trip = Sim.makeTrip('tsk', rec, 12, 16);
   const script = [[0, 'door'], [250, 'power', 1], [400, 'power', 12], [2500, 'coast'], [5200, 'ack']];
   const play = () => { const W = Sim.createWorld('tsk', trip, { diff: 'normal', weather: 'rain', seed: 21, lead: true }), T = W.player; let ptr = 0;
@@ -122,8 +119,7 @@ section('6. Xác định (replay) và chấm điểm');
   T.fireTunnel = 1; ok(Sim.score(T, W).final < s1, 'dừng trong hầm khi cháy bị trừ điểm'); T.fireTunnel = 0; T.anxMax = 100; ok(Sim.score(T, W).final < s1, 'bất an hành khách bị trừ điểm');
 }
 
-section('7. Chế độ điều độ (mạng nhiều tàu)');
-{
+if (section('7. Chế độ điều độ (mạng nhiều tàu)')) {
   for (const [ln, dir, t0] of [['tsk', 'down', 8 * 3600], ['tsk', 'up', 9 * 3600], ['toh', 'down', 9 * 3600], ['toh', 'up', 10 * 3600], ['jts', 'down', 9 * 3600], ['hok', 'up', 10 * 3600]]) {
     const W = Sim.createNetwork(ln, dir, { diff: 'normal', seed: 3, t0, span: 5400 }); W.events = []; let n = 0; while (W.t < 5400 && n++ < 1e5) Sim.netTick(W, 0.2); const sc = Sim.netScore(W);
     ok(W.net.trains.length >= (ln === 'jts' || ln === 'hok' ? 3 : 8), `${ln} ${dir}: có nhiều tàu`, W.net.trains.length); ok(sc.avg < 1.5, `${ln} ${dir}: không sự cố → trễ trung bình < 1,5 phút`, sc.avg); ok(sc.maxD < 6, `${ln} ${dir}: không sự cố → trễ lớn nhất < 6 phút`, sc.maxD);
@@ -138,8 +134,7 @@ section('7. Chế độ điều độ (mạng nhiều tàu)');
   ok(Sim.dispatch.skip(W2, W2.net.trains[0], 99) === false, 'thông qua ga không tồn tại bị từ chối');
 }
 
-section('8. Hồ sơ, thành tích và bản ghi');
-{
+if (section('8. Hồ sơ, thành tích và bản ghi')) {
   const St = global.Store; St.reset();
   const base = { kind: 'drive', line: 'tsk', trainLabel: 'Nozomi 1', diff: 'hard', weather: 'rain', seed: 1, score: 90, finished: true, perfectStops: 4, stops: 5, atc: 0, ackCount: 4, ackPen: 0, paCount: 1, hadFire: true, fireTunnel: 0, scenario: { kind: 'drive', line: 'tsk', dir: 'down', train: 'Nozomi 1', from: 0, to: 5, diff: 'hard', weather: 'rain', seed: 1 } };
   const r = St.record(base, { recipe: {}, actions: [[0, 'door']] }); const ids = r.fresh.map(a => a.id); for (const id of ['first', 'perfect3', 'noatc', 'storm', 'quickack', 'pa', 'fire', 'hard']) ok(ids.includes(id), 'thành tích ' + id);
@@ -147,8 +142,7 @@ section('8. Hồ sơ, thành tích và bản ghi');
   ok(St.get().history.length === 2, 'lịch sử ghi 2 lần'); St.record(Object.assign({}, base, { score: 95 }), { recipe: {}, actions: [] }); ok(Object.values(St.get().best)[0].score === 95, 'kết quả tốt nhất cập nhật'); St.reset(); ok(St.get().history.length === 0, 'xoá hồ sơ');
 }
 
-section('9. Hướng dẫn (bot làm theo từng bước)');
-{
+if (section('9. Hướng dẫn (bot làm theo từng bước)')) {
   for (let li = 0; li < 4; li++) {
     const c = Tutorial.cfg(li); ok(!!c, `bài ${li + 1}: tìm được chuyến`); if (!c) continue; const trip = Sim.makeTrip(c.lineId, c.rec, c.from, c.to);
     const W = Sim.createWorld(c.lineId, trip, { diff: c.diff, weather: c.weather, seed: c.seed, lead: c.lead, events: false }), T = W.player; let now = 0, n = 0; const LS = Tutorial.LESSONS[li], S = Tutorial.S;
@@ -167,8 +161,7 @@ section('9. Hướng dẫn (bot làm theo từng bước)');
   }
 }
 
-section('10. Bố trí ga, kết cấu tuyến, đường cong (layout.js)');
-{
+if (section('10. Bố trí ga, kết cấu tuyến, đường cong (layout.js)')) {
   const LAY = require(path.join(DRIVE, 'layout.js'));
   for (const code of Object.keys(LAY.TOK)) for (const dir of ['down', 'up']) {
     const [f, l, t] = code.split('-').map(x => parseInt(x, 10)), st = LAY.station(code, dir, 1), tag = `${code} ${dir}`;
@@ -200,8 +193,7 @@ section('10. Bố trí ga, kết cấu tuyến, đường cong (layout.js)');
     approx(Math.abs(bk[50]), 500 * 500 / (2 * 2000), 3, 'cong: đoạn phía SAU tàu lệch ngang ≈ z²/2R'); ok(bk[50] * fw[50] > 0, 'cong: phía sau và phía trước cong cùng chiều dấu'); }
 }
 
-section('11. Ghi: giới hạn tốc độ vào/ra đường sân ga, dừng quá muộn, thông qua');
-{
+if (section('11. Ghi: giới hạn tốc độ vào/ra đường sân ga, dừng quá muộn, thông qua')) {
   const rec = find('tsk', 'Kodama', 'down', 0, 12), L = Sim.lineOf('tsk');
   const trip = Sim.makeTrip('tsk', rec, 0, 12), W = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, zs = Sim.turnoutZones(T);
   const odawara = T.M.findIndex(m => m.name === 'Odawara'), atami = T.M.findIndex(m => m.name === 'Atami'), nagoya = T.M.findIndex(m => m.name === 'Nagoya');
@@ -224,8 +216,7 @@ section('11. Ghi: giới hạn tốc độ vào/ra đường sân ga, dừng qu�
   }
 }
 { const Lh = require(path.join(DRIVE, 'layout.js')); ok(Lh.stopCount('2-4-0', 'down') === 2 && Lh.stopCount('2-2-1', 'down') === 1 && Lh.stopCount('3-6-0', 'up') === 3, 'số đường dừng cùng chiều: ga 4 đường 2, ga 2-2-1 chỉ 1, ga 6 đường 3'); }
-section('12. Đèn pha: tự động / bật / tắt');
-{
+if (section('12. Đèn pha: tự động / bật / tắt')) {
   const rec = find('tsk', 'Kodama', 'down', 0, 12), mk = hour => { const W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }); W.trip.t0 = hour * 3600; return W; };
   let W = mk(11), T = W.player; ok(T.lamp === 'auto' && !Sim.lampOn(W, T), 'ban ngày, chế độ tự động: đèn tắt');
   Sim.cycleLamp(T); ok(T.lamp === 'on' && Sim.lampOn(W, T), 'chế độ bật: đèn sáng cả ban ngày'); Sim.cycleLamp(T); ok(T.lamp === 'off' && !Sim.lampOn(W, T), 'chế độ tắt: đèn tắt'); Sim.cycleLamp(T); ok(T.lamp === 'auto', 'vòng trở lại tự động');
@@ -234,8 +225,7 @@ section('12. Đèn pha: tự động / bật / tắt');
   T.cut = true; T.lamp = 'on'; ok(!Sim.lampOn(W, T), 'mất điện: đèn tắt');
 }
 
-section('13. Công tắc ATC (bật / cắt)');
-{
+if (section('13. Công tắc ATC (bật / cắt)')) {
   const rec = find('tsk', 'Kodama', 'down', 0, 12), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
   ok(T.atcOn === true, 'ATC mặc định BẬT');
   ok(Sim.toggleATC(T) === 'arm' && T.atcOn === true, 'bấm một lần: chỉ chờ xác nhận, chưa cắt'); W.t += 5; ok(Sim.toggleATC(T) === 'arm', 'quá 4 s thì phải xác nhận lại');
@@ -246,8 +236,7 @@ section('13. Công tắc ATC (bật / cắt)');
   ok(on.hit, 'ATC bật: phanh khi vượt tốc độ cho phép'); ok(!off.hit && off.v > on.v + 20, 'ATC cắt: không phanh tự động, tàu vượt giới hạn', off.v + ' vs ' + on.v); ok(off.bad > 5, 'ATC cắt và chạy > 30 km/h: tích lũy lỗi', off.bad);
 }
 
-section('14. Phát thanh: bên cửa mở và đổi tàu');
-{
+if (section('14. Phát thanh: bên cửa mở và đổi tàu')) {
   global.document = global.document || {}; require(path.join(DRIVE, 'transfers.js')); const GA = require(path.join(DRIVE, 'audio.js')), G = global.GameAudio || (GA && GA.GameAudio);
   const rec = find('tsk', 'Kodama', 'down', 0, 12), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, ds = nm => G.prototype.doorSide.call({}, W, T, T.M.findIndex(m => m.name === nm));
   const sd = ds('Odawara'); ok(sd && sd.ja === '左側' && sd.vi === 'trái', 'Odawara (2-2-1, đường dừng bên trái đường thông qua): cửa mở bên trái', JSON.stringify(sd));
@@ -257,8 +246,7 @@ section('14. Phát thanh: bên cửa mở và đổi tàu');
   const missing = ALL.flatMap(ln => Sim.lineOf(ln).stations).filter(s => !window.TRANSFERS[s.jp]); ok(missing.length === 0, 'mọi ga có mục đổi tàu', missing.map(s => s.jp).join(','));
 }
 
-section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đơn, đường ngang');
-{
+if (section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đơn, đường ngang')) {
   // --- đoạn cách điện Hokuriku
   const L = Sim.lineOf('hok'); ok(L.meta.freq.length === 3, 'hok: ba đoạn cách điện (新軽井沢, 新高田, 新糸魚川)');
   const rec = find('hok', 'Asama', 'down', 7, 8), mk = () => Sim.createWorld('hok', Sim.makeTrip('hok', rec, 7, 8), { diff: 'easy', seed: 1, lead: false, events: false });
@@ -349,8 +337,7 @@ section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường đ�
   for (const ln of ['jts', 'hok', 'nks', 'yam', 'aki']) { const L2 = Sim.lineOf(ln); ok(L2.trains.some(t => t.d === 'down') && L2.trains.some(t => t.d === 'up'), `${ln}: có cả hai chiều`); ok(L2.stations.every(st => st.lat && st.lon), `${ln}: ga có toạ độ`); ok(L2.meta.pa && L2.meta.defVeh && Sim.VEH[L2.meta.defVeh], `${ln}: có thông số tuyến`); }
 }
 
-section('16. Joetsu/Hokuriku tách khỏi Tohoku ở Omiya, Hokuriku tách khỏi Joetsu ở Takasaki; tàu tuyến cha chạy chung');
-{
+if (section('16. Joetsu/Hokuriku tách khỏi Tohoku ở Omiya, Hokuriku tách khỏi Joetsu ở Takasaki; tàu tuyến cha chạy chung')) {
   const J = Sim.lineOf('jts'), H = Sim.lineOf('hok');
   ok(J.meta.junctions.length === 2 && H.meta.junctions.length === 2 && J.meta.junctions[0].line === 'toh' && J.meta.junctions[1].branch, 'jts: nhập vào Tohoku ở Omiya + nhánh Hokuriku ở Takasaki; hok có 2 ngã rẽ (Omiya, Takasaki)');
   { const T0 = Sim.lineOf('toh'), Wt = k => ({ line: T0, lineId: 'toh', dir: k }), br = T0.meta.junctions; ok(br.length === 3 && br.every(j => j.branch), 'toh có 3 nhánh rẽ ra (Joetsu/Hokuriku, Yamagata, Akita)');
@@ -380,8 +367,7 @@ section('16. Joetsu/Hokuriku tách khỏi Tohoku ở Omiya, Hokuriku tách khỏ
     const hasPass = Object.values(W.passers).some(a => a.some(p => p)); ok(typeof hasPass === 'boolean', 'passers chạy được với tàu tuyến cha'); }
 }
 
-section('17. Ga: ghi riêng từng đường, tường bao, hồ sơ hình học');
-{
+if (section('17. Ga: ghi riêng từng đường, tường bao, hồ sơ hình học')) {
   const LAY = require(path.join(DRIVE, 'layout.js'));
   for (const code of Object.keys(LAY.TOK)) for (const dir of ['down', 'up']) {
     const st = LAY.station(code, dir, 0), outer = st.tracks.filter(t => !t.main);
@@ -398,8 +384,7 @@ section('17. Ga: ghi riêng từng đường, tường bao, hồ sơ hình học
   { const t0 = Date.now(); const L = Sim.lineOf('tsk'); for (let i = 0; i < 2000; i++) LAY.lateralTable(L, Sim, 'down', 100000 + i * 3, 2600, 10); ok(Date.now() - t0 < 400, 'bảng ngang 2000 lần < 0,4 s (hồ sơ tính trước)', Date.now() - t0); }
 }
 
-section('18. Ga cuối: chọn đường có sân ga của cả hai nhóm, đi qua ghi chữ X sang đường chính của ta');
-{
+if (section('18. Ga cuối: chọn đường có sân ga của cả hai nhóm, đi qua ghi chữ X sang đường chính của ta')) {
   const LAY = require(path.join(DRIVE, 'layout.js'));
   { const st = LAY.station('2-4-0t', 'down', 0); ok(st.tracks.length === 4 && st.tracks.filter(t => t.own).length === 3 && st.tracks.filter(t => !t.own).length === 1, 'Tokyo Tohoku: 3 đường xuống + 1 đường lên (sơ đồ HaisenNet)'); }
   for (const ln of ['toh', 'jts', 'hok', 'yam', 'aki']) ok(Sim.lineOf(ln).stations[0].lay === '2-4-0t', `${ln}: Tokyo dùng bố trí 2-4-0t`);
@@ -413,16 +398,14 @@ section('18. Ga cuối: chọn đường có sân ga của cả hai nhóm, đi q
   { const rm = find('tsk', 'Nozomi', 'down', 12, 15), tm = Sim.makeTrip('tsk', rm, 12, 15), W = Sim.createWorld('tsk', tm, { diff: 'easy', seed: 3, lead: false, events: false }); ok(Object.keys(W.termPick).length === 0, 'hành trình giữa hai ga trung gian: không chọn đường ga cuối'); }
 }
 
-section('20. Cầu bộ hành trên cao theo cỡ ga');
-{
+if (section('20. Cầu bộ hành trên cao theo cỡ ga')) {
   const LAY = require(path.join(DRIVE, 'layout.js')), want = { '3-6-0': 3, '5-8-0': 3, '3-4-0': 3, '2-4-0': 2, '2-4-1': 2, '2-4-0t': 2, '2-2-0': 1, '2-2-1': 1, '2-3-0': 1, '2-3-1': 1, '1-2-0': 0, '1-2-1': 0 };
   for (const [code, n] of Object.entries(want)) ok(LAY.bridgeCountOf(code) === n, `cầu bộ hành ga ${code}: ${n} lối`, LAY.bridgeCountOf(code));
   ok(Object.keys(LAY.TOK).every(c => want[c] !== undefined), 'mọi mã bố trí có quy tắc cầu bộ hành');
   const T = Sim.lineOf('toh'); for (const s of T.stations.filter(x => /^(東京|上野)$/.test(x.jp))) ok(Sim.inTunnel({ line: T, dir: 'down' }, Sim.sOfKm(s.km, 'down', T.kmEnd)), `${s.en} (Tohoku) là ga ngầm nên không có cầu bộ hành`);
 }
 
-section('19. Nhiệm vụ kiểm tra tự do (923 Doctor Yellow, E926 East i)');
-{
+if (section('19. Nhiệm vụ kiểm tra tự do (923 Doctor Yellow, E926 East i)')) {
   const trip = Sim.makeMission('tsk', 0, 12, 'T4'), L = Sim.lineOf('tsk');
   ok(trip && trip.mission && trip.dir === 'down' && trip.M.length === 13 && trip.M.filter(m => m.stop).length === 2, 'T4 Tokyo → Nagoya: chỉ dừng ở hai ga đầu/cuối, các ga giữa chạy qua');
   ok(Sim.makeMission('tsk', 12, 0, 'T4').dir === 'up', 'chiều chạy suy ra từ thứ tự hai ga');
@@ -454,8 +437,7 @@ section('19. Nhiệm vụ kiểm tra tự do (923 Doctor Yellow, E926 East i)');
     const sc = Sim.score(W2.player, W2); ok(sc.leg === 1 && sc.count === 3 && sc.legKm > 300, 'điểm chặng ghi số chặng và độ dài để tính điểm tổng'); }
 }
 
-section('21. Tàu chạy phía trước: cảnh báo, va chạm là kết thúc chuyến, không nhường tàu đã vượt qua');
-{
+if (section('21. Tàu chạy phía trước: cảnh báo, va chạm là kết thúc chuyến, không nhường tàu đã vượt qua')) {
   let tripL = null; for (const r of Sim.lineOf('tsk').trains.filter(t => t.t === 'Nozomi' && t.d === 'down' && t.s.some(e => e[0] === 0 && !e[3]) && t.s.some(e => e[0] === 12 && !e[3]))) { const tt = Sim.makeTrip('tsk', r, 0, 12); if (Sim.createWorld('tsk', tt, { diff: 'easy', seed: 1, lead: true, events: false }).lead) { tripL = tt; break; } }
   ok(!!tripL, 'tìm được chuyến Tokaido có tàu chạy trước');
   const mk = () => { const W = Sim.createWorld('tsk', tripL, { diff: 'easy', seed: 1, lead: true, events: false }), T = W.player; Sim.requestClose(T); let n = 0; while (!(T.started && T.phase === 'run' && T.v > 40) && n++ < 4e4) Sim.tick(W, 0.05, {}, true); return { W, T }; };
@@ -467,8 +449,7 @@ section('21. Tàu chạy phía trước: cảnh báo, va chạm là kết thúc 
   { const { W, T } = mk(); W.lead.x = T.x - 500; W.lead.v = 0; Sim.tick(W, 0.05, {}, false); ok(!T.collision && T.why !== 'lead' && !T.finished, 'tàu đã vượt qua (nằm phía sau): không còn bị ATC hãm về 0 và không tính là va chạm', T.why); }
 }
 
-section('22. ATC theo hệ: tên hệ, tín hiệu 0 (mất mã), KS-ATC dừng ga ba giai đoạn');
-{
+if (section('22. ATC theo hệ: tên hệ, tín hiệu 0 (mất mã), KS-ATC dừng ga ba giai đoạn')) {
   ok(Sim.lineOf('tsk').meta.atc === 'NS' && Sim.lineOf('toh').meta.atc === 'DS' && Sim.lineOf('nks').meta.atc === 'KS', 'mỗi tuyến có hệ ATC đúng (NS / DS / KS)');
   let tripL = null; for (const r of Sim.lineOf('tsk').trains.filter(t => t.t === 'Nozomi' && t.d === 'down' && t.s.some(e => e[0] === 0 && !e[3]) && t.s.some(e => e[0] === 12 && !e[3]))) { tripL = Sim.makeTrip('tsk', r, 0, 12); break; }
   const W = Sim.createWorld('tsk', tripL, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player; Sim.requestClose(T); let n = 0; while (!(T.started && T.phase === 'run' && T.v > 40) && n++ < 4e4) Sim.tick(W, 0.05, {}, true);

@@ -7,9 +7,29 @@ Game lái tàu Shinkansen của 5 công ty JR, chạy hoàn toàn trong trình d
 ## Có gì
 7 tuyến (Tokaido–Sanyo–Kyushu, Tohoku–Hokkaido, Joetsu, Hokuriku, Nishi-Kyushu, Yamagata, Akita), 13 nấc điều khiển, ATC, đoạn cách điện đổi tần số, cần vẹt, thời tiết, sự cố ngẫu nhiên, cảnh vật dựng từ dữ liệu OpenStreetMap. Tài liệu nghiệp vụ nằm ở [`docs/`](docs/00-progress.md), thiết kế ở [`docs/10-thiet-ke-game.md`](docs/10-thiet-ke-game.md).
 
+## Điều khiển nhanh
+| Phím | Việc |
+|---|---|
+| W / S | tăng / giảm cần gia tốc (13 nấc) |
+| ↓ / ↑ | tăng / giảm cần phanh (nhả về 0 mới kéo lại) |
+| Space · Q | về N · phanh khẩn |
+| Enter | đóng cửa, đèn sáng thì kéo cần để đi |
+| C · [ ] | tốc độ không đổi · chỉnh ∓5 km/h |
+| A · G · V · L | ATC (bấm 2 lần để cắt) · cần vẹt · gạt mưa · đèn pha |
+| Y / N · M | nhắc lại lệnh, chấp nhận / từ chối · phát thanh trấn an |
+| X · K | (tàu kiểm tra) bật đo · đánh dấu lỗi |
+| Tab · B · H · O | đổi khung nhìn · camera cuối đoàn · chế độ tập trung · ẩn điện đàm |
+| P · F9 | tạm dừng · chụp cảnh (ảnh + tệp JSON dựng lại cảnh) |
+| 1 2 3 · T · R | tua ×1/×4/×16 · tự lái · chạy lại |
+
+Mở tab **Hướng dẫn** để học 4 bài: lái và dừng ga, thiết bị, sự cố, cần vẹt và ATC.
+Chạy ở máy: `python -m http.server` trong thư mục `prototype/drive` rồi mở `http://localhost:8000` (mở thẳng tệp thì âm thanh nền ga không tua được).
+
 ## Kiểm thử và triển khai
 ```
-node tests/run.js        # kiểm thử mô phỏng (~10 phút)
+node tests/run.js                # kiểm thử mô phỏng (~4 phút)
+node tests/run.js --time         # in thời gian từng phần
+node tests/run.js --shard=1/4    # chỉ chạy lô 1 trong 4 (chia để chạy song song)
 ```
 GitHub Actions: `ci.yml` chạy kiểm thử mỗi lần đẩy mã; `pages.yml` chạy kiểm thử rồi đưa thư mục `prototype/drive` lên GitHub Pages.
 
