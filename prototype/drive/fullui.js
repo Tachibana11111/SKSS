@@ -155,9 +155,9 @@ function tileBtn(x, y, s, icon, label, key, on, color, fn) {
 
 // ---- bảng KIỂM TRA riêng cho 923 Doctor Yellow / E926 East i (chế độ nhiệm vụ): đo, đồ thị từng cảm biến, độ phủ, đánh dấu lỗi, giờ chuyến khách đầu ngày
 function drawMissionPanel(x, y, w, h) {
-  const Ms = W.mission, S = Sim, kmh = T.v * 3.6, band = S.INSPECT[Ms.veh].band, now = performance.now(), keys = Object.keys(S.SENSORS);
+  const Ms = W.mission, S = Sim, kmh = T.v * 3.6, band = S.INSPECT[Ms.veh].band, now = performance.now(), keys = Ms.keys;
   ctx.fillStyle = 'rgba(8,12,18,.84)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill(); ctx.strokeStyle = '#3b516a'; ctx.lineWidth = 1.5; ctx.stroke();
-  txt('KIỂM TRA · ' + S.INSPECT[Ms.veh].name, x + 14, y + 24, '#ffd24a', 'bold 15px system-ui');
+  txt('KIỂM TRA · ' + S.INSPECT[Ms.veh].name + (Ms.count > 1 ? ` · chặng ${Ms.leg + 1}/${Ms.count}` : ''), x + 14, y + 24, '#ffd24a', 'bold 15px system-ui');
   button(x + w - 236, y + 8, 110, 26, Ms.measure ? 'ĐO: BẬT (X)' : 'ĐO: TẮT (X)', () => doAct('measure'), Ms.measure, '#2a8f5a'); button(x + w - 118, y + 8, 106, 26, 'Đánh dấu (K)', () => doAct('mark'), now - (Ms.markedAt || 0) < 400, '#c9a227');
   // thanh tốc độ với dải đo hợp lệ
   const bx = x + 14, by = y + 46, bw = w - 28, vmax = 300, px = v => bx + bw * Math.min(v, vmax) / vmax; ctx.fillStyle = '#1b2530'; ctx.fillRect(bx, by, bw, 10);
@@ -175,7 +175,7 @@ function drawMissionPanel(x, y, w, h) {
     txt('phủ ' + Math.round(cov * 100) + '%', x + w - 14, yy + 34, '#7a8ea5', '11px system-ui', 'right'); ctx.fillStyle = '#1b2530'; ctx.fillRect(x + w - 104, yy + 38, 90, 5); ctx.fillStyle = '#4cd68a'; ctx.fillRect(x + w - 104, yy + 38, 90 * Math.min(1, cov), 5); });
   // bản ghi toàn tuyến: độ phủ trung bình từng ô 100 m, ghim vàng = lỗi đã đánh dấu, vạch trắng = vị trí tàu
   const ry = gy0 + keys.length * rh + 6, rw = w - 28; ctx.fillStyle = '#10161e'; ctx.fillRect(x + 14, ry, rw, 18);
-  const cw = Math.max(1, rw / Ms.n); for (let c = 0; c < Ms.n; c++) { let s = 0; for (const k of keys) s += Ms.cov[k][c]; s /= keys.length; if (s > 0.02) { ctx.fillStyle = `rgba(76,214,138,${0.25 + 0.75 * s})`; ctx.fillRect(x + 14 + c * cw, ry, Math.ceil(cw), 18); } }
+  for (let px_ = 0; px_ < rw; px_++) { const c0 = Math.floor(px_ / rw * Ms.n), c1 = Math.max(c0 + 1, Math.floor((px_ + 1) / rw * Ms.n)); let s = 0, m = 0; for (let c = c0; c < c1 && c < Ms.n; c++) { for (const k of keys) s += Ms.cov[k][c]; m += keys.length; } s = m ? s / m : 0; if (s > 0.02) { ctx.fillStyle = `rgba(76,214,138,${0.25 + 0.75 * s})`; ctx.fillRect(x + 14 + px_, ry, 1, 18); } }      // mỗi cột điểm ảnh lấy trung bình các ô 100 m rơi vào cột đó (tuyến dài hơn số điểm ảnh)
   for (const d of Ms.defects) if (d.marked) { ctx.fillStyle = '#ffd24a'; ctx.fillRect(x + 14 + (d.s - Ms.s0) / (Ms.s1 - Ms.s0) * rw - 1, ry - 3, 3, 24); }
   ctx.fillStyle = '#fff'; ctx.fillRect(x + 14 + Math.max(0, Math.min(1, (T.x - Ms.s0) / (Ms.s1 - Ms.s0))) * rw - 1, ry - 4, 3, 26);
   const seen = Ms.defects.filter(d => d.seen).length, marked = Ms.defects.filter(d => d.marked).length;

@@ -433,7 +433,16 @@ section('19. Nhiệm vụ kiểm tra tự do (923 Doctor Yellow, E926 East i)');
     ok(sb.final >= 55 && !Wb.mission.conflict, 'chạy đo trong khung đêm: không xung đột lịch tàu khách', [sb.final, Wb.mission.conflict]); }
   { const Wc = mk(4), Tc = Wc.player; Tc.phase = 'run'; Tc.started = true; Tc.x += 1500; Sim.markDefect(Tc); ok(Wc.mission.falseMarks === 1, 'đánh dấu khi không có lỗi: tính là đánh dấu sai'); }
   { const Wd = mk(5), Td = Wd.player; Wd.trip.t0 += 6 * 3600; Sim.tick(Wd, 0.05, {}, true); Wd.running = true; Sim.tick(Wd, 0.05, {}, true); ok(Wd.mission.conflict || Wd.mission.minMargin < 0, 'trễ sang giờ chuyến khách đầu ngày: báo xung đột lịch', Wd.mission.minMargin); }
-  { const E = Sim.makeMission('toh', 0, 8, 'E926'), We = Sim.createWorld('toh', E, { diff: 'easy', seed: 1, lead: true, events: true }); ok(E && E.t0 > 0 && We.mission && We.player.veh.key === 'E926', 'E926 trên Tohoku cũng có nhiệm vụ tự do'); }
+  { const E = Sim.makeMission('toh', 0, 8, 'E926'), We = Sim.createWorld('toh', E, { diff: 'easy', seed: 1, lead: true, events: true }); ok(E && E.t0 > 0 && We.mission && We.player.veh.key === 'E926', 'E926 trên Tohoku cũng có nhiệm vụ tự do');
+    ok(We.mission.keys.includes('contact') && !We.mission.keys.includes('ride'), 'East i: bộ cảm biến riêng (lực tiếp xúc cần vẹt, không có dao động toa)'); ok(W.mission.keys.includes('ride') && !W.mission.keys.includes('contact'), 'Doctor Yellow: bộ cảm biến riêng (dao động toa)');
+    ok(We.mission.defects.every(d => We.mission.keys.includes(d.sensor)) && W.mission.defects.every(d => W.mission.keys.includes(d.sensor)), 'lỗi chỉ thuộc cảm biến mà tàu có');
+    const Wp = Sim.createWorld('toh', E, { diff: 'easy', seed: 2, lead: true, events: true }), Tp = Wp.player; Sim.toggleMeasure(Tp); Tp.phase = 'run'; Tp.started = true; Tp.v = 230 / 3.6; Tp.a = 0; ok(Sim.measureQ(Tp, 'contact') > 0.9 && Sim.measureQ(Tp, 'wire') > 0.9, 'đúng dải: đo được dây điện và lực tiếp xúc'); Tp.pan = false; ok(Sim.measureQ(Tp, 'contact') === 0 && Sim.measureQ(Tp, 'wire') === 0, 'hạ cần vẹt: không đo được dây điện / lực tiếp xúc'); Tp.pan = true; Tp.v = 100 / 3.6; ok(Sim.measureQ(Tp, 'track') === 0, 'dưới tốc độ đo: không đo ray'); }
+  // nhiều chặng: Tokyo → Nagoya → Tokyo → Shizuoka; mỗi chặng một thế giới, đổi chiều ở ga giữa, giờ chặng sau nối tiếp chặng trước
+  { const st = [0, 12, 0, 6], t1 = Sim.makeMission('tsk', st, 'T4', 0), t2 = Sim.makeMission('tsk', st, 'T4', 1, t1.t0 + 6700), t3 = Sim.makeMission('tsk', st, 'T4', 2, t2.t0 + 7000), tx = Sim.makeMission('tsk', st, 'T4', 3, 1);
+    ok(t1.dir === 'down' && t2.dir === 'up' && t3.dir === 'down' && tx === null, 'nhiều chặng: chiều đổi theo thứ tự ga, chặng không tồn tại → null');
+    ok(t1.mission.count === 3 && t2.mission.leg === 1 && t2.t0 === Math.ceil((t1.t0 + 6700) / 300) * 300 && /chặng 2\/3/.test(t2.label), 'chặng sau bắt đầu đúng giờ nối tiếp (làm tròn 5 phút) và ghi số chặng');
+    const W2 = Sim.createWorld('tsk', t2, { diff: 'easy', seed: 1, lead: true, events: true }); ok(W2.mission.leg === 1 && W2.mission.count === 3 && W2.dir === 'up' && !W2.lead, 'thế giới chặng 2 chạy chiều lên, không tàu chạy trước');
+    const sc = Sim.score(W2.player, W2); ok(sc.leg === 1 && sc.count === 3 && sc.legKm > 300, 'điểm chặng ghi số chặng và độ dài để tính điểm tổng'); }
 }
 
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

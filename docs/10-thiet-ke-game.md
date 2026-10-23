@@ -140,4 +140,6 @@ Hai tàu kiểm tra không chạy theo chuỗi ga cố định. Chọn một chu
 - **Giao diện:** bảng KIỂM TRA riêng ở góc trên trái (thay điện đàm, phím O đổi qua lại): thanh tốc độ với dải đo, đồ thị 1,5 km từng cảm biến, độ phủ, bản ghi toàn tuyến, giờ chuyến khách đầu ngày.
 - **Điểm:** 40% độ phủ + 40% lỗi tìm thấy + 20% độ êm, trừ ATC phanh, đo ngoài dải, đánh dấu sai, xung đột lịch.
 - Mã: `makeMission`, `missionStep`, `missionScore` trong `sim.js`; `drawMissionPanel` trong `fullui.js`; test mục 19.
-- Chưa làm: nhiều chặng/quay đầu giữa đường, tín hiệu thật từng loại lỗi, âm thanh riêng, bố cục cổ điển (chỉ có trong bố cục toàn màn hình).
+- **Cảm biến riêng từng tàu [I]:** Doctor Yellow có hình học ray, dây điện, tín hiệu ATC, vô tuyến, dao động toa; East i có hình học ray, dây điện, tín hiệu ATC, vô tuyến, lực tiếp xúc cần vẹt (hạ cần vẹt thì mất phép đo dây điện và lực tiếp xúc).
+- **Nhiều chặng:** nút "Thêm chặng" nối thêm ga đích (có thể quay lại ga cũ). Mỗi chặng là một thế giới riêng, đổi chiều ở ga giữa, chặng sau bắt đầu 10 phút sau khi chặng trước kết thúc; điểm tổng là trung bình theo độ dài chặng; xung đột lịch ở chặng nào cũng bị trừ ở chặng đó.
+- Chưa làm: tín hiệu thật từng loại lỗi, âm thanh riêng, bố cục cổ điển (chỉ có trong bố cục toàn màn hình).

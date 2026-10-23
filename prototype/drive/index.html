@@ -45,6 +45,7 @@
     <label>Tàu <select id="train"></select></label>
     <label>Từ <select id="from"></select></label>
     <label>Đến <select id="to"></select></label>
+    <span id="legBox" style="display:none"><label>Thêm chặng → <select id="via"></select></label> <button id="viaAdd">Thêm</button> <button id="viaClr">Xoá chặng</button> <span id="viaList" style="color:#8aa0b5"></span></span>
   </div>
   <div class="row" id="rowDrive2">
     <label>Độ khó <select id="diff"></select></label>
@@ -129,19 +130,29 @@ function trainList() {
   const pref = [...$('train').options].find(o => /Nozomi|Hayabusa/.test(o.text) && /→ (Shin-Osaka|Hakata|Shin-Aomori|Tokyo)/.test(o.text)) || $('train').options[0]; if (pref) pref.selected = true;
   stopList();
 }
+let legsExtra = [], campaign = [];
+function legUpd() {
+  const rec = Lc().trains[+$('train').value], insp = rec && Sim.INSPECT[rec.v]; $('legBox').style.display = insp ? '' : 'none'; if (!insp) return;
+  const L = Lc(); $('viaList').textContent = legsExtra.length ? 'Lộ trình: ' + [L.stations[+$('from').value].en, L.stations[+$('to').value].en].concat(legsExtra.map(i => L.stations[i].en)).join(' → ') : '';
+}
+$('viaAdd').onclick = () => { const to = +$('to').value, last = legsExtra.length ? legsExtra[legsExtra.length - 1] : to, v = +$('via').value; if (v === last) return; legsExtra.push(v); legUpd(); };
+$('viaClr').onclick = () => { legsExtra = []; legUpd(); };
 function stopList() {
   const L = Lc(), rec = L.trains[+$('train').value]; if (!rec) return; const seq = rec.s.filter(e => !e[3]);
   $('from').innerHTML = ''; $('to').innerHTML = '';
   if (Sim.INSPECT[rec.v]) {      // tàu kiểm tra: nhiệm vụ tự do, chọn ga đầu/cuối bất kỳ trên tuyến (chiều chạy suy ra từ thứ tự hai ga)
     L.stations.forEach((s, i) => { $('from').add(new Option(s.en, i)); $('to').add(new Option(s.en, i)); });
-    $('from').selectedIndex = 0; $('to').selectedIndex = Math.min(L.stations.length - 1, Math.max(1, Math.floor(L.stations.length / 2))); return;
+    $('from').selectedIndex = 0; $('to').selectedIndex = Math.min(L.stations.length - 1, Math.max(1, Math.floor(L.stations.length / 2)));
+    $('via').innerHTML = ''; L.stations.forEach((s, i) => $('via').add(new Option(s.en, i))); legsExtra = []; legUpd(); return;
   }
+  legsExtra = []; legUpd();
   seq.forEach((e, k) => { if (k < seq.length - 1) $('from').add(new Option(L.stations[e[0]].en, e[0])); if (k > 0) $('to').add(new Option(L.stations[e[0]].en, e[0])); });
   $('from').selectedIndex = 0; const pt = [...$('to').options].find(o => /^(Nagoya|Sendai)$/.test(o.text)); if (pt) pt.selected = true; else $('to').selectedIndex = $('to').options.length - 1;
 }
 $('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = stopList;
+$('to').addEventListener('change', () => { legsExtra = []; legUpd(); });
 $('from').onchange = () => {
-  const rec = Lc().trains[+$('train').value]; if (Sim.INSPECT[rec.v]) { if ($('from').value === $('to').value) $('to').selectedIndex = (+$('from').value === 0) ? 1 : 0; return; }
+  const rec = Lc().trains[+$('train').value]; if (Sim.INSPECT[rec.v]) { if ($('from').value === $('to').value) $('to').selectedIndex = (+$('from').value === 0) ? 1 : 0; legsExtra = []; legUpd(); return; }
   const seq = rec.s.filter(e => !e[3]).map(e => e[0]), f = seq.indexOf(+$('from').value);
   [...$('to').options].forEach(o => o.disabled = seq.indexOf(+o.value) <= f);
   if ($('to').selectedOptions[0] && $('to').selectedOptions[0].disabled) { const ok = [...$('to').options].reverse().find(o => !o.disabled); if (ok) ok.selected = true; }
@@ -168,10 +179,11 @@ AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('sn
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
-function curRecipe() { return { lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: $('lead').checked, events: true }; }
+function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: $('lead').checked, events: true }; }
 function startDrive(r, opts) {
-  opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec = r.rec || L.trains[r.recIdx], trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, r.from, r.to, rec.v) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
+  opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec = r.rec || L.trains[r.recIdx], trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert('Chọn ga đi/đến hợp lệ cho chuyến này.'); return false; }
+  if (!(r.leg > 0)) campaign = [];
   ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
   if (trip.mission && ui.layout !== 'full') { ui.layout = 'full'; $('layoutBtn').textContent = 'Bố cục: toàn màn hình'; syncLayout(); }
   W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events });
@@ -220,6 +232,7 @@ addEventListener('keydown', e => {
   if (k === '1') { scale = 1; return; } if (k === '2') { scale = 4; return; } if (k === '3') { scale = 16; return; }
   if ((k === 'k' || k === 'K') && tutLessonActive) { Tutorial.skip(W, T); return; }
   if (replaying) return;
+  if (T.finished && endInfo && endInfo.more && k === 'Enter') { nextLeg(); e.preventDefault(); return; }
   if (W.mission && (k === 'x' || k === 'X')) { doAct('measure'); e.preventDefault(); return; } if (W.mission && (k === 'k' || k === 'K')) { doAct('mark'); e.preventDefault(); return; }
   if (k === 'w' || k === 'W') doAct('power', 1); else if (k === 's' || k === 'S') doAct('power', -1);
   else if (k === 'ArrowDown') doAct('brake', 1); else if (k === 'ArrowUp') doAct('brake', -1);
@@ -269,8 +282,12 @@ function frame(now) {
   if (W) AUD.update(W, T, { scale, paused: paused || mode === 'profile' });
   draw(); requestAnimationFrame(frame);
 }
+function nextLeg() { const r = Object.assign({}, recipe, { leg: (recipe.leg || 0) + 1, carryT0: W.trip.t0 + W.t + 600 }); startDrive(r); }
 function finalize() {
-  finalized = true; const sc = Sim.score(T, W); const ctxo = {
+  finalized = true; const sc = Sim.score(T, W);
+  if (W.mission) { campaign[W.mission.leg] = sc; if (!replaying && W.mission.leg < W.mission.count - 1 && !T.failed) { endInfo = { sc, fresh: [], best: null, advice: advise(sc), more: true }; return; }
+    if (W.mission.count > 1) { const done = campaign.filter(Boolean), km = done.reduce((a, c) => a + c.legKm, 0) || 1; sc.final = Math.round(done.reduce((a, c) => a + c.final * c.legKm, 0) / km); sc.legs = done; } }
+  const ctxo = {
     kind: tutLessonActive ? 'tutorial-run' : 'drive', line: recipe.lineId, trainLabel: W.trip.label, diff: recipe.diff, weather: W.weatherKind, seed: recipe.seed, score: sc.final, finished: T.finished && !T.failed,
     perfectStops: T.results.filter(r => !r.overrun && Math.abs(r.err) <= 0.5).length, stops: T.results.length, atc: T.atcCount, ackCount: W.ackCount || 0, ackPen: W.ackPen, paCount: W.paCount || 0,
     hadFire: W.faults.some(f => f.kind === 'fire'), fireTunnel: T.fireTunnel, deadViol: T.deadViol || 0, xingHit: T.xingHit || 0, scenario: { kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed } };
@@ -529,13 +546,15 @@ function drawEnd() {
   if (!replaying) button(380, 176, 170, 24, 'Xem lại chuyến này', () => { if (!recActs.length && !auto) { W.say('info', 'Không có thao tác nào được ghi.'); return; } startDrive(recipe, { replay: { actions: recActs.slice() } }); }, false);
   const bestRep = Store.get().replays[Store.scenarioKey({ kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed })];
   if (bestRep && !replaying) button(560, 176, 190, 24, 'Xem lại bản tốt nhất', () => startDrive(Object.assign({}, bestRep.recipe, { rec: undefined }), { replay: { actions: bestRep.actions } }), false);
+  if (endInfo && endInfo.more) button(60, 144, 220, 24, 'Chặng tiếp theo (Enter) →', nextLeg, true, '#2a8f5a');
   if (endPage === 0 && sc.mission) {
     let y = 226; txt('Cảm biến', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Phủ', 850, y, '#8aa0b5'); txt('Lỗi tìm thấy', 940, y, '#8aa0b5'); y += 26;
     sc.out.forEach(o => { txt(o[0], 60, y, '#fff', '14px system-ui'); txt(o[1], 230, y, '#fff', '14px system-ui'); txt(o[2] + '%', 850, y, '#fff', '14px system-ui'); txt(o[3] + '%', 940, y, '#fff', '14px system-ui'); y += 28; });
     y += 10; txt(`Độ phủ trung bình ${sc.covScore}% · lỗi đã đánh dấu ${sc.found}/${sc.tot} (${sc.findScore}%) · đánh dấu ${sc.marks} lần, sai ${sc.falseMarks}`, 60, y, '#c8d4e2', '14px system-ui'); y += 26;
     txt(`Độ êm ${sc.comfort}/100 · ATC phanh −${sc.atcPen} · đo ngoài dải −${sc.bandPen} · đánh dấu sai −${sc.falsePen} · xung đột tàu khách −${sc.confPen}`, 60, y, sc.confPen ? '#ff8a8a' : '#8aa0b5', '13px system-ui'); y += 22;
     txt(sc.minMargin < 1e8 ? `Khoảng cách tới chuyến khách đầu ngày: ${sc.minMargin >= 0 ? 'còn dư ' + Math.round(sc.minMargin / 60) + ' phút (sau khi chừa 10 phút)' : 'quá giờ ' + Math.round(-sc.minMargin / 60) + ' phút'}` : '', 60, y, '#8aa0b5', '13px system-ui');
-    txt('ĐIỂM: ' + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
+    if (campaign.filter(Boolean).length > 1 || (endInfo && endInfo.more)) { y += 30; txt('Các chặng:', 60, y, '#8aa0b5', '13px system-ui'); campaign.forEach((c, i) => { if (!c) return; y += 22; txt(`Chặng ${i + 1}: ${Math.round(c.legKm)} km · phủ ${c.covScore}% · lỗi ${c.found}/${c.tot} · ${c.final} điểm${c.confPen ? ' · XUNG ĐỘT LỊCH' : ''}`, 80, y, c.confPen ? '#ff8a8a' : '#c8d4e2', '13px system-ui'); }); }
+    txt((endInfo && endInfo.more ? 'ĐIỂM CHẶNG: ' : 'ĐIỂM: ') + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
     if (endInfo && endInfo.best) txt('Tốt nhất cho cấu hình này: ' + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');
   } else if (endPage === 0) {
     let y = 226; txt('Ga', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Dừng', 850, y, '#8aa0b5'); txt('Đúng giờ', 940, y, '#8aa0b5'); y += 22;
