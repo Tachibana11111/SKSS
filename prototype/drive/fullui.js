@@ -97,8 +97,7 @@ function drawTopBar(blink) {
     if (m.stop || showAll) txt(m.name, px, i % 2 ? 20 : 54, m.stop ? '#e8eef5' : '#7a8ea5', '10px system-ui', 'center'); });
   if (W.lead && W.lead.phase !== 'end') { const lx = pos(W.lead.x); if (lx > x0 - 6 && lx < x1 + 6) { ctx.fillStyle = '#ffa24a'; ctx.fillRect(lx - 4, ly - 8, 8, 16); } }
   ctx.fillStyle = '#4aa3ff'; ctx.fillRect(pos(T.x) - 6, ly - 9, 12, 18);
-  txt((delay >= 0 ? '+' : '') + Math.round(delay) + ' s' + (T.started ? '' : ' (chưa chạy)'), 1698, 30, Math.abs(delay) <= 15 ? '#4cd68a' : delay > 0 ? '#ff6464' : '#ffc247', 'bold 18px system-ui', 'right');
-  txt('lệch kế hoạch', 1698, 46, '#7a8ea5', '10px system-ui', 'right');
+
   // nút nhỏ: điện đàm, HUD, toàn màn hình
   // ba ô vuông biểu tượng cạnh nhau: điện đàm (O), HUD / tập trung (H), toàn màn hình (F11)
   const SZ = 44, GAP = 6, bx0 = FW - 16 - 5 * SZ - 4 * GAP, by0 = 7;
@@ -207,6 +206,9 @@ function drawFull() {
     else if (T.phase === 'dwell') { const e = -d; lines.push(nm + '  ·  LỆCH VẠCH ' + (e >= 0 ? '+' : '') + e.toFixed(2) + ' m'); cols.push('#fff');
       const mk = M[T.k], dep = mk.dep != null ? mk.dep : 0, hold = T.holds[T.k]; lines.push('Cửa: ' + (T.door === 'open' ? 'MỞ (đỗ ' + Math.round(T.dwellT) + ' s)' : T.door === 'closing' ? 'ĐANG ĐÓNG' : 'ĐÃ ĐÓNG → kéo cần') + ' · KH đi ' + hhmm(W.trip.t0 + dep) + (hold && hold > dep ? ' (giữ tới ' + hhmm(W.trip.t0 + hold) + ')' : '')); cols.push(T.door === 'closed' ? '#4cd68a' : '#ffc247');
       const nx = W.passers && W.passers[T.k] && W.passers[T.k].filter(p => p.t - W.t > -8).sort((a, b) => a.t - b.t)[0]; if (nx) { const dt = nx.t - W.t; lines.push(dt > 4.5 ? nx.label + ' thông qua đường thông qua sau ' + Math.round(dt) + ' s' : nx.label + ' ĐANG THÔNG QUA'); cols.push('#ffd88a'); } }
+    { const delay = W.t - Sim.plannedTime(T), hw = 560, hx = (FW - hw) / 2 + hw + 12, hy = TOPH + 14, col = Math.abs(delay) <= 15 ? '#4cd68a' : delay > 0 ? '#ff6464' : '#ffc247';      // lệch giờ: ngay bên phải hộp "còn xx km tới vạch"
+      ctx.fillStyle = 'rgba(8,12,18,.62)'; ctx.beginPath(); ctx.roundRect(hx, hy, 150, 48, 8); ctx.fill();
+      txt((delay >= 0 ? '+' : '') + Math.round(delay) + ' s' + (T.started ? '' : ' (chưa chạy)'), hx + 12, hy + 26, col, 'bold 18px system-ui'); txt('lệch kế hoạch', hx + 12, hy + 41, '#7a8ea5', '10px system-ui'); }
     if (lines.length && !tutLessonActive) { const hw = 560, hx = (FW - hw) / 2, hy = TOPH + 14, hh = lines.length * 22 + 14; ctx.fillStyle = 'rgba(8,12,18,.62)'; ctx.beginPath(); ctx.roundRect(hx, hy, hw, hh, 8); ctx.fill();
       lines.forEach((l, i) => txt(l, hx + 14, hy + 24 + i * 22, cols[i], (i === 0 ? 'bold 16px' : '13px') + ' system-ui'));
       if (barFrac !== null) { ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(hx + hw - 84, hy + 12, 70, 6); ctx.fillStyle = '#4aa3ff'; ctx.fillRect(hx + hw - 84, hy + 12, 70 * barFrac, 6); } } }
