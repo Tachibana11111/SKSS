@@ -92,7 +92,10 @@
     const top = mixc([6, 12, 24], [92, 160, 224], day), hor = mixc([14, 24, 42], [183, 214, 240], day);
     let gb = biomeAt(60);
     if (wdOn) { const cl = [landCls(60, 40), landCls(60, -40), landCls(150, 60)].map(x => String.fromCharCode(x || 0)); const ct = k => cl.filter(x => k.includes(x) && x !== ' ').length; if (ct('hci') >= 2) gb = 'urban'; else if (ct('fsepw') >= 2) gb = 'mountain'; else if (ct('aog') >= 1) gb = 'field'; }
-    const gcol = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
+    const gcol0 = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
+    // trong phạm vi hàng rào của ga (từ đầu rào tới hết rào) nền đất cố định là màu xi măng / đá dăm, không đổi theo quần xã xung quanh
+    let gwS = 0; for (const q of sts) gwS = Math.max(gwS, LAY.smooth(-FB - 150, -FB, q.d) * (1 - LAY.smooth(FA, FA + 150, q.d)));
+    const gcol = gwS > 0 ? [0, 1, 2].map(k => gcol0[k] + ([inSnow ? 214 : 82, inSnow ? 222 : 84, inSnow ? 232 : 84][k] - gcol0[k]) * gwS) : gcol0;
     // ---- nền: bầu trời, núi, mặt đất, sương mù (dùng cho phong cảnh thường và cho phần nhìn ra ngoài qua cửa hầm)
     const backdrop = () => {
     const g = ctx.createLinearGradient(0, py - 40, 0, c.hy + 4); g.addColorStop(0, mixc(rgbOf(top), [70, 78, 90], wx)); g.addColorStop(1, mixc(rgbOf(hor), [110, 118, 128], wx));
@@ -198,7 +201,7 @@
           e = z => side > 0 ? Math.max(lerp(Math.max(0, oppAt(z)) + 2.9, ex, wf(z)), xr(z) + 1.2) : Math.min(lerp(Math.min(0, oppAt(z)) - 2.9, ex, wf(z)), xl(z) - 1.2), th = 0.3 * side;      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
         for (let a = Math.max(ta, ZN); a < tb; a += 12) { const b = Math.min(tb, a + 12), inSt = b > za && a < zb, h = inSt ? 4.4 : 1.9, zm = (a + b) / 2, odd = Math.floor((T.x + a) / 12) % 2;
           sink.push({ z: zm, fn: () => { const ea = e(a), eb = e(b);
-            quad(P(ea, 0, a), P(eb, 0, b), P(eb, h, b), P(ea, h, a), odd ? concrete : concrete2);
+            quad(PG(ea, 0, a), PG(eb, 0, b), P(eb, h, b), P(ea, h, a), odd ? concrete : concrete2);      // chân tường xuống tận mặt đất (không hở khi nền thấp hơn mặt ray)
             quad(P(ea, h, a), P(eb, h, b), P(eb + th, h, b), P(ea + th, h, a), cap);
             if (inSt) { quad(P(ea, h, a), P(eb, h, b), P(eb, h + 2.2, b), P(ea, h + 2.2, a), glass); const pa = P(ea, 0, a), pb = P(ea, h + 2.2, a), w = Math.max(1, 0.18 * c.f / a); ctx.strokeStyle = 'rgba(70,80,92,.7)'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke(); }
           } }); }
