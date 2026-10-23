@@ -157,3 +157,9 @@ Nhãn: **[N]** có nguồn · **[K]** kiến thức nền chưa kiểm chứng �
 
 ### 9.5 Chưa tìm được
 Cầu thang hoặc thang sắt cho tổ lái (theo người dùng chỉ có ở depot, không cần ở ga); chi tiết mái ga Shinkansen; hàng rào phía ngoài; kích thước thang máy.
+
+### 9.6 Số hiệu ga (駅ナンバリング) của ga Shinkansen: chưa có dữ liệu kiểm chứng (2026-10-24)
+- **[N] Không có.** Trang Wikipedia tiếng Nhật của [東海道新幹線](https://ja.wikipedia.org/wiki/%E6%9D%B1%E6%B5%B7%E9%81%93%E6%96%B0%E5%B9%B9%E7%B7%9A), [山陽新幹線](https://ja.wikipedia.org/wiki/%E5%B1%B1%E9%99%BD%E6%96%B0%E5%B9%B9%E7%B7%9A), [東北新幹線](https://ja.wikipedia.org/wiki/%E6%9D%B1%E5%8C%97%E6%96%B0%E5%B9%B9%E7%B7%9A), [九州新幹線](https://ja.wikipedia.org/wiki/%E4%B9%9D%E5%B7%9E%E6%96%B0%E5%B9%B9%E7%B7%9A) và [北陸新幹線](https://ja.wikipedia.org/wiki/%E5%8C%97%E9%99%B8%E6%96%B0%E5%B9%B9%E7%B7%9A) không ghi số hiệu ga riêng cho các ga Shinkansen. Các số trong bảng (JC01, JT03, JR-A46, JB17...) đều là số của tuyến thường hoặc tàu điện nối với ga đó, không phải số của Shinkansen (chỉ đọc 100.000 ký tự đầu mỗi trang, phần cuối chưa đọc).
+- **[N] JR Central** chỉ công bố số hiệu cho **tuyến thường** (ví dụ Tokaido: CA-00 Atami, CA-68 Nagoya) ([trafficnews](https://trafficnews.jp/post/79232)); chưa tìm được nguồn nói ga Shinkansen dùng số này.
+- **[?]** Các tuyến Joetsu, Hokuriku, Hokkaido, Yamagata, Akita, Nishi-Kyushu chưa kiểm tra riêng.
+- **Quyết định:** game **không hiện số hiệu ga** trên biển tên ga cho tới khi có nguồn chính thức cho từng ga. Không dùng số của tuyến thường thay cho số Shinkansen.
