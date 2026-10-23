@@ -1,13 +1,13 @@
 # Cắt hình mặt trước (nhìn thẳng) của từng dòng tàu từ các bản vẽ rail.kychung.com (CC BY-NC-ND 4.0, chỉ dùng cá nhân).
 # Hình nhỏ này nằm ở góc ảnh nguồn đã tải (assets/src_*, n700_jrwest_large.webp). Chạy: python -X utf8 tools/build_front_sprites.py
-import os, json
+import os, json, sys
 import numpy as np
 from PIL import Image, ImageFilter
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'prototype', 'drive', 'assets')
 SPECS = {'n700': ('n700_jrwest_large.webp', (20, 100, 260, 330)), 'n700s': ('src_n700s.webp', (40, 110, 280, 360)),
          'e5': ('src_e5.webp', (60, 90, 290, 320)), 's800': ('src_s800.png', (1400, 130, 1650, 360)),
          'e7': ('e7 w7.png', (30, 100, 210, 290)), 'e6': ('e6.png', (45, 120, 200, 290)), 'e8': ('e8.png', (45, 120, 200, 290)), 'h5': ('h5.png', (62, 95, 245, 275)),
-         't4': ('doctor yellow.png', (50, 150, 225, 340)), 'e926': ('east-i.png', (60, 130, 225, 335))}
+         't4': ('doctor yellow.png', (50, 150, 225, 340)), 'e926': ('east-i.png', (60, 130, 225, 335)), 'e2': ('src_e2.png', (25, 125, 200, 305))}
 
 def shift(a, dy, dx):
     out = np.zeros_like(a)
@@ -40,7 +40,11 @@ def cut(name, f, box, thr=26):
     return out.crop(bb)
 
 meta = {}
+only = sys.argv[1:]
+if only:       # chỉ làm lại một số dòng, giữ nguyên số liệu của các dòng còn lại
+    t = open(os.path.join(ROOT, 'fronts.js'), encoding='utf-8').read(); meta = json.loads(t[t.find('{'):t.rfind('}') + 1])
 for name, (f, box) in SPECS.items():
+    if only and name not in only: continue
     img = cut(name, f, box); img.save(os.path.join(ROOT, 'front_' + name + '.png'), optimize=True)
     meta[name] = {'w': img.width, 'h': img.height}
     chk = Image.new('RGBA', img.size, (30, 40, 60, 255)); chk.alpha_composite(img); chk = chk.resize((img.width * 2, img.height * 2)); os.makedirs(os.path.join(ROOT, '..', '_tmp'), exist_ok=True); chk.save(os.path.join(ROOT, '..', '_tmp', 'chkfront_' + name + '.png'))

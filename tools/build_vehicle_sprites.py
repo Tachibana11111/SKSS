@@ -19,6 +19,7 @@ SPECS = {
     'h5':    ('h5.png', 10, 25.0, False, 0.30),           # H5 (Hokkaido)
     't4':    ('doctor yellow.png', 7, 25.0, False, 0.30), # 923 Dr. Yellow
     'e926':  ('east-i.png', 6, 25.0, False, 0.30),        # E926 East i
+    'e2':    ('src_e2.png', 10, 25.0, False, 0.30),       # E2-1000 (Tohoku/Joetsu cũ, 10 toa)
 }
 
 def bg_model(im):
@@ -124,9 +125,9 @@ def build_ref(name):
         if seg.max() - seg.min() > im.shape[1] * 0.35: cars.append((a, b, int(seg.min()), int(seg.max())))
     return im, cars
 
-def car_image_ref(im, c, up=30, down=150, cut_top=False, white_fill=False):
+def car_image_ref(im, c, up=30, down=150, cut_top=False, white_fill=False, xpl=60, xpr=90):
     a, b, x0, x1 = c; H, W, _ = im.shape
-    pad = 10; xl = max(0, x0 - 60); xr = min(W, x1 + 90)         # nới ra để lấy mũi tàu cong
+    pad = 10; xl = max(0, x0 - xpl); xr = min(W, x1 + xpr)         # nới ra để lấy mũi tàu cong
     ya = max(0, a - up); yb = min(H, a + down)
     crop = im[ya:yb, xl:xr]
     ref = im[max(0, a - up - 28):max(1, a - up - 6), xl:xr].mean(axis=0)
@@ -161,10 +162,10 @@ def main(names):
     reg = {}
     for name in names:
         src, ncars, carlen, flip, SCALE = SPECS[name]
-        if name in ('n700s', 'kamome'):
+        if name in ('n700s', 'kamome', 'e2'):
             im, cars = build_ref(name)
             if len(cars) != ncars: print(name, 'cảnh báo:', len(cars), 'dải', cars); continue
-            imgs = [car_image_ref(im, c, down=(190 if name == 'kamome' else 150), cut_top=(name == 'n700s'), white_fill=(name == 'n700s')) for c in cars]
+            imgs = [car_image_ref(im, c, down=(190 if name == 'kamome' else 175 if name == 'e2' else 150), cut_top=(name in ('n700s', 'e2')), white_fill=(name == 'n700s'), **({'xpl': 90 if k == 0 else 4, 'xpr': 90 if k == len(cars) - 1 else 6} if name == 'e2' else {})) for k, c in enumerate(cars)]
         else:
             im, B, diff, mask, cars = build(name)
             if len(cars) != ncars: continue

@@ -63,6 +63,7 @@
     <label>Tuyến <select id="line"></select></label>
     <label>Chiều <select id="dir"><option value="down">Xuống (ra xa Tokyo)</option><option value="up">Lên (về Tokyo)</option></select></label>
     <label>Tàu <select id="train"></select></label>
+    <label id="vehBox" style="display:none" title="Đoàn tàu đã rút khỏi tuyến; dùng lịch của chuyến đang chọn nên chỉ là giả định">Đoàn <select id="vehSel"><option value="">mặc định</option><option value="E2">E2-1000 (đã rút, lịch giả định)</option></select></label>
     <label>Từ <select id="from"></select></label>
     <label>Đến <select id="to"></select></label>
     <span id="legBox" style="display:none"><label>Thêm chặng <select id="via"></select></label><div class="btns" style="margin-top:4px"><button id="viaAdd">Thêm</button><button id="viaClr">Xoá chặng</button></div><span id="viaList" style="color:#8aa0b5;font-size:12px"></span></span>
@@ -177,7 +178,8 @@ function stopList() {
   seq.forEach((e, k) => { if (k < seq.length - 1) $('from').add(new Option(L.stations[e[0]].en, e[0])); if (k > 0) $('to').add(new Option(L.stations[e[0]].en, e[0])); });
   $('from').selectedIndex = 0; const pt = [...$('to').options].find(o => /^(Nagoya|Sendai)$/.test(o.text)); if (pt) pt.selected = true; else $('to').selectedIndex = $('to').options.length - 1;
 }
-$('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = stopList;
+$('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = () => { stopList(); vehUpd(); }; $('line').addEventListener('change', () => setTimeout(vehUpd, 0)); $('dir').addEventListener('change', () => setTimeout(vehUpd, 0));
+function vehUpd() { const rec = Lc().trains[+$('train').value], ok = rec && /^(E5|E7)$/.test(rec.v); $('vehBox').style.display = ok ? '' : 'none'; if (!ok) $('vehSel').value = ''; }
 $('to').addEventListener('change', () => { legsExtra = []; legUpd(); });
 $('from').onchange = () => {
   const rec = Lc().trains[+$('train').value]; if (Sim.INSPECT[rec.v]) { if ($('from').value === $('to').value) $('to').selectedIndex = (+$('from').value === 0) ? 1 : 0; legsExtra = []; legUpd(); return; }
@@ -263,9 +265,9 @@ AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('sn
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
-function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: $('lead').checked, events: true }; }
+function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: $('lead').checked, events: true, veh: $('vehSel').value || undefined }; }
 function startDrive(r, opts) {
-  opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec = r.rec || L.trains[r.recIdx], trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
+  opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec0 = r.rec || L.trains[r.recIdx], rec = r.veh && /^(E5|E7)$/.test(rec0.v) && Sim.VEH[r.veh] ? Object.assign({}, rec0, { v: r.veh, retro: 1 }) : rec0, trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert('Chọn ga đi/đến hợp lệ cho chuyến này.'); return false; }
   if (!(r.leg > 0)) campaign = [];
   ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
@@ -691,7 +693,7 @@ window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({
   requestAnimationFrame(tick);
   addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); on = !on; box.style.display = on ? 'block' : 'none'; wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', 'bản đồ nhỏ'); wrap(window.Strips, 'draw', 'dải tranh'); wrap(window.Scene, 'draw', 'cảnh 2D'); } }, true);
 })();
-trainList(); $('from').onchange(); setMode('drive'); startDrive(); requestAnimationFrame(frame);
+trainList(); vehUpd(); $('from').onchange(); setMode('drive'); startDrive(); requestAnimationFrame(frame);
 </script>
 </body>
 </html>

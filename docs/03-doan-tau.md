@@ -78,7 +78,7 @@ Suy ra E5 không thể chạy Tokaido, N700 không thể chạy Tohoku. E7/W7 l�
 **ALFA-X (E956, JR East)** **[N]**
 - Tàu thử 10 toa toàn toa động lực, bắt đầu thử từ 10/5/2019 (kế hoạch đến 3/2022), tốc độ thử 400 km/h, vận hành thử 360 km/h, thiết kế 405 km/h; thử trên Tohoku (vd. thử 5G ở 360 km/h giữa Sendai–Shin-Aomori 10–12/2020). Nguồn không nêu đưa vào chạy thương mại; dữ liệu dùng để phát triển **E10** (tàu kế nhiệm).
 
-**Các dòng đã rút [K]:** E2, E4 (Max, hai tầng, đã rút 2021), 100/300/0 series. Không cần cho game hiện tại.
+**Các dòng đã rút [K]:** E2 (có trong game như đoàn tùy chọn "E2-1000, lịch giả định" trên tuyến Tohoku/Joetsu/Hokuriku, dùng lịch của chuyến đang chọn; số liệu công suất/khối lượng là [K], chưa kiểm chứng), E4 (Max, hai tầng, đã rút 2021), 100/300/0 series. Không cần cho game hiện tại.
 
 ## 2b. Thông số kỹ thuật phục vụ mô phỏng (chiều dài, khối lượng, gia tốc, phanh)
 

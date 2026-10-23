@@ -7,7 +7,7 @@
   const CARD = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const lerp = (a, b, t) => a + (b - a) * t;
-  const SPR = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'n700s' };
+  const SPR = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', E2: 'e2', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'n700s' };
   const COL = { n700: '#e4eaf1', n700s: '#eaf0f6', s800: '#d9dde2', e5: '#27a07f' };
   const cache = {}, tvCache = {};
 

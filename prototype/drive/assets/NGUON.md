@@ -38,6 +38,7 @@ Cùng nguồn Nanyue Express / K.Y. Chung, cùng giấy phép CC BY-NC-ND 4.0, c
 | `h5.png` | H5 (Hokkaido) -> `h5_strip.*` |
 | `doctor yellow.png` | 923 Doctor Yellow -> `t4_strip.*` (tàu kiểm tra Tokaido/Sanyo) |
 | `east-i.png` | E926 East i -> `e926_strip.*` (tàu kiểm tra JR East) |
+| `jreast_e2-1000_large.png` (sao chép thành `src_e2.png`) | E2-1000 (10 toa) -> `e2_strip.*`, `front_e2.png`; người dùng tự tải 23/10/2026 từ rail.kychung.com (CC BY-NC-ND 4.0) |
 
 Hình mặt trước (`front_*`) cắt từ góc các ảnh này bằng `tools/build_front_sprites.py`. Hình nhìn từ trên (`top_*`) vẫn dựng từ ảnh SimplePlanes, chỉ đổi màu theo mẫu tàu.
 

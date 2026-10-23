@@ -63,7 +63,7 @@
     ctx.restore();
   }
   // tên ảnh dùng cho từng loại tàu (N700-8 tạm dùng toa N700S; ảnh chỉ có ở rail.kychung.com)
-  const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'kamome' };
+  const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', E2: 'e2', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'kamome' };
   function sprOf(R, key) { const s = R.sprites && R.sprites[SMAP[key] || 'n700']; return s && s.ready ? s : null; }
   const hOf = (R, key, k) => { const s = sprOf(R, key); return s ? s.meta.height * (k / s.meta.pxPerMeter) : 24; };
   // vẽ cả đoàn có số toa đúng: ảnh thật ghép từ toa đuôi, toa giữa (lặp), toa mũi; nếu thiếu ảnh thì vẽ tạm bằng code
@@ -248,7 +248,7 @@
         ctx.drawImage(scene._tint, 0, 0, ow, oh, fx - srcW * f, base - (spr.railY * f * SV) + 2, ow, oh);
       } else ctx.drawImage(img, spr.width - srcW, 0, srcW, spr.height, fx - srcW * f, base - (spr.railY * f * SV) + 2, srcW * f, dh);
       { // cần vẹt (パンタグラフ): đặt đúng chỗ nắp cần vẹt trên nóc từng mẫu tàu (đọc từ ảnh: [số toa, vị trí px trong toa]); nâng thì chạm dây điện, hạ thì gập sát nóc
-        const PAN = { n700: [[5, 264], [12, 85]], n700s: [[5, 260], [12, 87]], e5: [[3, 293], [7, 293]], h5: [[3, 293], [7, 293]], e6: [[2, 242], [6, 42]], e8: [[2, 242], [6, 42]], e7: [[5, 277], [7, 285]], t4: [[0, 612], [0, 1671]], s800: [[2, 170], [5, 170]], kamome: [[0, 683], [0, 1537]], e926: [[0, 243], [0, 852], [0, 1439]] };
+        const PAN = { n700: [[5, 264], [12, 85]], n700s: [[5, 260], [12, 87]], e5: [[3, 293], [7, 293]], h5: [[3, 293], [7, 293]], e6: [[2, 242], [6, 42]], e8: [[2, 242], [6, 42]], e7: [[5, 277], [7, 285]], t4: [[0, 612], [0, 1671]], s800: [[2, 170], [5, 170]], kamome: [[0, 683], [0, 1537]], e2: [[4, 42], [6, 42]], e926: [[0, 243], [0, 852], [0, 1439]] };
         const nm = SMAP[key] || 'n700', roofY = base - spr.railY * f * SV + 2, wy = base - 60; scene._pa = (scene._pa === undefined ? 1 : scene._pa) + ((T.pan === false ? 0 : 1) - (scene._pa === undefined ? 1 : scene._pa)) * 0.12;
         for (const [ci, ox] of PAN[nm] || []) { const car = ci ? spr.cars && spr.cars[ci - 1] : { x: 0 }; if (!car) continue; const x0 = fx - (spr.width - car.x - ox) * f; if (x0 < fx - srcW * f + 10) continue;
           const topY = roofY - 3 - (roofY - wy - 3) * scene._pa, kx = 8 + 5 * (1 - scene._pa), mid = (roofY + topY) / 2; ctx.strokeStyle = night > 0.3 ? '#8d98a6' : '#cfd6de'; ctx.lineWidth = 1.8;
