@@ -166,8 +166,7 @@
     };
     // khung cửa ra hầm: hầm thường là vòm; ga ngầm (Tokyo, Ueno của Tohoku) mở rộng bằng cả bề ngang sân ga
     const openingPoly = () => { if (zExit === null || zExit <= ZN) return null; const z = zExit, near = sts.filter(q => Math.abs(q.d - z) < 150 && q.st.extent), wide = near.length ? [Math.min(...near.map(q => q.st.extent[0])) - 0.8, Math.max(...near.map(q => q.st.extent[1])) + 0.8] : null, pts = [];
-      if (wide) { const [x0, x1] = wide; for (const [x, y] of [[x1, 0], [x1, 6.2], [x1 - 2.5, 8.0], [x0 + 2.5, 8.0], [x0, 6.2], [x0, 0]]) pts.push(P(x, y, z)); }
-      else { for (let i = 0; i <= 28; i++) { const th = Math.PI * i / 28; pts.push(P(5.0 * Math.cos(th), Math.sin(th) * 7.4 + 0.0, z)); } pts.unshift(P(5.0, 0, z)); pts.push(P(-5.0, 0, z)); }
+      { const [x0, x1] = wide || [-5.0, 5.0], h = wide ? 8.0 : 7.4, r = wide ? 1.4 : 1.8; pts.push(P(x1, 0, z)); for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 * i / 6; pts.push(P(x1 - r + Math.cos(a) * r, h - r + Math.sin(a) * r, z)); } for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 + Math.PI / 2 * i / 6; pts.push(P(x0 + r + Math.cos(a) * r, h - r + Math.sin(a) * r, z)); } pts.push(P(x0, 0, z)); }
       return pts; };
     const polyPath = pts => { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); };
     const outItems = [];
@@ -418,7 +417,8 @@
     if (entryZ !== null) {
       const ent = entryZ, urbanEnt = biomeAt(ent) === 'urban', stIn = sts.filter(q => q.d > ent - 50 && q.d < ent + 700), wide = urbanEnt || stIn.length > 0;
       const ex0 = Math.min(Math.min(0, ADJ) - 3.6, ...stIn.map(q => q.st.extent[0] - 0.8)), ex1 = Math.max(Math.max(0, ADJ) + 3.6, ...stIn.map(q => q.st.extent[1] + 0.8)), xc0 = (ex0 + ex1) / 2, hw = (ex1 - ex0) / 2;
-      const poly = []; if (wide) { for (const [x, y] of [[ex1, 0], [ex1, 6.6], [ex1 - 1.4, 8.0], [ex0 + 1.4, 8.0], [ex0, 6.6], [ex0, 0]]) poly.push(P(x, y, ent)); } else { for (let i = 0; i <= 28; i++) { const th = Math.PI * i / 28; poly.push(P(xc0 + hw * Math.cos(th), 0.1 + 7.8 * Math.sin(th), ent)); } poly.push(P(xc0 - hw, 0, ent)); poly.unshift(P(xc0 + hw, 0, ent)); }
+      const poly = [], hOpen = wide ? 8.0 : 7.4, rOpen = wide ? 1.4 : 1.8;      // cửa hầm: ô chữ nhật bo góc (không còn vòm tròn)
+      for (const [x, y] of [[ex1, 0], [ex1, hOpen - rOpen]]) poly.push(P(x, y, ent)); for (let i = 1; i <= 6; i++) { const a = Math.PI / 2 * i / 6; poly.push(P(ex1 - rOpen + Math.cos(a) * rOpen, hOpen - rOpen + Math.sin(a) * rOpen, ent)); } for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 + Math.PI / 2 * i / 6; poly.push(P(ex0 + rOpen + Math.cos(a) * rOpen, hOpen - rOpen + Math.sin(a) * rOpen, ent)); } poly.push(P(ex0, 0, ent));
       // mặt cửa
       if (urbanEnt || stIn.length) {          // toà nhà bê tông nhiều tầng có cửa sổ, ban công, mái, biển hiệu; cửa hầm là ô chữ nhật ở tầng trệt
         for (let xa = -78, ci = 0; xa < 78; xa += 12, ci++) { const hh = (xa + 12 > ex0 - 6 && xa < ex1 + 6) ? 20 + hash(ci * 5 + 1) * 8 : 9 + hash(ci * 7 + Math.floor(ent / 50)) * 26, tone = hash(ci * 11 + 3), bc = mixc([22 + tone * 14, 26 + tone * 12, 34 + tone * 10], [130 + tone * 40, 134 + tone * 34, 142 + tone * 30], day * (1 - wx * 0.35));
@@ -430,11 +430,11 @@
           if (hh > 16) for (let wy = 6.7; wy < hh - 2; wy += 6.6) quad(P(xa, wy, ent), P(xa + 12, wy, ent), P(xa + 12, wy + 0.3, ent), P(xa, wy + 0.3, ent), edgeC);                                 // dải ban công
         }
         // biển ga / khung viền quanh cửa
-        quad(P(ex0 - 1.2, 8.0, ent), P(ex1 + 1.2, 8.0, ent), P(ex1 + 1.2, 9.4, ent), P(ex0 - 1.2, 9.4, ent), mixc([30, 40, 52], [150, 158, 170], day * (1 - wx * 0.3)));
+        quad(P(ex0 - 1.2, hOpen, ent), P(ex1 + 1.2, hOpen, ent), P(ex1 + 1.2, hOpen + 1.4, ent), P(ex0 - 1.2, hOpen + 1.4, ent), mixc([30, 40, 52], [150, 158, 170], day * (1 - wx * 0.3)));
       } else {                                // sườn đồi: gò xanh quanh cửa vòm
         const hc = mixc([14, 24, 18], [52, 84, 56], day * (1 - wx * 0.3)), hl = P(xc0 - hw, 0, ent), hr = P(xc0 + hw, 0, ent), ht = P(xc0, 8.0, ent), ww = Math.abs(hr[0] - hl[0]), hhh = hl[1] - ht[1];
         ctx.fillStyle = hc; ctx.beginPath(); ctx.ellipse(ht[0], hl[1], ww * 2.4, hhh * 1.9, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#707a86'; ctx.beginPath(); ctx.ellipse(ht[0], hl[1], ww * 0.62, hhh * 1.02, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+        { const hw2 = hw + 1.0, h2 = hOpen + 1.0, r2 = rOpen + 0.8; ctx.fillStyle = '#707a86'; ctx.beginPath(); const q0 = P(xc0 + hw2, 0, ent); ctx.moveTo(q0[0], q0[1]); const q1 = P(xc0 + hw2, h2 - r2, ent); ctx.lineTo(q1[0], q1[1]); for (let i = 1; i <= 6; i++) { const a = Math.PI / 2 * i / 6, q = P(xc0 + hw2 - r2 + Math.cos(a) * r2, h2 - r2 + Math.sin(a) * r2, ent); ctx.lineTo(q[0], q[1]); } for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 + Math.PI / 2 * i / 6, q = P(xc0 - hw2 + r2 + Math.cos(a) * r2, h2 - r2 + Math.sin(a) * r2, ent); ctx.lineTo(q[0], q[1]); } const q2 = P(xc0 - hw2, 0, ent); ctx.lineTo(q2[0], q2[1]); ctx.closePath(); ctx.fill(); }
       }
       // bên trong cửa
       ctx.save(); ctx.beginPath(); poly.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.clip();
