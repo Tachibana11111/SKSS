@@ -1,5 +1,5 @@
 // Âm thanh v2: tổng hợp bằng WebAudio + phát thanh bằng giọng nói của trình duyệt (SpeechSynthesis). Không dùng file âm thanh.
-// Mọi âm đều là mô phỏng gần đúng [I], không phải ghi âm tàu thật. Lời phát thanh là mẫu tự soạn [I].
+// Mọi âm đều là mô phỏng gần đúng [I], không phải ghi âm tàu thật (còi: không có bản ghi miễn phí đã kiểm chứng, xem docs/10). Lời phát thanh là mẫu tự soạn [I].
 (function (root) {
   const JPN = ['東京', '品川', '新横浜', '小田原', '熱海', '三島', '新富士', '静岡', '掛川', '浜松', '豊橋', '三河安城', '名古屋', '岐阜羽島', '米原', '京都', '新大阪'];
   const VI = { Tokyo: 'Tokyo', Shinagawa: 'Shinagawa' };
@@ -86,7 +86,14 @@
   GameAudio.prototype.tunnelExit = function () { this.burst(0.35, 0.18, 1800, 1, 'bandpass', 0, 5000); this.tone(70, 0.3, 'sine', 0.12); };
   GameAudio.prototype.oppose = function (sp) { const g = 0.15 + 0.3 * sp; this.burst(0.9, g, 500, 0.8, 'bandpass', 0, 3200); this.burst(0.9, g, 3200, 0.8, 'bandpass', 0.55, 400); this.tone(50, 0.3, 'sine', 0.3 * sp, 0.45, 35); };
   GameAudio.prototype.thunder = function () { this.lastThunder = performance.now(); this.burst(2.4, 0.5, 130, 0.7, 'lowpass'); this.burst(1.2, 0.35, 90, 0.7, 'lowpass', 0.8); };
-  GameAudio.prototype.horn = function () { /* đã tắt tiếng còi theo yêu cầu: chưa có bản ghi còi thật của từng dòng tàu */ };
+  // còi hơi (空気笛) của Shinkansen, tổng hợp [I]: hai cao độ hơi lệch nhau (hai còi cùng kêu) có thành phần hơi gió, vào nhanh, ngắt gọn; KHÔNG dùng còi điện/nhạc của tàu thường. Cao độ là ước lượng, chưa có số liệu kiểm chứng [?]
+  GameAudio.prototype.horn = function () {
+    if (!this.ready) return; const c = this.ctx, t = c.currentTime, dur = 1.1, g = c.createGain(), lp = c.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.linearRampToValueAtTime(2400, t + 0.08); lp.frequency.linearRampToValueAtTime(1500, t + dur); lp.Q.value = 1.2;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.3, t + 0.05); g.gain.setValueAtTime(0.3, t + dur - 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    for (const f of [392, 415, 784, 830, 1176]) { const o = c.createOscillator(), og = c.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 0.97, t); o.frequency.linearRampToValueAtTime(f, t + 0.06); og.gain.value = f < 500 ? 0.5 : 0.18; o.connect(og); og.connect(lp); o.start(t); o.stop(t + dur + 0.05); }
+    lp.connect(g); g.connect(this.master); this.burst(dur, 0.1, 1800, 0.7, 'bandpass');
+  };
   GameAudio.prototype.doorChime = function () { this.tone(880, 0.28, 'sine', 0.18); this.tone(659, 0.4, 'sine', 0.18, 0.3); this.tone(880, 0.28, 'sine', 0.18, 0.9); this.tone(659, 0.4, 'sine', 0.18, 1.2); this.airRelease(0.1); };
   GameAudio.prototype.doorClosed = function () { this.burst(0.12, 0.35, 300, 2, 'lowpass'); this.tone(150, 0.12, 'sine', 0.2); this.airRelease(0.14); };
   GameAudio.prototype.doorOpen = function () { this.airRelease(0.16); this.burst(0.15, 0.3, 260, 2, 'lowpass', 0.5); this.tone(95, 1.6, 'sine', 0.05, 0.6); };
