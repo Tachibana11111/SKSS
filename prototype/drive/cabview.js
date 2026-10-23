@@ -195,9 +195,12 @@
     //      tường bám theo mép hành lang xr/xl (đã gồm các đường của ga đang toả ra), nên ga đỗ ở đường rìa nhánh cũng được bọc kín
     const enclose = (q, z0, z1) => {
       const concrete = mixc([22, 26, 30], [170, 174, 174], day * (1 - wx * 0.3)), concrete2 = mixc([18, 22, 26], [150, 154, 156], day * (1 - wx * 0.3)), cap = mixc([30, 34, 40], [206, 210, 210], day * (1 - wx * 0.3)), glass = day > 0.4 ? 'rgba(150,205,235,.16)' : 'rgba(60,90,120,.18)';
-      const za = z0 - 25, zb = z1 + 25, ta = Math.max(q.d - FA, ZN), tb = Math.min(q.d + FB, ZF);
+      // rào rộng hết cỡ từ chỗ đường ga bắt đầu toả ra tới chỗ đường cuối cùng nhập lại (theo từng đường thật của ga, không theo hằng số), rồi thu lại êm trong 150 m
+      const outerT = q.st.tracks.filter(t => !t.main && t.in0 !== undefined), appL = Math.max(outerT.length ? Math.max(...outerT.map(t => t.in0)) + 40 : 0, 480), depL = Math.max(outerT.length ? Math.max(...outerT.map(t => t.out0 + t.len)) + 40 : 0, 120),
+        wA = rr ? depL : appL, wB = rr ? appL : depL, s0 = q.d - wA, s1 = q.d + wB;
+      const za = z0 - 25, zb = z1 + 25, ta = Math.max(s0 - 150, ZN), tb = Math.min(s1 + 150, ZF);
       for (const side of [1, -1]) {
-        const ex = q.st.extent[side > 0 ? 1 : 0] + side * 1.4, zS = q.d - FA + 100, zE = q.d + FB - 150, wf = z => LAY.smooth(zS, zS + 150, z) * (1 - LAY.smooth(zE - 150, zE, z)),
+        const ex = q.st.extent[side > 0 ? 1 : 0] + side * 1.4, wf = z => LAY.smooth(s0 - 150, s0, z) * (1 - LAY.smooth(s1, s1 + 150, z)),
           e = z => side > 0 ? Math.max(lerp(Math.max(0, oppAt(z)) + 2.9, ex, wf(z)), xr(z) + 1.2) : Math.min(lerp(Math.min(0, oppAt(z)) - 2.9, ex, wf(z)), xl(z) - 1.2), th = 0.3 * side;      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
         for (let a = Math.max(ta, ZN); a < tb; a += 12) { const b = Math.min(tb, a + 12), inSt = b > za && a < zb, h = inSt ? 4.4 : 1.9, zm = (a + b) / 2, odd = Math.floor((T.x + a) / 12) % 2;
           sink.push({ z: zm, fn: () => { const ea = e(a), eb = e(b);
