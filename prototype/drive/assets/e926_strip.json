@@ -1,0 +1,41 @@
+{
+ "name": "e926",
+ "scale": 0.3,
+ "width": 1763,
+ "height": 59,
+ "pxPerMeter": 11.388,
+ "cars": [
+  {
+   "i": 1,
+   "x": 0,
+   "w": 314
+  },
+  {
+   "i": 2,
+   "x": 313,
+   "w": 285
+  },
+  {
+   "i": 3,
+   "x": 597,
+   "w": 285
+  },
+  {
+   "i": 4,
+   "x": 881,
+   "w": 285
+  },
+  {
+   "i": 5,
+   "x": 1166,
+   "w": 285
+  },
+  {
+   "i": 6,
+   "x": 1450,
+   "w": 314
+  }
+ ],
+ "railY": 57,
+ "source": "rail.kychung.com 2D drawing (CC BY-NC-ND 4.0), personal use only"
+}

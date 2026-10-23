@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  push:
+    branches: [main, public-release]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Kiểm thử mô phỏng (không cần trình duyệt)
+        run: node tests/run.js

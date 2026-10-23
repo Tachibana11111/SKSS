@@ -5,17 +5,11 @@ node_modules/
 # tài nguyên có giấy phép NC/ND hoặc chỉ dùng cá nhân: không đưa vào repo (xem prototype/drive/assets/NGUON.md và docs/data/README.md)
 docs/data/raw-pdf/
 prototype/drive/assets/*.webp
-prototype/drive/assets/n700_strip.*
 prototype/drive/_*
 prototype/drive/assets/src_*
-prototype/drive/assets/sprites.js
-prototype/drive/assets/audio/
-prototype/drive/assets/front_*
-prototype/drive/assets/fronts.js
 
 prototype/drive/assets/top_*
 prototype/drive/assets/tops.js
-prototype/drive/assets/*_strip.*
 prototype/drive/assets/e6.png
 prototype/drive/assets/e8.png
 prototype/drive/assets/h5.png
@@ -26,7 +20,6 @@ prototype/drive/assets/east-i.png
 # dữ liệu OpenStreetMap tải về (ODbL, lớn): không đưa vào repo
 data-osm/
 
-# dữ liệu OSM đã biên dịch (phái sinh, ODbL): không đưa vào repo
-prototype/drive/world/
+# (nhánh public-release: dải toa, hình mặt trước, âm thanh và dữ liệu OSM đã biên dịch được đưa vào để deploy GitHub Pages; xem README.md)
 
 tools/_tmp/
