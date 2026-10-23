@@ -40,13 +40,21 @@
         { text: 'Chờ kiểm tra xong (nhấn 3 để tua ×16). Sau đó tàu được chạy lại với tốc độ ≤ 70 km/h trong 12 km.', hint: '3', check: (W, T) => !W.eqkActive && !T.cut },
         { text: 'Báo CHÁY ở toa 6: ngoài hầm thì dừng ở ga gần nhất (không phanh gấp giữa đường). Nhấn Y báo điều độ, rồi tiếp tục.', hint: 'Y', onEnter: (W, T) => root.Sim.inject(W, 'fire'), check: (W, T) => (W.ackCount || 0) >= 1 },
         { text: 'Dừng ở ga, chờ khi điều độ thả tàu, rồi hoàn thành chuyến.', hint: '', check: (W, T) => T.finished }
-      ] }
+      ] },
+    { id: 'power', title: 'Bài 4 · Cần vẹt, ATC cắt/bật, tàu đứng phía trước', line: 'tsk', from: 12, to: 16, diff: 'normal', weather: 'clear', seed: 14, lead: true,
+      steps: [
+        { text: 'Đóng cửa (Enter), khởi hành (W), chạy tới khoảng 150 km/h.', hint: 'Enter, W', check: (W, T) => T.v * 3.6 >= 150 },
+        { text: 'Hạ CẦN VẸT (G) như khi qua đoạn cách điện (dead section): mất điện lưới nên không kéo và không hoàn năng được, tàu chỉ chạy đà.', hint: 'G', check: (W, T) => T.pan === false },
+        { text: 'Nâng cần vẹt lên lại (G) để có điện, rồi kéo lại tốc độ.', hint: 'G', check: (W, T) => T.pan !== false },
+        { text: 'ATC là lớp an toàn tự phanh. Nhấn A để CẮT ATC (chỉ khi ATC hỏng; tàu không còn ai phanh thay bạn), rồi nhấn A để BẬT lại.', hint: 'A', init: st => { st.off = false; }, check: (W, T, st) => { if (T.atcOn === false) st.off = true; return st.off && T.atcOn !== false; } },
+        { text: 'Phía trước có tàu ĐỨNG trên đường chính. Điện đàm sẽ báo khoảng cách. Giảm tốc và dừng lại phía sau nó, cách ít nhất vài trăm mét. Va chạm là kết thúc chuyến (điểm 0).', hint: '↓', onEnter: (W, T) => { if (W.lead) { W.lead.x = T.x + 3500; W.lead.v = 0; W.leadHoldUntil = 1e9; W.lead.cut = true; } }, check: (W, T) => !W.lead || (T.v < 0.5 && W.lead.x - W.lead.veh.len - T.x > 50), fail: (W, T) => T.collision },
+      ] },
   ];
   const S = { lesson: -1, step: 0, st: {}, enteredAt: 0, passedAt: -1, done: {}, banner: '' };
   function cfg(i) {
     const L = LESSONS[i], rec = pickTrain(L.from, L.to); if (!rec) return null;
     S.lesson = i; S.step = 0; S.st = {}; S.passedAt = -1; S.banner = '';
-    return { lineId: L.line, rec, from: L.from, to: L.to, diff: L.diff, weather: L.weather, seed: L.seed, events: false, lead: false, title: L.title };
+    return { lineId: L.line, rec, from: L.from, to: L.to, diff: L.diff, weather: L.weather, seed: L.seed, events: false, lead: !!L.lead, title: L.title };
   }
   function active() { return S.lesson >= 0 && S.lesson < LESSONS.length; }
   function enter(W, T) { const st = LESSONS[S.lesson].steps[S.step]; S.st = {}; if (st.init) st.init(S.st); if (st.onEnter) st.onEnter(W, T); S.enteredAt = W.t; S.entered = true; }

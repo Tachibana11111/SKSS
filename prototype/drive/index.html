@@ -76,7 +76,7 @@
   </div>
   
   <div class="row" id="rowTut" style="display:none">
-    <button class="go" data-lesson="0">Bài 1 · Lái cơ bản + dừng ga</button><button class="go" data-lesson="1">Bài 2 · Thiết bị</button><button class="go" data-lesson="2">Bài 3 · Sự cố</button>
+    <button class="go" data-lesson="0">Bài 1 · Lái cơ bản + dừng ga</button><button class="go" data-lesson="1">Bài 2 · Thiết bị</button><button class="go" data-lesson="2">Bài 3 · Sự cố</button><button class="go" data-lesson="3">Bài 4 · Cần vẹt, ATC, tàu trước</button>
     <span class="dim">Phím K: bỏ qua bước · R: làm lại bài.</span>
   </div>
 </aside>
@@ -282,7 +282,7 @@ let tutLessonActive = false;
 function startLesson(i) {
   const c = Tutorial.cfg(i); if (!c) { alert('Không tìm thấy chuyến phù hợp cho bài này.'); return; }
   tutorialRun = true; tutLessonActive = true; setMode('tutorial');
-  startDrive({ lineId: c.lineId, rec: c.rec, from: c.from, to: c.to, diff: c.diff, weather: c.weather, seed: c.seed, lead: false, events: false });
+  startDrive({ lineId: c.lineId, rec: c.rec, from: c.from, to: c.to, diff: c.diff, weather: c.weather, seed: c.seed, lead: c.lead, events: false });
   tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none';
 }
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));

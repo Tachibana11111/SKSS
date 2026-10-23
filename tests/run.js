@@ -149,9 +149,9 @@ section('8. Hồ sơ, thành tích và bản ghi');
 
 section('9. Hướng dẫn (bot làm theo từng bước)');
 {
-  for (let li = 0; li < 3; li++) {
+  for (let li = 0; li < 4; li++) {
     const c = Tutorial.cfg(li); ok(!!c, `bài ${li + 1}: tìm được chuyến`); if (!c) continue; const trip = Sim.makeTrip(c.lineId, c.rec, c.from, c.to);
-    const W = Sim.createWorld(c.lineId, trip, { diff: c.diff, weather: c.weather, seed: c.seed, lead: false, events: false }), T = W.player; let now = 0, n = 0; const LS = Tutorial.LESSONS[li], S = Tutorial.S;
+    const W = Sim.createWorld(c.lineId, trip, { diff: c.diff, weather: c.weather, seed: c.seed, lead: c.lead, events: false }), T = W.player; let now = 0, n = 0; const LS = Tutorial.LESSONS[li], S = Tutorial.S;
     while (n++ < 4e6 && !(S.step >= LS.steps.length)) {
       now += 50; const s = S.step;
       if (li === 0) { if (s === 0) Sim.requestClose(T); else if (s === 1 && T.door === 'closed') Sim.setPower(T, 1); else if (s === 2) Sim.setPower(T, Math.min(13, T.pw + (n % 30 === 0 ? 1 : 0))); else if (s === 3) Sim.setPower(T, 13); else if (s === 4) Sim.coast(T);
@@ -159,6 +159,7 @@ section('9. Hướng dẫn (bot làm theo từng bước)');
       if (li >= 1 && s === 0 && T.door === 'open') Sim.requestClose(T);
       if (li === 1) { if (s === 2) T.wiper = true; if (s === 4) T.wiper = false; if (s === 1 || s === 7) Sim.ackOldest(W); if (s === 5) for (const z of W.workers) if (!z.checked && T.x >= z.s0 - 600) Sim.honk(T); if (s === 6) for (const a of W.animals) if (!a.resolved && T.x >= a.s - 1200) Sim.honk(T); }
       if (li === 2) { if (s === 1 && W.decision) Sim.answerDecision(W, 'a'); if (s === 2 && T.cut) Sim.announcePA(T); if (s === 4) Sim.ackOldest(W); }
+      if (li === 3) { if (s === 1) { T.pan = false; } if (s === 2) T.pan = true; if (s === 3) { if (!S.st.off) T.atcOn = false; else T.atcOn = true; } if (s === 4 && W.lead) { if (W.lead.x - W.lead.veh.len - T.x < 1200) { Sim.setPower(T, 0); Sim.setBrake(T, 7); } else Sim.coast(T); } }
       const manual = li === 0 && s <= 7; Sim.tick(W, 0.05, {}, !manual); Tutorial.update(W, T, now);
       if (T.finished) { for (let k = 0; k < 60; k++) { now += 50; Tutorial.update(W, T, now); } break; }
     }
