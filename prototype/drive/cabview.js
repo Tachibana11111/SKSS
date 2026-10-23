@@ -203,11 +203,12 @@
         wA = rr ? depL : appL, wB = rr ? appL : depL, s0 = q.d - wA, s1 = q.d + wB;
       const za = z0 - 25, zb = z1 + 25, ta = Math.max(s0 - 150, ZN), tb = Math.min(s1 + 150, ZF);
       for (const side of [1, -1]) {
-        const e = z => { let v = side > 0 ? xr2(z) + 1.2 : xl2(z) - 1.2;      // rào ngoài bám theo rìa ngoài cùng của ga: đường ngoài cùng thật (kể cả đường nhánh đang toả ra / nhập lại) cách 4,1 m; trong phạm vi sân ga thì thêm mép ngoài sân ga + 1,4 m
-          for (const q2 of sts) { if (!q2.st.plats.length) continue; const zs = rr ? q2.d - 20 : q2.d - 420, pw = LAY.smooth(zs - 60, zs - 10, z) * (1 - LAY.smooth(zs + 450, zs + 500, z)); if (pw <= 0) continue; const edge = side > 0 ? Math.max(...q2.st.plats.map(p => p.xb)) + 1.4 : Math.min(...q2.st.plats.map(p => p.xa)) - 1.4; v = side > 0 ? Math.max(v, lerp(v, edge, pw)) : Math.min(v, lerp(v, edge, pw)); } return v; }, th = 0.3 * side;      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
+        // rào là vật CỐ ĐỊNH theo bố cục ga: giữ nguyên bề rộng (mép ngoài sân ga + 1,4 m, đường ngoài cùng + 4,1 m) trên suốt đoạn rào từ chỗ đường ga đầu tiên bắt đầu toả ra tới chỗ đường cuối cùng nhập lại, rồi thu lại êm trong 150 m về đường ray thật (xr2/xl2)
+        const exS = side > 0 ? Math.max(...q.st.plats.map(p => p.xb + 1.4), ...q.st.tracks.map(t => t.x + 4.1)) : Math.min(...q.st.plats.map(p => p.xa - 1.4), ...q.st.tracks.map(t => t.x - 4.1)), wf = z => LAY.smooth(s0 - 150, s0, z) * (1 - LAY.smooth(s1, s1 + 150, z)),
+          e = z => side > 0 ? Math.max(lerp(xr2(z) + 1.2, exS, wf(z)), xr2(z) + 1.2) : Math.min(lerp(xl2(z) - 1.2, exS, wf(z)), xl2(z) - 1.2), th = 0.3 * side;      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
         for (let a = Math.max(ta, ZN); a < tb; a += 12) { const b = Math.min(tb, a + 12), inSt = b > za && a < zb, h = inSt ? 4.4 : 1.9, zm = (a + b) / 2, odd = Math.floor((T.x + a) / 12) % 2;
           sink.push({ z: zm, fn: () => { const ea = e(a), eb = e(b);
-            quad(PG(ea, 0, a), PG(eb, 0, b), P(eb, h, b), P(ea, h, a), odd ? concrete : concrete2);      // chân tường xuống tận mặt đất (không hở khi nền thấp hơn mặt ray)
+            quad(PG(ea, -1.2, a), PG(eb, -1.2, b), P(eb, h, b), P(ea, h, a), odd ? concrete : concrete2);      // chân tường cắm sâu 1,2 m dưới mặt đất (không hở chân dù nền thấp hơn mặt ray)
             quad(P(ea, h, a), P(eb, h, b), P(eb + th, h, b), P(ea + th, h, a), cap);
             if (inSt) { quad(P(ea, h, a), P(eb, h, b), P(eb, h + 2.2, b), P(ea, h + 2.2, a), glass); const pa = P(ea, 0, a), pb = P(ea, h + 2.2, a), w = Math.max(1, 0.18 * c.f / a); ctx.strokeStyle = 'rgba(70,80,92,.7)'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke(); }
           } }); }
@@ -602,6 +603,6 @@
     W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => { const r = Object.assign({}, m, { s: Lm - (m.sOrig !== undefined ? m.sOrig : m.s) }); delete r.sOrig; return r; });      // bản phản chiếu: s đã là vị trí hình học gốc, bỏ sOrig (nếu giữ lại, ga ghép/tách bị tính lệch cả trăm mét và biến mất khỏi camera sau) T2.k = T.M.length - 1 - T.k; T2.forced = T.forced >= 0 ? T.M.length - 1 - T.forced : -1;      // dừng khẩn ở ga không có lịch dừng cũng phải rẽ vào đường nhánh trong camera sau W2.player = T2;
     draw(ctx, px, py, pw, ph, W2, T2, R);
   }
-  root.CAB_BUILD = 'cabview 23/10 19:05 (rào bám ray)';      // dấu bản dựng hiện ở cột trái: đổi mỗi lần sửa cabview.js để biết trình duyệt đang chạy bản nào
+  root.CAB_BUILD = 'cabview 23/10 19:40 (rào cố định theo bề rộng ga)';      // dấu bản dựng hiện ở cột trái: đổi mỗi lần sửa cabview.js để biết trình duyệt đang chạy bản nào
   root.CabView = { draw, drawRear, proj, cellObject, hash, CAMH, PEDGE, PH, ADJ };
 })(typeof window !== 'undefined' ? window : globalThis);
