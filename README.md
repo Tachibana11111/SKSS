@@ -16,6 +16,7 @@ GitHub Actions: `ci.yml` chạy kiểm thử mỗi lần đẩy mã; `pages.yml`
 ## Ghi công và giấy phép tài nguyên
 | Thành phần | Tác giả / nguồn | Giấy phép |
 |---|---|---|
+| Biểu tượng tab trang (`prototype/drive/assets/logo.png`) | 西日本旅客鉄道 (JR West), [File:Shinkansen-W.png](https://commons.wikimedia.org/wiki/File:Shinkansen-W.png), Wikimedia Commons | CC BY-SA 4.0 |
 | Hình tàu 2D (N700, N700S, E5, E6, E7/W7, E8, H5, 800, N700S-8000, 923, E926) và hình mặt trước cắt từ các hình đó | Nanyue Express / K.Y. Chung — [rail.kychung.com](https://rail.kychung.com/) | CC BY-NC-ND 4.0. Dải toa trong `prototype/drive/assets/*_strip.*` là bản cắt ghép từ hình gốc; **chỉ dùng phi thương mại**, chủ sở hữu hình có quyền yêu cầu gỡ. Xem `prototype/drive/assets/NGUON.md`. |
 | Bản đồ, nhà, đường, công viên, cây | © OpenStreetMap contributors — [openstreetmap.org/copyright](https://www.openstreetmap.org/copyright), dữ liệu tải từ [Geofabrik](https://download.geofabrik.de/) | ODbL 1.0. Dữ liệu biên dịch trong `prototype/drive/world/` là cơ sở dữ liệu phái sinh, cũng theo ODbL. |
 | Tiếng nền ga và tàu qua ga | Flavien Gillié, "Odawara Station, Préfecture de Kanagawa, Japon – Shinkansen train leaving for Tokyo", Internet Archive `aporee_70029_81567` | Public Domain Mark 1.0 |

@@ -40,3 +40,6 @@ Cùng nguồn Nanyue Express / K.Y. Chung, cùng giấy phép CC BY-NC-ND 4.0, c
 | `east-i.png` | E926 East i -> `e926_strip.*` (tàu kiểm tra JR East) |
 
 Hình mặt trước (`front_*`) cắt từ góc các ảnh này bằng `tools/build_front_sprites.py`. Hình nhìn từ trên (`top_*`) vẫn dựng từ ảnh SimplePlanes, chỉ đổi màu theo mẫu tàu.
+
+## Biểu tượng tab trang (logo.png)
+`logo.png` (304×299): pictogram Shinkansen của 西日本旅客鉄道 (JR West), [File:Shinkansen-W.png](https://commons.wikimedia.org/wiki/File:Shinkansen-W.png) trên Wikimedia Commons, **CC BY-SA 4.0**; tải trực tiếp từ https://upload.wikimedia.org/wikipedia/commons/8/88/Shinkansen-W.png ngày 2026-10-23 theo yêu cầu của người dùng. Chưa chỉnh sửa. Dùng làm favicon (`<link rel="icon">` trong `index.html`).
