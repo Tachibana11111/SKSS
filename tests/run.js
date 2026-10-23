@@ -412,4 +412,28 @@ section('18. Ga cuối: chọn đường có sân ga của cả hai nhóm, đi q
   { const rm = find('tsk', 'Nozomi', 'down', 12, 15), tm = Sim.makeTrip('tsk', rm, 12, 15), W = Sim.createWorld('tsk', tm, { diff: 'easy', seed: 3, lead: false, events: false }); ok(Object.keys(W.termPick).length === 0, 'hành trình giữa hai ga trung gian: không chọn đường ga cuối'); }
 }
 
+section('19. Nhiệm vụ kiểm tra tự do (923 Doctor Yellow, E926 East i)');
+{
+  const trip = Sim.makeMission('tsk', 0, 12, 'T4'), L = Sim.lineOf('tsk');
+  ok(trip && trip.mission && trip.dir === 'down' && trip.M.length === 13 && trip.M.filter(m => m.stop).length === 2, 'T4 Tokyo → Nagoya: chỉ dừng ở hai ga đầu/cuối, các ga giữa chạy qua');
+  ok(Sim.makeMission('tsk', 12, 0, 'T4').dir === 'up', 'chiều chạy suy ra từ thứ tự hai ga');
+  ok(Sim.makeMission('tsk', 3, 3, 'T4') === null && Sim.makeMission('tsk', 0, 5, 'N700') === null, 'từ chối cùng ga / tàu không phải tàu kiểm tra');
+  { let last = 0; for (const t of L.trains) { if (Sim.INSPECT[t.v]) continue; for (let i = 0; i <= 12; i++) { const x = Sim.timeAt(L, t, i); if (x != null && x > last) last = x; } }
+    ok(trip.t0 >= last + 600 - 1, 'xuất phát sau chuyến khách cuối ngày (trên đoạn chạy) ít nhất 10 phút', [trip.t0, last]); }
+  const mk = (seed, o) => Sim.createWorld('tsk', trip, Object.assign({ diff: 'easy', seed, lead: true, events: true }, o || {}));
+  const W = mk(1), T = W.player;
+  ok(!!W.mission && !W.lead && Object.keys(W.passers).length === 0 && (W.opposing || []).length === 0, 'nhiệm vụ: không tàu chạy trước, không tàu thông qua/ngược chiều');
+  ok(W.mission.defects.length >= 4 && W.mission.defects.every(d => d.s > W.mission.s0 + 800 && d.s < W.mission.s1 - 800), 'lỗi sinh ra cách xa hai ga đầu/cuối');
+  ok(JSON.stringify(mk(1).mission.defects) === JSON.stringify(mk(1).mission.defects) && JSON.stringify(mk(1).mission.defects) !== JSON.stringify(mk(2).mission.defects), 'lỗi theo seed');
+  // đo tắt: không phủ; đo bật: phủ khi đúng dải tốc độ
+  { const Wa = mk(3), Ta = Wa.player; let n = 0; while (!Ta.finished && n++ < 4e6) Sim.tick(Wa, 0.05, {}, true);
+    const sa = Sim.score(Ta, Wa); ok(sa.covScore === 0 && sa.found === 0 && sa.final <= 40, 'không bật đo: phủ 0%, không tìm lỗi nào, điểm thấp', [sa.covScore, sa.final]); }
+  { const Wb = mk(3), Tb = Wb.player; Sim.toggleMeasure(Tb); let n = 0; while (!Tb.finished && n++ < 4e6) { Sim.tick(Wb, 0.05, {}, true); for (const d of Wb.mission.defects) if (d.seen && !d.marked && Tb.x - d.s >= 0 && Tb.x - d.s <= 300) Sim.markDefect(Tb); }
+    const sb = Sim.score(Tb, Wb); ok(Tb.finished && sb.covScore >= 70, 'bật đo suốt chuyến: phủ ≥ 70%', sb.covScore); ok(sb.found >= Math.ceil(sb.tot * 0.6) && sb.falseMarks === 0, 'đánh dấu lỗi vừa phát hiện: tìm ≥ 60%, không đánh dấu sai', [sb.found, sb.tot, sb.falseMarks]);
+    ok(sb.final >= 55 && !Wb.mission.conflict, 'chạy đo trong khung đêm: không xung đột lịch tàu khách', [sb.final, Wb.mission.conflict]); }
+  { const Wc = mk(4), Tc = Wc.player; Tc.phase = 'run'; Tc.started = true; Tc.x += 1500; Sim.markDefect(Tc); ok(Wc.mission.falseMarks === 1, 'đánh dấu khi không có lỗi: tính là đánh dấu sai'); }
+  { const Wd = mk(5), Td = Wd.player; Wd.trip.t0 += 6 * 3600; Sim.tick(Wd, 0.05, {}, true); Wd.running = true; Sim.tick(Wd, 0.05, {}, true); ok(Wd.mission.conflict || Wd.mission.minMargin < 0, 'trễ sang giờ chuyến khách đầu ngày: báo xung đột lịch', Wd.mission.minMargin); }
+  { const E = Sim.makeMission('toh', 0, 8, 'E926'), We = Sim.createWorld('toh', E, { diff: 'easy', seed: 1, lead: true, events: true }); ok(E && E.t0 > 0 && We.mission && We.player.veh.key === 'E926', 'E926 trên Tohoku cũng có nhiệm vụ tự do'); }
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

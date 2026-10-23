@@ -132,12 +132,17 @@ function trainList() {
 function stopList() {
   const L = Lc(), rec = L.trains[+$('train').value]; if (!rec) return; const seq = rec.s.filter(e => !e[3]);
   $('from').innerHTML = ''; $('to').innerHTML = '';
+  if (Sim.INSPECT[rec.v]) {      // tàu kiểm tra: nhiệm vụ tự do, chọn ga đầu/cuối bất kỳ trên tuyến (chiều chạy suy ra từ thứ tự hai ga)
+    L.stations.forEach((s, i) => { $('from').add(new Option(s.en, i)); $('to').add(new Option(s.en, i)); });
+    $('from').selectedIndex = 0; $('to').selectedIndex = Math.min(L.stations.length - 1, Math.max(1, Math.floor(L.stations.length / 2))); return;
+  }
   seq.forEach((e, k) => { if (k < seq.length - 1) $('from').add(new Option(L.stations[e[0]].en, e[0])); if (k > 0) $('to').add(new Option(L.stations[e[0]].en, e[0])); });
   $('from').selectedIndex = 0; const pt = [...$('to').options].find(o => /^(Nagoya|Sendai)$/.test(o.text)); if (pt) pt.selected = true; else $('to').selectedIndex = $('to').options.length - 1;
 }
 $('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = stopList;
 $('from').onchange = () => {
-  const rec = Lc().trains[+$('train').value], seq = rec.s.filter(e => !e[3]).map(e => e[0]), f = seq.indexOf(+$('from').value);
+  const rec = Lc().trains[+$('train').value]; if (Sim.INSPECT[rec.v]) { if ($('from').value === $('to').value) $('to').selectedIndex = (+$('from').value === 0) ? 1 : 0; return; }
+  const seq = rec.s.filter(e => !e[3]).map(e => e[0]), f = seq.indexOf(+$('from').value);
   [...$('to').options].forEach(o => o.disabled = seq.indexOf(+o.value) <= f);
   if ($('to').selectedOptions[0] && $('to').selectedOptions[0].disabled) { const ok = [...$('to').options].reverse().find(o => !o.disabled); if (ok) ok.selected = true; }
 };
@@ -165,8 +170,10 @@ addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown',
 // ---- bắt đầu chuyến
 function curRecipe() { return { lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: $('lead').checked, events: true }; }
 function startDrive(r, opts) {
-  opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec = r.rec || L.trains[r.recIdx], trip = Sim.makeTrip(r.lineId, rec, r.from, r.to);
+  opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec = r.rec || L.trains[r.recIdx], trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, r.from, r.to, rec.v) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert('Chọn ga đi/đến hợp lệ cho chuyến này.'); return false; }
+  ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
+  if (trip.mission && ui.layout !== 'full') { ui.layout = 'full'; $('layoutBtn').textContent = 'Bố cục: toàn màn hình'; syncLayout(); }
   W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events });
   T = W.player; auto = false; $('auto').textContent = 'Tự lái: tắt (T)'; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endInfo = null; endPage = 0;
   replaying = opts.replay || null; if (replaying) scale = 4; else if (scale > 16) scale = 1;
@@ -193,7 +200,7 @@ const act = {
   power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, setpw(n) { Sim.setPower(T, n); }, setbk(n) { Sim.setBrake(T, n); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
   door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, csAdj(d) { Sim.adjustCS(T, d); },
   ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', 'Không có lệnh nào cần nhắc lại.'); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
-  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
 };
 function doAct(name, arg) { if (!W || replaying) return; recActs.push([tickCount, name, arg]); act[name](arg); }
 addEventListener('keydown', e => {
@@ -213,6 +220,7 @@ addEventListener('keydown', e => {
   if (k === '1') { scale = 1; return; } if (k === '2') { scale = 4; return; } if (k === '3') { scale = 16; return; }
   if ((k === 'k' || k === 'K') && tutLessonActive) { Tutorial.skip(W, T); return; }
   if (replaying) return;
+  if (W.mission && (k === 'x' || k === 'X')) { doAct('measure'); e.preventDefault(); return; } if (W.mission && (k === 'k' || k === 'K')) { doAct('mark'); e.preventDefault(); return; }
   if (k === 'w' || k === 'W') doAct('power', 1); else if (k === 's' || k === 'S') doAct('power', -1);
   else if (k === 'ArrowDown') doAct('brake', 1); else if (k === 'ArrowUp') doAct('brake', -1);
   else if (k === ' ') doAct('coast'); else if (k === 'q' || k === 'Q') doAct('eb');
@@ -316,7 +324,7 @@ function wrapText(str, maxW) {
 }
 const KEYS = {
   drive: [['Lái', null], ['W / S', 'cần gia tốc tăng / giảm'], ['↓ / ↑', 'cần phanh tăng / giảm (nhả về 0 mới kéo gia tốc)'], ['Space', 'về N (không kéo)'], ['Q', 'phanh khẩn'], ['Enter', 'đóng cửa (đèn sáng thì kéo cần để đi)'], ['C', 'tốc độ không đổi'], ['[ / ]', 'chỉnh tốc độ không đổi ∓5'],
-    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['B', 'camera ở cuối đoàn (nhìn ngược về sau)'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['Tab', 'đổi khung nhìn chính (buồng lái / bản đồ nhỏ / 2D)'], ['H', 'chế độ tập trung (ẩn bớt bảng)'], ['O', 'ẩn / hiện điện đàm'], ['F11', 'toàn màn hình'], ['F2', 'bố cục toàn màn hình ⇄ cổ điển'], ['P', 'tạm dừng'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
+    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['B', 'camera ở cuối đoàn (nhìn ngược về sau)'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['G', 'nâng / hạ cần vẹt'], ['X', 'bật / tắt đo (tàu kiểm tra Doctor Yellow, East i)'], ['K', 'đánh dấu lỗi vừa phát hiện (tàu kiểm tra)'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['Tab', 'đổi khung nhìn chính (buồng lái / bản đồ nhỏ / 2D)'], ['H', 'chế độ tập trung (ẩn bớt bảng)'], ['O', 'ẩn / hiện điện đàm'], ['F11', 'toàn màn hình'], ['F2', 'bố cục toàn màn hình ⇄ cổ điển'], ['P', 'tạm dừng'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
   dispatch: [['Điều độ', null], ['Bấm vào tàu', 'chọn tàu, rồi dùng nút lệnh'], ['Tab', 'chọn tàu kế'], ['Space', 'dừng / chạy'], ['1 – 4', 'tốc độ mô phỏng'], ['Chung', null], ['P', 'tạm dừng'], ['R', 'chạy lại']]
 };
 function drawKeys(m) {
@@ -521,7 +529,15 @@ function drawEnd() {
   if (!replaying) button(380, 176, 170, 24, 'Xem lại chuyến này', () => { if (!recActs.length && !auto) { W.say('info', 'Không có thao tác nào được ghi.'); return; } startDrive(recipe, { replay: { actions: recActs.slice() } }); }, false);
   const bestRep = Store.get().replays[Store.scenarioKey({ kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed })];
   if (bestRep && !replaying) button(560, 176, 190, 24, 'Xem lại bản tốt nhất', () => startDrive(Object.assign({}, bestRep.recipe, { rec: undefined }), { replay: { actions: bestRep.actions } }), false);
-  if (endPage === 0) {
+  if (endPage === 0 && sc.mission) {
+    let y = 226; txt('Cảm biến', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Phủ', 850, y, '#8aa0b5'); txt('Lỗi tìm thấy', 940, y, '#8aa0b5'); y += 26;
+    sc.out.forEach(o => { txt(o[0], 60, y, '#fff', '14px system-ui'); txt(o[1], 230, y, '#fff', '14px system-ui'); txt(o[2] + '%', 850, y, '#fff', '14px system-ui'); txt(o[3] + '%', 940, y, '#fff', '14px system-ui'); y += 28; });
+    y += 10; txt(`Độ phủ trung bình ${sc.covScore}% · lỗi đã đánh dấu ${sc.found}/${sc.tot} (${sc.findScore}%) · đánh dấu ${sc.marks} lần, sai ${sc.falseMarks}`, 60, y, '#c8d4e2', '14px system-ui'); y += 26;
+    txt(`Độ êm ${sc.comfort}/100 · ATC phanh −${sc.atcPen} · đo ngoài dải −${sc.bandPen} · đánh dấu sai −${sc.falsePen} · xung đột tàu khách −${sc.confPen}`, 60, y, sc.confPen ? '#ff8a8a' : '#8aa0b5', '13px system-ui'); y += 22;
+    txt(sc.minMargin < 1e8 ? `Khoảng cách tới chuyến khách đầu ngày: ${sc.minMargin >= 0 ? 'còn dư ' + Math.round(sc.minMargin / 60) + ' phút (sau khi chừa 10 phút)' : 'quá giờ ' + Math.round(-sc.minMargin / 60) + ' phút'}` : '', 60, y, '#8aa0b5', '13px system-ui');
+    txt('ĐIỂM: ' + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
+    if (endInfo && endInfo.best) txt('Tốt nhất cho cấu hình này: ' + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');
+  } else if (endPage === 0) {
     let y = 226; txt('Ga', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Dừng', 850, y, '#8aa0b5'); txt('Đúng giờ', 940, y, '#8aa0b5'); y += 22;
     const rows = sc.out, lh = rows.length > 12 ? 18 : 24;
     rows.forEach(o => { txt(o[0], 60, y, '#fff', '13px system-ui'); txt(o[1], 230, y, '#fff', '13px system-ui'); txt(o[2], 850, y, '#fff', '13px system-ui'); txt(o[3], 940, y, '#fff', '13px system-ui'); y += lh; });

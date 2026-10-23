@@ -131,3 +131,13 @@ Khung thứ ba cạnh khung buồng lái và khung 2D (`prototype/drive/topview.
 
 ## Phát thanh: bên cửa mở và đổi tàu (22/10/2026)
 Khi sắp tới ga, ngoài tên ga còn có hai câu: **các tuyến đổi tàu tại ga** (bảng `transfers.js`, **[K] kiến thức nền, chưa kiểm chứng từng ga**, chỉ liệt kê tuyến chính; ga chỉ có xe buýt thì nói "kết nối xe buýt") và **cửa mở bên trái hay bên phải** (theo sân ga kề đường dừng của ta trong bố trí ga; dừng ở đường chính do quá muộn để rẽ ghi thì không thông báo vì không có sân ga). Có tiếng Nhật, tiếng Anh (giọng đọc) và phụ đề tiếng Việt.
+
+## Nhiệm vụ kiểm tra tự do: 923 Doctor Yellow (T4) và E926 East i (2026-10-23)
+Hai tàu kiểm tra không chạy theo chuỗi ga cố định. Chọn một chuyến Doctor Yellow / East i trong danh sách rồi chọn **ga đầu và ga cuối bất kỳ** trên tuyến (chiều chạy suy ra từ thứ tự hai ga). Các ga giữa là ga chạy qua; chỉ dừng ở hai đầu.
+- **Khung giờ [I]:** xuất phát sau chuyến khách cuối ngày trên đoạn đã chọn (+10 phút, làm tròn 5 phút; dữ liệu lịch thật trong `data-lines.js`). Tới từng ga phải trước giờ chuyến khách đầu ngày qua ga đó trừ 10 phút; cảnh báo ở ~30 và ~10 phút, quá giờ là xung đột lịch (−30 điểm). Không có tàu chạy trước, tàu thông qua hay tàu ngược chiều.
+- **Đo [I]:** phím X bật/tắt đo. Phép đo hợp lệ khi đúng dải tốc độ (Doctor Yellow 160–270, East i 140–275 km/h), gia tốc êm, ATC bật (cảm biến tín hiệu), cần vẹt nâng (cảm biến dây điện). Năm cảm biến: hình học ray, dây điện, tín hiệu ATC, vô tuyến, dao động toa. Số liệu là mô phỏng: chỉ đúng loại phép đo.
+- **Lỗi:** sinh theo seed, khoảng 1 lỗi mỗi 22 km. Lỗi chỉ phát hiện nếu cảm biến đang đo hợp lệ khi qua; phím K đánh dấu trong 600 m sau đó (đánh dấu sai bị trừ).
+- **Giao diện:** bảng KIỂM TRA riêng ở góc trên trái (thay điện đàm, phím O đổi qua lại): thanh tốc độ với dải đo, đồ thị 1,5 km từng cảm biến, độ phủ, bản ghi toàn tuyến, giờ chuyến khách đầu ngày.
+- **Điểm:** 40% độ phủ + 40% lỗi tìm thấy + 20% độ êm, trừ ATC phanh, đo ngoài dải, đánh dấu sai, xung đột lịch.
+- Mã: `makeMission`, `missionStep`, `missionScore` trong `sim.js`; `drawMissionPanel` trong `fullui.js`; test mục 19.
+- Chưa làm: nhiều chặng/quay đầu giữa đường, tín hiệu thật từng loại lỗi, âm thanh riêng, bố cục cổ điển (chỉ có trong bố cục toàn màn hình).

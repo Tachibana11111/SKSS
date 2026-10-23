@@ -686,6 +686,86 @@
     if (tx != null) { if (down) { LM.push(Object.assign(mid, { thru: true, arr: tx - t0, dep: null })); } else { LM.unshift(Object.assign(mid, { fly: true, arr: null, dep: tx - t0 })); } }
     return fillPlan(LM);
   }
+  // ---- Nhiệm vụ kiểm tra tự do: 923 Doctor Yellow (T4) và E926 East i. Không có ga dừng cố định: chọn ga đầu/ga cuối bất kỳ trên tuyến, chạy vào đêm giữa chuyến khách cuối và chuyến khách đầu ngày.
+  // Số liệu thiết bị là mô phỏng [I]: chỉ đúng về loại phép đo, không đúng về giá trị.
+  const INSPECT = { T4: { name: 'Doctor Yellow', band: [160, 270] }, E926: { name: 'East i', band: [140, 275] } };
+  const SENSORS = {
+    track: { name: 'Hình học ray', unit: 'mm', vlo: 120, bad: ['cao thấp (高低) lệch', 'hướng (通り) lệch', 'khổ ray (軌間) lệch', 'vênh (水準) lệch'], amp: 7 },
+    wire: { name: 'Dây điện', unit: 'mm', vlo: 100, bad: ['dây chùng', 'dây lệch ngang (偏位)', 'giá treo lỏng', 'độ cao dây lệch'], amp: 40 },
+    signal: { name: 'Tín hiệu ATC', unit: 'dB', vlo: 100, bad: ['mã ATC yếu', 'mã ATC sai', 'vòng ray nhiễu'], amp: 6 },
+    radio: { name: 'Vô tuyến', unit: 'dB', vlo: 40, bad: ['mất sóng vô tuyến tàu', 'nhiễu rò sóng (LCX)'], amp: 8 },
+    ride: { name: 'Dao động toa', unit: 'm/s²', vlo: 80, bad: ['rung ngang vượt ngưỡng', 'rung dọc vượt ngưỡng'], amp: 0.25 } };
+  const MCELL = 100, MBUF = 600;     // ô phủ 100 m; chừa 10 phút trước chuyến khách đầu ngày [I]
+  const ceil5 = t => Math.ceil(t / 300) * 300;
+  function inspectWindow(L, lo, hi) {
+    const first = {}, last = {}; let maxLast = 0;
+    for (const rec of L.trains) { if (INSPECT[rec.v]) continue; for (let i = lo; i <= hi; i++) { const t = timeAt(L, rec, i); if (t == null) continue; if (first[i] === undefined || t < first[i]) first[i] = t; if (last[i] === undefined || t > last[i]) last[i] = t; if (t > maxLast) maxLast = t; } }
+    return { first, last, t0: ceil5(maxLast + 600) };
+  }
+  function makeMission(lineId, fromI, toI, vehKey) {
+    const L = lineOf(lineId); if (!INSPECT[vehKey] || fromI === toI || !L.stations[fromI] || !L.stations[toI]) return null;
+    const dir = toI > fromI ? 'down' : 'up', step = dir === 'down' ? 1 : -1, lo = Math.min(fromI, toI), hi = Math.max(fromI, toI), win = inspectWindow(L, lo, hi), t0 = win.t0;
+    const km = i => L.stations[i].km, distM = Math.abs(km(toI) - km(fromI)) * 1000, s = [];
+    for (let i = fromI; i !== toI + step; i += step) s.push(i === fromI ? [i, null, t0, 0] : i === toI ? [i, t0 + Math.round(distM / (190 / 3.6)) + 180, null, 0] : [i, null, null, 1]);
+    const rec = { t: INSPECT[vehKey].name, n: 'nhiệm vụ', d: dir, v: vehKey, s, src: 'M', mir: 0 }, trip = makeTrip(lineId, rec, fromI, toI);
+    if (!trip) return null; trip.mission = { veh: vehKey, win, lo, hi }; trip.label = `${rec.t} · nhiệm vụ ${L.stations[fromI].en} → ${L.stations[toI].en}`; return trip;
+  }
+  function initMission(W, trip, seed) {
+    const M = W.player.M, s0 = M[0].s, s1 = M[M.length - 1].s, n = Math.ceil((s1 - s0) / MCELL) + 1, r = rng((seed || 1) * 313 + 7), keys = Object.keys(SENSORS), cov = {}, defects = [];
+    for (const k of keys) cov[k] = new Float32Array(n);
+    const cnt = Math.max(4, Math.round((s1 - s0) / 1000 / 22 * (0.8 + r() * 0.4)));      // khoảng 1 lỗi mỗi 22 km, chia cho các cảm biến
+    for (let q = 0, tries = 0; q < cnt && tries < 400; tries++) { const s = s0 + 900 + r() * Math.max(1, s1 - s0 - 1800); if (defects.some(d => Math.abs(d.s - s) < 900)) continue; q++;
+      const k = keys[Math.floor(r() * keys.length)], sev = 1 + Math.floor(r() * 3), lab = SENSORS[k].bad[Math.floor(r() * SENSORS[k].bad.length)]; defects.push({ sensor: k, s, sev, label: lab, val: +(SENSORS[k].amp * (0.9 + sev * 0.7)).toFixed(2), seen: false, missed: false, marked: false, passed: false }); }
+    defects.sort((a, b) => a.s - b.s);
+    return { t0: trip.t0, veh: trip.mission.veh, win: trip.mission.win, lo: trip.mission.lo, hi: trip.mission.hi, s0, s1, n, cov, defects, measure: false, rec: Object.fromEntries(keys.map(k => [k, []])), lastRecS: s0, falseMarks: 0, marks: 0, measT: 0, inBandT: 0, outBandT: 0, minMargin: 1e9, conflict: false, warned: {}, flash: null, markedAt: -99 };
+  }
+  const bandOf = vk => INSPECT[vk].band;
+  // chất lượng phép đo (0..1) của một cảm biến ngay bây giờ: cần đang bật đo, đúng dải tốc độ, ổn định, ATC bật (tín hiệu), cần vẹt nâng (dây điện)
+  function measureQ(T, k) {
+    const Ms = T.W.mission; if (!Ms || !Ms.measure || T.phase !== 'run' || T.cut) return 0; const kmh = T.v * 3.6, sn = SENSORS[k];
+    if (kmh < sn.vlo || (k === 'track' || k === 'wire' || k === 'signal') && kmh < bandOf(Ms.veh)[0] * 0.75) return 0;
+    if (k === 'wire' && T.pan === false) return 0; if (k === 'signal' && T.atcOn === false) return 0;
+    const inBand = kmh >= bandOf(Ms.veh)[0] && kmh <= bandOf(Ms.veh)[1] + 1, steady = Math.abs(T.a) < 0.25 ? 1 : Math.abs(T.a) < 0.6 ? 0.6 : 0.3;
+    return (inBand ? 1 : 0.55) * steady;
+  }
+  const hash1 = x => { const v = Math.sin(x * 12.9898) * 43758.5453; return v - Math.floor(v); };
+  function missionValue(Ms, k, s) {         // giá trị đọc được của cảm biến k tại s: nền ngẫu nhiên nhỏ + gờ ở chỗ lỗi
+    const sn = SENSORS[k]; let v = (hash1(s * 0.07 + k.length) - 0.5) * sn.amp * 0.35;
+    for (const d of Ms.defects) if (d.sensor === k) { const u = (s - d.s) / 55; if (Math.abs(u) < 3) v += d.val * Math.exp(-u * u) * (d.sev === 2 ? 0.9 : 1); }
+    return v;
+  }
+  function missionStep(W, T, dt) {
+    const Ms = W.mission; if (!Ms || T.phase === 'end') return; const x = T.x;
+    if (T.phase === 'run') {
+      const cell = clamp(Math.floor((x - Ms.s0) / MCELL), 0, Ms.n - 1), kmh = T.v * 3.6;
+      if (Ms.measure) { Ms.measT += dt; const b = bandOf(Ms.veh); if (kmh >= b[0] && kmh <= b[1] + 1) Ms.inBandT += dt; else Ms.outBandT += dt; }
+      for (const k of Object.keys(SENSORS)) { const q = measureQ(T, k); if (q > Ms.cov[k][cell]) Ms.cov[k][cell] = q; }
+      while (x - Ms.lastRecS >= 5) { Ms.lastRecS += 5; for (const k of Object.keys(SENSORS)) { const q = measureQ(T, k); const a = Ms.rec[k]; a.push({ s: Ms.lastRecS, v: q > 0.3 ? missionValue(Ms, k, Ms.lastRecS) : null }); if (a.length > 800) a.splice(0, a.length - 800); } }
+      for (const d of Ms.defects) { if (d.passed || x < d.s) continue; d.passed = true; if (measureQ(T, d.sensor) >= 0.4) { d.seen = true; d.seenT = W.t; Ms.flash = { t: W.t, text: `${SENSORS[d.sensor].name}: ${d.label} ${d.val} ${SENSORS[d.sensor].unit}`, sev: d.sev }; } else d.missed = true; }
+    }
+    // không xung đột với chuyến khách đầu ngày: tới từng ga phía trước phải trước giờ chuyến khách đầu tiên qua ga đó trừ 10 phút
+    const j = T.M.findIndex(m => m.s > x - 1); if (j >= 0) { const m = T.M[j], i = m.i, tAbs = W.trip.t0 + W.t + (m.s - x) / Math.max(T.v, 40); let fa = Ms.win.first[i]; if (fa !== undefined) { while (fa <= Ms.t0) fa += 86400; const margin = fa - MBUF - tAbs; Ms.minMargin = Math.min(Ms.minMargin, margin); Ms.nextFirst = { i, name: m.name, margin };
+      const wr = Ms.warned; if (margin < 1800 && !wr.w30) { wr.w30 = 1; W.say('warn', `Chuyến khách đầu ngày qua ${m.name} sau ~${Math.round(margin / 60)} phút: lên kế hoạch rời đoạn này.`); }
+      if (margin < 600 && !wr.w10) { wr.w10 = 1; W.say('bad', `Chuyến khách đầu ngày sắp tới ${m.name} (còn ~${Math.round(margin / 60)} phút): phải kết thúc đo và về ga!`); }
+      if (margin < 0 && !Ms.conflict) { Ms.conflict = true; W.say('bad', `XUNG ĐỘT LỊCH TÀU KHÁCH tại ${m.name}: bạn chiếm đường quá giờ cho phép (−30 điểm).`); } } }
+  }
+  function toggleMeasure(T) { const Ms = T.W.mission; if (!Ms) return false; Ms.measure = !Ms.measure; T.W.say('info', Ms.measure ? `Đo: BẬT. Giữ ${bandOf(Ms.veh)[0]}–${bandOf(Ms.veh)[1]} km/h, gia tốc êm để phép đo hợp lệ.` : 'Đo: TẮT.'); return Ms.measure; }
+  function markDefect(T) {
+    const W = T.W, Ms = W.mission; if (!Ms || T.phase !== 'run') return false; Ms.marks++;
+    const d = Ms.defects.find(q => q.seen && !q.marked && T.x - q.s >= 0 && T.x - q.s <= 600);
+    if (d) { d.marked = true; W.say('stop', `Đã đánh dấu: ${SENSORS[d.sensor].name} · ${d.label} (${d.val} ${SENSORS[d.sensor].unit}) tại km ${kmOfS(d.s, W.dir, W.line.kmEnd).toFixed(1)}.`); return true; }
+    Ms.falseMarks++; W.say('warn', 'Đánh dấu nhưng không có tín hiệu lỗi trong 600 m vừa qua (đánh dấu sai).'); return false;
+  }
+  function missionScore(T, W) {
+    const Ms = W.mission, keys = Object.keys(SENSORS), out = [];
+    let covSum = 0; const found = Ms.defects.filter(d => d.marked).length, tot = Ms.defects.length;
+    for (const k of keys) { const a = Ms.cov[k], c = a.reduce((x, y) => x + y, 0) / Math.max(1, a.length), ds = Ms.defects.filter(d => d.sensor === k), fd = ds.filter(d => d.marked).length; covSum += c;
+      out.push([SENSORS[k].name, `phủ ${Math.round(c * 100)}% · tìm ${fd}/${ds.length} lỗi`, Math.round(c * 100), ds.length ? Math.round(fd / ds.length * 100) : 100]); }
+    const covScore = covSum / keys.length * 100, findScore = tot ? found / tot * 100 : 100, comfort = Math.max(0, 100 - T.comfort * W.diff.comfortK);
+    const confPen = Ms.conflict ? 30 : 0, falsePen = Math.min(20, Ms.falseMarks * 3), atcPen = Math.min(25, T.atcCount * 5), bandPen = Ms.measT > 60 ? Math.min(20, Math.round(Ms.outBandT / Ms.measT * 30)) : 0, unfinished = T.finished && !T.failed ? 0 : 15;
+    const final = Math.max(0, Math.min(100, Math.round(covScore * 0.4 + findScore * 0.4 + comfort * 0.2 - confPen - falsePen - atcPen - bandPen - unfinished)));
+    return { mission: true, out, covScore: Math.round(covScore), findScore: Math.round(findScore), found, tot, comfort: Math.round(comfort), confPen, falsePen, atcPen, bandPen, minMargin: Ms.minMargin, marks: Ms.marks, falseMarks: Ms.falseMarks, earlyPen: 0, ackPen: 0, hornPen: 0, wiperPen: 0, lampPen: 0, atcOffPen: 0, anxPen: 0, firePen: 0, deadPen: 0, xingPen: 0, netBonus: 0, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
+  }
   // ga cuối tuyến (đầu hoặc cuối hành trình là ga đầu/cuối của tuyến): mỗi chuyến chọn ngẫu nhiên (theo seed, không đụng dòng ngẫu nhiên của thế giới) MỘT trong mọi đường có sân ga.
   // Chọn đường thuộc nhóm đường chính ngược chiều (nhóm u) thì tàu phải qua ghi chữ X để sang đường chính của ta [I, sơ đồ HaisenNet]; ga giữa tuyến: giữ cách chọn cũ.
   function termPicks(W, L, M, seed) {
@@ -701,7 +781,8 @@
     termPicks(W, L, M, opts.seed || 1);
     W.load = opts.load != null ? opts.load : 0.45 + W.rnd() * 0.55;
     W.player = newTrain(M, W, { veh: trip.rec.v, label: trip.label, load: W.load, cp: trip.rec.cp });
-    W.passers = passers(L, W.catalog, { ...trip, M });
+    W.passers = trip.mission ? {} : passers(L, W.catalog, { ...trip, M });
+    if (trip.mission) { opts.lead = false; opts.events = false; W.mission = initMission(W, trip, opts.seed || 1); }
     { const P = W.player; if (P.cp && !P.cp.done && P.cp.kind === 'join') { const j = M.findIndex(m => m.i === P.cp.i), pv = VEH['E5'];      // đoàn Tohoku chờ sẵn ở ga: ta dừng cách đuôi nó 2,5 m
         if (j >= 0) { M[j].sOrig = M[j].s; M[j].s -= pv.len + COUPLE_GAP; W.parked.push({ key: 'E5', front: M[j].sOrig, kind: 'wait', i: P.cp.i }); } } }
     { const P = W.player; if (P.cp && P.cp.done && P.cp.kind === 'split' && M[0].i === P.cp.i) W.parked.push({ key: 'E5', front: M[0].s - P.veh.len - COUPLE_GAP, kind: 'left' }); }      // xuất phát đúng ga tách: phần Tohoku còn đứng ở sân ga phía sau
@@ -760,6 +841,7 @@
       if (c !== undefined) { if (c >= 0) { T.pw = Math.round(c * 13); T.bk = 0; } else { T.pw = 0; T.bk = c < -1.05 ? 8 : Math.max(1, Math.round(-c * 7)); } }
       step(T, dt, c === undefined ? {} : { cmd: c });
     } else { autoHorn(T); step(T, dt, input || {}); }
+    if (W.mission) missionStep(W, T, dt);
     if (W.eqkActive && W.t >= W.eqkRelease) {
       W.eqkActive = false;
       for (const X of allTrains(W)) { X.cut = false; if (X === T) W.zones.push({ s0: X.x - 2000, s1: X.x + 12000, v: (W.recoverV || 70) / 3.6, tA: W.t, tB: W.t + 1500, kind: 'eqk', label: 'chạy kiểm tra sau sự cố' }); }
@@ -972,6 +1054,7 @@
   }
 
   function score(T, W) {
+    if (W.mission) return missionScore(T, W);
     const D = W.diff, out = []; let tot = 0, n = 0;
     T.results.forEach(r => {
       if (r.overrun) { out.push([r.station, 'CHẠY QUÁ GA', 0, 0]); n++; return; }
@@ -988,7 +1071,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

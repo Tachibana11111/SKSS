@@ -152,6 +152,38 @@ function tileBtn(x, y, s, icon, label, key, on, color, fn) {
   ctx.lineCap = 'butt'; txt(label, x + s / 2, y + s - 9, on ? '#fff' : '#9fb4c9', 'bold 10px system-ui', 'center'); txt(key, x + s - 6, y + 12, on ? 'rgba(255,255,255,.8)' : '#6f8399', '9px system-ui', 'right'); btns.push({ x, y, w: s, h: s, fn });
 }
 
+
+// ---- bảng KIỂM TRA riêng cho 923 Doctor Yellow / E926 East i (chế độ nhiệm vụ): đo, đồ thị từng cảm biến, độ phủ, đánh dấu lỗi, giờ chuyến khách đầu ngày
+function drawMissionPanel(x, y, w, h) {
+  const Ms = W.mission, S = Sim, kmh = T.v * 3.6, band = S.INSPECT[Ms.veh].band, now = performance.now(), keys = Object.keys(S.SENSORS);
+  ctx.fillStyle = 'rgba(8,12,18,.84)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill(); ctx.strokeStyle = '#3b516a'; ctx.lineWidth = 1.5; ctx.stroke();
+  txt('KIỂM TRA · ' + S.INSPECT[Ms.veh].name, x + 14, y + 24, '#ffd24a', 'bold 15px system-ui');
+  button(x + w - 236, y + 8, 110, 26, Ms.measure ? 'ĐO: BẬT (X)' : 'ĐO: TẮT (X)', () => doAct('measure'), Ms.measure, '#2a8f5a'); button(x + w - 118, y + 8, 106, 26, 'Đánh dấu (K)', () => doAct('mark'), now - (Ms.markedAt || 0) < 400, '#c9a227');
+  // thanh tốc độ với dải đo hợp lệ
+  const bx = x + 14, by = y + 46, bw = w - 28, vmax = 300, px = v => bx + bw * Math.min(v, vmax) / vmax; ctx.fillStyle = '#1b2530'; ctx.fillRect(bx, by, bw, 10);
+  ctx.fillStyle = 'rgba(76,214,138,.55)'; ctx.fillRect(px(band[0]), by, px(band[1]) - px(band[0]), 10); ctx.fillStyle = '#fff'; ctx.fillRect(px(kmh) - 2, by - 3, 4, 16);
+  const inBand = kmh >= band[0] && kmh <= band[1] + 1; txt(`${Math.round(kmh)} km/h · dải đo ${band[0]}–${band[1]}`, bx, by + 28, !Ms.measure ? '#8aa0b5' : inBand ? '#4cd68a' : '#ffc247', '12px system-ui'); txt(Math.abs(T.a) < 0.25 ? 'êm' : 'giật: phép đo giảm', bx + bw, by + 28, Math.abs(T.a) < 0.25 ? '#4cd68a' : '#ffc247', '12px system-ui', 'right');
+  // đồ thị từng cảm biến: 1,5 km gần nhất, gờ ở chỗ lỗi
+  const gy0 = y + 88, rh = 52, gw = w - 28 - 118;
+  keys.forEach((k, i) => { const sn = S.SENSORS[k], yy = gy0 + i * rh, a = Ms.rec[k], q = S.measureQ(T, k), cell = Math.max(0, Math.min(Ms.n - 1, Math.floor((T.x - Ms.s0) / 100))), cov = Ms.cov[k].reduce((p, c) => p + c, 0) / Math.max(1, Ms.n);
+    txt(sn.name, x + 14, yy + 12, q > 0.3 ? '#fff' : '#7a8ea5', 'bold 12px system-ui'); ctx.fillStyle = q > 0.3 ? '#4cd68a' : '#3b4a5c'; ctx.beginPath(); ctx.arc(x + 108, yy + 8, 4, 0, 7); ctx.fill();
+    const gx = x + 14, gy = yy + 18, gh = 28; ctx.fillStyle = '#10161e'; ctx.fillRect(gx, gy, gw, gh); ctx.strokeStyle = '#243447'; ctx.beginPath(); ctx.moveTo(gx, gy + gh / 2); ctx.lineTo(gx + gw, gy + gh / 2); ctx.stroke();
+    const sA = T.x - 1500, last = a.length ? a[a.length - 1] : null; ctx.strokeStyle = q > 0.3 ? '#4aa3ff' : '#4a5a6c'; ctx.lineWidth = 1.3; ctx.beginPath(); let pen = false;
+    for (const p of a) { if (p.s < sA) continue; const X = gx + (p.s - sA) / 1500 * gw; if (p.v == null) { pen = false; continue; } const Y = gy + gh / 2 - Math.max(-1, Math.min(1, p.v / (sn.amp * 2))) * gh / 2; if (!pen) { ctx.moveTo(X, Y); pen = true; } else ctx.lineTo(X, Y); } ctx.stroke();
+    for (const d of Ms.defects) { if (!d.marked || d.s < sA || d.s > T.x) continue; const X = gx + (d.s - sA) / 1500 * gw; ctx.fillStyle = '#ffd24a'; ctx.fillRect(X - 1, gy, 2, gh); }
+    const cur = last && last.v != null && T.x - last.s < 30 ? last.v : null; txt(cur == null ? '—' : (cur >= 0 ? '+' : '') + cur.toFixed(sn.unit === 'm/s²' ? 2 : 1) + ' ' + sn.unit, x + w - 14, yy + 12, cur != null && Math.abs(cur) > sn.amp * 0.9 ? '#ff7a7a' : '#c8d4e2', '12px system-ui', 'right');
+    txt('phủ ' + Math.round(cov * 100) + '%', x + w - 14, yy + 34, '#7a8ea5', '11px system-ui', 'right'); ctx.fillStyle = '#1b2530'; ctx.fillRect(x + w - 104, yy + 38, 90, 5); ctx.fillStyle = '#4cd68a'; ctx.fillRect(x + w - 104, yy + 38, 90 * Math.min(1, cov), 5); });
+  // bản ghi toàn tuyến: độ phủ trung bình từng ô 100 m, ghim vàng = lỗi đã đánh dấu, vạch trắng = vị trí tàu
+  const ry = gy0 + keys.length * rh + 6, rw = w - 28; ctx.fillStyle = '#10161e'; ctx.fillRect(x + 14, ry, rw, 18);
+  const cw = Math.max(1, rw / Ms.n); for (let c = 0; c < Ms.n; c++) { let s = 0; for (const k of keys) s += Ms.cov[k][c]; s /= keys.length; if (s > 0.02) { ctx.fillStyle = `rgba(76,214,138,${0.25 + 0.75 * s})`; ctx.fillRect(x + 14 + c * cw, ry, Math.ceil(cw), 18); } }
+  for (const d of Ms.defects) if (d.marked) { ctx.fillStyle = '#ffd24a'; ctx.fillRect(x + 14 + (d.s - Ms.s0) / (Ms.s1 - Ms.s0) * rw - 1, ry - 3, 3, 24); }
+  ctx.fillStyle = '#fff'; ctx.fillRect(x + 14 + Math.max(0, Math.min(1, (T.x - Ms.s0) / (Ms.s1 - Ms.s0))) * rw - 1, ry - 4, 3, 26);
+  const seen = Ms.defects.filter(d => d.seen).length, marked = Ms.defects.filter(d => d.marked).length;
+  txt(`Phát hiện ${seen} · đã đánh dấu ${marked} · đánh dấu sai ${Ms.falseMarks}`, x + 14, ry + 38, '#c8d4e2', '12px system-ui');
+  if (Ms.flash && W.t - Ms.flash.t < 10) txt('▲ ' + Ms.flash.text + ' — bấm K để đánh dấu', x + 14, ry + 56, Math.floor(now / 250) % 2 ? '#ffd24a' : '#ffb347', 'bold 12px system-ui');
+  const nf = Ms.nextFirst; if (nf) { const m = nf.margin, tt = Math.max(0, m); txt('Chuyến khách đầu ngày qua ' + nf.name + ': ' + (m >= 0 ? 'còn ' + Math.floor(tt / 3600) + 'h' + String(Math.floor(tt % 3600 / 60)).padStart(2, '0') + 'm' : 'ĐÃ QUÁ GIỜ'), x + 14, ry + 76, m < 0 ? '#ff5a5a' : m < 600 ? '#ff9a4a' : m < 1800 ? '#ffc247' : '#8aa0b5', 'bold 12px system-ui'); }
+}
+
 function drawFull() {
   const PY = DASH_Y + 14, PH = FH - PY - 14;
   btns = []; curOX = 0; ctx.clearRect(0, 0, FW, FH); ctx.fillStyle = '#0b0f14'; ctx.fillRect(0, 0, FW, FH);
@@ -163,6 +195,7 @@ function drawFull() {
   if (!ui.focus) { const [x, y, w, h] = SLOT_PIP, v = others[1]; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); drawViewIn(v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: () => { ui.main = v; } }); }
   // ---- điện đàm
   if (!ui.focus && ui.radio) drawRadioFull(16, 72, 496, 340);
+  if (W.mission && !ui.focus && !ui.radio) drawMissionPanel(16, 72, 520, 450);
   // ---- hộp HUD giữa phía trên
   { const lines = [], cols = []; let barFrac = null;
     const nm = M[j].name;
