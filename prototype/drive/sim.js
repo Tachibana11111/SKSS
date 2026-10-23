@@ -224,13 +224,13 @@
   const nextTarget = T => { for (let j = T.k + 1; j < T.M.length; j++) if (T.M[j].stop || T.forced === j) return j; return T.M.length - 1; };
   const allTrains = W => [W.player, W.lead].concat(W.net ? W.net.trains : []).filter(Boolean);
   // tàu sắp rẽ vào đường tránh ở ga có đường thông qua (trong 2,5 km) coi như rời đường chính: tàu sau vẫn chạy thẳng
-  function offMain(O) { if (O.phase !== 'run') return false; const j = nextTarget(O), m = O.M[j]; return !!(m && m.loop && m.stop && Math.abs(m.s - O.x) < 2500); }
+  function offMain(O) { if (O.phase !== 'run' || O.cut) return false; const j = nextTarget(O), m = O.M[j]; return !!(m && m.loop && m.stop && Math.abs(m.s - O.x) < 2500); }
   // tàu chạy trước thuộc tuyến cha đã qua hẳn ngã rẽ (chiều xuống): nó đi đường chính, không còn cản đường ta
   function leadDiverged(W, Ld) {
     if (Ld.fj === undefined || W.dir !== 'down') return false; return Ld.x - Ld.veh.len > sOfKm(W.line.meta.junctions[Ld.fj].km, 'down', W.line.kmEnd) + 60;
   }
   function leaderOf(T) {
-    const W = T.W; if (!W.net) return T.isLead ? null : W.lead;
+    const W = T.W; if (!W.net) return T.isLead ? null : (W.lead && W.lead.x > T.x ? W.lead : null);
     let best = null; for (const O of W.net.trains) { if (O === T || O.phase === 'end' || O.phase === 'dwell' || offMain(O)) continue; if (O.x > T.x && (!best || O.x < best.x)) best = O; } return best;
   }
   // ---- Ghi (đường rẽ vào đường sân ga): giới hạn 80 km/h [I] từ 1.150 m trước vạch tới 630 m sau vạch, chỉ với ga có đường dừng khác đường chính
@@ -816,6 +816,19 @@
     prerun(W);
     return W;
   }
+  // tàu chạy trước: cảnh báo trên điện đàm khi nó đứng trên đường chính, và VA CHẠM (mũi tàu ta chạm đuôi nó) là kết thúc chuyến; điều kiện loại trừ giống ATC (đã rẽ đường tránh, cùng sân ga)
+  function leadWatch(W, T) {
+    const L = W.lead; if (!L || !W.running || !T.started || T.finished || T.phase === 'end' || T.phase === 'dwell') return;
+    if (L.phase === 'end' || leadDiverged(W, L) || (L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L)) || offMain(L)) return;
+    const gap = L.x - L.veh.len - T.x, still = L.v < 2 && L.phase === 'run'; W.leadWarn = W.leadWarn || { a: false, b: false, c: 0 };
+    if (!still) { W.leadWarn.a = W.leadWarn.b = false; }
+    if (L.x > T.x) {
+      if (still && gap < 3500 && !W.leadWarn.a) { W.leadWarn.a = true; W.say('warn', `Tàu phía trước (${W.leadLabel || 'tàu khác'}) đang ĐỨNG trên đường chính, cách ${Math.round(gap)} m. Giảm tốc, chuẩn bị dừng.`); }
+      if (still && gap < 900 && !W.leadWarn.b) { W.leadWarn.b = true; W.say('bad', `Tàu phía trước đứng cách ${Math.round(gap)} m! Phanh ngay.`); }
+      if (T.atcOn === false && gap < 1500 && T.v > 15 && W.t - W.leadWarn.c > 8) { W.leadWarn.c = W.t; W.say('bad', `ATC đang CẮT, tàu phía trước cách ${Math.round(gap)} m: không còn ai phanh thay bạn.`); }
+    }
+    if (gap <= 0 && L.x > T.x - 1) { T.collision = true; T.failed = true; T.finished = true; T.phase = 'end'; T.cut = true; T.log.push(['FAIL', W.t, 'Va chạm tàu phía trước']); W.say('bad', `VA CHẠM với tàu phía trước (${W.leadLabel || 'tàu khác'}) ở ${Math.round(T.v * 3.6)} km/h. Chuyến kết thúc.`); W.shakeAt = W.t; W.shakeAmp = 9; }
+  }
   function advanceLead(W, dt) {
     const L = W.lead; if (!L) return;
     if (W.leadHoldUntil && W.t < W.leadHoldUntil) L.cut = true; else if (L.cut && !W.eqkActive) L.cut = false;
@@ -845,6 +858,7 @@
       step(T, dt, c === undefined ? {} : { cmd: c });
     } else { autoHorn(T); step(T, dt, input || {}); }
     if (W.mission) missionStep(W, T, dt);
+    if (!T.isLead) leadWatch(W, T);
     if (W.eqkActive && W.t >= W.eqkRelease) {
       W.eqkActive = false;
       for (const X of allTrains(W)) { X.cut = false; if (X === T) W.zones.push({ s0: X.x - 2000, s1: X.x + 12000, v: (W.recoverV || 70) / 3.6, tA: W.t, tB: W.t + 1500, kind: 'eqk', label: 'chạy kiểm tra sau sự cố' }); }
@@ -1069,8 +1083,8 @@
     n = Math.max(1, n);
     const comfort = Math.max(0, 100 - T.comfort * D.comfortK), atcPen = T.atcCount * 8, earlyPen = Math.min(30, T.earlyDep * 0.3);
     const ackPen = Math.min(20, W.ackPen), hornPen = Math.min(20, T.hornPen + T.animalHit * 8), wiperPen = Math.min(10, Math.round(T.wiperBad / 20)), lampPen = Math.min(10, Math.round((T.lampBad || 0) / 30)), atcOffPen = Math.min(30, Math.round((T.atcOffBad || 0) / 8) + (T.atcCuts || 0) * 3);
-    const anxPen = Math.min(15, Math.round(Math.max(0, T.anxMax - 60) / 2.5)) + (T.panic ? 10 : 0), firePen = T.fireTunnel ? 15 : 0, deadPen = Math.min(20, (T.deadViol || 0) * 6), xingPen = Math.min(40, (T.xingHit || 0) * 25), netBonus = clamp(W.netScore || 0, -9, 9);
-    const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - lampPen - atcOffPen - anxPen - firePen - deadPen - xingPen + netBonus)));
+    const colPen = T.collision ? 100 : 0, anxPen = Math.min(15, Math.round(Math.max(0, T.anxMax - 60) / 2.5)) + (T.panic ? 10 : 0), firePen = T.fireTunnel ? 15 : 0, deadPen = Math.min(20, (T.deadViol || 0) * 6), xingPen = Math.min(40, (T.xingHit || 0) * 25), netBonus = clamp(W.netScore || 0, -9, 9);
+    const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - lampPen - atcOffPen - anxPen - firePen - deadPen - xingPen - colPen + netBonus)));
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 

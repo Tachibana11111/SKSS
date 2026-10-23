@@ -453,4 +453,17 @@ section('19. Nhiệm vụ kiểm tra tự do (923 Doctor Yellow, E926 East i)');
     const sc = Sim.score(W2.player, W2); ok(sc.leg === 1 && sc.count === 3 && sc.legKm > 300, 'điểm chặng ghi số chặng và độ dài để tính điểm tổng'); }
 }
 
+section('21. Tàu chạy phía trước: cảnh báo, va chạm là kết thúc chuyến, không nhường tàu đã vượt qua');
+{
+  let tripL = null; for (const r of Sim.lineOf('tsk').trains.filter(t => t.t === 'Nozomi' && t.d === 'down' && t.s.some(e => e[0] === 0 && !e[3]) && t.s.some(e => e[0] === 12 && !e[3]))) { const tt = Sim.makeTrip('tsk', r, 0, 12); if (Sim.createWorld('tsk', tt, { diff: 'easy', seed: 1, lead: true, events: false }).lead) { tripL = tt; break; } }
+  ok(!!tripL, 'tìm được chuyến Tokaido có tàu chạy trước');
+  const mk = () => { const W = Sim.createWorld('tsk', tripL, { diff: 'easy', seed: 1, lead: true, events: false }), T = W.player; Sim.requestClose(T); let n = 0; while (!(T.started && T.phase === 'run' && T.v > 40) && n++ < 4e4) Sim.tick(W, 0.05, {}, true); return { W, T }; };
+  { const { W, T } = mk(); W.lead.x = T.x + 3000; W.lead.v = 0; W.leadHoldUntil = 1e9; W.lead.cut = true; T.atcOn = false; let n = 0; while (!T.finished && n++ < 4e4) { Sim.setPower(T, 13); Sim.tick(W, 0.05, {}, false); }
+    ok(T.collision && T.failed && T.finished && T.phase === 'end', 'ATC cắt, lao vào tàu đứng phía trước: VA CHẠM, kết thúc chuyến', [T.collision, T.finished]);
+    ok(W.msgs.some(m => /ĐỨNG trên đường chính/.test(m.text)) && W.msgs.some(m => /VA CHẠM/.test(m.text)), 'điện đàm có cảnh báo tàu đứng phía trước và thông báo va chạm'); ok(Sim.score(T, W).final === 0, 'va chạm: điểm 0'); }
+  { const { W, T } = mk(); W.lead.x = T.x + 3000; W.lead.v = 0; W.leadHoldUntil = 1e9; W.lead.cut = true; let n = 0; while (!T.finished && n++ < 2000) { Sim.setPower(T, 13); Sim.tick(W, 0.05, {}, false); }
+    ok(!T.collision, 'ATC bật: ATC phanh giữ khoảng cách, không va chạm', [T.collision, Math.round(W.lead.x - W.lead.veh.len - T.x)]); }
+  { const { W, T } = mk(); W.lead.x = T.x - 500; W.lead.v = 0; Sim.tick(W, 0.05, {}, false); ok(!T.collision && T.why !== 'lead' && !T.finished, 'tàu đã vượt qua (nằm phía sau): không còn bị ATC hãm về 0 và không tính là va chạm', T.why); }
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
