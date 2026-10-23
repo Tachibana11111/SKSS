@@ -602,5 +602,6 @@
     W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => { const r = Object.assign({}, m, { s: Lm - (m.sOrig !== undefined ? m.sOrig : m.s) }); delete r.sOrig; return r; });      // bản phản chiếu: s đã là vị trí hình học gốc, bỏ sOrig (nếu giữ lại, ga ghép/tách bị tính lệch cả trăm mét và biến mất khỏi camera sau) T2.k = T.M.length - 1 - T.k; T2.forced = T.forced >= 0 ? T.M.length - 1 - T.forced : -1;      // dừng khẩn ở ga không có lịch dừng cũng phải rẽ vào đường nhánh trong camera sau W2.player = T2;
     draw(ctx, px, py, pw, ph, W2, T2, R);
   }
+  root.CAB_BUILD = 'cabview 23/10 19:05 (rào bám ray)';      // dấu bản dựng hiện ở cột trái: đổi mỗi lần sửa cabview.js để biết trình duyệt đang chạy bản nào
   root.CabView = { draw, drawRear, proj, cellObject, hash, CAMH, PEDGE, PH, ADJ };
 })(typeof window !== 'undefined' ? window : globalThis);

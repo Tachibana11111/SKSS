@@ -55,7 +55,7 @@
 <div id="stage">
 <aside id="sideL">
   <div class="row">
-    <strong>Lái Shinkansen · bản thử 0.4</strong>
+    <strong>Lái Shinkansen · bản thử 0.4</strong><span id="build" style="font-size:11px;color:var(--mut)"></span>
     <div class="tabs"><button class="tab on" id="tabDrive">Lái tàu</button><button class="tab" id="tabTut">Hướng dẫn</button><button class="tab" id="tabProf">Hồ sơ</button></div>
   </div>
   <div class="row" id="rowDrive1">
@@ -185,6 +185,7 @@ $('from').onchange = () => {
   if ($('to').selectedOptions[0] && $('to').selectedOptions[0].disabled) { const ok = [...$('to').options].reverse().find(o => !o.disabled); if (ok) ok.selected = true; }
 };
 $('dice').onclick = () => { $('seed').value = Math.floor(Math.random() * 99999); };
+$('build').textContent = window.CAB_BUILD || 'chưa tải cabview.js';
 // ---- hộp chọn có tìm kiếm cho các danh sách dài (Tàu, Từ, Đến, Thêm chặng): mở bên cạnh ô chọn (không tràn đáy màn hình), gõ để lọc, ↑↓ Enter, Esc
 const norm = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
 let picker = null;
