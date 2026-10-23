@@ -131,3 +131,29 @@ Bảng chung là các số liệu lấy từ Wikipedia tiếng Nhật (có thể
 - Tàu đêm 2026: [kumanichi (Kyodo)](https://kumanichi.com/articles/2023695), [Business Journal](https://biz-journal.jp/economy/post_395216.html), [tabiris](https://tabiris.com/?p=64163)
 - Cửa chắn sân ga: [trafficnews – Nagoya/Kyoto](https://trafficnews.jp/post/49143/), [trafficnews – Shin-Osaka](https://trafficnews.jp/post/81108), [trafficnews – nhanh nhất Nhật Bản](https://trafficnews.jp/post/36660)
 - Nhân sự, dọn tàu: [toretabi – Q&A JR Central](https://www.toretabi.jp/railway_info/jr-kiitemita2303.html); TASC: [JR Central 29/9/2025](https://jr-central.co.jp/news/release/_pdf/000044655.pdf)
+
+## 9. Công trình trong ga, từ lớn đến nhỏ (tìm hiểu 2026-10-23)
+Nhãn: **[N]** có nguồn · **[K]** kiến thức nền chưa kiểm chứng · **[?]** chưa tìm được. Phần lớn nguồn là trang hướng dẫn khách và Wikipedia, ít tài liệu thiết kế.
+
+### 9.1 Công trình lớn
+- **Ga cao tầng xếp chồng [N]:** sân ga Shinkansen ở tầng trên cùng, sảnh/soát vé ở giữa, tàu thường và metro ở dưới. Niigata: sân ga tầng 3, sảnh tầng 2, thêm cửa soát vé chuyển tàu ngay trên sân ga ([Wikipedia](https://ja.wikipedia.org/wiki/%E6%96%B0%E6%BD%9F%E9%A7%85)). Shin-Osaka: sân ga tầng 4, soát vé tầng 3, tàu thường tầng 1 (trang hướng dẫn khách, yếu). Tsuruga: sân ga cao khoảng 37 m (trang kỷ lục không chính thức, cần kiểm lại).
+- **Mái ga [N, ít]:** Niigata có mái phủ toàn bộ sân ga tàu thường bằng khung thép ([JR東日本建築設計](https://www.jred.co.jp/projects/p172.html)). **[?]** chưa có số liệu mái sân ga Shinkansen.
+- **Đường thông qua không sân ga [N]:** Shin-Fuji có đường chính không sân ga và đường phụ có sân ga hai bên; khi sự cố, hành khách chuyển tàu qua tấm ván bắc ([trafficnews](https://trafficnews.jp/post/98190)).
+- **Đường lên xuống [N]:** cầu thang, thang cuốn, thang máy. Tokyo: thang cuốn chạy lên từ sảnh soát vé ([wadattsu261](https://wadattsu261.com/content/tokyo-tokaidoshinkansen-metromarunouchiline-transfer-information/)). Vị trí cầu thang quyết định chỗ tàu 8 toa dừng ở sân ga 16 toa của Sanyo: gần cầu thang ở giữa, hoặc dồn về một đầu như Shin-Kobe ([Impress](https://travel.watch.impress.co.jp/docs/series/inoue/1457383.html)).
+- **Cầu vượt bộ hành giữa các sân ga [K]:** có ở ga mặt đất và ga cũ; ga Shinkansen cao tầng thường nối các sân ga qua sảnh bên dưới. Dùng trong game theo quyết định thiết kế (docs/10), không phải mô tả ga thật.
+
+### 9.2 Biển và thiết bị cho lái tàu
+- **Biển dừng (停止位置目標) [N]:** treo từ mái, đứng cạnh đường, hoặc đặt giữa hai ray; số trên biển là số toa của đoàn, dùng chung một ký hiệu nếu mọi đoàn dừng cùng chỗ ([Impress](https://travel.watch.impress.co.jp/docs/series/inoue/1457383.html)).
+
+### 9.3 Công trình nhỏ ở mép sân ga
+- **Vạch cảnh báo và gạch dẫn đường [N]**, có loại có vạch ở phía trong của sân ga ([JR West](https://www.jr-odekake.net/railroad/service/barrierfree/eye/); [Wikipedia](https://ja.wikipedia.org/wiki/%E3%83%97%E3%83%A9%E3%83%83%E3%83%88%E3%83%9B%E3%83%BC%E3%83%A0)).
+- **Cửa chắn sân ga, hàng rào, cảm biến ở mép sân ga [N]** (hồng ngoại, phát hiện vật nhô ra khi tàu vào/ra).
+- **Nút dừng khẩn [N]:** ấn xong tàu không tự dừng, chỉ báo cho nhân viên ([JR East](https://www.jreast.co.jp/saferelief/operationguide/pdf/emergency.pdf)); khoảng 50 m một nút ở các ga Shinkansen Kyushu ([JR Kyushu](https://www.jrkyushu.co.jp/company/esg/safety/pdf/220131_okyakusama.pdf)).
+- **Chỗ trú dưới sân ga, bậc thoát khỏi đường ray, thảm cảm biến người ngã, tấm lấp khe, nút báo khẩn [N, chung]:** loại thiết bị nêu trong Wikipedia, chưa rõ ga Shinkansen nào có cái nào.
+
+### 9.4 Bảo trì và tuyết
+- **Xe bảo trì [N]:** mỗi đêm khoảng 50 đoàn xe bảo trì chạy trên Tokaido; tại ga, xe bảo trì quay đầu hoặc đổi đường bằng nhân viên bẻ ghi tay ([JR Central](https://jr-central.co.jp/news/release/_pdf/000044949.pdf)).
+- **Tuyết [N]:** vòi phun nước đặt trong đường ray ở Joetsu (từ Jomo-Kogen trở bắc), Tohoku (Hachinohe–Aomori) và Maibara–Sekigahara (68,5 km); không nói riêng sân ga ([trafficnews](https://trafficnews.jp/post/48453/2)).
+
+### 9.5 Chưa tìm được
+Cầu thang hoặc thang sắt cho tổ lái (theo người dùng chỉ có ở depot, không cần ở ga); chi tiết mái ga Shinkansen; hàng rào phía ngoài; kích thước thang máy.
