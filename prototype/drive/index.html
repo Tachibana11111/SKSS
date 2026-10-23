@@ -92,6 +92,7 @@
     <button id="start" class="go">Bắt đầu / chạy lại (R)</button>
     <button id="auto">Tự lái: tắt (T)</button>
     <button id="layoutBtn" title="F2">Bố cục: toàn màn hình</button>
+    <button id="snap" title="F9: tạm dừng và chụp cảnh (ảnh + tệp mô tả để dựng lại)">📷 Chụp cảnh (F9)</button>
     <label>Tua <span class="btns"><button data-s="1">×1</button><button data-s="4">×4</button><button data-s="16">×16</button></span></label>
     <div class="grp">Cấu hình</div>
     <label>Độ khó <select id="diff"></select></label>
@@ -185,6 +186,40 @@ $('from').onchange = () => {
   if ($('to').selectedOptions[0] && $('to').selectedOptions[0].disabled) { const ok = [...$('to').options].reverse().find(o => !o.disabled); if (ok) ok.selected = true; }
 };
 $('dice').onclick = () => { $('seed').value = Math.floor(Math.random() * 99999); };
+
+// ---- chụp cảnh (snapshot): khi đã tạm dừng (P) hiện nút "Chụp cảnh", hoặc bấm nút ở cột phải / phím F9. Lưu ảnh PNG của khung game (kèm dòng tóm tắt) và tệp JSON mô tả cảnh để dựng lại đúng cảnh; sau khi chụp vẫn tạm dừng cho tới khi bấm P lại
+let snapMode = false;
+function sceneState() {
+  const r = Object.assign({}, recipe || {}); delete r.rec, delete r.carryT0; const L = W.lead, st = {
+    v: 1, build: window.CAB_BUILD || '', at: new Date().toISOString(), recipe: r, carryT0: recipe && recipe.carryT0, t0: W.trip.t0, wt: +W.t.toFixed(2), x: +T.x.toFixed(2), vel: +T.v.toFixed(3), phase: T.phase, k: T.k, door: T.door, dwellT: +T.dwellT.toFixed(1),
+    running: W.running, started: T.started, termPick: W.termPick || null, pan: T.pan, atcOn: T.atcOn, lamp: T.lamp, wiper: T.wiper, pw: T.pw, bk: T.bk, cs: T.cs, label: W.trip.label, dir: W.dir, station: (T.M[Math.min(T.k, T.M.length - 1)] || {}).name,
+    lead: L ? { x: +L.x.toFixed(2), v: +L.v.toFixed(3), phase: L.phase } : null, view: { main: ui.main, rear: ui.rear, focus: ui.focus, radio: ui.radio, layout: ui.layout, scenery: window.SCENERY, mode }
+  }; return st;
+}
+function restoreScene(st) {
+  if (!st || !st.recipe) return false; const r = Object.assign({}, st.recipe); if (st.carryT0) r.carryT0 = st.carryT0; if (!startDrive(r)) return false;
+  W.trip.t0 = st.t0; W.t = st.wt; W.running = st.running; T.x = st.x; T.v = st.vel; T.phase = st.phase; T.k = st.k; T.door = st.door; T.dwellT = st.dwellT; T.started = st.started; T.pan = st.pan; T.atcOn = st.atcOn; T.lamp = st.lamp; T.wiper = st.wiper; T.pw = st.pw; T.bk = st.bk; T.cs = st.cs;
+  if (st.termPick) W.termPick = st.termPick; if (st.lead && W.lead) { W.lead.x = st.lead.x; W.lead.v = st.lead.v; W.lead.phase = st.lead.phase; }
+  if (st.view) { ui.main = st.view.main; ui.rear = st.view.rear; ui.focus = st.view.focus; ui.radio = st.view.radio; if (st.view.layout) ui.layout = st.view.layout; }
+  paused = true; return true;
+}
+window.Snap = { state: sceneState, restore: restoreScene };
+async function takeSnapshot() {
+  if (!W || mode === 'profile' || mode === 'dispatch') return null; paused = true; snapMode = true; draw();
+  const st = sceneState(), w = cv.width, h = cv.height, off = document.createElement('canvas'); off.width = w; off.height = h + 40; const g = off.getContext('2d');
+  g.fillStyle = '#0b0f14'; g.fillRect(0, 0, w, h + 40); g.drawImage(cv, 0, 0); g.fillStyle = '#9fb4c9'; g.font = '14px monospace';
+  g.fillText(`${st.build} | ${W.lineId} ${st.label} | ${st.dir} | seed ${(st.recipe || {}).seed} | x=${st.x} m v=${(st.vel * 3.6).toFixed(0)} km/h | ${st.phase} ga ${st.station} | ${hhmm(((st.t0 + st.wt) % 86400 + 86400) % 86400)}`, 10, h + 24);
+  snapMode = false; draw(); const code = JSON.stringify(st), stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14), base = `canh_${W.lineId}_${stamp}`;
+  const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); };
+  const png = await new Promise(res => off.toBlob(res, 'image/png')); save(png, base + '.png'); save(new Blob([code], { type: 'application/json' }), base + '.json');
+  try { await navigator.clipboard.writeText(code); } catch (e) { }
+  W.say('info', `Đã chụp cảnh: ${base}.png và .json (mã cảnh đã chép vào bộ nhớ tạm). Vẫn tạm dừng, bấm P để chạy tiếp.`); return { st, png };
+}
+function pauseOverlay() {
+  if (!W || !paused || snapMode || mode === 'profile' || mode === 'dispatch') return; const full = ui.cur === 'full', bw = 250, bx = (W_ - bw) / 2, by = full ? DASH_Y - 50 : H_ - 60;
+  ctx.fillStyle = 'rgba(8,12,18,.78)'; ctx.beginPath(); ctx.roundRect(bx - 12, by - 28, bw + 24, 74, 10); ctx.fill(); txt('TẠM DỪNG · bấm P để chạy tiếp', W_ / 2, by - 8, '#ffc247', 'bold 14px system-ui', 'center');
+  button(bx, by, bw, 28, '📷 Chụp cảnh (F9)', () => takeSnapshot(), true, '#2a8f5a');
+}
 // ---- hộp chọn có tìm kiếm cho các danh sách dài (Tàu, Từ, Đến, Thêm chặng): mở bên cạnh ô chọn (không tràn đáy màn hình), gõ để lọc, ↑↓ Enter, Esc
 const norm = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
 let picker = null;
@@ -251,7 +286,7 @@ function startLesson(i) {
   tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none';
 }
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));
-$('start').onclick = () => { tutorialRun = false; startDrive(); }; $('auto').onclick = () => doAct('auto');
+$('start').onclick = () => { tutorialRun = false; startDrive(); }; $('auto').onclick = () => doAct('auto'); $('snap').onclick = () => takeSnapshot();
 $('dStart').onclick = () => startDispatch();
 function startDispatch() { Dispatch.start({ lineId: $('line').value, dir: $('dir').value, diff: $('diff').value, seed: +$('seed').value || 1, weather: $('dWeather').value, t0: +$('dHour').value * 3600, span: +$('dSpan').value }); }
 document.querySelectorAll('button[data-s]').forEach(b => b.onclick = () => scale = +b.dataset.s);
@@ -276,6 +311,7 @@ addEventListener('keydown', e => {
   if ((k === 'o' || k === 'O') && ui.cur === 'full') { ui.radio = !ui.radio; return; }
   if (k === 'b' || k === 'B') { ui.rear = !ui.rear; return; }
   if (k === 'F11') { toggleFullscreen(); e.preventDefault(); return; }
+  if (k === 'F9') { takeSnapshot(); e.preventDefault(); return; }
   if (k === 'F2') { ui.layout = ui.layout === 'full' ? 'classic' : 'full'; syncLayout(); e.preventDefault(); return; }
   if (k === 'r' || k === 'R') { if (replaying) { replaying = null; } if (tutLessonActive) { startLesson(Tutorial.S.lesson); } else startDrive(recipe); e.preventDefault(); return; }
   if (k === '1') { scale = 1; return; } if (k === '2') { scale = 4; return; } if (k === '3') { scale = 16; return; }
@@ -406,7 +442,8 @@ function drawKeys(m) {
   }
 }
 
-function draw() {
+function draw() { drawBase(); pauseOverlay(); }
+function drawBase() {
   if (ui.cur === 'full' && mode === 'drive') { drawFull(); return; }
   btns = []; ctx.clearRect(0, 0, W_, H_);
   if (mode === 'profile') { return; }
