@@ -92,10 +92,7 @@
     const top = mixc([6, 12, 24], [92, 160, 224], day), hor = mixc([14, 24, 42], [183, 214, 240], day);
     let gb = biomeAt(60);
     if (wdOn) { const cl = [landCls(60, 40), landCls(60, -40), landCls(150, 60)].map(x => String.fromCharCode(x || 0)); const ct = k => cl.filter(x => k.includes(x) && x !== ' ').length; if (ct('hci') >= 2) gb = 'urban'; else if (ct('fsepw') >= 2) gb = 'mountain'; else if (ct('aog') >= 1) gb = 'field'; }
-    const gcol0 = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
-    // trong phạm vi hàng rào của ga (từ đầu rào tới hết rào) nền đất cố định là màu xi măng / đá dăm, không đổi theo quần xã xung quanh
-    let gwS = 0; for (const q of sts) gwS = Math.max(gwS, LAY.smooth(-FB - 150, -FB, q.d) * (1 - LAY.smooth(FA, FA + 150, q.d)));
-    const gcol = gwS > 0 ? [0, 1, 2].map(k => gcol0[k] + ([inSnow ? 214 : 82, inSnow ? 222 : 84, inSnow ? 232 : 84][k] - gcol0[k]) * gwS) : gcol0;
+    const gcol = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
     // ---- nền: bầu trời, núi, mặt đất, sương mù (dùng cho phong cảnh thường và cho phần nhìn ra ngoài qua cửa hầm)
     const backdrop = () => {
     const g = ctx.createLinearGradient(0, py - 40, 0, c.hy + 4); g.addColorStop(0, mixc(rgbOf(top), [70, 78, 90], wx)); g.addColorStop(1, mixc(rgbOf(hor), [110, 118, 128], wx));
@@ -122,9 +119,6 @@
     const jw = o => Math.max(0, Math.min(1, (28 - Math.abs(o)) / 6));
     const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) { x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main) x = Math.max(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) + 2.9); } const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
     const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) { x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main) x = Math.min(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) - 2.9); } const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
-    // rìa ngoài thật của ga: chỉ tính các đường ray ở vị trí thật của chúng (kể cả đường nhánh đang toả ra / nhập lại) và đường chính tuyến cha; KHÔNG tính bề rộng "cả ga" (spread), nên khi các nhánh đã nhập hết rào cũng hết rộng
-    const xr2 = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) for (const t of q.st.tracks) if (!t.main) x = Math.max(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) + 2.9); const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
-    const xl2 = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) for (const t of q.st.tracks) if (!t.main) x = Math.min(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) - 2.9); const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
     if (zExit === null) backdrop();
     // ---- dải tranh phong cảnh OSM hai bên (strips.js): thay các khối nhà 3D rời rạc; chỉ vẽ khi đã có dữ liệu và không ở trong hầm
     const useStrips = wdOn && !!root.Strips;
@@ -198,17 +192,13 @@
     //      tường bám theo mép hành lang xr/xl (đã gồm các đường của ga đang toả ra), nên ga đỗ ở đường rìa nhánh cũng được bọc kín
     const enclose = (q, z0, z1) => {
       const concrete = mixc([22, 26, 30], [170, 174, 174], day * (1 - wx * 0.3)), concrete2 = mixc([18, 22, 26], [150, 154, 156], day * (1 - wx * 0.3)), cap = mixc([30, 34, 40], [206, 210, 210], day * (1 - wx * 0.3)), glass = day > 0.4 ? 'rgba(150,205,235,.16)' : 'rgba(60,90,120,.18)';
-      // rào rộng hết cỡ từ chỗ đường ga bắt đầu toả ra tới chỗ đường cuối cùng nhập lại (theo từng đường thật của ga, không theo hằng số), rồi thu lại êm trong 150 m
-      const outerT = q.st.tracks.filter(t => !t.main && t.in0 !== undefined), appL = Math.max(outerT.length ? Math.max(...outerT.map(t => t.in0)) + 40 : 0, 480), depL = Math.max(outerT.length ? Math.max(...outerT.map(t => t.out0 + t.len)) + 40 : 0, 120),
-        wA = rr ? depL : appL, wB = rr ? appL : depL, s0 = q.d - wA, s1 = q.d + wB;
-      const za = z0 - 25, zb = z1 + 25, ta = Math.max(s0 - 150, ZN), tb = Math.min(s1 + 150, ZF);
+      const za = z0 - 25, zb = z1 + 25, ta = Math.max(q.d - FA, ZN), tb = Math.min(q.d + FB, ZF);
       for (const side of [1, -1]) {
-        // rào là vật CỐ ĐỊNH theo bố cục ga: giữ nguyên bề rộng (mép ngoài sân ga + 1,4 m, đường ngoài cùng + 4,1 m) trên suốt đoạn rào từ chỗ đường ga đầu tiên bắt đầu toả ra tới chỗ đường cuối cùng nhập lại, rồi thu lại êm trong 150 m về đường ray thật (xr2/xl2)
-        const exS = side > 0 ? Math.max(...q.st.plats.map(p => p.xb + 1.4), ...q.st.tracks.map(t => t.x + 4.1)) : Math.min(...q.st.plats.map(p => p.xa - 1.4), ...q.st.tracks.map(t => t.x - 4.1)), wf = z => LAY.smooth(s0 - 150, s0, z) * (1 - LAY.smooth(s1, s1 + 150, z)),
-          e = z => side > 0 ? Math.max(lerp(xr2(z) + 1.2, exS, wf(z)), xr2(z) + 1.2) : Math.min(lerp(xl2(z) - 1.2, exS, wf(z)), xl2(z) - 1.2), th = 0.3 * side;      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
+        const ex = q.st.extent[side > 0 ? 1 : 0] + side * 1.4, zS = q.d - FA + 100, zE = q.d + FB - 150, wf = z => LAY.smooth(zS, zS + 150, z) * (1 - LAY.smooth(zE - 150, zE, z)),
+          e = z => side > 0 ? Math.max(lerp(Math.max(0, oppAt(z)) + 2.9, ex, wf(z)), xr(z) + 1.2) : Math.min(lerp(Math.min(0, oppAt(z)) - 2.9, ex, wf(z)), xl(z) - 1.2), th = 0.3 * side;      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
         for (let a = Math.max(ta, ZN); a < tb; a += 12) { const b = Math.min(tb, a + 12), inSt = b > za && a < zb, h = inSt ? 4.4 : 1.9, zm = (a + b) / 2, odd = Math.floor((T.x + a) / 12) % 2;
           sink.push({ z: zm, fn: () => { const ea = e(a), eb = e(b);
-            quad(PG(ea, -1.2, a), PG(eb, -1.2, b), P(eb, h, b), P(ea, h, a), odd ? concrete : concrete2);      // chân tường cắm sâu 1,2 m dưới mặt đất (không hở chân dù nền thấp hơn mặt ray)
+            quad(P(ea, 0, a), P(eb, 0, b), P(eb, h, b), P(ea, h, a), odd ? concrete : concrete2);
             quad(P(ea, h, a), P(eb, h, b), P(eb + th, h, b), P(ea + th, h, a), cap);
             if (inSt) { quad(P(ea, h, a), P(eb, h, b), P(eb, h + 2.2, b), P(ea, h + 2.2, a), glass); const pa = P(ea, 0, a), pb = P(ea, h + 2.2, a), w = Math.max(1, 0.18 * c.f / a); ctx.strokeStyle = 'rgba(70,80,92,.7)'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke(); }
           } }); }
@@ -603,6 +593,5 @@
     W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => { const r = Object.assign({}, m, { s: Lm - (m.sOrig !== undefined ? m.sOrig : m.s) }); delete r.sOrig; return r; });      // bản phản chiếu: s đã là vị trí hình học gốc, bỏ sOrig (nếu giữ lại, ga ghép/tách bị tính lệch cả trăm mét và biến mất khỏi camera sau) T2.k = T.M.length - 1 - T.k; T2.forced = T.forced >= 0 ? T.M.length - 1 - T.forced : -1;      // dừng khẩn ở ga không có lịch dừng cũng phải rẽ vào đường nhánh trong camera sau W2.player = T2;
     draw(ctx, px, py, pw, ph, W2, T2, R);
   }
-  root.CAB_BUILD = 'cabview 23/10 19:40 (rào cố định theo bề rộng ga)';      // dấu bản dựng hiện ở cột trái: đổi mỗi lần sửa cabview.js để biết trình duyệt đang chạy bản nào
   root.CabView = { draw, drawRear, proj, cellObject, hash, CAMH, PEDGE, PH, ADJ };
 })(typeof window !== 'undefined' ? window : globalThis);
