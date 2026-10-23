@@ -25,4 +25,7 @@ GitHub Actions: `ci.yml` chạy kiểm thử mỗi lần đẩy mã; `pages.yml`
 
 Nếu bạn là chủ sở hữu một tài nguyên ở trên và muốn gỡ hoặc ghi công khác, hãy mở issue; tài nguyên sẽ được gỡ.
 
-Mã nguồn chưa gắn giấy phép (mặc định bảo lưu mọi quyền).
+## Giấy phép
+**Mã nguồn** (các tệp `.js`, `.html`, `.py` do tác giả viết) theo [MIT](LICENSE), © 2026 Tachibana11111.
+
+Giấy phép MIT **không áp dụng** cho: hình tàu và dải toa (CC BY-NC-ND 4.0, K.Y. Chung), dữ liệu OpenStreetMap đã biên dịch (ODbL), âm thanh, lịch tàu và tài liệu nghiệp vụ; mỗi thứ giữ giấy phép hoặc điều kiện riêng ghi ở bảng trên. Tên "Shinkansen", "JR" và tên các mẫu tàu thuộc chủ sở hữu tương ứng; giấy phép này không cấp quyền dùng chúng.
