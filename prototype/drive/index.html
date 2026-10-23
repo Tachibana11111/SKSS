@@ -9,18 +9,36 @@
   :root{--bg:#10151c;--panel:#18212c;--fg:#e8eef5;--mut:#8aa0b5}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,"Segoe UI",sans-serif}
-  header{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px;background:var(--panel)}
-  header select,header button,header input{background:#223042;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:4px 8px;font:inherit}
-  header input[type=number]{width:84px}
-  header button:hover{background:#2c4059;cursor:pointer}
-  header .go{background:#2a6fd6;border-color:#4aa3ff;font-weight:600}
-  header .tab.on{background:#2a6fd6;border-color:#4aa3ff}
+  aside{display:flex;flex-direction:column;gap:10px;padding:8px;background:var(--panel);border-radius:8px;font-size:13px}
+  aside .row{flex-direction:column;align-items:stretch;gap:6px}
+  aside .grp{font-size:12px;color:var(--mut);font-weight:600;margin-top:4px}
+  aside label{display:flex;flex-direction:column;gap:2px;font-size:12px}
+  aside label.inl{flex-direction:row;align-items:center;gap:6px}
+  aside select,aside button,aside input{background:#223042;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:4px 8px;font:inherit;width:100%}
+  aside input[type=checkbox]{width:auto}
+  aside input[type=range]{padding:0;border:0}
+  aside .btns{display:flex;gap:4px} aside .btns button{flex:1;padding:4px 0}
+  aside button:hover{background:#2c4059;cursor:pointer}
+  aside .go{background:#2a6fd6;border-color:#4aa3ff;font-weight:600}
+  aside .tab.on{background:#2a6fd6;border-color:#4aa3ff}
+  aside .tabs{display:flex;gap:4px} aside .tabs .tab{flex:1;padding:4px 2px;font-size:12px}
+  #stage{display:grid;grid-template-columns:220px minmax(0,1fr) 220px;gap:8px;align-items:start;padding:6px}
+  @media (max-width:1499px){#stage{display:block}aside{flex-direction:row;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px}aside .row{flex-direction:row;flex-wrap:wrap;align-items:flex-end}aside select,aside button,aside input{width:auto}aside .tabs .tab{padding:4px 10px}}
+  body.isfull aside{display:none}
+  #picker{position:fixed;z-index:50;background:#18212c;border:1px solid #33475e;border-radius:8px;display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+  #picker input{margin:6px;background:#223042;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:5px 8px;font:inherit}
+  #picker .list{overflow:auto;padding:0 4px 6px}
+  #picker .it{padding:4px 10px;border-radius:5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #picker .it:hover,#picker .it.hl{background:#2c4059}
+  #picker .it.cur{color:#4aa3ff;font-weight:600}
+  #picker .it.dis{color:#566a80;cursor:not-allowed}
+  #picker .none{padding:8px 12px;color:var(--mut)}
   label{color:var(--mut)}
-  #wrap{max-width:1800px;margin:0 auto;padding:8px;position:relative}
+  #wrap{margin:0 auto;padding:0;position:relative;min-width:0;width:100%}
   canvas{width:100%;display:block;background:#0b0f14;border-radius:8px}
-  body.fullui #wrap{max-width:none;padding:6px}
-  body.fullui canvas{width:min(100%, calc((100vh - 150px) * 1.7778));margin:0 auto}
-  body.isfull header,body.isfull #help{display:none}
+  body.fullui canvas{width:min(100%, calc((100vh - 150px) * 1.7778));margin:0 auto}      /* giữ nguyên kích cỡ khung game */
+  body.isfull #help{display:none}
+  body.isfull #stage{display:block;padding:0}
   body.isfull #wrap{padding:0}
   body.isfull canvas{width:min(100vw, calc(100vh * 1.7778));margin:0 auto}
   #help{color:var(--mut);font-size:13px;padding:6px 4px}
@@ -34,30 +52,20 @@
 </style>
 </head>
 <body>
-<header>
+<div id="stage">
+<aside id="sideL">
   <div class="row">
     <strong>Lái Shinkansen · bản thử 0.4</strong>
-    <button class="tab on" id="tabDrive">Lái tàu</button><button class="tab" id="tabTut">Hướng dẫn</button><button class="tab" id="tabProf">Hồ sơ</button>
+    <div class="tabs"><button class="tab on" id="tabDrive">Lái tàu</button><button class="tab" id="tabTut">Hướng dẫn</button><button class="tab" id="tabProf">Hồ sơ</button></div>
   </div>
   <div class="row" id="rowDrive1">
+    <div class="grp">Chuyến</div>
     <label>Tuyến <select id="line"></select></label>
     <label>Chiều <select id="dir"><option value="down">Xuống (ra xa Tokyo)</option><option value="up">Lên (về Tokyo)</option></select></label>
     <label>Tàu <select id="train"></select></label>
     <label>Từ <select id="from"></select></label>
     <label>Đến <select id="to"></select></label>
-    <span id="legBox" style="display:none"><label>Thêm chặng → <select id="via"></select></label> <button id="viaAdd">Thêm</button> <button id="viaClr">Xoá chặng</button> <span id="viaList" style="color:#8aa0b5"></span></span>
-  </div>
-  <div class="row" id="rowDrive2">
-    <label>Độ khó <select id="diff"></select></label>
-    <label>Thời tiết <select id="weather"></select></label>
-    <label>Seed <input id="seed" type="number" value="1"></label>
-    <button id="dice" title="Seed ngẫu nhiên">🎲</button>
-    <button id="start" class="go">Bắt đầu / chạy lại (R)</button> <button id="layoutBtn" title="F2">Bố cục: toàn màn hình</button>
-    <button id="auto">Tự lái: tắt (T)</button>
-    <label>Tua <button data-s="1">×1</button><button data-s="4">×4</button><button data-s="16">×16</button></label>
-    <label><input type="checkbox" id="autoslow" checked> tự về ×1 gần ga</label>
-    <label><input type="checkbox" id="stopmsg" checked> về ×1 khi có điện đàm</label>
-    <label><input type="checkbox" id="lead" checked> tàu chạy trước</label>
+    <span id="legBox" style="display:none"><label>Thêm chặng <select id="via"></select></label><div class="btns" style="margin-top:4px"><button id="viaAdd">Thêm</button><button id="viaClr">Xoá chặng</button></div><span id="viaList" style="color:#8aa0b5;font-size:12px"></span></span>
   </div>
   <div class="row" id="rowDisp" style="display:none">
     <label>Giờ bắt đầu <select id="dHour"></select></label>
@@ -66,21 +74,40 @@
     <button id="dStart" class="go">Bắt đầu ca điều độ</button>
     <span class="dim">Dùng chung ô Tuyến, Chiều, Độ khó, Seed ở trên.</span>
   </div>
+  
   <div class="row" id="rowTut" style="display:none">
     <button class="go" data-lesson="0">Bài 1 · Lái cơ bản + dừng ga</button><button class="go" data-lesson="1">Bài 2 · Thiết bị</button><button class="go" data-lesson="2">Bài 3 · Sự cố</button>
     <span class="dim">Phím K: bỏ qua bước · R: làm lại bài.</span>
   </div>
-  <div class="row">
-    <label><input type="checkbox" id="snd" checked> âm thanh</label> <input id="vol" type="range" min="0" max="100" value="60" style="width:90px;vertical-align:middle">
-    <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
-    <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option><option value="off">Cảnh ngẫu nhiên cũ</option></select></label>
-  </div>
-</header>
+</aside>
 <div id="wrap">
   <canvas id="c" width="1780" height="900"></canvas>
   <div id="modal"></div>
   <div id="help">Lịch tàu thật tháng 10/2026 (JR East, JR West) cho cả hai chiều; "(ước)" là lịch đối xứng. Hình tàu: rail.kychung.com (CC BY-NC-ND 4.0), chỉ dùng cá nhân (xem assets/NGUON.md). Mọi số liệu tự đặt ghi ở docs/10-thiet-ke-game.md. Bảng phím tắt nằm ở cột phải.
   </div>
+</div>
+<aside id="sideR">
+  <div class="row" id="rowDrive2">
+    <div class="grp">Chạy</div>
+    <button id="start" class="go">Bắt đầu / chạy lại (R)</button>
+    <button id="auto">Tự lái: tắt (T)</button>
+    <button id="layoutBtn" title="F2">Bố cục: toàn màn hình</button>
+    <label>Tua <span class="btns"><button data-s="1">×1</button><button data-s="4">×4</button><button data-s="16">×16</button></span></label>
+    <div class="grp">Cấu hình</div>
+    <label>Độ khó <select id="diff"></select></label>
+    <label>Thời tiết <select id="weather"></select></label>
+    <label>Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
+    <label class="inl"><input type="checkbox" id="autoslow" checked> tự về ×1 gần ga</label>
+    <label class="inl"><input type="checkbox" id="stopmsg" checked> về ×1 khi có điện đàm</label>
+    <label class="inl"><input type="checkbox" id="lead" checked> tàu chạy trước</label>
+  </div>
+  <div class="row">
+    <div class="grp">Âm thanh và cảnh</div>
+    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label><input id="vol" type="range" min="0" max="100" value="60">
+    <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
+    <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option><option value="off">Cảnh ngẫu nhiên cũ</option></select></label>
+  </div>
+</aside>
 </div>
 <script src="data-lines.js"></script>
 <script src="assets/n700_strip.js"></script>
@@ -158,6 +185,28 @@ $('from').onchange = () => {
   if ($('to').selectedOptions[0] && $('to').selectedOptions[0].disabled) { const ok = [...$('to').options].reverse().find(o => !o.disabled); if (ok) ok.selected = true; }
 };
 $('dice').onclick = () => { $('seed').value = Math.floor(Math.random() * 99999); };
+// ---- hộp chọn có tìm kiếm cho các danh sách dài (Tàu, Từ, Đến, Thêm chặng): mở bên cạnh ô chọn (không tràn đáy màn hình), gõ để lọc, ↑↓ Enter, Esc
+const norm = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
+let picker = null;
+function closePicker() { if (picker) { picker.el.remove(); document.removeEventListener('mousedown', picker.out, true); picker = null; } }
+function openPicker(sel) {
+  closePicker(); const r = sel.getBoundingClientRect(), vw = innerWidth, vh = innerHeight, w = Math.min(460, vw - 16), maxH = Math.floor(vh * 0.82);
+  const el = document.createElement('div'); el.id = 'picker'; el.style.width = w + 'px'; el.style.maxHeight = maxH + 'px';
+  const left = r.left < vw / 2 ? Math.min(r.right + 8, vw - w - 8) : Math.max(8, r.left - w - 8); el.style.left = left + 'px';
+  const inp = document.createElement('input'); inp.placeholder = 'Gõ để tìm…'; const list = document.createElement('div'); list.className = 'list'; el.append(inp, list); document.body.appendChild(el);
+  const opts = [...sel.options]; let shown = [], hl = 0;
+  const render = () => { const q = norm(inp.value.trim()); shown = opts.filter(o => !q || norm(o.text).includes(q)); list.innerHTML = '';
+    if (!shown.length) { const n = document.createElement('div'); n.className = 'none'; n.textContent = 'Không có mục nào khớp.'; list.appendChild(n); }
+    shown.forEach((o, k) => { const d = document.createElement('div'); d.className = 'it' + (o.value === sel.value ? ' cur' : '') + (o.disabled ? ' dis' : '') + (k === hl ? ' hl' : ''); d.textContent = o.text; d.title = o.text;
+      d.onmousedown = e => { e.preventDefault(); e.stopPropagation(); }; d.onclick = () => choose(o); list.appendChild(d); });
+    const cur = list.querySelector('.hl'); if (cur) cur.scrollIntoView({ block: 'nearest' }); el.style.top = Math.max(8, Math.min(r.top - 8, vh - el.offsetHeight - 8)) + 'px'; };
+  const choose = o => { if (!o || o.disabled) return; sel.value = o.value; closePicker(); sel.dispatchEvent(new Event('change')); sel.focus(); };
+  inp.oninput = () => { hl = 0; render(); };
+  inp.onkeydown = e => { if (e.key === 'Escape') { closePicker(); sel.focus(); e.preventDefault(); } else if (e.key === 'ArrowDown') { hl = Math.min(shown.length - 1, hl + 1); render(); e.preventDefault(); } else if (e.key === 'ArrowUp') { hl = Math.max(0, hl - 1); render(); e.preventDefault(); } else if (e.key === 'Enter') { choose(shown[hl]); e.preventDefault(); } e.stopPropagation(); };
+  const out = e => { if (!el.contains(e.target)) closePicker(); }; document.addEventListener('mousedown', out, true); picker = { el, out };
+  const ci = opts.findIndex(o => o.value === sel.value); hl = Math.max(0, ci); render(); inp.focus();
+}
+for (const id of ['train', 'from', 'to', 'via']) { const sel = $(id); sel.addEventListener('mousedown', e => { e.preventDefault(); openPicker(sel); }); sel.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); openPicker(sel); } }); }
 // ---- chế độ
 function setMode(m) {
   mode = m; closeModal();
