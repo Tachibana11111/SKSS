@@ -3,7 +3,7 @@
 // Chuỗi bố trí viết theo chiều chạy XUỐNG (km tăng), trái -> phải khi nhìn từ buồng lái; Nhật chạy bên trái nên đường xuống nằm bên trái đường lên.
 //   d/u = đường dừng chiều xuống/lên, D/U = đường thông qua chiều xuống/lên, P = sân ga.
 (function (root) {
-  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-1': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '3-4-0': 'PdPduPu' };
+  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-1': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '3-4-0': 'PdPduPu', '2-4-0t': 'dPddPu' };      // 2-4-0t: Tokyo (Tohoku/Joetsu/Hokuriku) theo sơ đồ ray HaisenNet: 3 đường nhập đường chính xuống, 1 đường nhập đường chính lên [D sơ đồ, I hướng]
   const ADJ = -4.3, TRK_GAP = 4.3, EDGE = 1.75, ISLAND = 7.2, SIDE = 9.0;       // toạ độ mô hình: X dương = phía "sân ga của đường ta"; đường ngược chiều gần nhất ở X = ADJ
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -39,13 +39,21 @@
     // sân ga kề đường dừng của ta
     const plat = plats.find(p => Math.abs(Math.min(Math.abs(p.xa - ours.x), Math.abs(p.xb - ours.x)) - EDGE) < 0.01) || null;
     const platSign = plat ? ((plat.xa + plat.xb) / 2 > ours.x ? 1 : -1) : 1;
-    return { code, dir, tracks, plats, stops, ref, opp: X(opp), oppT, ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
+    const platTracks = tracks.filter(t => !t.thr && plats.some(p => Math.abs(Math.min(Math.abs(p.xa - t.x), Math.abs(p.xb - t.x)) - EDGE) < 0.01));      // mọi đường có sân ga kề (cả hai nhóm d và u): ga cuối dùng cho cả tàu vào lẫn ra
+    return { code, dir, tracks, plats, stops, platTracks, ref, opp: X(opp), oppT, ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
   }
   // trọng số "đã chia ra các đường của ga" tại vị trí s (m): 0 ở xa, 1 trong phạm vi sân ga; sM = vị trí vạch dừng
   // mức "đã toả hết" của cả ga (theo đường ngoài cùng): dùng cho bề rộng hành lang; từng đường có trackW riêng (ghi riêng)
   const spread = (s, sM) => smooth(sM - 760, sM - 430, s) * (1 - smooth(sM + 40, sM + 380, s));
   // ghi thật: dịch ngang tuyến tính (góc không đổi ~1:12), tách khỏi / nhập vào đường kia tại một điểm rõ ràng (hình chữ Y), không toả mượt mơ hồ
   const ramp = (a, b, x) => clamp((x - a) / (b - a), 0, 1);
+  // vị trí ngang (X mô hình) đường ĐI của tàu ta tại vị trí s so với vạch dừng sM. Đường d: như cũ (x·trackW). Đường u (ga cuối: tàu xuất phát/đến ở nhóm đường nối vào đường chính ngược chiều):
+  // đường ga nhập vào đường chính ngược chiều, rồi qua ghi chữ X (dài 150 m, ở xa vạch XA trước / XB sau vạch) để sang đường chính của ta. w = trackW của đường, sp = spread của ga; xa/xb theo hướng nhìn (camera sau đổi chỗ)
+  const laneOf = (t, s, sM, w, sp, xa, xb) => {
+    const xt = t.main ? t.plain + (t.x - t.plain) * sp : t.plain + (t.x - t.plain) * w; if (t.own) return xt;
+    const dz = sM - s, sm = u => smooth(0, 1, u), cin = sm((xa - dz) / 150), cout = sm((-dz - xb) / 150);
+    return xt * cin * (1 - cout);
+  };
   const trackW = (t, s, sM) => t.in0 === undefined ? 1 : ramp(sM - t.in0, sM - t.in0 + t.len, s) * (1 - ramp(sM + t.out0, sM + t.out0 + t.len, s));
 
   // đường cong: bảng [km0, km1, R, sg] theo km; trả về độ cong (1/m, dương = rẽ phải theo chiều chạy) tại s (m dọc tuyến theo chiều chạy)
@@ -96,7 +104,7 @@
   }
   // tàu dừng ở ga này phải rẽ ghi sang đường sân ga (đường dừng khác đường chính)? [I theo bố trí]
   const _div = {};
-  function diverts(code, dir, pick) { const k = code + dir + pick; if (_div[k] === undefined) _div[k] = station(code, dir, pick).ours.x !== 0; return _div[k]; }
+  function diverts(code, dir, pick) { const k = code + dir + (pick && typeof pick === 'object' ? 'o' + pick.i : pick); if (_div[k] === undefined) _div[k] = station(code, dir, pick).ours.x !== 0; return _div[k]; }
   const _sc = {};
   function stopCount(code, dir) { const k = code + dir; if (_sc[k] === undefined) _sc[k] = station(code, dir, 0).stops.length; return _sc[k]; }
   // ---- Hướng địa lý của tuyến (độ, theo chiều kim đồng hồ từ hướng Bắc) tại vị trí s theo chiều chạy: lấy từ toạ độ các ga (nội suy giữa trung điểm các đoạn)
@@ -114,6 +122,6 @@
     return ((b + clamp(dev, -35, 35)) % 360 + 360) % 360;
   }
   const lerp = (a, b, t) => a + (b - a) * t;
-  root.Layout = { pickOf: (st, i) => st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);

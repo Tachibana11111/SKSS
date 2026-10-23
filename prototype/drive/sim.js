@@ -234,8 +234,8 @@
     let best = null; for (const O of W.net.trains) { if (O === T || O.phase === 'end' || O.phase === 'dwell' || offMain(O)) continue; if (O.x > T.x && (!best || O.x < best.x)) best = O; } return best;
   }
   // ---- Ghi (đường rẽ vào đường sân ga): giới hạn 80 km/h [I] từ 1.150 m trước vạch tới 630 m sau vạch, chỉ với ga có đường dừng khác đường chính
-  function stationDiverts(L, i, dir) { const Ly = root.Layout; if (!Ly || !L.stations[i] || !L.stations[i].lay) return false; return Ly.diverts(L.stations[i].lay, dir, Ly.pickOf(L.stations[i], i)); }
-  const divertsAt = (T, j) => { const m = T.M[j]; return !!(m && (m.stop || T.forced === j || (j === T.k && T.phase !== 'end')) && !m.mainStop && stationDiverts(T.W.line, m.i, T.W.dir)); };
+  function stationDiverts(L, i, dir, W) { const Ly = root.Layout; if (!Ly || !L.stations[i] || !L.stations[i].lay) return false; return Ly.diverts(L.stations[i].lay, dir, Ly.pickOf(L.stations[i], i, W)); }
+  const divertsAt = (T, j) => { const m = T.M[j]; return !!(m && (m.stop || T.forced === j || (j === T.k && T.phase !== 'end')) && !m.mainStop && stationDiverts(T.W.line, m.i, T.W.dir, T.W)); };
   const geoS = m => m.sOrig !== undefined ? m.sOrig : m.s;      // vị trí gốc của ga (hình học sân ga/ghi); m.s có thể lùi lại khi chờ ghép
   function turnoutZones(T) { const out = []; for (let j = 0; j < T.M.length; j++) if (divertsAt(T, j)) out.push({ s0: geoS(T.M[j]) - G.turnoutIn, s1: geoS(T.M[j]) + G.turnoutOut, v: G.turnoutV, j }); return out; }
   // vị trí các ghi và ghi chéo (chữ X) mà đoàn tàu đi qua quanh một ga: dùng cho âm thanh
@@ -640,7 +640,7 @@
     const Ly = root.Layout, L = W.line; W.stabled = []; if (!Ly) return; const r = rng((W.seed || 1) * 131 + 5);
     M.forEach((m, k) => {
       const st = L.stations[m.i]; if (!st || !st.lay || (k === 0 && m.s === M[0].s && false)) return;
-      const sc = Ly.station(st.lay, W.dir, Ly.pickOf(st, m.i)), cand = sc.tracks.filter(t => !t.main && t !== sc.ours); if (!cand.length || r() > 0.3) return;
+      const sc = Ly.station(st.lay, W.dir, Ly.pickOf(st, m.i, W)), cand = sc.tracks.filter(t => !t.main && t !== sc.ours); if (!cand.length || r() > 0.3) return;
       const t = cand[Math.floor(r() * cand.length)], face = t.own ? 1 : -1; let key = L.meta.defVeh;      // face = 1: đỗ quay đầu theo chiều chạy của ta; -1: quay ngược lại (đường chiều kia)
       if (L.meta.coupleMini && st.km <= L.meta.coupleMini.maxKm && r() < 0.5) { const north = (W.dir === 'down') === (face === 1), mini = r() < 0.5 ? 'E6' : 'E8'; key = r() < 0.4 ? 'E5' : (north ? mini + '+E5' : 'E5+' + mini); }      // mini luôn ở phía bắc đoàn
       W.stabled.push({ k, i: m.i, track: t, key, face, front: geoS(m) + (r() * 100 - 30) });
@@ -686,11 +686,19 @@
     if (tx != null) { if (down) { LM.push(Object.assign(mid, { thru: true, arr: tx - t0, dep: null })); } else { LM.unshift(Object.assign(mid, { fly: true, arr: null, dep: tx - t0 })); } }
     return fillPlan(LM);
   }
+  // ga cuối tuyến (đầu hoặc cuối hành trình là ga đầu/cuối của tuyến): mỗi chuyến chọn ngẫu nhiên (theo seed, không đụng dòng ngẫu nhiên của thế giới) MỘT trong mọi đường có sân ga.
+  // Chọn đường thuộc nhóm đường chính ngược chiều (nhóm u) thì tàu phải qua ghi chữ X để sang đường chính của ta [I, sơ đồ HaisenNet]; ga giữa tuyến: giữ cách chọn cũ.
+  function termPicks(W, L, M, seed) {
+    const Ly = root.Layout; if (!Ly) return; const r = rng(seed * 977 + 13); W.termPick = {};
+    for (const m of [M[0], M[M.length - 1]]) { if (!m || m.i === undefined) continue; if (m.i !== 0 && m.i !== L.stations.length - 1) continue; const st = L.stations[m.i]; if (!st || !st.lay || st.side) continue;
+      const pt = Ly.station(st.lay, W.dir, 0).platTracks; if (pt.length < 2) continue; W.termPick[m.i] = pt[Math.floor(r() * pt.length)].i; }
+  }
   function createWorld(lineId, trip, opts) {
     opts = opts || {};
     const rnd = rng(opts.seed || 1), W = baseWorld(lineId, trip.dir, opts.diff, opts.seed, opts.weather), L = W.line;
     W.trip = trip; W.catalog = catalogOf(L, trip.dir);
     const M = fillPlan(trip.M.map(m => Object.assign({}, m)));
+    termPicks(W, L, M, opts.seed || 1);
     W.load = opts.load != null ? opts.load : 0.45 + W.rnd() * 0.55;
     W.player = newTrain(M, W, { veh: trip.rec.v, label: trip.label, load: W.load, cp: trip.rec.cp });
     W.passers = passers(L, W.catalog, { ...trip, M });
@@ -772,7 +780,7 @@
       if (jj < 0) jj = T.M.length - 1;
       if (jj === T.k && T.phase === 'dwell') { T.holds[jj] = Math.max(T.holds[jj] || 0, rel); continue; }
       if (!T.M[jj].stop) T.forced = jj;
-      if (T.forced === jj && stationDiverts(W.line, T.M[jj].i, W.dir)) {       // (ga không có lịch dừng) còn kịp giảm tốc xuống tốc độ qua ghi và rẽ vào đường sân ga không?
+      if (T.forced === jj && stationDiverts(W.line, T.M[jj].i, W.dir, W)) {       // (ga không có lịch dừng) còn kịp giảm tốc xuống tốc độ qua ghi và rẽ vào đường sân ga không?
         const need = G.turnoutIn + Math.max(0, (T.v * T.v - G.turnoutV * G.turnoutV) / (2 * G.aATC)) + 150;
         if (T.M[jj].s - T.x < need) { T.M[jj].mainStop = true; if (T === W.player) W.say('warn', `Dừng khẩn tại ${T.M[jj].name}: quá gần để rẽ ghi, tàu sẽ dừng ở ĐƯỜNG CHÍNH trước/ngay ga (không có sân ga).`); }
       }
@@ -951,7 +959,7 @@
   const D_ = {
     hold(W, T, j, sec) { if (!T || j <= T.k || j > T.M.length - 1 || !T.M[j].stop) return false; const base = T.M[j].dep != null ? T.M[j].dep : (T.M[j].arr || 0); T.holds[j] = Math.max(T.holds[j] || 0, base + sec, W.t + sec); W.say('stop', `Lệnh: giữ ${T.label} tại ${T.M[j].name} thêm ${sec} s.`); W.cmds = (W.cmds || 0) + 1; return true; },
     release(W, T, j) { if (!T || T.holds[j] == null) return false; delete T.holds[j]; if (T.waitFor) T.waitFor = null; W.say('stop', `Lệnh: thả ${T.label} tại ${T.M[j] ? T.M[j].name : '?'}.`); W.cmds = (W.cmds || 0) + 1; return true; },
-    skip(W, T, j) { if (!T || j <= T.k || j >= T.M.length - 1 || !T.M[j].stop) return false; if (T.phase === 'run' && stationDiverts(W.line, T.M[j].i, W.dir) && T.M[j].s - T.x < G.turnoutIn + 300) { W.say('warn', `Không thể cho ${T.label} thông qua ${T.M[j].name}: tàu đã gần/ vào ghi sang đường sân ga.`); return false; } T.M[j].stop = false; fillPlan(T.M); W.say('stop', `Lệnh: ${T.label} THÔNG QUA ${T.M[j].name}.`); W.cmds = (W.cmds || 0) + 1; return true; },
+    skip(W, T, j) { if (!T || j <= T.k || j >= T.M.length - 1 || !T.M[j].stop) return false; if (T.phase === 'run' && stationDiverts(W.line, T.M[j].i, W.dir, W) && T.M[j].s - T.x < G.turnoutIn + 300) { W.say('warn', `Không thể cho ${T.label} thông qua ${T.M[j].name}: tàu đã gần/ vào ghi sang đường sân ga.`); return false; } T.M[j].stop = false; fillPlan(T.M); W.say('stop', `Lệnh: ${T.label} THÔNG QUA ${T.M[j].name}.`); W.cmds = (W.cmds || 0) + 1; return true; },
     overtake(W, slow, fast, j) { if (!slow || !fast || j <= slow.k || !slow.M[j].stop) return false; slow.waitFor = { train: fast, s: slow.M[j].s }; slow.holds[j] = Math.max(slow.holds[j] || 0, 0); W.say('stop', `Lệnh: ${slow.label} chờ tại ${slow.M[j].name} cho ${fast.label} vượt.`); W.cmds = (W.cmds || 0) + 1; return true; }
   };
   function netScore(W) {

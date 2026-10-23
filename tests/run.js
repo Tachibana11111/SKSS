@@ -170,7 +170,7 @@ section('10. Bố trí ga, kết cấu tuyến, đường cong (layout.js)');
 {
   const LAY = require(path.join(DRIVE, 'layout.js'));
   for (const code of Object.keys(LAY.TOK)) for (const dir of ['down', 'up']) {
-    const [f, l, t] = code.split('-').map(Number), st = LAY.station(code, dir, 1), tag = `${code} ${dir}`;
+    const [f, l, t] = code.split('-').map(x => parseInt(x, 10)), st = LAY.station(code, dir, 1), tag = `${code} ${dir}`;
     ok(st.plats.length === f, `${tag}: đúng số sân`, st.plats.length);
     ok(st.tracks.length === l + (t ? 2 : 0), `${tag}: đúng số đường (kể cả thông qua)`, st.tracks.length);
     ok(st.tracks.filter(x => x.thr).length === (t ? 2 : 0), `${tag}: số đường thông qua`);
@@ -395,6 +395,21 @@ section('17. Ga: ghi riêng từng đường, tường bao, hồ sơ hình học
   { const L = Sim.lineOf('toh'), vk = L.struct.find(g => g[2] === 'v' && g[1] - g[0] > 3), x = Sim.sOfKm((vk[0] + vk[1]) / 2, 'down', L.kmEnd), el = LAY.elevTable(L, Sim, 'down', x, 100, 10); ok(el[0] > 8 && el[0] <= 9.01, 'cao độ trên cầu cạn ≈ 9 m', el[0]); }
   { const L = Sim.lineOf('toh'), gk = L.struct.find(g => g[2] === 'g' && g[1] - g[0] > 3); if (gk) { const x = Sim.sOfKm((gk[0] + gk[1]) / 2, 'down', L.kmEnd), el = LAY.elevTable(L, Sim, 'down', x, 100, 10); ok(Math.abs(el[0] - 2) < 0.1, 'cao độ trên nền đất ≈ 2 m', el[0]); } }
   { const t0 = Date.now(); const L = Sim.lineOf('tsk'); for (let i = 0; i < 2000; i++) LAY.lateralTable(L, Sim, 'down', 100000 + i * 3, 2600, 10); ok(Date.now() - t0 < 400, 'bảng ngang 2000 lần < 0,4 s (hồ sơ tính trước)', Date.now() - t0); }
+}
+
+section('18. Ga cuối: chọn đường có sân ga của cả hai nhóm, đi qua ghi chữ X sang đường chính của ta');
+{
+  const LAY = require(path.join(DRIVE, 'layout.js'));
+  { const st = LAY.station('2-4-0t', 'down', 0); ok(st.tracks.length === 4 && st.tracks.filter(t => t.own).length === 3 && st.tracks.filter(t => !t.own).length === 1, 'Tokyo Tohoku: 3 đường xuống + 1 đường lên (sơ đồ HaisenNet)'); }
+  for (const ln of ['toh', 'jts', 'hok', 'yam', 'aki']) ok(Sim.lineOf(ln).stations[0].lay === '2-4-0t', `${ln}: Tokyo dùng bố trí 2-4-0t`);
+  const rec = find('tsk', 'Nozomi', 'down', 0, 12), trip = Sim.makeTrip('tsk', rec, 0, 12); const picks = new Set(), kinds = new Set();
+  for (let seed = 1; seed <= 40; seed++) { const W = Sim.createWorld('tsk', trip, { diff: 'easy', seed, lead: false, events: false }); const p = W.termPick[0]; ok(p !== undefined && W.termPick[trip.M[trip.M.length - 1].i] === undefined, 'ga đầu hành trình là ga cuối tuyến có chọn đường; ga cuối hành trình (Nagoya) giữ cách cũ'); picks.add(p);
+    const st = LAY.station('3-6-0', 'down', LAY.pickOf(W.line.stations[0], 0, W)), o = st.ours; kinds.add(o.own); let prev = null, mx = 0;
+    for (let s = 0; s <= 1500; s += 10) { const l = LAY.laneOf(o, s, 0, LAY.trackW(o, s, 0), LAY.spread(s, 0), 1300, 720); if (prev !== null) mx = Math.max(mx, Math.abs(l - prev)); prev = l; if (s === 0) ok(Math.abs(l - o.x) < 1e-9, 'bắt đầu đúng đường đã chọn'); }
+    ok(prev === 0 && mx < 1.0, 'ra khỏi ga về đường chính của ta (X = 0), không nhảy ngang quá 1 m/10 m (ghi #12 ~0,8)', [prev, mx]); }
+  ok(picks.size >= 4 && kinds.has(true) && kinds.has(false), 'qua 40 seed: gặp cả đường nhóm d (đi thẳng) lẫn nhóm u (qua ghi X)', [...picks]);
+  { const W1 = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 7, lead: false, events: false }), W2 = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 7, lead: false, events: false }); ok(JSON.stringify(W1.termPick) === JSON.stringify(W2.termPick), 'cùng seed cùng đường'); }
+  { const rm = find('tsk', 'Nozomi', 'down', 12, 15), tm = Sim.makeTrip('tsk', rm, 12, 15), W = Sim.createWorld('tsk', tm, { diff: 'easy', seed: 3, lead: false, events: false }); ok(Object.keys(W.termPick).length === 0, 'hành trình giữa hai ga trung gian: không chọn đường ga cuối'); }
 }
 
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
