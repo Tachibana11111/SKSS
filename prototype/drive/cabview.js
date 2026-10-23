@@ -122,6 +122,9 @@
     const jw = o => Math.max(0, Math.min(1, (28 - Math.abs(o)) / 6));
     const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) { x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main) x = Math.max(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) + 2.9); } const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
     const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) { x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main) x = Math.min(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) - 2.9); } const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
+    // rìa ngoài thật của ga: chỉ tính các đường ray ở vị trí thật của chúng (kể cả đường nhánh đang toả ra / nhập lại) và đường chính tuyến cha; KHÔNG tính bề rộng "cả ga" (spread), nên khi các nhánh đã nhập hết rào cũng hết rộng
+    const xr2 = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) for (const t of q.st.tracks) if (!t.main) x = Math.max(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) + 2.9); const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
+    const xl2 = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) for (const t of q.st.tracks) if (!t.main) x = Math.min(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) - 2.9); const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
     if (zExit === null) backdrop();
     // ---- dải tranh phong cảnh OSM hai bên (strips.js): thay các khối nhà 3D rời rạc; chỉ vẽ khi đã có dữ liệu và không ở trong hầm
     const useStrips = wdOn && !!root.Strips;
@@ -200,7 +203,8 @@
         wA = rr ? depL : appL, wB = rr ? appL : depL, s0 = q.d - wA, s1 = q.d + wB;
       const za = z0 - 25, zb = z1 + 25, ta = Math.max(s0 - 150, ZN), tb = Math.min(s1 + 150, ZF);
       for (const side of [1, -1]) {
-        const e = z => side > 0 ? xr(z) + 1.2 : xl(z) - 1.2, th = 0.3 * side;      // rào ngoài bám theo rìa ngoài cùng của ga: đường ngoài cùng (kể cả đường nhánh đang toả ra / nhập lại) và mép sân ga, cách 1,2 m; uốn theo đúng đường      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
+        const e = z => { let v = side > 0 ? xr2(z) + 1.2 : xl2(z) - 1.2;      // rào ngoài bám theo rìa ngoài cùng của ga: đường ngoài cùng thật (kể cả đường nhánh đang toả ra / nhập lại) cách 4,1 m; trong phạm vi sân ga thì thêm mép ngoài sân ga + 1,4 m
+          for (const q2 of sts) { if (!q2.st.plats.length) continue; const zs = rr ? q2.d - 20 : q2.d - 420, pw = LAY.smooth(zs - 60, zs - 10, z) * (1 - LAY.smooth(zs + 450, zs + 500, z)); if (pw <= 0) continue; const edge = side > 0 ? Math.max(...q2.st.plats.map(p => p.xb)) + 1.4 : Math.min(...q2.st.plats.map(p => p.xa)) - 1.4; v = side > 0 ? Math.max(v, lerp(v, edge, pw)) : Math.min(v, lerp(v, edge, pw)); } return v; }, th = 0.3 * side;      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
         for (let a = Math.max(ta, ZN); a < tb; a += 12) { const b = Math.min(tb, a + 12), inSt = b > za && a < zb, h = inSt ? 4.4 : 1.9, zm = (a + b) / 2, odd = Math.floor((T.x + a) / 12) % 2;
           sink.push({ z: zm, fn: () => { const ea = e(a), eb = e(b);
             quad(PG(ea, 0, a), PG(eb, 0, b), P(eb, h, b), P(ea, h, a), odd ? concrete : concrete2);      // chân tường xuống tận mặt đất (không hở khi nền thấp hơn mặt ray)
