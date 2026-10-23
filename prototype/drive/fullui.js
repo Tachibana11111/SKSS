@@ -101,11 +101,12 @@ function drawTopBar(blink) {
   txt('lệch kế hoạch', 1698, 46, '#7a8ea5', '10px system-ui', 'right');
   // nút nhỏ: điện đàm, HUD, toàn màn hình
   // ba ô vuông biểu tượng cạnh nhau: điện đàm (O), HUD / tập trung (H), toàn màn hình (F11)
-  const SZ = 44, GAP = 6, bx0 = FW - 16 - 4 * SZ - 3 * GAP, by0 = 7;
+  const SZ = 44, GAP = 6, bx0 = FW - 16 - 5 * SZ - 4 * GAP, by0 = 7;
   iconBtn(bx0, by0, SZ, 'rear', ui.rear, 'B', () => { ui.rear = !ui.rear; });
   iconBtn(bx0 + (SZ + GAP), by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
   iconBtn(bx0 + 2 * (SZ + GAP), by0, SZ, 'hud', !ui.focus, 'H', () => { ui.focus = !ui.focus; });
   iconBtn(bx0 + 3 * (SZ + GAP), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
+  iconBtn(bx0 + 4 * (SZ + GAP), by0, SZ, 'pause', paused, 'Esc', () => { paused = !paused; });
 }
 
 // công tắc ATC lớn, nổi bật: xanh khi bật, vàng khi chờ xác nhận, đỏ nhấp nháy khi đang cắt
@@ -130,6 +131,7 @@ function iconBtn(x, y, sz, kind, on, key, fn) {
   if (kind === 'rear') { ctx.beginPath(); ctx.roundRect(cx - 13, cy - 10, 26, 18, 3); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy - 1, 5, Math.PI * 0.2, Math.PI * 1.55); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 6, cy - 7); ctx.lineTo(cx - 3, cy - 1); ctx.lineTo(cx - 9, cy - 2); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(cx - 9, cy + 8); ctx.lineTo(cx - 9, cy + 13); ctx.moveTo(cx + 9, cy + 8); ctx.lineTo(cx + 9, cy + 13); ctx.stroke(); }
   else if (kind === 'radio') { ctx.beginPath(); ctx.roundRect(cx - 12, cy - 10, 24, 17, 4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 5, cy + 7); ctx.lineTo(cx - 8, cy + 13); ctx.lineTo(cx + 1, cy + 7); ctx.stroke(); for (const dy of [-4, 1]) { ctx.beginPath(); ctx.moveTo(cx - 7, cy + dy); ctx.lineTo(cx + 7, cy + dy); ctx.stroke(); } }
   else if (kind === 'hud') { ctx.beginPath(); ctx.roundRect(cx - 13, cy - 10, 26, 20, 3); ctx.stroke(); ctx.fillRect(cx - 9, cy - 6, 10, 4); ctx.fillRect(cx - 9, cy + 1, 18, 3); }
+  else if (kind === 'pause') { if (on) { ctx.beginPath(); ctx.moveTo(cx - 7, cy - 11); ctx.lineTo(cx + 10, cy); ctx.lineTo(cx - 7, cy + 11); ctx.closePath(); ctx.fill(); } else { ctx.fillRect(cx - 9, cy - 11, 6, 22); ctx.fillRect(cx + 3, cy - 11, 6, 22); } }
   else { for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.moveTo(cx + sx * 4, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 4); ctx.stroke(); } }
   ctx.lineCap = 'butt'; txt(key, cx, y + sz - 3, on ? '#dbe9ff' : '#7a8ea5', 'bold 9px system-ui', 'center'); btns.push({ x, y, w: sz, h: sz, fn });
 }
@@ -148,7 +150,7 @@ function tileBtn(x, y, s, icon, label, key, on, color, fn) {
   else if (icon === 'auto') { ctx.beginPath(); ctx.arc(cx, cy, 14, 0.4, Math.PI * 1.4); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, 14, Math.PI * 1.4 + 0.4, Math.PI * 2.4); ctx.stroke(); ln(10, -9, 15, -14); ln(10, -9, 17, -7); ln(-10, 9, -15, 14); ln(-10, 9, -17, 7); }
   else if (icon === 'eb') { const r = 15; ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; ctx.lineTo(cx + Math.cos(a) * r * 1.08, cy + Math.sin(a) * r * 1.08); } ctx.closePath(); ctx.stroke(); txt('EB', cx, cy + 5, c, 'bold 13px system-ui', 'center'); }
   else if (icon === 'coast') { ctx.beginPath(); ctx.roundRect(cx - 14, cy - 14, 28, 28, 4); ctx.stroke(); txt('N', cx, cy + 8, c, 'bold 20px system-ui', 'center'); }
-  else if (icon === 'pause') { ctx.fillRect(cx - 11, cy - 13, 8, 26); ctx.fillRect(cx + 3, cy - 13, 8, 26); }
+  else if (icon === 'horn') { ctx.beginPath(); ctx.roundRect(cx - 15, cy - 5, 9, 10, 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 6, cy - 5); ctx.lineTo(cx + 8, cy - 14); ctx.lineTo(cx + 8, cy + 14); ctx.lineTo(cx - 6, cy + 5); ctx.closePath(); ctx.stroke(); ln(13, -6, 17, -9); ln(13, 0, 18, 0); ln(13, 6, 17, 9); }
   ctx.lineCap = 'butt'; txt(label, x + s / 2, y + s - 9, on ? '#fff' : '#9fb4c9', 'bold 10px system-ui', 'center'); txt(key, x + s - 6, y + 12, on ? 'rgba(255,255,255,.8)' : '#6f8399', '9px system-ui', 'right'); btns.push({ x, y, w: s, h: s, fn });
 }
 
@@ -229,7 +231,7 @@ function drawFull() {
       ['door', 'Đóng cửa', 'Enter', () => doAct('door'), T.door !== 'open', '#e08a2f'], ['cruise', 'Tốc độ đều', 'C', () => doAct('cs'), T.cs, '#2a8fa0'], ['wiper', 'Gạt mưa', 'V', () => doAct('wiper'), T.wiper, '#2a6fd6'],
       ['lamp', 'Đèn: ' + lampLab, 'L', () => doAct('lamp'), T.lamp !== 'auto', '#c9a227'], ['ack', 'Nhắc lệnh', 'Y', () => doAct('ack'), pend > 0 && blink, '#c9a227'],
       ['pa', 'Phát thanh', 'M', () => doAct('pa'), T.anx > 40 && blink, '#2a8fa0'], ['auto', 'Tự lái', 'T', () => doAct('auto'), auto, '#2a6fd6'], ['eb', 'Phanh khẩn', 'Q', () => doAct('eb'), T.bk === 8, '#d64a4a'],
-      ['coast', 'Về N', 'Space', () => doAct('coast'), false, '#2a6fd6'], ['pause', paused ? 'Chạy tiếp' : 'Tạm dừng', 'P', () => { paused = !paused; }, paused, '#8a96a6']], TS = 82, TG = 6;
+      ['coast', 'Về N', 'Space', () => doAct('coast'), false, '#2a6fd6'], ['horn', 'Còi', 'P', () => doAct('horn'), T.horn > 0, '#c9a227']], TS = 82, TG = 6;
     tl.forEach((t, i) => tileBtn(PX + 12 + (i % 5) * (TS + TG), PY + 36 + Math.floor(i / 5) * (TS + TG), TS, t[0], t[1], t[2], t[4], t[5], t[3]));
     const ty = PY + 36 + 2 * (TS + TG) + 10; ctx.fillStyle = '#243447'; ctx.fillRect(PX + 12, ty - 6, PW - 24, 1); txt('TIMS (trạng thái xe)', PX + 12, ty + 12, '#8aa0b5', 'bold 11px system-ui');
     const faultCars = new Set(W.faults.map(f => f.car)), nc = T.veh.cars, cw = Math.min(26, (PW - 24) / nc);

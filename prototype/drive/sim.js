@@ -504,6 +504,12 @@
     const W = T.W;
     for (const z of W.workers || []) if (!z.checked && T.x >= z.s0 - 600 && T.x <= z.s0 + 200) honk(T);
     for (const an of W.animals || []) if (an.active && !an.resolved && T.x >= an.s - 1200 && T.x <= an.s - 800) honk(T);
+    if (T.phase !== 'run' || T.isLead) return;
+    // các chỗ còi tự kêu thêm, mỗi chỗ một lần [I: lựa chọn của game, chưa có quy định kiểm chứng]: ga không dừng (còn 600 m), đường ngang đang bị chắn (còn 700 m), tàu phía trước đứng trên đường chính (còn 1500 m)
+    const once = key => { W.hornDone = W.hornDone || {}; if (W.hornDone[key]) return false; W.hornDone[key] = true; return true; };
+    T.M.forEach((m, k) => { if (k > 0 && k < T.M.length - 1 && !m.stop && T.x < m.s && m.s - T.x < 600 && once('thru' + k)) honk(T); });
+    const g = xingAhead(W, T, 700); if (g && once('xing' + Math.round(g.s))) honk(T);
+    const L = W.lead; if (L && L.phase === 'run' && L.v < 2 && L.x > T.x && L.x - L.veh.len - T.x < 1500 && once('lead' + (W.leadStopAt || 0))) honk(T);
   }
   function autoExtras(T) {
     const W = T.W; T.wiper = !!W.rainHere;
@@ -511,8 +517,7 @@
     if (W.decision && W.t - W.decision.t0 > 8) answerDecision(W, 'a');
     if (T.anx > 40 && T.v < 0.5 && W.t - T.paAt > 45) announcePA(T);
     if (T.needConfirm || T.atc) confirmATC(T);
-    for (const z of W.workers || []) if (!z.checked && T.x >= z.s0 - 600 && T.x <= z.s0 + 200) honk(T);
-    for (const an of W.animals || []) if (an.active && !an.resolved && T.x >= an.s - 1200 && T.x <= an.s - 800) honk(T);
+    autoHorn(T);
   }
   function autopilot(T, margin) {
     const c = autoRaw(T, margin);

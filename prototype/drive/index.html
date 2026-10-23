@@ -215,11 +215,11 @@ async function takeSnapshot() {
   const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); };
   const png = await new Promise(res => off.toBlob(res, 'image/png')); save(png, base + '.png'); save(new Blob([code], { type: 'application/json' }), base + '.json');
   try { await navigator.clipboard.writeText(code); } catch (e) { }
-  W.say('info', `Đã chụp cảnh: ${base}.png và .json (mã cảnh đã chép vào bộ nhớ tạm). Vẫn tạm dừng, bấm P để chạy tiếp.`); return { st, png };
+  W.say('info', `Đã chụp cảnh: ${base}.png và .json (mã cảnh đã chép vào bộ nhớ tạm). Vẫn tạm dừng, bấm Esc hoặc nút ⏸ để chạy tiếp.`); return { st, png };
 }
 function pauseOverlay() {
   if (!W || !paused || snapMode || mode === 'profile' || mode === 'dispatch') return; const full = ui.cur === 'full', bw = 250, bx = (W_ - bw) / 2, by = full ? DASH_Y - 50 : H_ - 60;
-  ctx.fillStyle = 'rgba(8,12,18,.78)'; ctx.beginPath(); ctx.roundRect(bx - 12, by - 28, bw + 24, 74, 10); ctx.fill(); txt('TẠM DỪNG · bấm P để chạy tiếp', W_ / 2, by - 8, '#ffc247', 'bold 14px system-ui', 'center');
+  ctx.fillStyle = 'rgba(8,12,18,.78)'; ctx.beginPath(); ctx.roundRect(bx - 12, by - 28, bw + 24, 74, 10); ctx.fill(); txt('TẠM DỪNG · bấm Esc để chạy tiếp', W_ / 2, by - 8, '#ffc247', 'bold 14px system-ui', 'center');
   button(bx, by, bw, 28, '📷 Chụp cảnh (F9)', () => takeSnapshot(), true, '#2a8f5a');
 }
 // ---- hộp chọn có tìm kiếm cho các danh sách dài (Tàu, Từ, Đến, Thêm chặng): mở bên cạnh ô chọn (không tràn đáy màn hình), gõ để lọc, ↑↓ Enter, Esc
@@ -277,7 +277,7 @@ function startDrive(r, opts) {
   replaying = opts.replay || null; if (replaying) scale = 4; else if (scale > 16) scale = 1;
   if (!tutorialRun) tutLessonActive = false;
   W.say('info', `Chuyến ${trip.label} (${T.veh.name}) · ${L.stations[trip.M[0].i].en} → ${L.stations[trip.M[trip.M.length - 1].i].en} · ${Sim.DIFF[r.diff].name} · tải khách ${Math.round(W.load * 100)}%` + (W.lead ? ` · tàu trước: ${W.leadLabel}` : ' · không có tàu trước') + (rec.mir ? ' · lịch ước tính (đối xứng)' : ''));
-  W.say('info', replaying ? 'ĐANG XEM LẠI chuyến đã ghi (không điều khiển được). Nhấn P để tạm dừng, 1/2/3 để đổi tốc độ, R để thoát.' : 'Nhấn Enter để đóng cửa. Khi đèn ĐÓNG CỬA sáng, kéo cần gia tốc (W) để khởi hành.');
+  W.say('info', replaying ? 'ĐANG XEM LẠI chuyến đã ghi (không điều khiển được). Nhấn Esc để tạm dừng, 1/2/3 để đổi tốc độ, R để thoát.' : 'Nhấn Enter để đóng cửa. Khi đèn ĐÓNG CỬA sáng, kéo cần gia tốc (W) để khởi hành.');
   AUD.reset(W); return true;
 }
 let tutLessonActive = false;
@@ -306,7 +306,8 @@ addEventListener('keydown', e => {
   const k = e.key;
   if (mode === 'dispatch') { if (Dispatch.key(e)) e.preventDefault(); return; }
   if (!W || mode === 'profile') return;
-  if (k === 'p' || k === 'P') { paused = !paused; e.preventDefault(); return; }
+  if (k === 'Escape' || ((k === 'p' || k === 'P') && mode === 'dispatch')) { paused = !paused; e.preventDefault(); return; }
+  if ((k === 'p' || k === 'P') && W) { doAct('horn'); e.preventDefault(); return; }
   if (k === 'Tab' && T.finished) { endPage = (endPage + 1) % 2; e.preventDefault(); return; }
   if (k === 'Tab' && ui.cur === 'full') { cycleMain(); e.preventDefault(); return; }
   if ((k === 'h' || k === 'H') && ui.cur === 'full') { ui.focus = !ui.focus; return; }
@@ -428,7 +429,7 @@ function wrapText(str, maxW) {
 }
 const KEYS = {
   drive: [['Lái', null], ['W / S', 'cần gia tốc tăng / giảm'], ['↓ / ↑', 'cần phanh tăng / giảm (nhả về 0 mới kéo gia tốc)'], ['Space', 'về N (không kéo)'], ['Q', 'phanh khẩn'], ['Enter', 'đóng cửa (đèn sáng thì kéo cần để đi)'], ['C', 'tốc độ không đổi'], ['[ / ]', 'chỉnh tốc độ không đổi ∓5'],
-    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['B', 'camera ở cuối đoàn (nhìn ngược về sau)'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['G', 'nâng / hạ cần vẹt'], ['X', 'bật / tắt đo (tàu kiểm tra Doctor Yellow, East i)'], ['K', 'đánh dấu lỗi vừa phát hiện (tàu kiểm tra)'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['Tab', 'đổi khung nhìn chính (buồng lái / bản đồ nhỏ / 2D)'], ['H', 'chế độ tập trung (ẩn bớt bảng)'], ['O', 'ẩn / hiện điện đàm'], ['F11', 'toàn màn hình'], ['F2', 'bố cục toàn màn hình ⇄ cổ điển'], ['P', 'tạm dừng (khi dừng có nút Chụp cảnh)'], ['F9', 'chụp cảnh: lưu ảnh PNG và tệp JSON mô tả để dựng lại'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
+    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['B', 'camera ở cuối đoàn (nhìn ngược về sau)'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['G', 'nâng / hạ cần vẹt'], ['X', 'bật / tắt đo (tàu kiểm tra Doctor Yellow, East i)'], ['K', 'đánh dấu lỗi vừa phát hiện (tàu kiểm tra)'], ['P', 'còi (còi hơi; game cũng tự bấm khi cần)'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['Tab', 'đổi khung nhìn chính (buồng lái / bản đồ nhỏ / 2D)'], ['H', 'chế độ tập trung (ẩn bớt bảng)'], ['O', 'ẩn / hiện điện đàm'], ['F11', 'toàn màn hình'], ['F2', 'bố cục toàn màn hình ⇄ cổ điển'], ['Esc', 'tạm dừng (hoặc nút ⏸ trên cùng; khi dừng có nút Chụp cảnh)'], ['F9', 'chụp cảnh: lưu ảnh PNG và tệp JSON mô tả để dựng lại'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
   dispatch: [['Điều độ', null], ['Bấm vào tàu', 'chọn tàu, rồi dùng nút lệnh'], ['Tab', 'chọn tàu kế'], ['Space', 'dừng / chạy'], ['1 – 4', 'tốc độ mô phỏng'], ['Chung', null], ['P', 'tạm dừng'], ['R', 'chạy lại']]
 };
 function drawKeys(m) {

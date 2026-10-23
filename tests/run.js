@@ -461,4 +461,14 @@ if (section('22. ATC theo hệ: tên hệ, tín hiệu 0 (mất mã), KS-ATC d�
     ok(T2.finished && !T2.failed && T2.results.length >= 1 && Math.abs(T2.results[T2.results.length - 1].err) < 30, 'KS-ATC: autopilot vẫn dừng đúng vạch với mẫu ba giai đoạn', T2.results.map(r => r.err)); }
 }
 
+if (section('23. Còi: bấm tay và tự động (ga không dừng, tàu đứng phía trước)')) {
+  let trip = null; for (const r of Sim.lineOf('toh').trains.filter(t => t.d === 'down' && t.t === 'Hayabusa')) { const st = r.s.filter(e => !e[3]).map(e => e[0]); if (st.length >= 3 && st[st.length - 1] - st[0] > st.length + 2) { trip = Sim.makeTrip('toh', r, st[0], st[st.length - 1]); break; } }
+  ok(!!trip, 'tìm được chuyến có ga không dừng');
+  const W = Sim.createWorld('toh', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+  Sim.honk(T); ok(T.horn > 1.3, 'honk() bật cờ còi');
+  Sim.requestClose(T); let n = 0, honks = 0, prev = 0; while (!T.finished && n++ < 6e5) { Sim.tick(W, 0.05, {}, true); if (T.horn > 1.3 && !(prev > 1.3)) honks++; prev = T.horn; }
+  const keys = Object.keys(W.hornDone || {}).filter(k => /^thru/.test(k));
+  ok(keys.length >= 1 && honks > keys.length, 'đi qua ga không dừng: còi tự kêu một lần mỗi ga', [keys.length, honks]);
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
