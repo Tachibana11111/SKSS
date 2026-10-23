@@ -93,9 +93,8 @@
     let gb = biomeAt(60);
     if (wdOn) { const cl = [landCls(60, 40), landCls(60, -40), landCls(150, 60)].map(x => String.fromCharCode(x || 0)); const ct = k => cl.filter(x => k.includes(x) && x !== ' ').length; if (ct('hci') >= 2) gb = 'urban'; else if (ct('fsepw') >= 2) gb = 'mountain'; else if (ct('aog') >= 1) gb = 'field'; }
     const gcol0 = inSnow ? [214, 222, 232] : gb === 'urban' ? [58, 62, 66] : gb === 'mountain' ? [34, 62, 40] : [64, 96, 52];
-    // nền đất trong phạm vi ga (từ đầu đoạn đường ga toả ra tới hết đoạn nhập lại, chuyển êm 150 m ở hai đầu) cố định màu xi măng / đá dăm, không đổi theo quần xã xung quanh
-    let gwS = 0; for (const q of sts) { const ot = q.st.tracks.filter(t => !t.main && t.in0 !== undefined), app = Math.max(ot.length ? Math.max(...ot.map(t => t.in0)) + 40 : 0, 480), dep = Math.max(ot.length ? Math.max(...ot.map(t => t.out0 + t.len)) + 40 : 0, 120), a = rr ? dep : app, b = rr ? app : dep;
-      gwS = Math.max(gwS, LAY.smooth(q.d - a - 150, q.d - a, 0) * (1 - LAY.smooth(q.d + b, q.d + b + 150, 0))); }
+    // nền đất cố định màu xi măng / đá dăm đúng trong đoạn hàng rào của ga (từ đầu rào tới cuối rào, cùng hằng số FA/FB với tường rào; chuyển êm 60 m nằm bên trong đoạn rào), không đổi theo quần xã xung quanh
+    let gwS = 0; for (const q of sts) gwS = Math.max(gwS, LAY.smooth(q.d - FA, q.d - FA + 60, 0) * (1 - LAY.smooth(q.d + FB - 60, q.d + FB, 0)));
     const gcol = gwS > 0 ? [0, 1, 2].map(k => gcol0[k] + ([inSnow ? 214 : 82, inSnow ? 222 : 84, inSnow ? 232 : 84][k] - gcol0[k]) * gwS) : gcol0;
     // ---- nền: bầu trời, núi, mặt đất, sương mù (dùng cho phong cảnh thường và cho phần nhìn ra ngoài qua cửa hầm)
     const backdrop = () => {
