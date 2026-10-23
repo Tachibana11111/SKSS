@@ -224,7 +224,7 @@
       }
       // trụ đỡ mặt cầu: ở hai đầu và hai bên mỗi thang
       const cols = [xl, xr]; for (const p of st.plats) { const xc = (p.xa + p.xb) / 2; cols.push(xc - 1.9, xc + 1.9); }
-      for (const xc of cols) { const a = P(xc - 0.3, -1.5, zn + 0.5), b = P(xc + 0.3, -1.5, zn + 0.5), d = P(xc + 0.3, BY, zn + 0.5), e = P(xc - 0.3, BY, zn + 0.5); quad(a, b, d, e, pil); }
+      for (const xc of cols) { const y0 = st.plats.some(p => xc >= p.xa && xc <= p.xb) ? PH : -2, a = P(xc - 0.3, y0, zn + 0.5), b = P(xc + 0.3, y0, zn + 0.5), d = P(xc + 0.3, BY, zn + 0.5), e = P(xc - 0.3, BY, zn + 0.5); quad(a, b, d, e, pil); }
       // thân cầu: sàn bê tông, tường có dải cửa sổ, mái tôn nhô ra
       quad(P(xl, BY - 0.5, zn), P(xr, BY - 0.5, zn), P(xr, BY - 0.5, zf), P(xl, BY - 0.5, zf), under);
       quad(P(xl, BY - 0.5, zn), P(xr, BY - 0.5, zn), P(xr, BY, zn), P(xl, BY, zn), pil);
@@ -256,8 +256,10 @@
       for (const p of st.plats) {
         const isOurs = q.stopHere && st.plat === p;
         // mặt trên, mặt đứng hai mép, vạch vàng an toàn ở mép kề đường
-        strip(() => p.xa, () => p.xb, PH, z0, z1, topc);
-        for (const e of [p.xa, p.xb]) { const adj = st.tracks.some(t => Math.abs(Math.abs(t.x - e) - PEDGE) < 0.01); wall(() => e, 0, PH, z0, z1, '#3a4a5c'); if (adj) { const inward = e === p.xa ? 1 : -1; strip(() => e, () => e + inward * 0.55, PH, z0, z1, '#e8c93a'); } }
+        // mặt trên, mặt đứng và vạch vàng vẽ theo từng đoạn 30 m vào danh sách xa → gần (như mái ga), để vật ở phía sau/phía dưới (cảnh, cột cầu) bị mặt sân ga che đúng, không nhìn xuyên qua
+        for (let za = z0; za < z1; za += 30) { const zb = Math.min(z1, za + 30); sink.push({ z: zb, fn: () => {
+          strip(() => p.xa, () => p.xb, PH, za, zb + 0.4, topc);
+          for (const e of [p.xa, p.xb]) { const adj = st.tracks.some(t => Math.abs(Math.abs(t.x - e) - PEDGE) < 0.01); wall(() => e, 0, PH, za, zb + 0.4, '#3a4a5c'); if (adj) { const inward = e === p.xa ? 1 : -1; strip(() => e, () => e + inward * 0.55, PH, za, zb + 0.4, '#e8c93a'); } } } }); }
         // mái ga (nửa trong suốt)
         // mái ga đặc, chừa hở phía trên đường ray (lùi 1,2 m khỏi mép kề đường) và nghiêng: mép kề đường thấp 5,2 m, mép ngoài / đỉnh mái cao 6,2 m (đảo: hai mái dốc về hai phía)
         // vẽ theo từng đoạn 30 m vào danh sách xa → gần để phong cảnh phía sau không đè lên mái
