@@ -204,11 +204,45 @@
           } }); }
       }
     };
+    // ---- cầu bộ hành trên cao bắc ngang qua mọi đường ray, nối các sân ga (chỉ ở khung buồng lái; vật cố định theo toạ độ ga, không kẹp theo camera)
+    // số cầu theo cỡ ga: ≥ 3 sân ga: 3 lối (1/6, 1/2, 5/6 độ dài sân ga); 2 sân ga và ≥ 4 đường: 2 lối (1/4, 3/4); 2 sân ga ít đường: 1 lối giữa; ga 1 sân ga hoặc ga ngầm: không có
+    const bridgeN = {}, bridgeCount = i => { const key = W.lineId + ':' + i; if (bridgeN[key] !== undefined) return bridgeN[key]; const stn = L.stations[i];
+      let n = LAY.bridgeCountOf(stn.lay || '2-2-0'); if (n && S.inTunnel({ line: L, dir: 'down' }, S.sOfKm(stn.km, 'down', L.kmEnd))) n = 0; return (bridgeN[key] = n); };
+    const BY = 9.4, BH = 2.4, BD = 3.2;       // mặt cầu cao hơn cổng đỡ dây (7,6 m); thân cầu cao 2,4 m; bề dày theo chiều tàu 3,2 m
+    const drawBridge = (st, zc, xl, xr) => {
+      const zn = zc - BD / 2, zf = zc + BD / 2, k = day * (1 - wx * 0.3), wallC = mixc([34, 38, 44], [178, 176, 160], k), under = mixc([14, 16, 20], [88, 90, 92], k), roofC = mixc([24, 30, 40], [78, 88, 106], k), glass = mixc([12, 20, 32], [92, 124, 156], k), pil = mixc([24, 28, 34], [148, 150, 146], k), dark = mixc([6, 8, 12], [40, 42, 46], k);
+      if (zn < ZN + 0.6) return;
+      const Ls = (BY - PH) / 0.55, zl = zf + Ls, lane = c.lane || 0;
+      // thang bậc có mái xuống từng sân ga: dốc 0,55 theo chiều tàu chạy, từ mặt cầu xuống mặt sân ga; hai bên có tường và cửa sổ nhỏ
+      for (const p of st.plats) { const xc = (p.xa + p.xb) / 2, hw = 1.15, a = P(xc - hw, BY, zf), b = P(xc + hw, BY, zf), d = P(xc + hw, PH, zl), e = P(xc - hw, PH, zl);
+        quad(a, b, d, e, under);                                                       // mặt dưới thang (nhìn từ dưới lên)
+        const sides = [xc - hw, xc + hw].sort((u, v) => Math.abs(v - (-lane)) - Math.abs(u - (-lane)));
+        for (const xs of sides) { const a0 = P(xs, BY, zf), a1 = P(xs, BY + BH, zf), b0 = P(xs, PH, zl), b1 = P(xs, PH + BH, zl); quad(a0, a1, b1, b0, wallC);
+          const w0 = P(xs, BY + 1.0, zf + 0.5), w1 = P(xs, BY + 1.9, zf + 0.5), v0 = P(xs, PH + 1.0 + (BY - PH) * 0.04, zl - 0.5), v1 = P(xs, PH + 1.9 + (BY - PH) * 0.04, zl - 0.5); quad(w0, w1, v1, v0, glass); }
+        const r0 = P(xc - hw - 0.25, BY + BH + 0.5, zf), r1 = P(xc + hw + 0.25, BY + BH + 0.5, zf), r2 = P(xc + hw + 0.25, PH + BH + 0.5, zl), r3 = P(xc - hw - 0.25, PH + BH + 0.5, zl); quad(r0, r1, r2, r3, roofC);
+        const o0 = P(xc - hw, PH, zl), o1 = P(xc + hw, PH, zl), o2 = P(xc + hw, PH + BH, zl), o3 = P(xc - hw, PH + BH, zl); quad(o0, o1, o2, o3, dark);       // cửa vào thang ở đầu dưới
+      }
+      // trụ đỡ mặt cầu: ở hai đầu và hai bên mỗi thang
+      const cols = [xl, xr]; for (const p of st.plats) { const xc = (p.xa + p.xb) / 2; cols.push(xc - 1.9, xc + 1.9); }
+      for (const xc of cols) { const a = P(xc - 0.3, -1.5, zn + 0.5), b = P(xc + 0.3, -1.5, zn + 0.5), d = P(xc + 0.3, BY, zn + 0.5), e = P(xc - 0.3, BY, zn + 0.5); quad(a, b, d, e, pil); }
+      // thân cầu: sàn bê tông, tường có dải cửa sổ, mái tôn nhô ra
+      quad(P(xl, BY - 0.5, zn), P(xr, BY - 0.5, zn), P(xr, BY - 0.5, zf), P(xl, BY - 0.5, zf), under);
+      quad(P(xl, BY - 0.5, zn), P(xr, BY - 0.5, zn), P(xr, BY, zn), P(xl, BY, zn), pil);
+      quad(P(xl, BY, zn), P(xr, BY, zn), P(xr, BY + BH, zn), P(xl, BY + BH, zn), wallC);
+      quad(P(xl, BY + 0.9, zn), P(xr, BY + 0.9, zn), P(xr, BY + 1.8, zn), P(xl, BY + 1.8, zn), glass);
+      for (let x = xr; x < xl; x += 4.0) quad(P(x - 0.1, BY, zn), P(x + 0.1, BY, zn), P(x + 0.1, BY + BH, zn), P(x - 0.1, BY + BH, zn), pil);      // cột đứng giữa các ô cửa sổ
+      quad(P(xl + 0.6, BY + BH, zn - 0.5), P(xr - 0.6, BY + BH, zn - 0.5), P(xr - 0.6, BY + BH + 0.7, zn - 0.5), P(xl + 0.6, BY + BH + 0.7, zn - 0.5), roofC);
+    };
+    const bridgesFor = q => {
+      const n = zExit === null ? bridgeCount(q.m.i) : 0; if (!n) return; const fr = n === 3 ? [1 / 6, 1 / 2, 5 / 6] : n === 2 ? [0.25, 0.75] : [0.5], ext = q.st.extent, z0p = rr ? q.d - 20 : q.d - 420;
+      for (const f of fr) { const zc = z0p + 440 * f; if (zc < ZN + 3 || zc > 1600 || zc < physLoZ || zc > physHiZ) continue; sink.push({ z: zc, fn: () => drawBridge(q.st, zc, ext[1] + 1.4, ext[0] - 1.4) }); }
+    };
     const drawStations = () => {
     for (const q of sts) {
       const { m, i, d, st } = q;
       const sgR = rr ? -1 : 1;       // camera sau: sân ga nằm phía SAU vạch dừng của tàu ta nên khi nhìn lùi nó nằm xa hơn vạch (z lớn hơn), không phải gần hơn
       if (zExit === null) enclose(q, rr ? d - 20 : d - 420, rr ? d + 420 : d + 20);
+      bridgesFor(q);
       if (zExit === null) for (const t of st.tracks) {        // ghi: thanh nối lưỡi ghi, hộp máy chuyển ghi và đèn báo ở chỗ đường ga rẽ khỏi đường chính
         if (t.main || t.in0 === undefined) continue; const zs = rr ? d + t.in0 : d - t.in0, sgn = t.x >= t.plain ? 1 : -1; if (zs < ZN + 1 || zs > 700) continue;
         sink.push({ z: zs, fn: () => { const xs = lerp(t.plain, t.x, 0.0), steel = mixc([40, 44, 50], [196, 202, 208], day * (1 - wx * 0.3)), box = mixc([20, 30, 24], [70, 98, 78], day * (1 - wx * 0.3));
