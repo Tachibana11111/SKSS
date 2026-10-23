@@ -54,7 +54,9 @@
     const dz = sM - s, sm = u => smooth(0, 1, u), cin = sm((xa - dz) / 150), cout = sm((-dz - xb) / 150);
     return xt * cin * (1 - cout);
   };
-  const trackW = (t, s, sM) => t.in0 === undefined ? 1 : ramp(sM - t.in0, sM - t.in0 + t.len, s) * (1 - ramp(sM + t.out0, sM + t.out0 + t.len, s));
+  // dịch ngang làm trơn (smoothstep): đường ga tách khỏi đường chính theo tiếp tuyến rồi song song với đường chính, không bẻ gấp ở chỗ nhập (như ghi chữ X)
+  const ease = u => u * u * (3 - 2 * u);
+  const trackW = (t, s, sM) => t.in0 === undefined ? 1 : ease(ramp(sM - t.in0, sM - t.in0 + t.len, s)) * (1 - ease(ramp(sM + t.out0, sM + t.out0 + t.len, s)));
 
   // đường cong: bảng [km0, km1, R, sg] theo km; trả về độ cong (1/m, dương = rẽ phải theo chiều chạy) tại s (m dọc tuyến theo chiều chạy)
   function curvatureAt(L, Sim, dir, s) {
