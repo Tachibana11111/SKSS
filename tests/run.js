@@ -467,4 +467,17 @@ section('21. Tàu chạy phía trước: cảnh báo, va chạm là kết thúc 
   { const { W, T } = mk(); W.lead.x = T.x - 500; W.lead.v = 0; Sim.tick(W, 0.05, {}, false); ok(!T.collision && T.why !== 'lead' && !T.finished, 'tàu đã vượt qua (nằm phía sau): không còn bị ATC hãm về 0 và không tính là va chạm', T.why); }
 }
 
+section('22. ATC theo hệ: tên hệ, tín hiệu 0 (mất mã), KS-ATC dừng ga ba giai đoạn');
+{
+  ok(Sim.lineOf('tsk').meta.atc === 'NS' && Sim.lineOf('toh').meta.atc === 'DS' && Sim.lineOf('nks').meta.atc === 'KS', 'mỗi tuyến có hệ ATC đúng (NS / DS / KS)');
+  let tripL = null; for (const r of Sim.lineOf('tsk').trains.filter(t => t.t === 'Nozomi' && t.d === 'down' && t.s.some(e => e[0] === 0 && !e[3]) && t.s.some(e => e[0] === 12 && !e[3]))) { tripL = Sim.makeTrip('tsk', r, 0, 12); break; }
+  const W = Sim.createWorld('tsk', tripL, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player; Sim.requestClose(T); let n = 0; while (!(T.started && T.phase === 'run' && T.v > 40) && n++ < 4e4) Sim.tick(W, 0.05, {}, true);
+  Sim.inject(W, 'atcfault', { ahead: 6000, sec: 60 }); const zone = W.zones.find(z => z.kind === 'atcfault'); ok(!!zone && W.msgs.some(m => /TÍN HIỆU 0/.test(m.text)), 'inject atcfault tạo vùng tín hiệu 0 và thông báo');
+  let stopped = false, passed = false; n = 0; while (n++ < 12000 && !T.finished) { Sim.tick(W, 0.05, {}, true); if (T.v < 0.3 && W.t < zone.tB && T.x < zone.s0 + 40) stopped = true; if (T.x > zone.s0 + 60 && W.t < zone.tB) passed = true; if (stopped && W.t > zone.tB + 60) break; }
+  ok(stopped && !passed, 'tín hiệu 0: tàu dừng trước vùng, không chạy vào khi còn tín hiệu 0', [stopped, passed]);
+  { let tr = null; for (const r of Sim.lineOf('nks').trains.filter(t => t.d === 'down')) { const st = r.s.filter(e => !e[3]); if (st.length >= 2) { tr = Sim.makeTrip('nks', r, st[0][0], st[1][0]); break; } }
+    const W2 = Sim.createWorld('nks', tr, { diff: 'easy', seed: 1, lead: false, events: false }), T2 = W2.player; Sim.requestClose(T2); let m = 0; while (!T2.finished && m++ < 6e5) Sim.tick(W2, 0.05, {}, true);
+    ok(T2.finished && !T2.failed && T2.results.length >= 1 && Math.abs(T2.results[T2.results.length - 1].err) < 30, 'KS-ATC: autopilot vẫn dừng đúng vạch với mẫu ba giai đoạn', T2.results.map(r => r.err)); }
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

@@ -145,3 +145,8 @@ Trên tuyến thường, **防護無線** (radio bảo vệ) là tín hiệu ngu
 - Sự cố nghiêm trọng: [trafficnews – 1 năm sau nứt bệ](https://trafficnews.jp/post/82339), [Toyo Keizai](https://toyokeizai.net/articles/-/214798), [coki.jp – tàu ghép tách](https://coki.jp/article/news/48884/)
 - ATC vô tuyến: [newswitch](https://newswitch.jp/p/17666), [trafficnews – ATACS](https://trafficnews.jp/post/113288)
 - An toàn: [nippon.com](https://www.nippon.com/ja/in-depth/d01045/), [itmedia – cháy Nozomi 225](https://www.itmedia.co.jp/makoto/spv/1507/03/news012.html), [trafficnews – tự thiêu](https://trafficnews.jp/post/41259/); Tomii 2010 ([PDF](https://www.witpress.com/Secure/elibrary/papers/CR10/CR10011FU1.pdf))
+
+## Cập nhật 24/10/2026: ATC trong game theo hệ
+- Mỗi tuyến có hệ ATC riêng (`LINE_META.atc`): **ATC-NS** (Tokaido/Sanyo), **DS-ATC** (Tohoku, Joetsu, Hokuriku, Yamagata, Akita), **KS-ATC** (Nishi-Kyushu); tên hiện dưới số ATC trên đồng hồ **[N]**. Yamagata/Akita dùng DS-ATC chỉ là suy luận cho đoạn chung với Tohoku **[I]**.
+- **KS-ATC dừng ga ba giai đoạn** **[N: ba giai đoạn]**: mẫu dừng ga là bậc thang 160 → 110 → 60 km/h rồi vào mẫu liên tục; các mức km/h là **[I]** (nguồn chỉ nói "ba giai đoạn").
+- **Tín hiệu 0 (mất mã/tính lỗi)** **[N: fail-safe, không có tín hiệu thì coi là dừng; ATC-NS từng có lỗi tính toán]**: sự cố `atcfault`, ATC hạ tốc độ cho phép về 0 trước một khối ~1,5 km trong 1,5 phút (**[I]**) rồi nhả; xuất hiện ngẫu nhiên thay cho cảnh báo ổ trục ở tuyến ATC-NS (độ khó có sự cố thiết bị). Nút xác nhận vẫn bỏ (ATC tự nhả) theo quyết định trước.

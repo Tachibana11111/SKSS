@@ -1,6 +1,8 @@
 // Lõi mô phỏng lái Shinkansen v0.4 (không phụ thuộc trình duyệt).
 // Số liệu: docs/03 (tàu), 04 (lịch), 06 (ATC, ngưỡng thời tiết), 07 (lái), 09 (sự cố). Nhãn [I] = đơn giản hóa/suy luận (xem docs/10).
 (function (root) {
+  // hệ ATC theo tuyến [N, docs/06 §2]: ATC-NS (Tokaido/Sanyo), DS-ATC (Tohoku/Joetsu/Hokuriku/Hokkaido), KS-ATC (Kyushu/Nishi-Kyushu)
+  const ATCN = { NS: 'ATC-NS', DS: 'DS-ATC', KS: 'KS-ATC' };
   const G = { aATC: 0.72, stopTol: 30, atcBuf: 400, turnoutV: 80 / 3.6, turnoutIn: 1150, turnoutOut: 630 };   // mẫu ATC [I]; ATC chặn ở vạch + 30 m; đệm khoảng cách 400 m [I]
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const NOTCH_MIN = -8, NOTCH_MAX = 13;
@@ -32,7 +34,7 @@
   // ---- Tuyến: giới hạn tốc độ (km thực dọc tuyến), hầm lớn, cảnh quan, độ dốc mô phỏng. Chỉ có [I] (số liệu thật: docs/02)
   const LINE_META = {
     tsk: {
-      pa: '東海道・山陽・九州', defVeh: 'N700', flipDown: true, snow: [[385, 405, 120, 'tuyết Sekigahara'], [405, 462, 170, 'tuyết Maibara–Otsu']],
+      pa: '東海道・山陽・九州', atc: 'NS', defVeh: 'N700', flipDown: true, snow: [[385, 405, 120, 'tuyết Sekigahara'], [405, 462, 170, 'tuyết Maibara–Otsu']],
       limits: [[0, 6.8, 110], [6.8, 90, 270], [90, 515.4, 285], [515.4, 1069.1, 300], [1069.1, 1325.9, 260]],
       tunnels: [[97.5, 105.5, 'Tanna'], [549.9, 566.1, 'Rokko']],
       biomes: [[0, 42, 'urban'], [70, 112, 'mountain'], [335, 352, 'urban'], [360, 372, 'urban'], [384, 420, 'mountain'], [452, 470, 'mountain'], [470, 520, 'urban'],
@@ -40,7 +42,7 @@
       grade: [[0, 515.4, 8, 20], [515.4, 1069.1, 9, 18], [1069.1, 1325.9, 13, 35]]   // [km0, km1, điển hình ‰, tối đa ‰]; hình dạng giả lập, tối đa theo docs/02
     },
     toh: {
-      pa: '東北・北海道', defVeh: 'E5', flipDown: false, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata' }, { km: 498.5, side: -1, branch: true, R: 1500, len: 1.2, to: 'Akita' }], coupleMini: { maxKm: 496.5, p: 0.4, mini: 'E6' }, snow: [[330, 400, 230, 'tuyết Sendai–Morioka'], [520, 674, 200, 'tuyết Morioka–Shin-Aomori']],
+      pa: '東北・北海道', atc: 'DS', defVeh: 'E5', flipDown: false, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata' }, { km: 498.5, side: -1, branch: true, R: 1500, len: 1.2, to: 'Akita' }], coupleMini: { maxKm: 496.5, p: 0.4, mini: 'E6' }, snow: [[330, 400, 230, 'tuyết Sendai–Morioka'], [520, 674, 200, 'tuyết Morioka–Shin-Aomori']],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 703.8, 260], [703.8, 715.9, 140], [715.9, 769.8, 160], [769.8, 786.3, 140], [786.3, 823.7, 260]],   // Hokkaido: đoạn dùng chung ray ba với tàu hàng (Shin-Nakaoguni–Kikonai) 140 km/h ngoài hầm, 160 km/h trong hầm Seikan [N]
       tunnels: [[533, 559, 'Iwate-Ichinohe'], [641, 667, 'Hakkoda'], [715.9, 769.8, 'Seikan']],
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [520, 565, 'mountain'], [636, 674.9, 'mountain'], [674.9, 715, 'mountain'], [769.8, 823.7, 'field']],
@@ -51,7 +53,7 @@
               { km: 732.9, dir: 'down', text: 'Dưới đáy biển eo Tsugaru (≈ 23 km). Nếu có cháy: không dừng giữa hầm, chạy tới điểm cứu hộ 吉岡 hoặc ra khỏi hầm.' }]
     },
     yam: {
-      pa: '山形', defVeh: 'E8', flipDown: false,
+      pa: '山形', atc: 'DS', defVeh: 'E8', flipDown: false,
       snow: [[262, 300, 100, 'tuyết đèo Itaya'], [300, 403.7, 110, 'tuyết Yamagata–Shinjo']],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 255.1, 300], [255.1, 403.7, 130]],        // Fukushima–Shinjo là đường sắt thường khổ chuẩn: tối đa 130 km/h [N]
       curveA: 1.3, curveFrom: 255.1, tunnels: [], coupleMini: { maxKm: 255.1, p: 0.55, mini: 'E8' }, junctions: [{ km: 257.1, side: -1, line: 'toh' }],
@@ -62,7 +64,7 @@
               { km: 255.1, dir: 'up', text: 'Sắp ghép với Yamabiko tại Fukushima (nếu là tàu ghép): dừng đúng vạch, chờ ghép xong.' }]
     },
     aki: {
-      pa: '秋田', defVeh: 'E6', flipDown: false,
+      pa: '秋田', atc: 'DS', defVeh: 'E6', flipDown: false,
       snow: [[330, 400, 230, 'tuyết Sendai–Morioka'], [496.5, 545, 95, 'tuyết Sengan-toge'], [545, 623.8, 110, 'tuyết Akita']],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 623.8, 130]],
       curveA: 1.3, curveFrom: 496.5, tunnels: [], coupleMini: { maxKm: 496.5, p: 0.6, mini: 'E6' }, junctions: [{ km: 498.5, side: -1, line: 'toh' }],
@@ -72,21 +74,21 @@
               { km: 572.1, dir: 'down', text: 'Tại Omagari tàu đổi chiều chạy (switchback): từ đây tới Akita ghế quay ngược chiều. (Mô hình giữ nguyên hướng nhìn.)' }]
     },
     jts: {
-      pa: '上越', defVeh: 'E7', flipDown: false, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, branch: true, R: 4000, len: 1.5, to: 'Hokuriku' }], snow: [[151, 272, 200, 'tuyết Jomo-Kogen–Nagaoka']],
+      pa: '上越', atc: 'DS', defVeh: 'E7', flipDown: false, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, branch: true, R: 4000, len: 1.5, to: 'Hokuriku' }], snow: [[151, 272, 200, 'tuyết Jomo-Kogen–Nagaoka']],
       limits: [[0, 30.3, 110], [30.3, 113, 275], [113, 127.9, 260], [127.9, 333.9, 275]],       // hầm Nakayama có cong R=1.500 m: trang Wikipedia JP ghi 160 km/h (số cũ); lịch 2026 chạy nhanh hơn nhiều nên dùng 260 km/h [I]
       tunnels: [[113, 127.9, 'Nakayama'], [164, 186.2, 'Oshimizu']],
       biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [112, 262, 'mountain'], [262, 275, 'urban'], [318, 333.9, 'urban']],
       grade: [[0, 36, 15, 25], [36, 333.9, 8, 15]]
     },
     nks: {
-      pa: '西九州', defVeh: 'N700S-6', flipDown: true, snow: [],
+      pa: '西九州', atc: 'KS', defVeh: 'N700S-6', flipDown: true, snow: [],
       limits: [[0, 66.0, 260]],
       tunnels: [[1.2, 6.9, 'Tawarazaka'], [14.5, 17.4, 'Kiba'], [35.5, 40.5, 'Kuyama'], [50.0, 57.5, 'Shin-Nagasaki']],   // tên [N]; vị trí km [I]
       biomes: [[0, 12, 'mountain'], [30, 36, 'field'], [43, 47, 'urban'], [47, 60, 'mountain'], [60, 66, 'urban']],
       grade: [[0, 66.0, 12, 30]]
     },
     hok: {
-      pa: '北陸', defVeh: 'E7', flipDown: true, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, line: 'jts', shared: true }], snow: [[140, 300, 200, 'tuyết Karuizawa–Joetsu-Myoko'], [300, 575.6, 180, 'tuyết Itoigawa–Tsuruga']],
+      pa: '北陸', atc: 'DS', defVeh: 'E7', flipDown: true, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, line: 'jts', shared: true }], snow: [[140, 300, 200, 'tuyết Karuizawa–Joetsu-Myoko'], [300, 575.6, 180, 'tuyết Itoigawa–Tsuruga']],
       limits: [[0, 30.3, 110], [30.3, 105, 275], [105, 575.6, 260]],
       tunnels: [[254, 276.2, 'Iiyama'], [284, 295, 'Kubiki']],
       biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [120, 160, 'mountain'], [218, 228, 'urban'], [240, 335, 'mountain'], [386, 398, 'urban'], [445, 458, 'urban'], [575.6 - 10, 575.6, 'urban']],
@@ -260,7 +262,8 @@
       else if (z.s0 > x && z.v < a) { const q = Math.sqrt(z.v * z.v + 2 * G.aATC * (z.s0 - x)); if (q < a) { a = q; why = 'turnout'; } }
     }
     T.free = a;
-    const j = nextTarget(T), tgt = T.M[j].s, d = tgt + G.stopTol - x, q = d > 0 ? Math.sqrt(2 * G.aATC * d) : 0;
+    const j = nextTarget(T), tgt = T.M[j].s, d = tgt + G.stopTol - x; let q = d > 0 ? Math.sqrt(2 * G.aATC * d) : 0;
+    if (W.line.meta.atc === 'KS' && !T.M[j].thru && q >= 60 / 3.6 && q < 170 / 3.6) q = (q >= 160 / 3.6 ? 160 : q >= 110 / 3.6 ? 110 : 60) / 3.6;      // KS-ATC: dừng ga phanh BA giai đoạn (160 → 110 → 60 km/h, dưới 60 theo mẫu liên tục) [N: ba giai đoạn; các mức km/h là I]
     if (q < a && !T.M[j].thru) { a = q; why = 'stop'; }
     const L = leaderOf(T);
     if (L && L.phase !== 'end' && !leadDiverged(W, L) && !(L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L)) && !offMain(L)) {
@@ -958,7 +961,7 @@
       } else if (kind === 'doorfault') {
         ev(at, w => { const car = 1 + Math.floor(rnd() * Math.max(1, w.player.veh.cars)); w.faults.push({ car, kind: 'door', text: `Toa ${car}: cửa lỗi (không đóng hoàn toàn)`, level: 'warn', t: w.t }); w.player.doorFaultOnce = true; w.say('warn', `TIMS: toa ${car} báo lỗi cửa. Lần đóng cửa tới có thể phải mở lại.`); });
       } else if (kind === 'fault') {
-        ev(at, w => { const car = 1 + Math.floor(rnd() * Math.max(1, w.player.veh.cars)); w.faults.push({ car, kind: 'hotbox', text: `Toa ${car}: nhiệt độ ổ trục cao`, level: 'bad', t: w.t }); w.zones.push({ s0: -1e9, s1: 1e9, v: 230 / 3.6, tA: w.t, tB: 1e9, kind: 'fault', label: 'nhiệt độ ổ trục cao' }); w.say('bad', `CẢNH BÁO TIMS: toa ${car} nhiệt độ bệ ổ trục cao. Hạn chế ≤ 230 km/h tới hết chuyến (tài liệu 06 §5.4). Nhấn Y để nhắc lại lệnh.`, { ack: true }); });
+        ev(at, w => { if (w.line.meta.atc === 'NS' && hash01(Math.round(at), W.seed || 1) < 0.5) { inject(w, 'atcfault', {}); return; } const car = 1 + Math.floor(rnd() * Math.max(1, w.player.veh.cars)); w.faults.push({ car, kind: 'hotbox', text: `Toa ${car}: nhiệt độ ổ trục cao`, level: 'bad', t: w.t }); w.zones.push({ s0: -1e9, s1: 1e9, v: 230 / 3.6, tA: w.t, tB: 1e9, kind: 'fault', label: 'nhiệt độ ổ trục cao' }); w.say('bad', `CẢNH BÁO TIMS: toa ${car} nhiệt độ bệ ổ trục cao. Hạn chế ≤ 230 km/h tới hết chuyến (tài liệu 06 §5.4). Nhấn Y để nhắc lại lệnh.`, { ack: true }); });
       } else if (kind === 'xingcar') {
         ev(at, w => { const T = w.player, cand = w.xings.filter(g => !g.hit && g.s > T.x + 3500 && (g.s - lastS) * sgn < 0 && Math.abs(g.s - T.x) < 25000); if (!cand.length) return; const g = cand[Math.floor(rnd() * Math.min(3, cand.length))]; w.armedX = { xg: g, s: g.s }; });
       } else if (kind === 'wire') {
@@ -1014,6 +1017,7 @@
     else if (kind === 'eqk') { W.eqkAt = W.t; W.eqkActive = true; W.eqkRelease = W.t + (o.sec || 300); for (const X of allTrains(W)) X.cut = true; W.say('bad', 'CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên. Phát thanh trấn an hành khách (M).'); }
     else if (kind === 'wire') { const s = T.x + sgn * 12000; W.wires.push({ s, tA: W.t, tB: W.t + 1800 }); W.zones.push({ s0: s - 1500, s1: s + 1500, v: 0, tA: W.t, tB: W.t + 1800, kind: 'wire', hold: true, label: 'dây điện hỏng' }); startHold(W, s + 1500, 1800, 'wire'); W.say('bad', 'SỰ CỐ DÂY ĐIỆN: DỪNG chạy, về ga gần nhất, chờ khôi phục. Nhấn Y để nhắc lại lệnh.', { ack: true }); }
     else if (kind === 'fire') { W.fireActive = true; W.fireEnd = W.t + 900; startHold(W, 1e12, 900, 'fire'); W.faults.push({ car: 6, kind: 'fire', text: 'Toa 6: báo cháy/khói', level: 'bad', t: W.t }); W.say('bad', 'BÁO CHÁY toa 6: nếu trong hầm thì KHÔNG dừng, ra khỏi hầm rồi dừng ở ga gần nhất. Báo điều độ (Y).', { ack: true }); }
+    else if (kind === 'atcfault') { const ah = o.ahead || 5000, s = T.x + sgn * ah, dur = o.sec || 90, tB = W.t + ah / 55 + dur; W.zones.push({ s0: Math.min(s, s + sgn * 1500), s1: Math.max(s, s + sgn * 1500), v: 0, tA: W.t, tB, kind: 'atcfault', label: 'ATC: tín hiệu 0' }); W.say('bad', `ATC báo TÍN HIỆU 0 phía trước (${ATCN[W.line.meta.atc] || 'ATC'} mất mã hoặc tính lỗi: nguyên tắc fail-safe, không có tín hiệu thì coi là dừng). Dừng trước vùng, chờ điều độ xử lý (~${Math.round(dur)} s). Nhấn Y để nhắc lại lệnh.`, { ack: true }); }
     else if (kind === 'leadstop' && W.lead) { W.leadHoldUntil = W.t + (o.sec || 300); W.leadStopAt = W.t; W.say('warn', 'Điều độ: tàu phía trước dừng khẩn. ATC sẽ giữ khoảng cách.'); }
     return true;
   }
@@ -1089,7 +1093,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

@@ -486,7 +486,7 @@ function drawBase() {
     if (v % 40 === 0) txt(v, cx + Math.cos(a) * (rr - 34), cy + Math.sin(a) * (rr - 34) + 4, '#8aa0b5', '10px system-ui', 'center'); }
   const a = ang(kmh); ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (rr - 16), cy + Math.sin(a) * (rr - 16)); ctx.stroke();
   txt(Math.round(kmh), cx, cy + 16, '#fff', 'bold 38px system-ui', 'center'); txt('km/h', cx, cy + 34, '#8aa0b5', '12px system-ui', 'center');
-  txt(T.atcOn === false ? 'ATC CẮT' : 'ATC ' + (Math.floor(atcK / 5) * 5), cx, cy + 58, T.atcOn === false ? (blink ? '#ff3b3b' : '#a02020') : T.atc ? '#ff6464' : '#4cd68a', 'bold 18px system-ui', 'center');
+  txt(T.atcOn === false ? 'ATC CẮT' : 'ATC ' + (Math.floor(atcK / 5) * 5), cx, cy + 58, T.atcOn === false ? (blink ? '#ff3b3b' : '#a02020') : T.atc ? '#ff6464' : '#4cd68a', 'bold 18px system-ui', 'center'); txt(Sim.ATCN[W.line.meta.atc] || '', cx, cy + 72, '#6f8399', '10px system-ui', 'center');
   txt(T.atc ? 'ATC ĐANG PHANH · ' + (WHY[T.why] || '') : (T.phase === 'run' ? 'giới hạn bởi: ' + (WHY[T.why] || '') : ''), cx, cy + 76, T.atc ? '#ff6464' : '#8aa0b5', '12px system-ui', 'center');
   txt('Dốc ' + (T.grade >= 0 ? '+' : '') + T.grade.toFixed(0) + '‰ (mô phỏng)', 24, 144, Math.abs(T.grade) > 10 ? '#ffc247' : '#8aa0b5', '11px system-ui');
   if (T.cs) txt('定速 ' + Math.round(T.csSet * 3.6) + ' km/h', 306, 128, '#3ad6e6', 'bold 13px system-ui', 'right');
