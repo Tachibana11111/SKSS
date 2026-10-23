@@ -78,7 +78,7 @@ Suy ra E5 không thể chạy Tokaido, N700 không thể chạy Tohoku. E7/W7 l�
 **ALFA-X (E956, JR East)** **[N]**
 - Tàu thử 10 toa toàn toa động lực, bắt đầu thử từ 10/5/2019 (kế hoạch đến 3/2022), tốc độ thử 400 km/h, vận hành thử 360 km/h, thiết kế 405 km/h; thử trên Tohoku (vd. thử 5G ở 360 km/h giữa Sendai–Shin-Aomori 10–12/2020). Nguồn không nêu đưa vào chạy thương mại; dữ liệu dùng để phát triển **E10** (tàu kế nhiệm).
 
-**Các dòng đã rút [K]:** E2 (có trong game như đoàn tùy chọn "E2-1000, lịch giả định" trên tuyến Tohoku/Joetsu/Hokuriku, dùng lịch của chuyến đang chọn; số liệu công suất/khối lượng là [K], chưa kiểm chứng), E4 (Max, hai tầng, đã rút 2021), 100/300/0 series. Không cần cho game hiện tại.
+**Các dòng đã rút:** xem mục 2c (lịch sử đội tàu theo tuyến). E2 chưa rút hết: còn 6 đoàn (4/2025) theo Wikipedia **[N]**; trong game E2 là đoàn tùy chọn "E2-1000, lịch giả định" cho chuyến E5/E7 (số liệu công suất/khối lượng là [K]). E4 (Max) đã rút hoàn toàn 17/10/2021 **[N]**.
 
 ## 2b. Thông số kỹ thuật phục vụ mô phỏng (chiều dài, khối lượng, gia tốc, phanh)
 
@@ -101,6 +101,27 @@ Suy ra E5 không thể chạy Tokaido, N700 không thể chạy Tohoku. E7/W7 l�
 - **N700S [N]:** hệ thống kéo SiC nhẹ hơn N700 khoảng 20% (khoảng 47 t cho cả đoàn), tải trọng trục thấp nhất trong các tàu cao tốc (**11 t**), mỗi toa nhẹ hơn 140 kg; cấu hình 14M2T (4 toa một khối). **Gia tốc, giảm tốc và khối lượng đoàn N700S: JR Central không công bố số trong các nguồn tìm được** (đã thử Wikipedia tiếng Nhật/Anh, Railway Journal, Impress, newswitch). N700S được thiết kế chạy cùng lịch với N700A nên có thể dùng **2,6 km/h/s khởi động và 2,70 km/h/s giảm tốc thường** của N700A làm giá trị thay thế **[I]**.
 - **E5/E6/E8 giảm tốc trên Shinkansen:** JR East không công bố một con số cố định; phanh theo **mẫu giảm tốc của DS-ATC** (tính theo tốc độ). Chỉ có số liệu E7 (2,69 → 1,44 km/h/s theo tốc độ) và tuyến thường E6/E8 (5,2 km/h/s). E5 dùng phanh đĩa kẹp giữa với má phanh áp suất đều, nhưng không nêu giảm tốc. Có thể dùng đường cong E7 làm thay thế cho mô phỏng **[I]**.
 - **Quy ước khi mô phỏng lái tàu (mục 07):** N700A/E7 là bộ thông số tham chiếu có số liệu; các dòng khác dùng giá trị thay thế ghi trên.
+
+## 2c. Lịch sử đội tàu theo tuyến (kiểm chứng web 24/10/2026)
+
+Nguồn là Wikipedia tiếng Anh (các trang từng dòng tàu và từng tuyến); các chỗ nguồn mâu thuẫn được ghi rõ. Mọi mục là **[N]** trừ khi ghi khác. Chưa tra Wikipedia tiếng Nhật cho phần này.
+
+| Tuyến | Dòng tàu và thời gian chạy |
+|---|---|
+| Tokaido (1964) | 0 series 1964–2008 (rút khỏi Tokaido 1999; chạy Sanyo tới 14/12/2008) · 100 series từ 1985, rút khỏi Tokaido 16/9/2003, khỏi Sanyo 16/3/2012 · 300 series 1992–16/3/2012 · 500 series (JR West) từ 1997 · 700 series: chuyến Tokaido cuối 1/3/2020 · N700 từ 1/7/2007, N700A, N700S đang chạy |
+| Sanyo (1972/75) | 0 series tới 2008 · 100 series tới 16/3/2012 · 300 tới 3/2012 · **500 series: JR West công bố (22/6/2026) kết thúc chạy thương mại 13/1/2027** (Nippon.com ghi "cuối 1/2027", Wikipedia ghi bốn đoàn rút trong 2026 và hai đoàn cuối 2027: ngày chưa thống nhất) · 700 series còn chạy trên Sanyo (700-E Kodama, theo mục 03 ở trên) · N700 từ 7/2007 |
+| Kyushu (2004/2011) | 800 series 6 toa từ 3/2004 · N700-7000/8000 8 toa từ 3/2011 (bộ đầu giao 10/2008 tại Hakata) |
+| Nishi-Kyushu (23/9/2022) | N700S-8000 6 toa, bốn đoàn |
+| Tohoku (1982) | 200 series 6/1982–11/2011 · E1 (Max) từ 1994, rút 9/2012 (một nguồn ghi Max Yamabiko/Aoba 7/1994–12/1999: mâu thuẫn, chưa rõ) · E2 từ 3/1997, còn 6 đoàn 4/2025 · E4 (Max) 12/1997–17/10/2021 (rút khỏi Tohoku 9/2012) · E5 từ 3/2011 · E6 từ 3/2013 (Akita) · H5 từ 3/2016 · E3 chạy Tsubasa (xem Yamagata) |
+| Joetsu (1982) | 200 series 1982–2013 · E1, E2 (2013–2023), E4 (tới 10/2021) · E7 từ 3/2019 và chạy toàn bộ từ 3/2023 (mục 03) |
+| Hokuriku (1997 Nagano, 2015 Kanazawa) | E7/W7 từ 3/2014 thay E2 và E4; Asama hiện do E7/W7 chạy |
+| Yamagata (mini) | 400 series từ 1992, rút 18/4/2010 (set L3 cuối) · E3 từ 4/12/1999 · E8 từ 16/3/2024. Ngày E3 hết chạy Yamagata: một trang ghi 18/3/2024, infobox E3 ghi 2026; dùng số của mục 03 (2000番台 ngừng 24/12/2025, từ ja.wikipedia) |
+| Akita (mini, 1997) | E3 từ 1997 tới 2014 · E6 từ 3/2013 |
+| Hokkaido (26/3/2016) | E5 và H5 (H5 là bản chịu lạnh của E5, từ 3/2016); một đoàn H5 bị loại 2022 (mục 03) |
+
+**Nguồn:** [0 series](https://en.wikipedia.org/wiki/0_Series_Shinkansen), [100 series](https://en.wikipedia.org/wiki/100_Series_Shinkansen), [300 series](https://en.wikipedia.org/wiki/300_Series_Shinkansen), [500 series](https://en.wikipedia.org/wiki/500_Series_Shinkansen), [700 series](https://en.wikipedia.org/wiki/700_Series_Shinkansen), [Sanyo](https://en.wikipedia.org/wiki/San%27y%C5%8D_Shinkansen), [Nippon.com về 500 series](https://www.nippon.com/en/japan-data/h02826/), [200 series](https://en.wikipedia.org/wiki/200_Series_Shinkansen), [E2](https://en.wikipedia.org/wiki/E2_Series_Shinkansen), [E4](https://en.wikipedia.org/wiki/E4_Series_Shinkansen), [Tohoku](https://en.wikipedia.org/wiki/T%C5%8Dhoku_Shinkansen), [Joetsu](https://en.wikipedia.org/wiki/J%C5%8Detsu_Shinkansen), [Hokuriku](https://en.wikipedia.org/wiki/Hokuriku_Shinkansen), [E7/W7](https://en.wikipedia.org/wiki/E7_and_W7_Series_Shinkansen), [400 series](https://en.wikipedia.org/wiki/400_Series_Shinkansen), [E3](https://en.wikipedia.org/wiki/E3_Series_Shinkansen), [Yamagata](https://en.wikipedia.org/wiki/Yamagata_Shinkansen), [Akita](https://en.wikipedia.org/wiki/Akita_Shinkansen), [Kyushu](https://en.wikipedia.org/wiki/Kyushu_Shinkansen), [Hokkaido](https://en.wikipedia.org/wiki/Hokkaido_Shinkansen), [800 series](https://en.wikipedia.org/wiki/800_Series_Shinkansen), [N700S](https://en.wikipedia.org/wiki/N700S_Series_Shinkansen).
+
+**Chưa kiểm chứng:** ngày chính xác E1 rút khỏi Joetsu, thời điểm E2 hết chạy Asama/Nagano, ngày rút 800 series (nguồn không có), và 100/0 series trên Kodama Sanyo từng năm.
 
 ## 3. Điều chỉnh tải trọng và thông số theo chuyên chở (gợi ý cho game)
 - Chỗ ngồi theo hạng (Gran/Green/Thường) là thông tin có sẵn, tiện để mô hình hóa doanh thu theo hạng.

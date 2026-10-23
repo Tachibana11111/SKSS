@@ -23,7 +23,7 @@
   VEH['E6'] = { name: 'E6', len: 152.8, m: 335e3, a0: 0.5, P: 5.0e6, vmax: 320 / 3.6, aB7: 0.75, aEB: 1.04, cap: 338, cd: 0.6, cars: 7 };
   VEH['E8'] = { name: 'E8', len: 152.8, m: 336e3, a0: 0.5, P: 5.0e6, vmax: 300 / 3.6, aB7: 0.75, aEB: 1.04, cap: 355, cd: 0.6, cars: 7 };
   VEH['T4'] = { name: '923 Doctor Yellow', len: 177.1, m: 360e3, a0: 0.72, P: 6.0e6, vmax: 270 / 3.6, aB7: 0.75, aEB: 1.04, cap: 0, cd: 1.0, cars: 7 };          // tàu kiểm tra Tokaido/Sanyo; số liệu [K]
-  VEH['E2'] = { name: 'E2-1000 (đã rút)', len: 251, m: 474e3, a0: 0.5, P: 9.6e6, vmax: 275 / 3.6, aB7: 0.75, aEB: 1.04, cap: 814, cd: 0.6, cars: 10 };            // đoàn đã rút (chạy Tohoku/Joetsu/Nagano); số liệu [K]
+  VEH['E2'] = { name: 'E2-1000 (đang rút dần)', len: 251, m: 474e3, a0: 0.5, P: 9.6e6, vmax: 275 / 3.6, aB7: 0.75, aEB: 1.04, cap: 814, cd: 0.6, cars: 10 };            // đoàn đã rút (chạy Tohoku/Joetsu/Nagano); số liệu [K]
   VEH['E926'] = { name: 'E926 East i', len: 135.0, m: 300e3, a0: 0.5, P: 4.8e6, vmax: 275 / 3.6, aB7: 0.75, aEB: 1.04, cap: 0, cd: 0.6, cars: 6 };               // tàu kiểm tra JR East; số liệu [K]
   // tàu ghép hai đoàn (Hayabusa + Komachi, Yamabiko + Tsubasa): đoàn đầu + đoàn sau; parts dùng để vẽ từng đoạn
   function combo(a, b) { const A = VEH[a], B = VEH[b], gap = 2.5; return { name: A.name + ' + ' + B.name, len: A.len + gap + B.len, m: A.m + B.m, a0: (A.a0 * A.m + B.a0 * B.m) / (A.m + B.m), P: A.P + B.P, vmax: Math.min(A.vmax, B.vmax), aB7: 0.75, aEB: 1.04, cap: A.cap + B.cap, cd: (A.cd * A.len + B.cd * B.len) / (A.len + B.len), cars: A.cars + B.cars, parts: [a, b], gap }; }
