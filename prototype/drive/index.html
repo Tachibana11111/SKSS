@@ -109,24 +109,10 @@
   </div>
 </aside>
 </div>
-<script src="data-lines.js"></script>
-<script src="assets/n700_strip.js"></script>
-<script src="assets/sprites.js"></script>
-<script src="sim.js"></script>
-<script src="store.js"></script>
-<script src="assets/fronts.js"></script>
-<script src="transfers.js"></script>
-<script src="assets/tops.js"></script>
-<script src="scene.js"></script>
-<script src="layout.js"></script>
-<script src="cabview.js"></script>
-<script src="topview.js"></script>
-<script src="fullui.js"></script>
-<script src="audio.js"></script>
-<script src="tutorial.js"></script>
-<script src="dispatch.js"></script>
-<script src="world.js"></script>
-<script src="strips.js"></script>
+<script>
+// nạp mã kèm tham số thời gian để trình duyệt không dùng bản đã lưu đệm (chạy local khi đang sửa mã)
+(function () { const v = Date.now(); for (const f of ["data-lines.js", "assets/n700_strip.js", "assets/sprites.js", "sim.js", "store.js", "assets/fronts.js", "transfers.js", "assets/tops.js", "scene.js", "layout.js", "cabview.js", "topview.js", "fullui.js", "audio.js", "tutorial.js", "dispatch.js", "world.js", "strips.js"]) document.write('<script src="' + f + '?v=' + v + '"><\/script>'); })();
+</script>
 <script>
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 let W_ = cv.width, H_ = cv.height; const LINES = window.LINES;
