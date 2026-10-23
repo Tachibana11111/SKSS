@@ -200,8 +200,7 @@
         wA = rr ? depL : appL, wB = rr ? appL : depL, s0 = q.d - wA, s1 = q.d + wB;
       const za = z0 - 25, zb = z1 + 25, ta = Math.max(s0 - 150, ZN), tb = Math.min(s1 + 150, ZF);
       for (const side of [1, -1]) {
-        const ex = q.st.extent[side > 0 ? 1 : 0] + side * 1.4, wf = z => LAY.smooth(s0 - 150, s0, z) * (1 - LAY.smooth(s1, s1 + 150, z)),
-          e = z => side > 0 ? Math.max(lerp(Math.max(0, oppAt(z)) + 2.9, ex, wf(z)), xr(z) + 1.2) : Math.min(lerp(Math.min(0, oppAt(z)) - 2.9, ex, wf(z)), xl(z) - 1.2), th = 0.3 * side;      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
+        const e = z => side > 0 ? xr(z) + 1.2 : xl(z) - 1.2, th = 0.3 * side;      // rào ngoài bám theo rìa ngoài cùng của ga: đường ngoài cùng (kể cả đường nhánh đang toả ra / nhập lại) và mép sân ga, cách 1,2 m; uốn theo đúng đường      // tường đứng yên theo toạ độ ga (không trượt theo đường toả ra), chỉ nhường chỗ cho đường thật
         for (let a = Math.max(ta, ZN); a < tb; a += 12) { const b = Math.min(tb, a + 12), inSt = b > za && a < zb, h = inSt ? 4.4 : 1.9, zm = (a + b) / 2, odd = Math.floor((T.x + a) / 12) % 2;
           sink.push({ z: zm, fn: () => { const ea = e(a), eb = e(b);
             quad(PG(ea, 0, a), PG(eb, 0, b), P(eb, h, b), P(ea, h, a), odd ? concrete : concrete2);      // chân tường xuống tận mặt đất (không hở khi nền thấp hơn mặt ray)
