@@ -23,7 +23,7 @@ Game lái tàu Shinkansen của 5 công ty JR, chạy hoàn toàn trong trình d
 | Esc · nút ⏸ · F9 | tạm dừng · chụp cảnh (ảnh + tệp JSON dựng lại cảnh) |
 | 1 2 3 · T · R | tua ×1/×4/×16 · tự lái · chạy lại |
 
-Mở tab **Hướng dẫn** để học 4 bài: lái và dừng ga, thiết bị, sự cố, cần vẹt và ATC.
+Lần đầu vào trang có wizard ba trang (chọn chế độ, phím bấm, ghi công); xem lại ở tab Hồ sơ. Mở tab **Hướng dẫn** để học 4 bài: lái và dừng ga, thiết bị, sự cố, cần vẹt và ATC.
 Chạy ở máy: `python -m http.server` trong thư mục `prototype/drive` rồi mở `http://localhost:8000` (mở thẳng tệp thì âm thanh nền ga không tua được).
 
 ## Kiểm thử và triển khai
