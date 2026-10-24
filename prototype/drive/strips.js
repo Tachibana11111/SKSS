@@ -108,7 +108,7 @@
   // dùng cho góc nhìn cửa sổ hành khách (winview.js): sinh các tấm tranh phủ khoảng s [sa, sb] (hệ trò chơi) cho các bên `sides`, trong ngân sách thời gian; lấy tấm bằng tile()
   function prepare(o, sa, sb, sides) {
     frameNo++; const WD = o.WD, lvl = Math.max(0, Math.min(3, Math.round(o.t * 3))), t0 = performance.now(), want = [];
-    for (let k = o.lite ? 0 : 1; k >= 0; k--) for (const side of sides) for (let ti = Math.floor(sa / TILE); ti <= Math.floor(sb / TILE); ti++) if (ti >= 0) want.push({ layer: k, side, ti, lvl });
+    for (const k of (o.layers || (o.lite ? [0] : [1, 0]))) for (const side of sides) for (let ti = Math.floor(sa / TILE); ti <= Math.floor(sb / TILE); ti++) if (ti >= 0) want.push({ layer: k, side, ti, lvl });
     const missing = want.filter(w => !cache.has(keyOf(o, w))); missing.sort((a, b) => (a.ti - b.ti) || (a.layer - b.layer)); const budget = missing.length > 10 ? 22 : 4;
     for (const w of missing) { if (performance.now() - t0 > budget) break; if (!WD.loaded(o.lid, o.dir, o.kmEnd, w.ti * TILE - 60, (w.ti + 1) * TILE + 60)) continue; cache.set(keyOf(o, w), { cv: genTile(WD, { lid: o.lid, dir: o.dir, kmEnd: o.kmEnd, dO: o.dO, layer: w.layer, side: w.side, ti: w.ti, lvl }), used: frameNo }); }
     if (cache.size > CAP) { const arr = [...cache.entries()].sort((a, b) => a[1].used - b[1].used); for (let i = 0; i < arr.length - CAP + 40; i++) cache.delete(arr[i][0]); }
@@ -116,5 +116,5 @@
   }
   function tile(o, layer, side, ti, lvl) { const e = cache.get(keyOf(o, { layer, side, ti, lvl })) || cache.get(keyOf(o, { layer, side, ti, lvl: lvl + 1 })) || cache.get(keyOf(o, { layer, side, ti, lvl: lvl - 1 })); if (e) { e.used = frameNo; return e.cv; } return null; }
   const keyOf = (o, w) => `${o.lid}|${o.dir}|${o.dO}|${w.side}|${w.layer}|${w.ti}|${w.lvl}`;
-  root.Strips = { _c: cache, draw, prepare, tile, LAYERS, TILE, clear: () => cache.clear(), size: () => cache.size };
+  root.Strips = { _c: cache, draw, prepare, tile, house, LAYERS, TILE, clear: () => cache.clear(), size: () => cache.size };
 })(typeof window !== 'undefined' ? window : globalThis);

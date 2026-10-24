@@ -1,15 +1,15 @@
 // Bố cục TOÀN MÀN HÌNH 16:9 (canvas 1920×1080): buồng lái phủ kín làm khung chính; bảng điều khiển ở đáy (cần kéo, đồng hồ phụ, đồng hồ tốc độ, nút + TIMS, cần phanh);
 // điện đàm trên trái; hai khung phụ (bản đồ nhỏ, 2D) trên phải, bấm vào để hoán đổi làm khung chính (Tab xoay vòng); H = chế độ tập trung; O = ẩn/hiện điện đàm; F11 = toàn màn hình.
 // File này dùng các hàm/biến toàn cục của index.html (ctx, txt, panel, button, lamp, btns, doAct, W, T, SPR, FR, TP, AUD, radio, wrapText, hhmm, fmt, Tutorial...).
-const ui = { layout: 'full', main: 'cab', focus: false, radio: true, cur: 'classic', rear: false };
+const ui = { main: 'cab', focus: false, radio: true, cur: 'classic', rear: false };
 const FW = 1920, FH = 1080, TOPH = 58, DASH_Y = 676;
 const MAIN_R = [0, TOPH, FW, DASH_Y - TOPH];
 const SLOT_PIP = [1566, 74, 336, 212];                  // khung phụ góc trên phải
 const SLOT_DASH = [276, DASH_Y + 22, 284, 284];          // khung phụ trong bảng điều khiển (trái đồng hồ tốc độ)
 
-// chọn bố cục theo chế độ: lái tàu dùng bố cục toàn màn hình (nếu bật), các chế độ khác dùng bố cục cổ điển 1780×900
+// chọn kích thước canvas theo chế độ: lái tàu và hướng dẫn luôn dùng bố cục toàn màn hình 1920×1080 (bố cục cổ điển đã bỏ), chế độ điều độ dùng canvas nhỏ 1780×900
 function syncLayout() {
-  const want = ((mode === 'drive' && ui.layout === 'full') || mode === 'tutorial') ? 'full' : 'classic';      // hướng dẫn luôn dùng bố cục toàn màn hình
+  const want = (mode === 'drive' || mode === 'tutorial') ? 'full' : 'classic';      // lái tàu và hướng dẫn luôn dùng bố cục toàn màn hình; 'classic' chỉ là kích thước canvas nhỏ của chế độ điều độ
   if (want === ui.cur) return; ui.cur = want;
   if (want === 'full') { cv.width = FW; cv.height = FH; W_ = FW; H_ = FH; } else { cv.width = 1780; cv.height = 900; W_ = 1780; H_ = 900; }
   document.body.classList.toggle('fullui', want === 'full');
