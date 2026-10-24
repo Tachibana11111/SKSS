@@ -514,7 +514,7 @@
       ctx.save(); ctx.beginPath(); poly.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.clip();
       const ig = ctx.createLinearGradient(0, py, 0, py + ph); ig.addColorStop(0, '#1c2128'); ig.addColorStop(0.5, '#0a0d11'); ig.addColorStop(1, '#161b22'); ctx.fillStyle = ig; ctx.fillRect(px - 60, py - 60, pw + 120, ph + 120);
       const zEndIn = Math.min(ZF, entryEnd, ent + 900);
-      for (const sgn of [-1, 1]) for (let k = Math.ceil((T.x + ent) / 18), z = k * 18 - T.x; z < Math.min(ent + 500, zEndIn); k++, z = k * 18 - T.x) { const a = P(sgn * 2.9, 6.3, z), r = Math.max(1.2, 0.18 * c.f / z), gl = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], r * 4); gl.addColorStop(0, 'rgba(255,236,170,.9)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(a[0] - r * 4, a[1] - r * 4, r * 8, r * 8); }
+      for (const sgn of [-1, 1]) for (let k = Math.ceil((T.x + ent) / 18), z = k * 18 - T.x; z < Math.min(ent + 500, zEndIn); k++, z = k * 18 - T.x) { if (biomeAt(z) !== 'urban' && !sts.some(q => Math.abs(z - q.d) < 600)) continue; const a = P(sgn * 2.9, 6.3, z), r = Math.max(1.2, 0.18 * c.f / z), gl = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], r * 4); gl.addColorStop(0, 'rgba(255,236,170,.9)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(a[0] - r * 4, a[1] - r * 4, r * 8, r * 8); }
       zMin = ent; zLim = zEndIn; drawTracks(ent); ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; wire(() => 0, ent, zLim); wire(oppAt, ent, zLim);
       sink = []; drawStations(); sink.sort((a, b) => b.z - a.z); for (const it of sink) if (it.z >= zMin && it.z <= zLim) it.fn();
       zMin = ZN; zLim = ZF; sink = items; ctx.restore();
