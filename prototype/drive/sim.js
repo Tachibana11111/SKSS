@@ -845,7 +845,7 @@
   // Chọn đường thuộc nhóm đường chính ngược chiều (nhóm u) thì tàu phải qua ghi chữ X để sang đường chính của ta [I, sơ đồ HaisenNet]; ga giữa tuyến: giữ cách chọn cũ.
   function termPicks(W, L, M, seed) {
     const Ly = root.Layout; if (!Ly) return; const r = rng(seed * 977 + 13); W.termPick = {};
-    for (const m of [M[0], M[M.length - 1]]) { if (!m || m.i === undefined) continue; if (m.i !== 0 && m.i !== L.stations.length - 1) continue; const st = L.stations[m.i]; if (!st || !st.lay || st.side) continue;
+    for (const m of [M[0], M[M.length - 1]]) { if (!m || m.i === undefined) continue; if (m.i !== 0 && m.i !== L.stations.length - 1) continue; if (L.meta.curveA && m.i !== 0) continue; const st = L.stations[m.i];      // tuyến mini (Yamagata, Akita): ga cuối phía nhánh (Shinjo, Akita) là đường đơn, không chọn đường và không qua ghi chữ X; chỉ Tokyo mới có if (!st || !st.lay || st.side) continue;
       const pt = Ly.station(st.lay, W.dir, 0).platTracks; if (pt.length < 2) continue; W.termPick[m.i] = pt[Math.floor(r() * pt.length)].i; }
   }
   function createWorld(lineId, trip, opts) {

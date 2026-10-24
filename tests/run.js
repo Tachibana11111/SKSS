@@ -508,4 +508,10 @@ if (section('25. Góc nhìn cửa sổ hành khách (winview.js): vẽ không l�
   ok(!err && n > 100, 'cửa sổ trái/phải vẽ không lỗi ở dọc đường và trong ga (' + n + ' khung)', err);
 }
 
+if (section('26. Tuyến mini: chỉ ga Tokyo chọn đường dừng / qua ghi chữ X, ga cuối nhánh (Akita, Shinjo) thì không')) {
+  for (const ln of ['aki', 'yam']) { const La = Sim.lineOf(ln), last = La.stations.length - 1;
+    for (const dir of ['down', 'up']) { const r = La.trains.find(t => t.d === dir && t.s.filter(e => !e[3]).length >= 2 && (dir === 'up' ? t.s.filter(e => !e[3])[0][0] === last : t.s.filter(e => !e[3])[0][0] === 0)); if (!r) continue; const st = r.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld(ln, Sim.makeTrip(ln, r, st[0], st[st.length - 1]), { diff: 'easy', seed: 5, lead: false, events: false });
+      ok(W.termPick && W.termPick[last] === undefined, `${ln} ${dir}: ga cuối nhánh không có termPick (không qua ghi chữ X)`, JSON.stringify(W.termPick)); } }
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
