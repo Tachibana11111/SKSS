@@ -124,6 +124,7 @@
     <label>Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
     <label class="inl"><input type="checkbox" id="stopmsg" checked> về ×1 khi có điện đàm</label>
     <label class="inl"><input type="checkbox" id="lead" checked> tàu chạy trước</label>
+    <label title="Chỉ khi lái chuyến Tohoku (E5): ghép với tàu Akita/Yamagata ở Tokyo (đầu đoàn) rồi tách ở Morioka/Fukushima; chiều lên thì tàu nhánh nối vào đuôi. Nasuno không ghép.">Ghép tàu nhánh <select id="couple"><option value="auto">tự động (theo tỉ lệ)</option><option value="always">luôn (nếu có thể)</option><option value="never">không</option></select></label>
   </div>
   <div class="row">
     <div class="grp">Âm thanh và cảnh</div>
@@ -289,14 +290,14 @@ AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('sn
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
-function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: $('lead').checked, events: true, veh: $('vehSel').value || undefined }; }
+function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: $('lead').checked, events: true, veh: $('vehSel').value || undefined, couple: $('couple').value }; }
 function startDrive(r, opts) {
   opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec0 = r.rec || L.trains[r.recIdx], rec = r.veh && /^(E5|E7)$/.test(rec0.v) && Sim.VEH[r.veh] ? Object.assign({}, rec0, { v: r.veh, retro: 1 }) : rec0, trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert('Chọn ga đi/đến hợp lệ cho chuyến này.'); return false; }
   if (!(r.leg > 0)) campaign = [];
   ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
   if (trip.mission && ui.layout !== 'full') { ui.layout = 'full'; $('layoutBtn').textContent = 'Bố cục: toàn màn hình'; syncLayout(); }
-  W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events });
+  W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events, couple: r.couple });
   T = W.player; auto = false; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endInfo = null; endPage = 0;
   replaying = opts.replay || null; if (replaying) scale = 4; else if (scale > 16) scale = 1;
   if (!tutorialRun) tutLessonActive = false;
@@ -388,6 +389,7 @@ function frame(now) {
       if (W.newMsg) { W.newMsg = false; if ($('stopmsg').checked && scale > 1 && !replaying) { scale = 1; break; } }
       if (T.finished) break;
     }
+    if (W.camReq !== undefined && W.camSeen !== W.camReq) { W.camSeen = W.camReq; if (!replaying) ui.rear = W.camReq.rear; }      // cảnh nối ở đuôi: tự bật camera sau, nối xong tự tắt
     if (tutLessonActive) Tutorial.update(W, T, now);
     if (T.finished && !finalized) finalize();
   }

@@ -63,6 +63,16 @@ Mọi tuyến chỉ dùng cá nhân. Dữ liệu sinh bằng `tools/build_lines.
 - **Dừng tránh tàu ngược chiều** (運転停車, đường đơn): sự kiện điều độ tự sinh khoảng 1 lần mỗi 45 km đường đơn (1–4 lần/chuyến), tàu dừng 70–170 s ở ga (kể cả ga không có lịch dừng), tàu ngược chiều vào ga rồi mới chạy tiếp; thời gian chờ được miễn trừ khi tính trễ giờ.
 - Akita: mọi chuyến đều ghép cả hai chiều (đúng như người dùng nêu). Yamagata: một số chuyến chạy một mình (121, 129, 158, 160) [D].
 
+## 3d. Người chơi lái chuyến Tohoku (E5) ghép / tách với tàu nhánh (2026-10-24)
+
+Trước đây chỉ có phía người chơi là mini (mục 3b). Từ 24/10/2026 người chơi lái **Hayabusa/Hayate/Yamabiko (E5)** cũng có ghép/tách; **Nasuno không ghép** [theo mục 3b]. Ô "Ghép tàu nhánh" ở menu phải: tự động (tỉ lệ 0,6 với E6 Akita ở Morioka, 0,55 với E8 Yamagata ở Fukushima, cùng tỉ lệ đã dùng cho tàu ngược chiều [I]) / luôn / không. Công thức của tỉ lệ và các giá trị thời gian đều là [I].
+
+- **Chiều xuống từ Tokyo:** vạch dừng của ta lùi về phía sau một đoạn = chiều dài mini + khe nối 2,5 m; mini ở phía trước lùi vào (46 m thu về 0 trong ~30 s), nối xong ~45 s mới đóng cửa được. Nối xong buồng lái chuyển (màn đen mờ dần) sang đầu đoàn mini, ta được kéo cùng (đoàn E6/E8 + E5, mini ở phía bắc).
+- **Tách ở Morioka/Fukushima (không phải ga cuối của chuyến):** trong thời gian dừng mini ở phía trước tách ra; buồng lái về đầu E5 (lùi một đoạn bằng chiều dài mini + khe nối), mini đứng ở chỗ cũ, sau 25 s tăng tốc 0,7 m/s² tới tối đa 34 m/s chạy trước vào tuyến nhánh (vẽ lệch ngang theo ngã rẽ). Ta bị chặn khởi hành tới khi đuôi mini cách đầu ta ≥ 450 m.
+- **Chiều lên, ở Morioka/Fukushima (kể cả xuất phát từ đó):** mini từ tuyến nhánh chạy vào nối vào ĐUÔI ta (quãng đường 900 m giảm theo bình phương trong ≤ 60 s). **Camera sau tự bật** khi bắt đầu nối và **tự tắt** khi nối xong; buồng lái vẫn ở đầu E5, không đổi.
+- **Chuyến mini:** camera sau (phím B) trong lúc ghép ở Tokyo hoặc tách ở Morioka/Fukushima đặt ở **đuôi của mini** thay vì đuôi cả đoàn, nên thấy đoàn Tohoku tiến vào nối (cách 46 m thu về 2,5 m) hoặc ở lại khi mini đi. Khi nối xong camera nhảy về đuôi cả đoàn (có màn đen ngắn).
+- **Chưa làm / hạn chế:** mini chỉ nối/tách ở một ga (không có cảnh nối hai tàu nhánh trong cùng chuyến); hình tàu nhánh vẽ bằng ảnh mặt trước (không có đuôi riêng); chưa có tiếng nối toa; số liệu thời gian và tỉ lệ là suy luận.
+
 ## 3c. Ngã rẽ của Joetsu / Hokuriku và tàu chạy chung đường
 
 Người dùng nêu (2026-10-22): Joetsu và Hokuriku đi chung đường với Tohoku từ Tokyo tới Omiya, rồi rẽ trái; tới Takasaki hai tuyến tách nhau; mọi đoạn đều là đường đôi; đoạn chung có thể phải nhường nhau nhiều.

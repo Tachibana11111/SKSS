@@ -473,7 +473,7 @@
     }
     // đoàn Tohoku đang chờ ở sân ga (phía trước, cùng đường): thấy đuôi nó; phần đã tách ở lại thì nằm sau lưng
     for (const pk of W.parked || []) { const pv = S.VEH[pk.key], tail0 = pk.front - pv.len - T.x, tail = Math.max(tail0, 8); if (pk.kind !== 'wait' || tail0 < 0 || tail0 > 4000) continue;
-      const qL = sts.find(q => Math.abs(q.m.s - pk.front) < 400), X = qL ? qL.st.ours.x : 0, pic = iconFor(pk.key);
+      const qL = sts.find(q => Math.abs(q.m.s - pk.front) < 400), X = (pk.own ? c.lane : qL ? qL.st.ours.x : 0) + (pk.jn !== undefined ? S.trunkOff(W, pk.front - pv.len, pk.jn) : 0), pic = iconFor(pk.key);
       items.push({ z: tail, fn: () => { if (pic) drawFront(pic, X, tail, fadeA(tail)); else { const w = 3.4 * c.f / tail, a = P(X, 0.1, tail); ctx.fillStyle = '#d8dee6'; ctx.fillRect(a[0] - w / 2, a[1] - w * 1.1, w, w * 1.1); } } }); }
     for (const sb of W.stabled || []) { const veh = S.VEH[sb.key], hi = sb.front - T.x, lo = hi - veh.len; if (lo > 1700 || hi < -20) continue; const X = sb.track.x, headHi = sb.face === 1;       // tàu đỗ ở đường phụ của ga: đầu tàu (đoàn thứ nhất) ở đầu cao nếu quay theo chiều chạy, ở đầu thấp nếu quay ngược
       items.push({ z: Math.max(lo, ZN + 1), fn: () => headHi ? slicesVeh(veh, hi, X, -1) : slicesVeh(veh, lo, X, 1) }); }
@@ -539,7 +539,7 @@
     // khung buồng lái (gờ kính và bảng đồng hồ phía dưới)
     const fr = ctx.createLinearGradient(0, py + ph * 0.9, 0, py + ph); fr.addColorStop(0, 'rgba(8,10,14,.0)'); fr.addColorStop(0.35, 'rgba(8,10,14,.92)'); fr.addColorStop(1, '#05070a'); ctx.fillStyle = fr; ctx.fillRect(px, py + ph * 0.9, pw, ph * 0.1);
     ctx.fillStyle = '#05070a'; ctx.fillRect(px, py, 5, ph); ctx.fillRect(px + pw - 5, py, 5, ph); ctx.fillRect(px, py, pw, 3);
-    { const u = W.cabSwitchAt !== undefined ? 1 - (W.t - W.cabSwitchAt) / 1.8 : 0; if (u > 0 && u <= 1) { ctx.fillStyle = 'rgba(0,0,0,' + Math.min(1, u * 1.3) + ')'; ctx.fillRect(px, py, pw, ph); } }       // chuyển buồng lái sau khi ghép: màn đen mờ dần
+    { const swAt = W.rear ? W.rearSwitchAt : W.cabSwitchAt, u = swAt !== undefined ? 1 - (W.t - swAt) / 1.8 : 0; if (u > 0 && u <= 1) { ctx.fillStyle = 'rgba(0,0,0,' + Math.min(1, u * 1.3) + ')'; ctx.fillRect(px, py, pw, ph); } }       // chuyển buồng lái sau khi ghép: màn đen mờ dần
     ctx.restore();
   }
 
@@ -621,14 +621,14 @@
 
   // Camera ở buồng lái CUỐI đoàn nhìn ngược về phía sau: dựng một "thế giới phản chiếu" (hướng chạy đảo, toạ độ s' = chiều dài tuyến − s) rồi vẽ bằng cùng hàm draw
   function drawRear(ctx, px, py, pw, ph, W, T, R) {
-    const L = W.line, Lm = L.kmEnd * 1000, W2 = Object.create(W), T2 = Object.create(T), mz = z => Object.assign({}, z, { s0: Lm - z.s1, s1: Lm - z.s0 });
-    W2.dir = W.dir === 'down' ? 'up' : 'down'; W2.zones = (W.zones || []).map(mz); W2.workers = []; W2.wires = []; W2.animals = []; W2.opposing = []; W2.rearLen = T.veh.len; W2.oppRear = (W.opposing || []).map(t0 => ({ t0, key: root.Sim.oppKey(W, T, t0) })); W2.passers = {};
+    const L = W.line, Lm = L.kmEnd * 1000, W2 = Object.create(W), T2 = Object.create(T), rv = root.Sim.rearVis(T), aLen = rv ? rv.anchorLen : T.veh.len, mz = z => Object.assign({}, z, { s0: Lm - z.s1, s1: Lm - z.s0 });
+    W2.dir = W.dir === 'down' ? 'up' : 'down'; W2.zones = (W.zones || []).map(mz); W2.workers = []; W2.wires = []; W2.animals = []; W2.opposing = []; W2.rearLen = aLen; W2.oppRear = (W.opposing || []).map(t0 => ({ t0, key: root.Sim.oppKey(W, T, t0) })); W2.passers = {};
     W2.dead = (W.dead || []).map(d => Object.assign({}, d, { s0: Lm - d.s1, s1: Lm - d.s0, hzA: d.hzB, hzB: d.hzA })); W2.xings = (W.xings || []).map(g => Object.assign({}, g, { s: Lm - g.s })).sort((a, b) => a.s - b.s);
-    W2.parked = (W.parked || []).filter(p => p.kind === 'left').map(p => ({ key: p.key, front: Lm - (p.front - root.Sim.VEH[p.key].len), kind: 'wait' }));
-    W2.rear = true; W2.rearOf = W.dir; W2.rearShift = 0.85 * T.veh.len; const LAY = root.Layout;
+    W2.parked = (W.parked || []).filter(p => p.kind === 'left').map(p => ({ key: p.key, front: Lm - (p.front - root.Sim.VEH[p.key].len), kind: 'wait', jn: p.jn, own: p.cc ? true : undefined }));
+    W2.rear = true; W2.rearOf = W.dir; W2.rearShift = 0.85 * aLen; const LAY = root.Layout;
     W2.rearPick = mi => { const code = L.stations[mi].lay || '2-2-0', N = LAY.tokens(code, W.dir).length; return { i: N - 1 - LAY.station(code, W.dir, LAY.pickOf(L.stations[mi], mi, W)).ours.i }; };      // camera ở đúng đường vật lý của ta (chỉ số đảo vì chuỗi bố trí đảo thứ tự)
     W2.stabled = (W.stabled || []).map(sb => { const code = L.stations[sb.i].lay || '2-2-0', N = LAY.tokens(code, W.dir).length, st2 = LAY.station(code, W.dir, W2.rearPick(sb.i), true), t2 = st2.tracks.find(t => t.i === N - 1 - sb.track.i); return t2 ? { key: sb.key, i: sb.i, front: Lm - (sb.front - root.Sim.VEH[sb.key].len), face: -sb.face, track: t2 } : null; }).filter(Boolean);      // cùng một đường vật lý: chỉ số trong chuỗi bố trí đảo ngược
-    W2.lead = null; T2.x = Lm - (T.x - T.veh.len); T2.M = T.M.slice().reverse().map(m => { const r = Object.assign({}, m, { s: Lm - (m.sOrig !== undefined ? m.sOrig : m.s) }); delete r.sOrig; return r; });      // bản phản chiếu: s đã là vị trí hình học gốc, bỏ sOrig (nếu giữ lại, ga ghép/tách bị tính lệch cả trăm mét và biến mất khỏi camera sau) T2.k = T.M.length - 1 - T.k; T2.forced = T.forced >= 0 ? T.M.length - 1 - T.forced : -1;      // dừng khẩn ở ga không có lịch dừng cũng phải rẽ vào đường nhánh trong camera sau W2.player = T2;
+    if (rv) W2.parked.push({ key: rv.key, front: Lm - (T.x - aLen - rv.gap - root.Sim.VEH[rv.key].len), kind: 'wait', own: true }); W2.lead = null; T2.x = Lm - (T.x - aLen); T2.M = T.M.slice().reverse().map(m => { const r = Object.assign({}, m, { s: Lm - (m.sOrig !== undefined ? m.sOrig : m.s) }); delete r.sOrig; return r; });      // bản phản chiếu: s đã là vị trí hình học gốc, bỏ sOrig (nếu giữ lại, ga ghép/tách bị tính lệch cả trăm mét và biến mất khỏi camera sau) T2.k = T.M.length - 1 - T.k; T2.forced = T.forced >= 0 ? T.M.length - 1 - T.forced : -1;      // dừng khẩn ở ga không có lịch dừng cũng phải rẽ vào đường nhánh trong camera sau W2.player = T2;
     draw(ctx, px, py, pw, ph, W2, T2, R);
   }
   root.CabView = { draw, drawRear, proj, cellObject, hash, CAMH, PEDGE, PH, ADJ };

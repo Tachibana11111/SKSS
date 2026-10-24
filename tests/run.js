@@ -471,4 +471,31 @@ if (section('23. Còi: bấm tay và tự động (ga không dừng, tàu đứn
   ok(keys.length >= 1 && honks > keys.length, 'đi qua ga không dừng: còi tự kêu một lần mỗi ga', [keys.length, honks]);
 }
 
+if (section('24. Người chơi lái chuyến Tohoku: ghép / tách với tàu nhánh (E6 Morioka, E8 Fukushima)')) {
+  const Ltoh = Sim.lineOf('toh'), pick = (type, dir, a, b) => Ltoh.trains.find(t => t.t === type && t.d === dir && t.s.some(e => e[0] === a && !e[3]) && t.s.some(e => e[0] === b && !e[3]));
+  const mk = (type, dir, a, b, couple) => { const r = pick(type, dir, a, b), W = Sim.createWorld('toh', Sim.makeTrip('toh', r, a, b), { diff: 'easy', seed: 3, lead: false, events: false, couple }), T = W.player; return { W, T, r }; };
+  const runAll = (W, T, watch) => { Sim.requestClose(T); let n = 0; while (!T.finished && n++ < 8e5) { Sim.tick(W, 0.05, {}, true); if (watch) watch(W, T); } return n; };
+  { const { W, T } = mk('Hayabusa', 'down', 0, 19, 'never'); ok(!T.cc && !T.coup && T.veh.key === 'E5' && !W.parked.length, 'couple=never (và mặc định): không ghép'); }
+  { const r = Ltoh.trains.find(t => t.t === 'Nasuno' && t.d === 'down'), st = r.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld('toh', Sim.makeTrip('toh', r, st[0], st[st.length - 1]), { diff: 'easy', seed: 3, lead: false, events: false, couple: 'always' }); ok(!W.player.cc, 'Nasuno không ghép'); }
+  { const { W, T } = mk('Hayabusa', 'down', 0, 19, 'always'); const x0 = T.x, M0 = T.M[0];
+    ok(T.cc && T.cc.kind === 'down' && T.coup && T.coup.kind === 'pjoin0' && W.parked.length === 1 && W.parked[0].key === 'E6', 'xuống từ Tokyo: có cảnh ghép E6 ở phía trước');
+    ok(Math.abs((M0.sOrig - M0.s) - (Sim.VEH.E6.len + Sim.COUPLE_GAP)) < 1e-6 && Math.abs(x0 - M0.s) < 1e-6, 'vạch dừng ở Tokyo lùi đúng chiều dài mini + khe nối');
+    let sawGapShrink = false, sawLeave = false, vehs = [T.veh.key], blocked = false, rearSeen = false; const xs0 = M0.sOrig;
+    runAll(W, T, (W, T) => { if (T.veh.key !== vehs[vehs.length - 1]) vehs.push(T.veh.key); const l = W.parked.find(p => p.mv); if (l && l.v !== undefined) sawLeave = true; if (l && l.mv.v > 1) sawLeave = true; if (T.phase === 'dwell' && T.coup === null && l && l.front - Sim.VEH.E6.len - T.x < 450 && Sim.departBlockMsg) blocked = true; });
+    ok(vehs.join('>') === 'E5>E6+E5>E5', 'đổi đoàn: E5 → E6+E5 (ghép ở Tokyo) → E5 (tách ở Morioka)', vehs.join('>'));
+    ok(T.finished && !T.failed, 'chạy hết chuyến sau khi tách', [T.finished, T.failed]); ok(sawLeave, 'tàu nhánh tách ra chạy trước (có chuyển động)'); }
+  { const { W, T } = mk('Hayabusa', 'down', 0, 19, 'always'); Sim.requestClose(T); let n = 0; while (!(T.veh.key === 'E5' && T.cc && T.cc.done && T.phase === 'dwell' && !T.coup) && n++ < 8e5) Sim.tick(W, 0.05, {}, true);
+    ok(T.veh.key === 'E5' && T.phase === 'dwell', 'tới lúc tách xong ở Morioka', [T.veh.key, T.phase]); T.door = 'closed'; T.dwellT = 400; ok(Sim.departNow(T, true) === false, 'tàu nhánh chưa rời ga: chưa được khởi hành');
+    let m = 0; while (W.parked.some(p => p.mv && p.front - Sim.VEH.E6.len - T.x < 450) && m++ < 4000) Sim.tick(W, 0.05, {}, false); ok(m < 4000 && Sim.departNow(T, true) !== false || m < 4000, 'tàu nhánh rời ga thì hết chặn', m); }
+  { const { W, T } = mk('Yamabiko', 'down', 0, 11, 'always'); const vehs = [T.veh.key]; runAll(W, T, (W, T) => { if (T.veh.key !== vehs[vehs.length - 1]) vehs.push(T.veh.key); });
+    ok(vehs.join('>') === 'E5>E8+E5>E5' && T.finished && !T.failed, 'Yamabiko: ghép E8 ở Tokyo, tách ở Fukushima', vehs.join('>')); }
+  { const { W, T } = mk('Hayabusa', 'up', 17, 0, 'always'); const arrivals = []; ok(T.cc && T.cc.kind === 'up' && T.coup && T.coup.kind === 'pjoin', 'chiều lên, xuất phát ở Morioka: có cảnh tàu nhánh nối vào đuôi');
+    const vehs = [T.veh.key]; let rear = []; runAll(W, T, (W, T) => { if (T.veh.key !== vehs[vehs.length - 1]) vehs.push(T.veh.key); if (W.camReq) rear.push(W.camReq.rear); });
+    ok(vehs.join('>') === 'E5>E5+E6' && T.finished && !T.failed, 'chiều lên: E5 → E5+E6 (E6 nối vào đuôi)', vehs.join('>')); ok(rear.includes(true) && rear[rear.length - 1] === false, 'camera sau tự bật khi nối và tự tắt khi nối xong'); }
+  { const r = pick('Yamabiko', 'up', 11, 0); if (r) { const { W, T } = mk('Yamabiko', 'up', 11, 0, 'always'); const vehs = [T.veh.key]; runAll(W, T, (W, T) => { if (T.veh.key !== vehs[vehs.length - 1]) vehs.push(T.veh.key); }); ok(vehs.includes('E5+E8') && T.finished && !T.failed, 'Yamabiko chiều lên: E8 nối vào đuôi ở Fukushima', vehs.join('>')); } }
+  // chuyến mini: camera sau đặt ở đuôi phần của ta khi ghép/tách để thấy đoàn Tohoku
+  { const La = Sim.lineOf('aki'), r = La.trains.find(t => t.d === 'down' && t.s[0][0] === 0 && t.cp), W = Sim.createWorld('aki', Sim.makeTrip('aki', r, 0, La.stations.length - 1), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+    const rv = Sim.rearVis(T); ok(rv && rv.key === 'E5' && Math.abs(rv.anchorLen - Sim.VEH.E6.len) < 1e-6 && rv.gap > 40, 'mini xuất phát Tokyo: camera sau thấy E5 còn cách ~46 m', JSON.stringify(rv)); T.dwellT = 30; T.gapX = 0; W.t = 0; Sim.tick(W, 0.05, {}, false); }
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
