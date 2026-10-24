@@ -79,6 +79,7 @@
     <label id="vehBox" style="display:none" title="Đoàn tàu đang rút dần; dùng lịch của chuyến đang chọn nên chỉ là giả định">Đoàn <select id="vehSel"><option value="">mặc định</option><option value="E2">E2-1000 (đang rút dần, lịch giả định)</option></select></label>
     <label>Từ <select id="from"></select></label>
     <label>Đến <select id="to"></select></label>
+    <button id="start" class="go" style="width:100%">Bắt đầu / chạy lại (R)</button>
     <span id="legBox" style="display:none"><label>Thêm chặng <select id="via"></select></label><div class="btns" style="margin-top:4px"><button id="viaAdd">Thêm</button><button id="viaClr">Xoá chặng</button></div><span id="viaList" style="color:#8aa0b5;font-size:12px"></span></span>
   </div>
   <div class="row" id="rowDisp" style="display:none">
@@ -118,8 +119,6 @@
 <aside id="sideR">
   <div class="row" id="rowDrive2">
     <div class="grp">Chạy</div>
-    <button id="start" class="go">Bắt đầu / chạy lại (R)</button>
-    <button id="auto">Tự lái: tắt (T)</button>
     <button id="layoutBtn" title="F2">Bố cục: toàn màn hình</button>
     <button id="snap" title="F9: tạm dừng và chụp cảnh (ảnh + tệp mô tả để dựng lại)">📷 Chụp cảnh (F9)</button>
     <label>Tua <span class="btns"><button data-s="1">×1</button><button data-s="4">×4</button><button data-s="16">×16</button></span></label>
@@ -127,7 +126,6 @@
     <label>Độ khó <select id="diff"></select></label>
     <label>Thời tiết <select id="weather"></select></label>
     <label>Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
-    <label class="inl"><input type="checkbox" id="autoslow" checked> tự về ×1 gần ga</label>
     <label class="inl"><input type="checkbox" id="stopmsg" checked> về ×1 khi có điện đàm</label>
     <label class="inl"><input type="checkbox" id="lead" checked> tàu chạy trước</label>
   </div>
@@ -276,7 +274,7 @@ for (const id of ['train', 'from', 'to', 'via']) { const sel = $(id); sel.addEve
 function setMode(m) {
   mode = m; closeModal();
   for (const [id, mm] of [['tabDrive', 'drive'], ['tabTut', 'tutorial'], ['tabProf', 'profile']]) $(id).classList.toggle('on', mm === m);
-  $('rowDrive1').style.display = (m === 'drive' || m === 'dispatch') ? 'flex' : 'none'; $('rowDrive2').style.display = m === 'drive' ? 'flex' : 'none';
+  $('rowDrive1').style.display = (m === 'drive' || m === 'dispatch') ? 'flex' : 'none'; $('start').style.display = m === 'drive' ? '' : 'none'; $('rowDrive2').style.display = m === 'drive' ? 'flex' : 'none';
   $('rowDisp').style.display = m === 'dispatch' ? 'flex' : 'none'; $('rowTut').style.display = m === 'tutorial' ? 'flex' : 'none';
   if (m === 'dispatch') { $('train').parentElement.style.display = 'none'; $('from').parentElement.style.display = 'none'; $('to').parentElement.style.display = 'none'; } else { $('train').parentElement.style.display = ''; $('from').parentElement.style.display = ''; $('to').parentElement.style.display = ''; }
   if (m === 'profile') showProfile();
@@ -303,7 +301,7 @@ function startDrive(r, opts) {
   ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
   if (trip.mission && ui.layout !== 'full') { ui.layout = 'full'; $('layoutBtn').textContent = 'Bố cục: toàn màn hình'; syncLayout(); }
   W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events });
-  T = W.player; auto = false; $('auto').textContent = 'Tự lái: tắt (T)'; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endInfo = null; endPage = 0;
+  T = W.player; auto = false; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endInfo = null; endPage = 0;
   replaying = opts.replay || null; if (replaying) scale = 4; else if (scale > 16) scale = 1;
   if (!tutorialRun) tutLessonActive = false;
   W.say('info', `Chuyến ${trip.label} (${T.veh.name}) · ${L.stations[trip.M[0].i].en} → ${L.stations[trip.M[trip.M.length - 1].i].en} · ${Sim.DIFF[r.diff].name} · tải khách ${Math.round(W.load * 100)}%` + (W.lead ? ` · tàu trước: ${W.leadLabel}` : ' · không có tàu trước') + (rec.mir ? ' · lịch ước tính (đối xứng)' : ''));
@@ -318,7 +316,7 @@ function startLesson(i) {
   tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; ui.radio = c.radio; ui.focus = false; ui.rear = false;
 }
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));
-$('start').onclick = () => { tutorialRun = false; startDrive(); }; $('auto').onclick = () => doAct('auto'); $('snap').onclick = () => takeSnapshot();
+$('start').onclick = () => { tutorialRun = false; startDrive(); }; $('snap').onclick = () => takeSnapshot();
 $('dStart').onclick = () => startDispatch();
 function startDispatch() { Dispatch.start({ lineId: $('line').value, dir: $('dir').value, diff: $('diff').value, seed: +$('seed').value || 1, weather: $('dWeather').value, t0: +$('dHour').value * 3600, span: +$('dSpan').value }); }
 document.querySelectorAll('button[data-s]').forEach(b => b.onclick = () => scale = +b.dataset.s);
@@ -328,7 +326,7 @@ const act = {
   power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, setpw(n) { Sim.setPower(T, n); }, setbk(n) { Sim.setBrake(T, n); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
   door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, csAdj(d) { Sim.adjustCS(T, d); },
   ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', 'Không có lệnh nào cần nhắc lại.'); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
-  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; }
 };
 function doAct(name, arg) { if (!W || replaying) return; recActs.push([tickCount, name, arg]); act[name](arg); }
 addEventListener('keydown', e => {
@@ -382,7 +380,7 @@ function frame(now) {
   if (mode === 'dispatch') { Dispatch.frame(rdt); ctx.clearRect(0, 0, W_, H_); ctx.save(); ctx.translate(OX, 0); Dispatch.draw(ctx, CW, H_); ctx.restore(); drawKeys('dispatch'); requestAnimationFrame(frame); return; }
   if (W && !paused && mode !== 'profile') {
     let sc = scale;
-    if ($('autoslow').checked || tutLessonActive) {
+    if (tutLessonActive) {
       if (T.phase === 'run') { const j = Sim.nextTarget(T), d = T.M[j].s - T.x; if (d < 1500 || Math.abs(T.x - T.M[T.k].s) < 500) sc = Math.min(sc, 1); }
       else if (T.phase === 'dwell' && T.started) { const mk = T.M[T.k], dep = mk.dep != null ? mk.dep : 0; if (dep - W.t < 50 && !(T.holds[T.k] > W.t)) sc = Math.min(sc, 1); }
       if (T.phase === 'dwell' && W.passers && (W.passers[T.k] || []).some(p => p.t - W.t < 35 && p.t - W.t > -8)) sc = Math.min(sc, 1);     // có tàu thông qua: về ×1 để thấy tàu vượt
