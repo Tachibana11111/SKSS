@@ -144,9 +144,9 @@
       }
     }
     ctx.restore();
-    if (tun) { // trong hầm: tường bê tông, đèn trần chạy lướt theo tốc độ, che hết phong cảnh
+    if (tun) { // trong hầm: tường bê tông, đèn trần chạy lướt theo tốc độ (chỉ hầm đô thị và quanh ga; hầm vùng đồi núi không có đèn), che hết phong cảnh
       const tg = ctx.createLinearGradient(0, py, 0, py + ph); tg.addColorStop(0, '#222830'); tg.addColorStop(0.5, '#0d1116'); tg.addColorStop(1, '#171c23'); ctx.fillStyle = tg; ctx.fillRect(px, py, pw, ph);
-      const lsp = 18 * K, lo = (T.x * K) % lsp; for (let sx = px - lsp; sx < px + pw + lsp; sx += lsp) { const x = sx - lo + lsp, gl = ctx.createRadialGradient(x, py + 22, 0, x, py + 22, 34); gl.addColorStop(0, 'rgba(255,236,170,.85)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(x - 34, py - 12, 68, 68); }
+      const lsp = 18 * K, lo = (T.x * K) % lsp, lampsOn = root.Sim.biomeAt(W.line, kmOf(W, T.x)) === 'urban' || T.M.some(m => Math.abs(m.s - T.x) < 600); if (lampsOn) for (let sx = px - lsp; sx < px + pw + lsp; sx += lsp) { const x = sx - lo + lsp, gl = ctx.createRadialGradient(x, py + 22, 0, x, py + 22, 34); gl.addColorStop(0, 'rgba(255,236,170,.85)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(x - 34, py - 12, 68, 68); }
       ctx.fillStyle = 'rgba(180,190,200,.12)'; ctx.fillRect(px, base - 72, pw, 3);
     }
     // mặt đất / đá dăm
