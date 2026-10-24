@@ -78,7 +78,7 @@
     const fadeA = Z => clamp(1.15 - Z / fogZ, 0.12, 1);
     const km = z => S.kmOfS(T.x + z, W.dir, L.kmEnd), biomeAt = z => S.biomeAt(L, km(z));
     // cảnh thật OpenStreetMap (world.js) nếu đã có dữ liệu tại đây: toà nhà đúng vị trí, rừng/ruộng/nước theo lớp phủ đất; không thì phong cảnh sinh ngẫu nhiên theo vùng
-    const WD = root.World, wdOurs = (W.rearOf || W.dir) === 'up' ? -4.3 : 0, wdOn = !!(WD && root.SCENERY !== 'off' && WD.has(W.lineId, W.dir, L.kmEnd, T.x));
+    const WD = root.World, wdOurs = (W.rearOf || W.dir) === 'up' ? -4.3 : 0, wdOn = !!(WD && WD.has(W.lineId, W.dir, L.kmEnd, T.x));
     const landCls = (z, e) => { const sd = WD.toSD(W.dir, L.kmEnd, T.x, z, e, wdOurs); return WD.landAt(W.lineId, sd[0], sd[1]); };
     const CLS_TREE = 'fsep', CLS_FIELD = 'a', CLS_NONE = 'hcizwmr';
     const rgbOf = s => s.match(/\d+/g).map(Number);

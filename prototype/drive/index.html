@@ -107,7 +107,7 @@
     <div class="grp">Âm thanh và cảnh</div>
     <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label><input id="vol" type="range" min="0" max="100" value="60">
     <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
-    <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option><option value="off">Cảnh ngẫu nhiên cũ</option></select></label>
+    <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option></select></label>
   </div>
 </aside>
 </div>
@@ -257,7 +257,7 @@ function setMode(m) {
 $('layoutBtn').onclick = () => { ui.layout = ui.layout === 'full' ? 'classic' : 'full'; $('layoutBtn').textContent = 'Bố cục: ' + (ui.layout === 'full' ? 'toàn màn hình' : 'cổ điển'); syncLayout(); };
 $('tabDrive').onclick = () => { tutorialRun = false; setMode('drive'); if (!W) startDrive(); }; $('tabTut').onclick = () => setMode('tutorial'); $('tabProf').onclick = () => setMode('profile');
 // ---- lưu cài đặt
-const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('scenery').value = S.scenery || 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
+const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('scenery').value = S.scenery === 'lite' ? 'lite' : 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
 $('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
 $('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
