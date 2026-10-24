@@ -38,12 +38,12 @@
     // ---- loại cửa sổ theo toa chứa camera (đoàn ghép: phần đầu hoặc phần sau)
     let camKey = T.veh.key; if (T.veh.parts) camKey = (T.veh.len / 2 < S.VEH[T.veh.parts[0]].len) ? T.veh.parts[0] : T.veh.parts[T.veh.parts.length - 1];
     const spec = WINSPEC[SMAP[camKey] || 'n700s'] || WINSPEC.n700s, nWin = nWindows(spec), totalM = (nWin - 1) * spec.pitch + spec.w;
-    const EYE = spec.sill + spec.h / 2 + 0.15;
+    const EYE = 2.9;      // độ cao mắt so với mặt ray: nâng lên ngang đầu người đứng ở sân ga (đầu ~2,95 m) để thấy cả người và nhìn qua lan can cầu cạn; sill đo được chỉ để tham khảo
     // ---- hình học các ô cửa sổ trên màn hình (px/m ở mặt kính = scale); mọi ô dùng chung một phép chiếu
     const availW = pw * 0.88, availH = ph * 0.70, scale = Math.min(availW / totalM, availH / spec.h), winW = spec.w * scale, winH = spec.h * scale, pitchPx = spec.pitch * scale;
     const ox0 = px + pw / 2 - (totalM * scale) / 2, ox1 = ox0 + totalM * scale, ow = ox1 - ox0, oy0 = py + ph * 0.42 - winH / 2, oy1 = oy0 + winH, oh = winH, rad = Math.min(winW, winH) * 0.12;
     const f = Math.max(scale * DEYE, ow / 2.4), shx = sh > 0.1 ? (Math.random() - 0.5) * sh * 3 : 0, bob = Math.min(1, v / 80) * Math.sin(now / 70) * 0.9 + (sh > 0.1 ? (Math.random() - 0.5) * sh * 4 : 0);
-    const cx = (ox0 + ox1) / 2 + shx, hy = oy0 + oh / 2 - 0.15 * scale + bob;
+    const cx = (ox0 + ox1) / 2 + shx, hy = oy0 + oh / 2 - 0.08 * scale + bob;
     const X = (s, d) => cx + (s - sCam) * f / d, Y = (h, d) => hy + (EYE - h) * f / d;
     const sAt = (x, d) => sCam + (x - cx) * d / f;
     const dep = e => Math.max(0.3, e - EOFF);
