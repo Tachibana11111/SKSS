@@ -498,4 +498,14 @@ if (section('24. Người chơi lái chuyến Tohoku: ghép / tách với tàu n
     const rv = Sim.rearVis(T); ok(rv && rv.key === 'E5' && Math.abs(rv.anchorLen - Sim.VEH.E6.len) < 1e-6 && rv.gap > 40, 'mini xuất phát Tokyo: camera sau thấy E5 còn cách ~46 m', JSON.stringify(rv)); T.dwellT = 30; T.gapX = 0; W.t = 0; Sim.tick(W, 0.05, {}, false); }
 }
 
+if (section('25. Góc nhìn cửa sổ hành khách (winview.js): vẽ không lỗi ở mọi dạng đoạn đường')) {
+  require(path.join(DRIVE, 'winview.js')); const noop = () => {}, mkCtx = () => new Proxy({}, { get: (t, k) => k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop), set: (t, k, v) => { t[k] = v; return true; } }), ctx = mkCtx();
+  ok(typeof WinView === 'object' && typeof WinView.draw === 'function', 'WinView.draw có sẵn');
+  let n = 0, err = null;
+  for (const ln of ['tsk', 'toh', 'nks', 'yam']) for (const dir of ['down', 'up']) { const L = Sim.lineOf(ln), r = L.trains.find(t => t.d === dir && !t.cp && t.s.filter(e => !e[3]).length >= 2); if (!r) continue; const st = r.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld(ln, Sim.makeTrip(ln, r, st[0], st[st.length - 1]), { diff: 'easy', seed: 4, lead: false, events: false }), T = W.player;
+    W.opposing = [W.t - 1.5, W.t + 3]; for (let km = 1; km < L.kmEnd; km += 11) { T.x = Sim.sOfKm(km, dir, L.kmEnd); T.v = 100; for (const side of [1, -1]) { try { WinView.draw(ctx, 0, 0, 1920, 620, W, T, { sprites: {}, aud: null }, side); n++; } catch (e) { err = ln + ' ' + dir + ' km' + km + ' ' + e.message; } } }
+    for (let k = 0; k < T.M.length; k += 3) { T.k = k; T.phase = 'dwell'; T.x = T.M[k].s; T.v = 0; T.door = 'open'; for (const side of [1, -1]) { try { WinView.draw(ctx, 0, 0, 1920, 620, W, T, { sprites: {}, aud: null }, side); n++; } catch (e) { err = ln + ' ' + dir + ' ga' + k + ' ' + e.message; } } } }
+  ok(!err && n > 100, 'cửa sổ trái/phải vẽ không lỗi ở dọc đường và trong ga (' + n + ' khung)', err);
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

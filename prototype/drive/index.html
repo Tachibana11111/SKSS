@@ -145,6 +145,7 @@
 <script src="scene.js"></script>
 <script src="layout.js"></script>
 <script src="cabview.js"></script>
+<script src="winview.js"></script>
 <script src="topview.js"></script>
 <script src="fullui.js"></script>
 <script src="audio.js"></script>
@@ -335,6 +336,7 @@ addEventListener('keydown', e => {
   if ((k === 'p' || k === 'P') && W) { doAct('horn'); e.preventDefault(); return; }
   if (k === 'Tab' && T.finished) { endPage = (endPage + 1) % 2; e.preventDefault(); return; }
   if (k === 'Tab' && ui.cur === 'full') { cycleMain(); e.preventDefault(); return; }
+  if ((k === ',' || k === '.') && ui.cur === 'full') { const v = k === ',' ? 'winL' : 'winR'; ui.main = ui.main === v ? 'cab' : v; e.preventDefault(); return; }
   if ((k === 'h' || k === 'H') && ui.cur === 'full') { ui.focus = !ui.focus; return; }
   if ((k === 'o' || k === 'O') && ui.cur === 'full') { ui.radio = !ui.radio; return; }
   if (k === 'b' || k === 'B') { ui.rear = !ui.rear; return; }
@@ -455,7 +457,7 @@ function wrapText(str, maxW) {
 }
 const KEYS = {
   drive: [['Lái', null], ['W / S', 'cần gia tốc tăng / giảm'], ['↓ / ↑', 'cần phanh tăng / giảm (nhả về 0 mới kéo gia tốc)'], ['Space', 'về N (không kéo)'], ['Q', 'phanh khẩn'], ['Enter', 'đóng cửa (đèn sáng thì kéo cần để đi)'], ['C', 'tốc độ không đổi'], ['[ / ]', 'chỉnh tốc độ không đổi ∓5'],
-    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['B', 'camera ở cuối đoàn (nhìn ngược về sau)'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['G', 'nâng / hạ cần vẹt'], ['X', 'bật / tắt đo (tàu kiểm tra Doctor Yellow, East i)'], ['K', 'đánh dấu lỗi vừa phát hiện (tàu kiểm tra)'], ['P', 'còi (còi hơi; game cũng tự bấm khi cần)'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['Tab', 'đổi khung nhìn chính (buồng lái / bản đồ nhỏ / 2D)'], ['H', 'chế độ tập trung (ẩn bớt bảng)'], ['O', 'ẩn / hiện điện đàm'], ['F11', 'toàn màn hình'], ['F2', 'bố cục toàn màn hình ⇄ cổ điển'], ['Esc', 'tạm dừng (hoặc nút ⏸ trên cùng; khi dừng có nút Chụp cảnh)'], ['F9', 'chụp cảnh: lưu ảnh PNG và tệp JSON mô tả để dựng lại'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
+    ['V', 'gạt mưa'], ['L', 'đèn pha: tự động / bật / tắt'], ['B', 'camera ở cuối đoàn (nhìn ngược về sau)'], ['A', 'công tắc ATC: bấm 2 lần để cắt, 1 lần để bật'], ['G', 'nâng / hạ cần vẹt'], ['X', 'bật / tắt đo (tàu kiểm tra Doctor Yellow, East i)'], ['K', 'đánh dấu lỗi vừa phát hiện (tàu kiểm tra)'], ['P', 'còi (còi hơi; game cũng tự bấm khi cần)'], ['M', 'phát thanh trấn an hành khách'], ['Y / N', 'nhắc lại lệnh · chấp nhận / từ chối đề nghị'], ['Chung', null], ['T', 'tự lái bật / tắt'], ['Tab', 'đổi khung nhìn chính (buồng lái / bản đồ nhỏ / 2D / cửa sổ trái / cửa sổ phải)'], [', .', 'cửa sổ hành khách bên trái / bên phải (bấm lại để về buồng lái)'], ['H', 'chế độ tập trung (ẩn bớt bảng)'], ['O', 'ẩn / hiện điện đàm'], ['F11', 'toàn màn hình'], ['F2', 'bố cục toàn màn hình ⇄ cổ điển'], ['Esc', 'tạm dừng (hoặc nút ⏸ trên cùng; khi dừng có nút Chụp cảnh)'], ['F9', 'chụp cảnh: lưu ảnh PNG và tệp JSON mô tả để dựng lại'], ['1 2 3', 'tua ×1 / ×4 / ×16'], ['R', 'chạy lại chuyến'], ['K', 'bỏ qua bước (Hướng dẫn)'], ['Tab', 'đổi trang tổng kết']],
   dispatch: [['Điều độ', null], ['Bấm vào tàu', 'chọn tàu, rồi dùng nút lệnh'], ['Tab', 'chọn tàu kế'], ['Space', 'dừng / chạy'], ['1 – 4', 'tốc độ mô phỏng'], ['Chung', null], ['P', 'tạm dừng'], ['R', 'chạy lại']]
 };
 function drawKeys(m) {

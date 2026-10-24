@@ -16,14 +16,15 @@ function syncLayout() {
 }
 function toggleFullscreen() { try { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); } catch (e) { } }
 document.addEventListener('fullscreenchange', () => document.body.classList.toggle('isfull', !!document.fullscreenElement));
-const VIEWS = ['cab', 'top', 'side'], VNAME = { cab: 'BUỒNG LÁI', top: 'BẢN ĐỒ NHỎ', side: 'GÓC NHÌN NGANG 2D' };
-function cycleMain() { ui.main = VIEWS[(VIEWS.indexOf(ui.main) + 1) % 3]; }
+const VIEWS = ['cab', 'top', 'side', 'winL', 'winR'], VNAME = { cab: 'BUỒNG LÁI', top: 'BẢN ĐỒ NHỎ', side: 'GÓC NHÌN NGANG 2D', winL: 'CỬA SỔ TRÁI', winR: 'CỬA SỔ PHẢI' };
+function cycleMain() { ui.main = VIEWS[(VIEWS.indexOf(ui.main) + 1) % VIEWS.length]; }
 
 // vẽ một góc nhìn vào hình chữ nhật (x,y,w,h)
 function drawViewIn(kind, x, y, w, h) {
   ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
   if (kind === 'cab') (ui.rear ? CabView.drawRear : CabView.draw)(ctx, x, y, w, h, W, T, { sprites: SPR, fronts: FR, aud: AUD });
   else if (kind === 'top') TopView.draw(ctx, x, y, w, h, W, T, { sprites: SPR, tops: TP, aud: AUD });
+  else if (kind === 'winL' || kind === 'winR') WinView.draw(ctx, x, y, w, h, W, T, { sprites: SPR, aud: AUD }, kind === 'winL' ? 1 : -1);
   else { Scene.draw(ctx, x, y, w, h, W, T, { sprites: SPR, nextTarget: Sim.nextTarget, aud: AUD }); if (Sim.inTunnel(W, T.x)) { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x, y, w, h); } }
   ctx.restore();
 }

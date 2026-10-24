@@ -19,6 +19,7 @@ Game lái tàu Shinkansen của 5 công ty JR, chạy hoàn toàn trong trình d
 | Y / N · M | nhắc lại lệnh, chấp nhận / từ chối · phát thanh trấn an |
 | X · K | (tàu kiểm tra) bật đo · đánh dấu lỗi |
 | Tab · B · H · O | đổi khung nhìn · camera cuối đoàn · chế độ tập trung · ẩn điện đàm |
+| , · . | cửa sổ hành khách bên trái · bên phải (toa giữa đoàn, bấm lại để về buồng lái) |
 | P | còi (game cũng tự bấm còi ở khu làm việc, hươu, ga không dừng, đường ngang, tàu đứng phía trước) |
 | Esc · nút ⏸ · F9 | tạm dừng · chụp cảnh (ảnh + tệp JSON dựng lại cảnh) |
 | 1 2 3 · T · R | tua ×1/×4/×16 · tự lái · chạy lại |
