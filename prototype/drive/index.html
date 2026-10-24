@@ -49,12 +49,10 @@
   label{color:var(--mut)}
   #wrap{margin:0 auto;padding:0;position:relative;min-width:0;width:100%}
   canvas{width:100%;display:block;background:#0b0f14;border-radius:8px}
-  body.fullui canvas{width:min(100%, calc((100vh - 150px) * 1.7778));margin:0 auto}      /* giữ nguyên kích cỡ khung game */
-  body.isfull #help{display:none}
+  body.fullui canvas{width:min(100%, calc((100vh - 24px) * 1.7778));margin:0 auto}      /* giữ nguyên kích cỡ khung game */
   body.isfull #stage{display:block;padding:0}
   body.isfull #wrap{padding:0}
   body.isfull canvas{width:min(100vw, calc(100vh * 1.7778));margin:0 auto}
-  #help{color:var(--mut);font-size:13px;padding:6px 4px}
   kbd{background:#223042;border:1px solid #33475e;border-radius:4px;padding:0 5px;color:var(--fg)}
   .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;width:100%}
   #modal{display:none;position:absolute;left:8px;right:8px;top:8px;bottom:8px;background:rgba(10,14,20,.97);border-radius:8px;padding:18px;overflow:auto;z-index:5}
@@ -113,8 +111,6 @@
     <p class="dim" style="font-size:12px;margin:10px 0 0">Bản rút gọn. Danh sách đầy đủ và cách báo gỡ tài nguyên nằm ở README và assets/NGUON.md.</p></div>
   <div class="nav"><button id="wBack">Quay lại</button><button id="wNext" class="go">Tiếp tục</button></div>
 </div></div>
-  <div id="help">Lịch tàu thật tháng 10/2026 (JR East, JR West) cho cả hai chiều; "(ước)" là lịch đối xứng. Hình tàu: rail.kychung.com (CC BY-NC-ND 4.0), chỉ dùng cá nhân (xem assets/NGUON.md). Mọi số liệu tự đặt ghi ở docs/10-thiet-ke-game.md. Bảng phím tắt nằm ở cột phải.
-  </div>
 </div>
 <aside id="sideR">
   <div class="row" id="rowDrive2">
