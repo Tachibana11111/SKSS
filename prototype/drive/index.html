@@ -283,7 +283,9 @@ function setMode(m) {
   tutorialRun = m === 'tutorial' && tutorialRun;
 }
 $('layoutBtn').onclick = () => { ui.layout = ui.layout === 'full' ? 'classic' : 'full'; $('layoutBtn').textContent = 'Bố cục: ' + (ui.layout === 'full' ? 'toàn màn hình' : 'cổ điển'); syncLayout(); };
-$('tabDrive').onclick = () => { tutorialRun = false; setMode('drive'); if (!W) startDrive(); }; $('tabTut').onclick = () => setMode('tutorial'); $('tabProf').onclick = () => setMode('profile');
+// bấm tab là vào ngay màn hình tương ứng: Lái tàu → chuyến mới theo ô chọn (hoặc quay lại chuyến đang lái nếu vừa xem Hồ sơ); Hướng dẫn → bài đầu chưa xong (hoặc bài đang học)
+$('tabDrive').onclick = () => { if (mode === 'drive') return; if (tutLessonActive || !W) { tutorialRun = false; tutLessonActive = false; setMode('drive'); startDrive(); } else setMode('drive'); };
+$('tabTut').onclick = () => { if (mode === 'tutorial') return; if (tutLessonActive && W) { setMode('tutorial'); return; } const done = Object.assign({}, (Store.get().tutorial || {}), Tutorial.S.done), i = Tutorial.LESSONS.findIndex(l => !done[l.id]); startLesson(i < 0 ? 0 : i); }; $('tabProf').onclick = () => setMode('profile');
 // ---- lưu cài đặt
 const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('scenery').value = S.scenery === 'lite' ? 'lite' : 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
