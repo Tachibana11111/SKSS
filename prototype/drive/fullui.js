@@ -9,7 +9,7 @@ const SLOT_DASH = [276, DASH_Y + 22, 284, 284];          // khung phụ trong b�
 
 // chọn bố cục theo chế độ: lái tàu dùng bố cục toàn màn hình (nếu bật), các chế độ khác dùng bố cục cổ điển 1780×900
 function syncLayout() {
-  const want = (mode === 'drive' && ui.layout === 'full') ? 'full' : 'classic';
+  const want = ((mode === 'drive' && ui.layout === 'full') || mode === 'tutorial') ? 'full' : 'classic';      // hướng dẫn luôn dùng bố cục toàn màn hình
   if (want === ui.cur) return; ui.cur = want;
   if (want === 'full') { cv.width = FW; cv.height = FH; W_ = FW; H_ = FH; } else { cv.width = 1780; cv.height = 900; W_ = 1780; H_ = 900; }
   document.body.classList.toggle('fullui', want === 'full');
@@ -100,12 +100,13 @@ function drawTopBar(blink) {
 
   // nút nhỏ: điện đàm, HUD, toàn màn hình
   // ba ô vuông biểu tượng cạnh nhau: điện đàm (O), HUD / tập trung (H), toàn màn hình (F11)
-  const SZ = 44, GAP = 6, bx0 = FW - 16 - 5 * SZ - 4 * GAP, by0 = 7;
-  iconBtn(bx0, by0, SZ, 'rear', ui.rear, 'B', () => { ui.rear = !ui.rear; });
-  iconBtn(bx0 + (SZ + GAP), by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
-  iconBtn(bx0 + 2 * (SZ + GAP), by0, SZ, 'hud', !ui.focus, 'H', () => { ui.focus = !ui.focus; });
-  iconBtn(bx0 + 3 * (SZ + GAP), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
-  iconBtn(bx0 + 4 * (SZ + GAP), by0, SZ, 'pause', paused, 'Esc', () => { paused = !paused; });
+  const SZ = 44, GAP = 6, nIcons = tutLessonActive ? 3 : 5, bx0 = FW - 16 - nIcons * SZ - (nIcons - 1) * GAP, by0 = 7;      // hướng dẫn: chỉ điện đàm, toàn màn hình, tạm dừng
+  let ix = bx0; const nextX = () => { const x = ix; ix += SZ + GAP; return x; };
+  if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'rear', ui.rear, 'B', () => { ui.rear = !ui.rear; });
+  iconBtn(nextX(), by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
+  if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'hud', !ui.focus, 'H', () => { ui.focus = !ui.focus; });
+  iconBtn(nextX(), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
+  iconBtn(nextX(), by0, SZ, 'pause', paused, 'Esc', () => { paused = !paused; });
 }
 
 // công tắc ATC lớn, nổi bật: xanh khi bật, vàng khi chờ xác nhận, đỏ nhấp nháy khi đang cắt
@@ -234,7 +235,7 @@ function drawFull() {
       ['lamp', 'Đèn: ' + lampLab, 'L', () => doAct('lamp'), T.lamp !== 'auto', '#c9a227'], ['ack', 'Nhắc lệnh', 'Y', () => doAct('ack'), pend > 0 && blink, '#c9a227'],
       ['pa', 'Phát thanh', 'M', () => doAct('pa'), T.anx > 40 && blink, '#2a8fa0'], ['auto', 'Tự lái', 'T', () => doAct('auto'), auto, '#2a6fd6'], ['eb', 'Phanh khẩn', 'Q', () => doAct('eb'), T.bk === 8, '#d64a4a'],
       ['coast', 'Về N', 'Space', () => doAct('coast'), false, '#2a6fd6'], ['horn', 'Còi', 'P', () => doAct('horn'), T.horn > 0, '#c9a227']], TS = 82, TG = 6;
-    tl.forEach((t, i) => tileBtn(PX + 12 + (i % 5) * (TS + TG), PY + 36 + Math.floor(i / 5) * (TS + TG), TS, t[0], t[1], t[2], t[4], t[5], t[3]));
+    (tutLessonActive ? tl.filter(t => t[0] !== 'auto') : tl).forEach((t, i) => tileBtn(PX + 12 + (i % 5) * (TS + TG), PY + 36 + Math.floor(i / 5) * (TS + TG), TS, t[0], t[1], t[2], t[4], t[5], t[3]));
     const ty = PY + 36 + 2 * (TS + TG) + 10; ctx.fillStyle = '#243447'; ctx.fillRect(PX + 12, ty - 6, PW - 24, 1); txt('TIMS (trạng thái xe)', PX + 12, ty + 12, '#8aa0b5', 'bold 11px system-ui');
     const faultCars = new Set(W.faults.map(f => f.car)), nc = T.veh.cars, cw = Math.min(26, (PW - 24) / nc);
     for (let c = 1; c <= nc; c++) { const x = PX + 12 + (c - 1) * cw, doorCol = T.phase === 'dwell' ? (T.door === 'open' ? '#ffc247' : T.door === 'closing' ? '#e08a2f' : '#4cd68a') : '#2f7a55'; ctx.fillStyle = faultCars.has(c) ? '#ff5a5a' : doorCol; ctx.fillRect(x, ty + 20, cw - 3, 13); txt(c, x + (cw - 3) / 2, ty + 46, '#7a8ea5', '8px system-ui', 'center'); }
@@ -245,10 +246,20 @@ function drawFull() {
   // ---- lớp phủ: quyết định điều độ, hướng dẫn, chưa chạy, kết thúc, cảnh báo viền
   if (W.decision) { const dd = W.decision, left = Math.max(0, dd.timeout - (W.t - dd.t0)); ctx.fillStyle = 'rgba(40,30,8,.96)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(560, 210, 800, 70, 10); ctx.fill(); ctx.stroke();
     txt(dd.text, 576, 234, '#ffe9b0', 'bold 14px system-ui'); txt('Còn ' + Math.ceil(left) + ' s', 1340, 234, '#ffc247', 'bold 13px system-ui', 'right'); button(576, 248, 170, 24, dd.a.label, () => doAct('ack'), true, '#2a8f5a'); button(756, 248, 170, 24, dd.b.label, () => doAct('no'), true, '#8f3a3a'); }
-  if (tutLessonActive) Tutorial.draw(ctx, 520, 300, 880, W, T);
-  if (T.finished) { ctx.save(); ctx.translate(400, 60); curOX = 400; drawEnd(); ctx.restore(); curOX = 0; }
+  if (tutLessonActive) Tutorial.draw(ctx, (FW - 560) / 2, TOPH + 14, 560, W, T);
+  if (T.finished && tutLessonActive) drawTutEnd();
+  else if (T.finished) { ctx.save(); ctx.translate(400, 60); curOX = 400; drawEnd(); ctx.restore(); curOX = 0; }
   else if (!T.started && !tutLessonActive) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]); txt('Nhấn Enter để đóng cửa, rồi kéo cần gia tốc (W) khi đèn ĐÓNG CỬA sáng', FW / 2, 400, '#fff', 'bold 20px system-ui', 'center'); }
   if (T.atcOn === false && blink) { ctx.strokeStyle = 'rgba(255,60,60,.85)'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, FW - 8, FH - 8); } else if (T.cut) { ctx.strokeStyle = 'rgba(154,90,214,.8)'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, FW - 8, FH - 8); }
   drawTopBar(blink);
 }
+// màn kết thúc rút gọn của hướng dẫn: chỉ kết quả và hai nút (chạy lại bài / bài kế)
+function drawTutEnd() {
+  const sc = Sim.score(T, W), x = (FW - 520) / 2, y = 250, S = Tutorial.S, L = Tutorial.LESSONS[S.lesson], nxt = S.lesson + 1 < Tutorial.LESSONS.length ? S.lesson + 1 : -1;
+  ctx.fillStyle = 'rgba(8,12,18,.94)'; ctx.strokeStyle = T.failed ? '#ff6464' : '#4cd68a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(x, y, 520, 190, 12); ctx.fill(); ctx.stroke();
+  txt(T.failed ? (T.collision ? 'VA CHẠM: kết thúc chuyến' : 'Chuyến không đạt') : 'Xong ' + L.title, x + 260, y + 40, '#fff', 'bold 20px system-ui', 'center');
+  txt('Điểm chuyến ' + sc.final + ' · thời gian chạy ' + fmt(W.t), x + 260, y + 68, '#9fb4c9', '14px system-ui', 'center');
+  button(x + 40, y + 110, 200, 40, 'Làm lại bài (R)', () => startLesson(S.lesson), true, '#2a6fd6');
+  if (nxt >= 0) button(x + 280, y + 110, 200, 40, 'Bài kế tiếp →', () => startLesson(nxt), true, '#2a8f5a'); }
+
 const clamp01 = x => Math.max(0, Math.min(1, x));

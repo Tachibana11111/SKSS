@@ -7,7 +7,7 @@
   };
   const dist = (W, T) => { const j = root.Sim.nextTarget(T); return T.M[j].s - T.x; };
   const LESSONS = [
-    { id: 'basic', title: 'Bài 1 · Khởi hành, lái, dừng đúng vạch', line: 'tsk', from: 15, to: 16, diff: 'easy', weather: 'clear', seed: 11,
+    { id: 'basic', title: 'Bài 1 · Khởi hành, lái, dừng đúng vạch', line: 'tsk', from: 15, to: 16, diff: 'easy', weather: 'clear', seed: 11, radio: false,
       steps: [
         { text: 'Nhấn ENTER để trưởng tàu đóng cửa (mất khoảng 10 giây).', hint: 'Enter / nút "Đóng cửa"', check: (W, T) => T.door !== 'open' },
         { text: 'Khi đèn ĐÓNG CỬA sáng, nhấn W để kéo cần gia tốc. Tàu sẽ khởi hành.', hint: 'W', check: (W, T) => T.phase === 'run' },
@@ -54,7 +54,7 @@
   function cfg(i) {
     const L = LESSONS[i], rec = pickTrain(L.from, L.to); if (!rec) return null;
     S.lesson = i; S.step = 0; S.st = {}; S.passedAt = -1; S.banner = '';
-    return { lineId: L.line, rec, from: L.from, to: L.to, diff: L.diff, weather: L.weather, seed: L.seed, events: false, lead: !!L.lead, title: L.title };
+    return { radio: L.radio !== false, lineId: L.line, rec, from: L.from, to: L.to, diff: L.diff, weather: L.weather, seed: L.seed, events: false, lead: !!L.lead, title: L.title };
   }
   function active() { return S.lesson >= 0 && S.lesson < LESSONS.length; }
   function enter(W, T) { const st = LESSONS[S.lesson].steps[S.step]; S.st = {}; if (st.init) st.init(S.st); if (st.onEnter) st.onEnter(W, T); S.enteredAt = W.t; S.entered = true; }
@@ -64,19 +64,19 @@
     if (!S.entered) enter(W, T);
     const st = L.steps[S.step];
     if (S.passedAt >= 0) { if (now - S.passedAt > 900) { S.passedAt = -1; S.step++; S.entered = false; if (S.step >= L.steps.length) { S.done[L.id] = true; S.banner = 'Hoàn thành ' + L.title + '!'; const all = LESSONS.every(l => S.done[l.id]); if (root.Store) root.Store.get().tutorial = Object.assign(root.Store.get().tutorial || {}, S.done), root.Store.save(); S.allDone = all; } } return; }
-    if (st.fail && st.fail(W, T, S.st)) { S.banner = 'Chưa đúng: bạn có thể nhấn K để bỏ qua bước này hoặc R để làm lại bài.'; }
+    if (st.fail && st.fail(W, T, S.st)) { S.banner = 'Chưa đúng: K bỏ qua, R làm lại bài'; }
     if (st.check(W, T, S.st)) { S.passedAt = now; S.banner = ''; }
   }
   function skip(W, T) { if (!active()) return; const L = LESSONS[S.lesson]; if (S.step < L.steps.length) { S.step++; S.entered = false; S.passedAt = -1; S.banner = ''; if (S.step >= L.steps.length) S.done[L.id] = true; } }
   function draw(ctx, px, py, pw, W, T) {
     if (!active()) return; const L = LESSONS[S.lesson], n = L.steps.length, done = S.step >= n;
-    const h = 92; ctx.save(); ctx.fillStyle = 'rgba(14,22,34,.9)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(px, py, pw, h, 10); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ffc247'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'left'; ctx.fillText(L.title + (done ? '  ·  XONG' : '  ·  bước ' + (S.step + 1) + '/' + n), px + 14, py + 22);
+    const h = 112; ctx.save(); ctx.fillStyle = 'rgba(14,22,34,.9)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(px, py, pw, h, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffc247'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'left'; ctx.fillText(L.title, px + 14, py + 22); ctx.textAlign = 'right'; ctx.fillText(done ? 'XONG' : 'bước ' + (S.step + 1) + '/' + n, px + pw - 12, py + 22); ctx.textAlign = 'left';
     ctx.fillStyle = '#e8eef5'; ctx.font = '14px system-ui';
     const text = done ? (S.banner || 'Bài đã xong. Chọn bài khác ở thanh trên hoặc nhấn R để làm lại.') : L.steps[S.step].text;
     const words = text.split(' '); let line = '', y = py + 46; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > pw - 28 && line) { ctx.fillText(line, px + 14, y); y += 19; line = w; } else line = t; } ctx.fillText(line, px + 14, y);
-    const nt = !done && L.steps[S.step].note && L.steps[S.step].note(W, T); if (nt) { ctx.fillStyle = '#4cd68a'; ctx.fillText(nt, px + 14, py + h - 12); }
-    if (!done && L.steps[S.step].hint) { ctx.fillStyle = '#7a8ea5'; ctx.font = '11px system-ui'; ctx.textAlign = 'right'; ctx.fillText('Phím: ' + L.steps[S.step].hint + ' · K = bỏ qua bước', px + pw - 12, py + 20); }
+    const nt = !done && L.steps[S.step].note && L.steps[S.step].note(W, T); if (nt) { ctx.fillStyle = '#4cd68a'; ctx.textAlign = 'right'; ctx.fillText(nt, px + pw - 12, py + h - 30); ctx.textAlign = 'left'; }
+    if (!done && L.steps[S.step].hint) { ctx.fillStyle = '#7a8ea5'; ctx.font = '11px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Phím: ' + L.steps[S.step].hint + ' · K = bỏ qua bước', px + 14, py + h - 10); }
     if (S.passedAt >= 0) { ctx.fillStyle = '#4cd68a'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right'; ctx.fillText('✔ Đúng rồi!', px + pw - 12, py + h - 12); } else if (S.banner && !done) { ctx.fillStyle = '#ff9a7a'; ctx.font = '12px system-ui'; ctx.textAlign = 'right'; ctx.fillText(S.banner, px + pw - 12, py + h - 12); }
     ctx.restore();
   }

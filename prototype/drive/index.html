@@ -285,7 +285,7 @@ function startLesson(i) {
   const c = Tutorial.cfg(i); if (!c) { alert('Không tìm thấy chuyến phù hợp cho bài này.'); return; }
   tutorialRun = true; tutLessonActive = true; setMode('tutorial');
   startDrive({ lineId: c.lineId, rec: c.rec, from: c.from, to: c.to, diff: c.diff, weather: c.weather, seed: c.seed, lead: c.lead, events: false });
-  tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none';
+  tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; ui.radio = c.radio; ui.focus = false; ui.rear = false;
 }
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));
 $('start').onclick = () => { tutorialRun = false; startDrive(); }; $('auto').onclick = () => doAct('auto'); $('snap').onclick = () => takeSnapshot();
@@ -298,7 +298,7 @@ const act = {
   power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, setpw(n) { Sim.setPower(T, n); }, setbk(n) { Sim.setBrake(T, n); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
   door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, csAdj(d) { Sim.adjustCS(T, d); },
   ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', 'Không có lệnh nào cần nhắc lại.'); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
-  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; $('auto').textContent = 'Tự lái: ' + (auto ? 'bật' : 'tắt') + ' (T)'; }
 };
 function doAct(name, arg) { if (!W || replaying) return; recActs.push([tickCount, name, arg]); act[name](arg); }
 addEventListener('keydown', e => {
@@ -315,7 +315,7 @@ addEventListener('keydown', e => {
   if (k === 'b' || k === 'B') { ui.rear = !ui.rear; return; }
   if (k === 'F11') { toggleFullscreen(); e.preventDefault(); return; }
   if (k === 'F9') { takeSnapshot(); e.preventDefault(); return; }
-  if (k === 'F2') { ui.layout = ui.layout === 'full' ? 'classic' : 'full'; syncLayout(); e.preventDefault(); return; }
+  if (k === 'F2' && !tutLessonActive) { ui.layout = ui.layout === 'full' ? 'classic' : 'full'; syncLayout(); e.preventDefault(); return; }
   if (k === 'r' || k === 'R') { if (replaying) { replaying = null; } if (tutLessonActive) { startLesson(Tutorial.S.lesson); } else startDrive(recipe); e.preventDefault(); return; }
   if (k === '1') { scale = 1; return; } if (k === '2') { scale = 4; return; } if (k === '3') { scale = 16; return; }
   if ((k === 'k' || k === 'K') && tutLessonActive) { Tutorial.skip(W, T); return; }
@@ -335,7 +335,7 @@ addEventListener('keydown', e => {
 });
 const radio = { w: null, scroll: 0, total: 0, max: 0, viewH: 0, top: 0, x0: 0, x1: 0, bar: null, drag: null };
 const cvXY = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W_ / r.width, (e.clientY - r.top) * H_ / r.height]; };
-cv.addEventListener('wheel', e => { if (mode !== 'drive' || !W) return; const [x, y] = cvXY(e); if (x >= radio.x0 && x <= radio.x1 && y >= radio.top - 4 && radio.max > 0) { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + e.deltaY * 0.6)); e.preventDefault(); } }, { passive: false });
+cv.addEventListener('wheel', e => { if ((mode !== 'drive' && mode !== 'tutorial') || !W) return; const [x, y] = cvXY(e); if (x >= radio.x0 && x <= radio.x1 && y >= radio.top - 4 && radio.max > 0) { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + e.deltaY * 0.6)); e.preventDefault(); } }, { passive: false });
 cv.addEventListener('mousedown', e => { if (!radio.bar) return; const [x, y] = cvXY(e), b = radio.bar; if (x >= b.x - 4 && x <= b.x + b.w + 4) { if (y >= b.y && y <= b.y + b.h) radio.drag = { dy: y - b.y }; else { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + (y < b.y ? -1 : 1) * radio.viewH * 0.8)); } e.preventDefault(); } });
 window.addEventListener('mousemove', e => { if (!radio.drag) return; const [, y] = cvXY(e), th = radio.bar.h, f = (y - radio.drag.dy - radio.top) / Math.max(1, radio.viewH - th); radio.scroll = Math.max(0, Math.min(radio.max, f * radio.max)); });
 window.addEventListener('mouseup', () => { radio.drag = null; });
@@ -447,7 +447,7 @@ function drawKeys(m) {
 
 function draw() { drawBase(); pauseOverlay(); }
 function drawBase() {
-  if (ui.cur === 'full' && mode === 'drive') { drawFull(); return; }
+  if (ui.cur === 'full' && (mode === 'drive' || mode === 'tutorial')) { drawFull(); return; }
   btns = []; ctx.clearRect(0, 0, W_, H_);
   if (mode === 'profile') { return; }
   if (!W) { txt('Chọn chuyến và nhấn "Bắt đầu / chạy lại", hoặc mở tab Hướng dẫn.', W_ / 2, H_ / 2, '#8aa0b5', '20px system-ui', 'center'); return; }
