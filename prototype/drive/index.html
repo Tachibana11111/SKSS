@@ -104,7 +104,7 @@
     <p class="dim" style="font-size:12px;margin:14px 0 0">Chọn xong sẽ sang trang phím bấm. Đổi chế độ lúc nào cũng được ở thanh trên cùng. <button class="link" id="wSkip">Bỏ qua, tự khám phá</button></p></div>
   <div id="w2" style="display:none"><h2>Phím bấm</h2><p class="dim" id="w2sub"></p><div class="keys">
     <div><b>W / S</b> tăng / giảm cần kéo</div><div><b>↓ / ↑</b> tăng / giảm phanh</div><div><b>Space</b> về N</div><div><b>Q</b> phanh khẩn</div><div><b>Enter</b> đóng cửa</div><div><b>C</b> tốc độ không đổi</div>
-    <div><b>P</b> còi</div><div><b>Esc</b> tạm dừng</div><div><b>A / G</b> ATC / cần vẹt</div><div><b>V / L</b> gạt mưa / đèn pha</div><div><b>Y / N</b> nhắc lệnh / từ chối</div><div><b>M</b> phát thanh</div><div><b>Tab</b> đổi khung nhìn</div><div><b>F9</b> chụp cảnh</div></div>
+    <div><b>P</b> còi</div><div><b>Esc</b> tạm dừng</div><div><b>A / G</b> ATC / cần vẹt</div><div><b>V / L</b> gạt mưa / đèn pha</div><div><b>Y / N</b> nhắc lệnh / từ chối</div><div><b>M</b> phát thanh</div><div><b>Tab</b> đổi khung nhìn</div><div><b>F9</b> chụp cảnh</div><div><b>J</b> ù cabin máy bay</div></div>
     <p class="dim" style="font-size:12px;margin:12px 0 0">Bảng đầy đủ nằm ở cột phải (chế độ lái) và README.</p></div>
   <div id="w3" style="display:none"><h2>Ghi công tài nguyên</h2><p class="dim" style="font-size:13px">Game dùng tài nguyên của nhiều người. Mã nguồn theo MIT; các tài nguyên dưới đây giữ giấy phép riêng.</p>
     <table><tr><td>Hình tàu 2D, hình mặt trước</td><td>K.Y. Chung (rail.kychung.com), CC BY-NC-ND 4.0</td></tr><tr><td>Bản đồ, nhà, đường, cây</td><td>© OpenStreetMap contributors, ODbL</td></tr><tr><td>Tiếng nền ga Odawara</td><td>Flavien Gillié, Internet Archive, Public Domain</td></tr><tr><td>Biểu tượng tab</td><td>JR West, Wikimedia Commons</td></tr><tr><td>Bố trí ga</td><td>Wikipedia tiếng Nhật, CC BY-SA 4.0</td></tr><tr><td>Lịch tàu thật 10/2026</td><td>JR East, JR West (dữ liệu thuộc chủ sở hữu)</td></tr></table>
@@ -127,7 +127,7 @@
   </div>
   <div class="row">
     <div class="grp">Âm thanh và cảnh</div>
-    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label><input id="vol" type="range" min="0" max="100" value="60">
+    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60">
     <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
     <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option></select></label>
   </div>
@@ -164,7 +164,7 @@ const TP = {}; for (const k of Object.keys(window.TOPS || {})) { TP[k] = {}; for
 const FR = {}; for (const k of Object.keys(window.FRONTS || {})) { const img = new Image(), o = { img, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/front_' + k + '.png'; FR[k] = o; }
 if (window.N700_STRIP) loadSpr('n700', window.N700_STRIP); for (const [k, m] of Object.entries(window.SPRITES || {})) loadSpr(k, m);
 let mode = 'drive', W = null, T = null, scale = 1, auto = false, paused = false, lastT = performance.now(), btns = [];
-let tickCount = 0, recActs = [], recipe = null, replaying = null, ptr = 0, finalized = false, endInfo = null, endPage = 0, tutorialRun = false;
+let tickCount = 0, recActs = [], recipe = null, replaying = null, ptr = 0, finalized = false, endT = null, endInfo = null, endPage = 0, tutorialRun = false;
 const hhmm = s => { const h = Math.floor(s / 3600) % 24, m = Math.floor(s % 3600 / 60); return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'); };
 const fmt = Sim.fmtT;
 // ---- thiết lập giao diện
@@ -283,7 +283,7 @@ $('tabTut').onclick = () => { if (mode === 'tutorial') return; if (tutLessonActi
 // ---- lưu cài đặt
 const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('scenery').value = S.scenery === 'lite' ? 'lite' : 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
-$('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
+$('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
 $('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
 AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('snd').checked;
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
@@ -296,7 +296,7 @@ function startDrive(r, opts) {
   if (!(r.leg > 0)) campaign = [];
   ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
   W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events, couple: r.couple });
-  T = W.player; auto = false; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endInfo = null; endPage = 0;
+  T = W.player; auto = false; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endT = null; endInfo = null; endPage = 0;
   replaying = opts.replay || null; if (replaying) scale = 4; else if (scale > 16) scale = 1;
   if (!tutorialRun) tutLessonActive = false;
   W.say('info', `Chuyến ${trip.label} (${T.veh.name}) · ${L.stations[trip.M[0].i].en} → ${L.stations[trip.M[trip.M.length - 1].i].en} · ${Sim.DIFF[r.diff].name} · tải khách ${Math.round(W.load * 100)}%` + (W.lead ? ` · tàu trước: ${W.leadLabel}` : ' · không có tàu trước') + (rec.mir ? ' · lịch ước tính (đối xứng)' : ''));
@@ -329,6 +329,7 @@ addEventListener('keydown', e => {
   const k = e.key;
   if (mode === 'dispatch') { if (Dispatch.key(e)) e.preventDefault(); return; }
   if (!W || mode === 'profile') return;
+  if (k === 'j' || k === 'J') { AUD.unlock(); cabinSet(!AUD.cabin); e.preventDefault(); return; }
   if (k === 'Escape' || ((k === 'p' || k === 'P') && mode === 'dispatch')) { paused = !paused; e.preventDefault(); return; }
   if ((k === 'p' || k === 'P') && W) { doAct('horn'); e.preventDefault(); return; }
   if (k === 'Tab' && T.finished) { endPage = (endPage + 1) % 2; e.preventDefault(); return; }
@@ -396,7 +397,7 @@ function frame(now) {
 }
 function nextLeg() { const r = Object.assign({}, recipe, { leg: (recipe.leg || 0) + 1, carryT0: W.trip.t0 + W.t + 600 }); startDrive(r); }
 function finalize() {
-  finalized = true; const sc = Sim.score(T, W);
+  finalized = true; endT = W.t; const sc = Sim.score(T, W);
   if (W.mission) { campaign[W.mission.leg] = sc; if (!replaying && W.mission.leg < W.mission.count - 1 && !T.failed) { endInfo = { sc, fresh: [], best: null, advice: advise(sc), more: true }; return; }
     if (W.mission.count > 1) { const done = campaign.filter(Boolean), km = done.reduce((a, c) => a + c.legKm, 0) || 1; sc.final = Math.round(done.reduce((a, c) => a + c.final * c.legKm, 0) / km); sc.legs = done; } }
   const ctxo = {
@@ -476,7 +477,7 @@ function drawEnd() {
   ctx.fillStyle = 'rgba(8,12,18,1)'; ctx.fillRect(10, 106, 1100, 788);
   const sc = endInfo ? endInfo.sc : Sim.score(T, W), last = T.M[T.M.length - 1];
   txt((replaying ? 'XEM LẠI · ' : '') + 'Kết thúc chuyến · ' + W.trip.label + ' · ' + Sim.DIFF[W.diffKey].name + ' · seed ' + (recipe ? recipe.seed : ''), 560, 138, '#fff', 'bold 21px system-ui', 'center');
-  txt('Thời gian chạy ' + fmt(W.t) + (last.arr != null ? ' (kế hoạch ' + fmt(last.arr) + ')' : '') + ' · miễn trừ do sự kiện ' + Math.round(T.excused) + ' s' + (W.trip.truncated ? ' · chuyến bị cắt ngắn (kế hoạch ngừng chạy)' : ''), 560, 162, '#8aa0b5', '14px system-ui', 'center');
+  txt('Thời gian chạy ' + fmt(endT != null ? endT : W.t) + (last.arr != null ? ' (kế hoạch ' + fmt(last.arr) + ')' : '') + ' · miễn trừ do sự kiện ' + Math.round(T.excused) + ' s' + (W.trip.truncated ? ' · chuyến bị cắt ngắn (kế hoạch ngừng chạy)' : ''), 560, 162, '#8aa0b5', '14px system-ui', 'center');
   button(60, 176, 150, 24, endPage === 0 ? 'Trang: Điểm (Tab)' : 'Trang: Tổng kết (Tab)', () => { endPage = (endPage + 1) % 2; }, true);
   button(220, 176, 150, 24, 'Chạy lại (R)', () => { tutLessonActive ? startLesson(Tutorial.S.lesson) : startDrive(recipe); }, false);
   if (!replaying) button(380, 176, 170, 24, 'Xem lại chuyến này', () => { if (!recActs.length && !auto) { W.say('info', 'Không có thao tác nào được ghi.'); return; } startDrive(recipe, { replay: { actions: recActs.slice() } }); }, false);

@@ -259,7 +259,7 @@ function drawTutEnd() {
   const sc = Sim.score(T, W), x = (FW - 520) / 2, y = 250, S = Tutorial.S, L = Tutorial.LESSONS[S.lesson], nxt = S.lesson + 1 < Tutorial.LESSONS.length ? S.lesson + 1 : -1;
   ctx.fillStyle = 'rgba(8,12,18,.94)'; ctx.strokeStyle = T.failed ? '#ff6464' : '#4cd68a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(x, y, 520, 190, 12); ctx.fill(); ctx.stroke();
   txt(T.failed ? (T.collision ? 'VA CHẠM: kết thúc chuyến' : 'Chuyến không đạt') : 'Xong ' + L.title, x + 260, y + 40, '#fff', 'bold 20px system-ui', 'center');
-  txt('Điểm chuyến ' + sc.final + ' · thời gian chạy ' + fmt(W.t), x + 260, y + 68, '#9fb4c9', '14px system-ui', 'center');
+  txt('Điểm chuyến ' + sc.final + ' · thời gian chạy ' + fmt(endT != null ? endT : W.t), x + 260, y + 68, '#9fb4c9', '14px system-ui', 'center');
   button(x + 40, y + 110, 200, 40, 'Làm lại bài (R)', () => startLesson(S.lesson), true, '#2a6fd6');
   if (nxt >= 0) button(x + 280, y + 110, 200, 40, 'Bài kế tiếp →', () => startLesson(nxt), true, '#2a8f5a'); }
 
