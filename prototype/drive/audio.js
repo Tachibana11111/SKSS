@@ -32,8 +32,8 @@
     this.motorO.connect(mf); this.motorO2.connect(mf); mf.connect(mg); mg.connect(this.master); this.motor = { g: mg, f: mf };
     this.motorO.start(); this.motorO2.start();
     // quạt gió/điều hoà: tiếng ù thấp liên tục
-    // tiếng ù cabin máy bay thương mại (bật bằng phím J): nhiễu trầm đã lọc mạnh + hai âm trầm lệch nhau tạo nhịp chậm; khi bật thì tiếng chạy/gió thô giảm bớt [I]
-    this.cab = mk(noise(), flt('lowpass', 380, 0.6), 0); this.cabO = [c.createOscillator(), c.createOscillator()]; const cg = c.createGain(); cg.gain.value = 0; this.cabO.forEach((o, i) => { o.type = 'sine'; o.frequency.value = i ? 84.4 : 84; o.connect(cg); o.start(); }); cg.connect(this.master); this.cabG = cg;
+    // tiếng ù cabin máy bay thương mại (bật bằng phím J): chỉ nhiễu trầm đã lọc mạnh (một đường tiếng liên tục, không có âm ù trầm riêng); khi bật thì tiếng chạy/gió thô giảm bớt [I]
+    this.cab = mk(noise(), flt('lowpass', 380, 0.6), 0);
     this.hvacO = c.createOscillator(); this.hvacO.type = 'sine'; this.hvacO.frequency.value = 118; const hg = c.createGain(); hg.gain.value = 0; this.hvacO.connect(hg); hg.connect(this.master); this.hvac = { g: hg }; this.hvacO.start();
     // bản ghi thật: Odawara (Internet Archive, public domain): nền ga 10–118 s; tàu qua/rời ga ở các đoạn CLIPS
     try { const mk2 = () => { const e = new Audio('assets/audio/odawara_leaving.mp3'); e.preload = 'metadata'; e.volume = 0; return e; }; this.amb = mk2(); this.clipEl = mk2(); this.ambOn = false; this.clipT = 0; } catch (e) { this.amb = null; }
@@ -151,7 +151,7 @@
     const sp = Math.min(1, v / 80), frc = T.f, inTun = this.inTunnel(W, T), dw = T.phase === 'dwell', run = T.phase === 'run';
     // tiếng chạy; trong hầm ù to hơn và gió nhỏ đi
     const cabK = this.cabin ? 0.3 : 1;      // chế độ ù cabin: bớt tiếng chạy và gió thô
-    set(this.cab, this.cabin ? 0.09 + 0.3 * Math.pow(sp, 0.5) : 0, 0.8); this.cabG.gain.setTargetAtTime(this.cabin ? 0.05 + 0.12 * Math.pow(sp, 0.5) : 0, t, 0.8);      // ù liên tục (không phụ thuộc cột điện, ghi), to hơn bản đầu
+    set(this.cab, this.cabin ? 0.13 + 0.4 * Math.pow(sp, 0.5) : 0, 0.8);      // ù liên tục (không phụ thuộc cột điện, ghi), to hơn bản đầu
     set(this.rumble, cabK * (0.55 * Math.pow(sp, 0.8) + (v > 0.3 ? 0.04 : 0)) * (inTun ? 1.5 : 1));
     this.rumble.f.frequency.setTargetAtTime(this.cabin ? 70 + 90 * sp : 90 + 420 * sp, t, 0.2);
     set(this.wind, (this.cabin ? 0.05 : 1) * 0.32 * Math.pow(sp, 2.2) * (inTun ? 0.55 : 1) * (1 + 0.15 * Math.sin(now / 1900)));
