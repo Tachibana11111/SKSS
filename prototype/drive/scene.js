@@ -63,6 +63,7 @@
     ctx.restore();
   }
   // tên ảnh dùng cho từng loại tàu (N700-8 tạm dùng toa N700S; ảnh chỉ có ở rail.kychung.com)
+  let winLvl = 0;      // mức sáng của các ô cửa sổ tàu (0 ban ngày)
   const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', E2: 'e2', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'kamome' };
   function sprOf(R, key) { const s = R.sprites && R.sprites[SMAP[key] || 'n700']; return s && s.ready ? s : null; }
   const hOf = (R, key, k) => { const s = sprOf(R, key); return s ? s.meta.height * (k / s.meta.pxPerMeter) : 24; };
@@ -77,7 +78,8 @@
     const total = idx.reduce((a, i) => a + cars[i].w, 0), f = wPx / total, y = base - hPx * (m.railY / m.height);
     ctx.save(); ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.imageSmoothingEnabled = true;
     if (flip) { ctx.translate(xFront, 0); ctx.scale(-1, 1); xFront = 0; }
-    let x = xFront - wPx; for (const i of idx) { const c = cars[i]; ctx.drawImage(sp.img, c.x, 0, c.w, m.height, x, y, c.w * f + 0.5, hPx); x += c.w * f; }
+    const WL = root.WinLit, wl = winLvl > 0.06 && WL ? WL.get(sp) : null;
+    let x = xFront - wPx; for (const i of idx) { const c = cars[i]; ctx.drawImage(sp.img, c.x, 0, c.w, m.height, x, y, c.w * f + 0.5, hPx); if (wl) { const x0c = x; WL.overlap(wl, c.x, c.x + c.w, (wa, wb, ya, yb, id) => { ctx.fillStyle = WL.fill(id, winLvl); ctx.fillRect(x0c + (Math.max(wa, c.x) - c.x) * f, y + ya / m.height * hPx, (Math.min(wb, c.x + c.w) - Math.max(wa, c.x)) * f + 0.5, (yb - ya) / m.height * hPx); }); } x += c.w * f; }
     ctx.restore();
   }
   function stripTrain(ctx, spr, img, xFront, base, wPx, hPx, flip, alpha, railOff) {
@@ -111,7 +113,7 @@
     if (dusk > 0.05 && wx < 0.3) { ctx.fillStyle = 'rgba(255,140,60,' + Math.min(0.35, dusk * 0.3) + ')'; ctx.fillRect(px, py + 40, pw, base - py - 40); }
     if (night > 0.4 && wx < 0.5) { ctx.fillStyle = 'rgba(255,255,255,' + (0.7 * (night - 0.4)) + ')'; for (let i = 0; i < 40; i++) ctx.fillRect(px + hash(i * 17) * pw, py + hash(i * 31 + 7) * (base - py - 30), 1.3, 1.3); }
     // kết cấu dưới chân tàu: hầm / cầu cạn / cầu (cao độ tuyến so với mặt đất làm nền lùi xuống) [I theo tỷ lệ kết cấu thật]
-    const tun = root.Sim.inTunnel(W, T.x), elev = root.Layout ? root.Layout.elevTable(W.line, root.Sim, W.dir, T.x, 40, 10)[0] : 0, kindNow = root.Sim.structAt(W.line, kmOf(W, T.x)), drop = tun ? 0 : elev * 2.6;
+    const tun = root.Sim.inTunnel(W, T.x), _wl = (winLvl = root.WinLit ? root.WinLit.level(night, tun, W.rainHere ? 0.55 : 0) : 0), elev = root.Layout ? root.Layout.elevTable(W.line, root.Sim, W.dir, T.x, 40, 10)[0] : 0, kindNow = root.Sim.structAt(W.line, kmOf(W, T.x)), drop = tun ? 0 : elev * 2.6;
     // ---- lớp xa: núi, núi Phú Sĩ
     ctx.save(); ctx.translate(0, drop);
     const kmNow = kmOf(W, T.x), dirS = W.dir === 'up' ? -1 : 1;
@@ -247,6 +249,7 @@
         const tc = scene._tint.getContext('2d'); tc.clearRect(0, 0, scene._tint.width, scene._tint.height); tc.drawImage(img, spr.width - srcW, 0, srcW, spr.height, 0, 0, srcW * f, dh); tc.globalCompositeOperation = 'source-atop'; tc.fillStyle = 'rgba(6,10,24,' + (0.5 * night) + ')'; tc.fillRect(0, 0, ow, oh); tc.globalCompositeOperation = 'source-over';
         ctx.drawImage(scene._tint, 0, 0, ow, oh, fx - srcW * f, base - (spr.railY * f * SV) + 2, ow, oh);
       } else ctx.drawImage(img, spr.width - srcW, 0, srcW, spr.height, fx - srcW * f, base - (spr.railY * f * SV) + 2, srcW * f, dh);
+      if (winLvl > 0.06 && root.WinLit) { const WL = root.WinLit, sx0 = spr.width - srcW, dx0 = fx - srcW * f, top0 = base - (spr.railY * f * SV) + 2; WL.overlap(WL.get(psp), sx0, spr.width, (wa, wb, ya, yb, id) => { const ax = Math.max(wa, sx0); ctx.fillStyle = WL.fill(id, winLvl); ctx.fillRect(dx0 + (ax - sx0) * f, top0 + ya * f * SV, (wb - ax) * f + 0.5, (yb - ya) * f * SV); }); }
       { // cần vẹt (パンタグラフ): đặt đúng chỗ nắp cần vẹt trên nóc từng mẫu tàu (đọc từ ảnh: [số toa, vị trí px trong toa]); nâng thì chạm dây điện, hạ thì gập sát nóc
         const PAN = { n700: [[5, 264], [12, 85]], n700s: [[5, 260], [12, 87]], e5: [[3, 293], [7, 293]], h5: [[3, 293], [7, 293]], e6: [[2, 242], [6, 42]], e8: [[2, 242], [6, 42]], e7: [[5, 277], [7, 285]], t4: [[0, 612], [0, 1671]], s800: [[2, 170], [5, 170]], kamome: [[0, 683], [0, 1537]], e2: [[4, 42], [6, 42]], e926: [[0, 243], [0, 852], [0, 1439]] };
         const nm = SMAP[key] || 'n700', roofY = base - spr.railY * f * SV + 2, wy = base - 60; scene._pa = (scene._pa === undefined ? 1 : scene._pa) + ((T.pan === false ? 0 : 1) - (scene._pa === undefined ? 1 : scene._pa)) * 0.12;
