@@ -235,7 +235,7 @@
         ctx.fillStyle = mixc([14, 16, 20], [46, 50, 56], 0.2 + 0.5 * (urbanLamp ? 1 : 0.0)); ctx.fillRect(x, oy0 - 4, 6.6, oh + 8);
         const gl = 0.12 + 0.55 * Math.exp(-Math.abs(x - cx) / (ow * 0.5)); ctx.fillStyle = 'rgba(200,205,215,' + gl * (0.25 + 0.45 * (0.35 + 0.65 * night) * 0.4) + ')'; ctx.fillRect(x, oy0 - 4, 6.6, oh + 8);
         if (Math.floor((s + 5) / 10) !== Math.floor((s - 1) / 10)) { ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x, oy0 - 4, 2.2, oh + 8); }
-        if (urbanLamp && Math.floor((s + 9) / 18) !== Math.floor((s - 9) / 18)) { const g = ctx.createRadialGradient(x, hy - 80, 0, x, hy - 80, 70); g.addColorStop(0, 'rgba(255,236,170,.75)'); g.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = g; ctx.fillRect(x - 70, hy - 150, 140, 140); } }
+        if (urbanLamp && Math.floor((s + 9) / 18) !== Math.floor((s - 9) / 18)) { ctx.save(); ctx.translate(x, hy - 80); ctx.scale(2.2, 1); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 70); g.addColorStop(0, 'rgba(255,236,170,.75)'); g.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = g; ctx.fillRect(-70, -70, 140, 140); ctx.restore(); ctx.fillStyle = 'rgba(255,246,210,.95)'; ctx.fillRect(x - 9, hy - 82, 18, 4); } }
       if (any) { ctx.fillStyle = 'rgba(70,76,84,.55)'; ctx.fillRect(ox0, Y(EYE + 0.8, dd), ow, Math.max(2, 0.05 * f / dd)); ctx.fillRect(ox0, Y(EYE - 0.9, dd), ow, Math.max(2, 0.05 * f / dd)); } } });
 
     items.sort((a, b) => b.d - a.d); for (const it of items) it.fn();

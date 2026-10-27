@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Lái Shinkansen - bản thử 0.4</title>
 <link rel="icon" type="image/png" href="assets/logo.png">
 <style>
@@ -53,6 +53,11 @@
   body.isfull #stage{display:block;padding:0}
   body.isfull #wrap{padding:0}
   body.isfull canvas{width:min(100vw, calc(100vh * 1.7778));margin:0 auto}
+  /* điện thoại / máy tính bảng cảm ứng: chạm không kéo/zoom trang, nút toàn màn hình, nhắc xoay ngang */
+  #fsBtn{display:none;position:fixed;right:8px;bottom:8px;z-index:60;background:#223042;color:var(--fg);border:1px solid #33475e;border-radius:8px;padding:8px 12px;font:inherit;opacity:.85}
+  #rot{display:none;position:fixed;inset:0;z-index:70;background:rgba(8,12,18,.96);color:var(--fg);align-items:center;justify-content:center;text-align:center;padding:30px;font-size:18px;line-height:1.6}
+  @media (pointer:coarse){html,body{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}#fsBtn{display:block}aside button,aside select,aside input{min-height:40px}}
+  @media (pointer:coarse) and (orientation:portrait) and (max-width:700px){#rot{display:flex}}
   kbd{background:#223042;border:1px solid #33475e;border-radius:4px;padding:0 5px;color:var(--fg)}
   .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;width:100%}
   #modal{display:none;position:absolute;left:8px;right:8px;top:8px;bottom:8px;background:rgba(10,14,20,.97);border-radius:8px;padding:18px;overflow:auto;z-index:5}
@@ -96,6 +101,8 @@
 <div id="wrap">
   <canvas id="c" width="1780" height="900"></canvas>
   <div id="modal"></div>
+<div id="rot"><div>📱 Xoay ngang màn hình để chơi.<br><span style="color:#8aa0b5;font-size:14px">Cần chạm: cần kéo/phanh ở bảng bên dưới, nút Còi/Cửa/Tạm dừng ở bảng nút điều khiển. Nên bật toàn màn hình.</span></div></div>
+<button id="fsBtn" title="Toàn màn hình">⛶ Toàn màn hình</button>
 <div id="wiz"><div class="box">
   <div class="top"><div class="dots" id="wDots"></div><span id="wStep"></span></div>
   <div id="w1"><h2>Chào mừng đến Lái Shinkansen</h2><p class="dim">Game lái tàu Shinkansen chạy ngay trong trình duyệt: 7 tuyến, lịch tàu thật tháng 10/2026, ATC, cần vẹt, thời tiết và sự cố. Dự án sở thích, không chính thức và không liên quan tới JR. Bạn muốn bắt đầu thế nào?</p>
@@ -287,6 +294,10 @@ function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Stor
 $('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
 $('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
 AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('snd').checked;
+$('fsBtn').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); } catch (e) { } };
+// mất focus / ẩn tab: tạm dừng thật (như Esc), tắt hẳn âm nền, tiếng chạy qua và giọng PA; quay lại người chơi tự bấm Esc để chạy tiếp
+const focusLost = () => { if (W && !paused && (mode === 'drive' || mode === 'tutorial')) paused = true; try { AUD.silence(); if (window.speechSynthesis) speechSynthesis.cancel(); AUD.q = []; AUD.speaking = false; } catch (e) { } };
+document.addEventListener('visibilitychange', () => { if (document.hidden) focusLost(); }); addEventListener('blur', focusLost);
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến

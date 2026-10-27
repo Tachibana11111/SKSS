@@ -170,8 +170,13 @@
       }
     };
     // khung cửa ra hầm: hầm thường là vòm; ga ngầm (Tokyo, Ueno của Tohoku) mở rộng bằng cả bề ngang sân ga
+    // vỏ hầm hẹp ôm sát các đường ray: biên trái/phải = đường ngoài cùng (đường ngược chiều, đường ga, đường chính tuyến cha ở đoạn rẽ nhánh) ± chừa 2,7 m; rộng ra/hẹp lại theo ghi
+    const spanMemo = new Map(), tunSpan = z => { const key = Math.round(z * 2); let r = spanMemo.get(key); if (r) return r; let lo = 0, hi = 0; const add = x => { if (x < lo) lo = x; if (x > hi) hi = x; }; add(oppAt(z));
+      for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj; if (z >= a && z <= b) { add(S.trunkOff(W, T.x + z)); add(S.trunkOff(W, T.x + z) + ADJ); } }
+      for (const q of sts) for (const t of q.st.tracks) { if (t.main || t.in0 === undefined) continue; const za = rr ? q.d - t.out0 - t.len : q.d - t.in0, zb = rr ? q.d + t.in0 : q.d + t.out0 + t.len; if (z >= za && z <= zb) add(lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s))); }
+      r = [lo - 2.7, hi + 2.7]; spanMemo.set(key, r); return r; };
     const openingPoly = () => { if (zExit === null || zExit <= ZN) return null; const z = zExit, near = sts.filter(q => Math.abs(q.d - z) < 150 && q.st.extent), wide = near.length ? [Math.min(...near.map(q => q.st.extent[0])) - 0.8, Math.max(...near.map(q => q.st.extent[1])) + 0.8] : null, pts = [];
-      { const [x0, x1] = wide || [-5.0, 5.0], h = wide ? 8.0 : 7.4, r = wide ? 1.4 : 1.8; pts.push(P(x1, 0, z)); for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 * i / 6; pts.push(P(x1 - r + Math.cos(a) * r, h - r + Math.sin(a) * r, z)); } for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 + Math.PI / 2 * i / 6; pts.push(P(x0 + r + Math.cos(a) * r, h - r + Math.sin(a) * r, z)); } pts.push(P(x0, 0, z)); }
+      { const [x0, x1] = wide || tunSpan(z), h = wide ? 8.0 : 6.6, r = wide ? 1.4 : 1.6; pts.push(P(x1, 0, z)); for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 * i / 6; pts.push(P(x1 - r + Math.cos(a) * r, h - r + Math.sin(a) * r, z)); } for (let i = 0; i <= 6; i++) { const a = Math.PI / 2 + Math.PI / 2 * i / 6; pts.push(P(x0 + r + Math.cos(a) * r, h - r + Math.sin(a) * r, z)); } pts.push(P(x0, 0, z)); }
       return pts; };
     const polyPath = pts => { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); };
     const outItems = [];
@@ -182,7 +187,13 @@
     if (zExit !== null) {   // lòng hầm: tường tối có khoét lỗ ở cửa ra (nhìn thấy phong cảnh bên ngoài), đèn trần (chỉ ở hầm đô thị và quanh ga ngầm; hầm vùng đồi núi không có đèn)
       const tw = ctx.createLinearGradient(0, py, 0, py + ph); tw.addColorStop(0, '#2a3038'); tw.addColorStop(0.5, '#0c0f13'); tw.addColorStop(1, '#1a1f26'); ctx.fillStyle = tw;
       const op = openingPoly(); ctx.beginPath(); ctx.rect(px - 60, py - 60, pw + 120, ph + 120); if (op) op.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.fill('evenodd');
-      for (const sgn of [-1, 1]) for (let k = Math.ceil((T.x + ZN) / 18), z = k * 18 - T.x; z < Math.min(420, zExit); k++, z = k * 18 - T.x) { if (biomeAt(z) !== 'urban' && !sts.some(q => Math.abs(z - q.d) < 600)) continue; const a = P(sgn * 2.9, 6.3, z); const r = Math.max(1.2, 0.18 * c.f / z); const gl = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], r * 4); gl.addColorStop(0, 'rgba(255,236,170,.9)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(a[0] - r * 4, a[1] - r * 4, r * 8, r * 8); }
+      // vỏ hầm: hai vách thẳng đứng, vát góc, trần; chia theo khoảng cách để xa thì tối dần
+      { const zE = Math.min(zExit, 900), bands = [[ZN, 40, 1], [40, 120, 0.72], [120, 300, 0.5], [300, zE, 0.34]], xl = z => tunSpan(z)[0], xr = z => tunSpan(z)[1], lit = 0.5 + 0.5 * Math.max(night, 0.4), hasL = z => biomeAt(z) === 'urban' || sts.some(q => Math.abs(z - q.d) < 600);
+        for (const [b0, b1, f] of bands) { if (b0 >= zE) break; const a = Math.max(b0, zMin), e = Math.min(b1, zE), g = Math.round(60 * f * lit);
+          wall(xl, 0, 4.8, a, e, 'rgb(' + (g + 6) + ',' + (g + 9) + ',' + (g + 13) + ')'); wall(xr, 0, 4.8, a, e, 'rgb(' + (g + 6) + ',' + (g + 9) + ',' + (g + 13) + ')');
+          strip(z => xl(z), z => xl(z) + 1.5, 6.3, a, e, 'rgb(' + (g + 2) + ',' + (g + 4) + ',' + (g + 7) + ')'); strip(z => xr(z) - 1.5, z => xr(z), 6.3, a, e, 'rgb(' + (g + 2) + ',' + (g + 4) + ',' + (g + 7) + ')');
+          strip(z => xl(z) + 1.5, z => xr(z) - 1.5, 6.3, a, e, 'rgb(' + (g - 4) + ',' + (g - 2) + ',' + (g + 1) + ')'); }
+        for (const side of [0, 1]) for (let k = Math.ceil((T.x + ZN) / 18), z = k * 18 - T.x; z < Math.min(420, zExit); k++, z = k * 18 - T.x) { if (!hasL(z)) continue; const X = side ? xr(z) - 0.15 : xl(z) + 0.15, a = P(X, 4.3, z), r = Math.max(1.2, 0.16 * c.f / z), gl = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], r * 5); gl.addColorStop(0, 'rgba(255,236,170,.95)'); gl.addColorStop(0.35, 'rgba(255,230,160,.35)'); gl.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = gl; ctx.fillRect(a[0] - r * 5, a[1] - r * 5, r * 10, r * 10); } }
     }
     drawTracks();
     // đèn pha: chỉ bật khi tối, trong hầm, hoặc mưa/tuyết lúc nhá nhem; ban ngày ngoài hầm thì tắt. Chùm sáng bám đường đang chạy (kể cả đường nhánh/đường cong)

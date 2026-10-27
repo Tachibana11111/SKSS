@@ -8,7 +8,13 @@
     this.ctx = null; this.cabin = false; this.enabled = true; this.vol = 0.6; this.ready = false; this.annMode = 'ja';
     this.prev = {}; this.msgCount = 0; this.lastConfirmBeep = 0; this.lastResults = 0; this.q = []; this.ann = {}; this.next = {};
   }
+  // trình duyệt di động chỉ cho SpeechSynthesis nói sau một cử chỉ của người dùng: "mồi" bằng một câu im lặng ở lần chạm/bấm đầu tiên; danh sách giọng nạp muộn nên lắng nghe voiceschanged
+  GameAudio.prototype.primeSpeech = function () {
+    const ss = root.speechSynthesis; if (!ss || this.primed) return; this.primed = true;
+    try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; ss.speak(u); ss.onvoiceschanged = () => { }; ss.getVoices(); } catch (e) { }
+  };
   GameAudio.prototype.unlock = function () {
+    this.primeSpeech();
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     const AC = root.AudioContext || root.webkitAudioContext; if (!AC) return;
     const c = this.ctx = new AC();
@@ -56,7 +62,7 @@
       e.volume = e.volume + (target - e.volume) * 0.08;
     } catch (x) { }
   };
-  GameAudio.prototype.silence = function () { try { if (this.amb) { this.amb.volume = 0; this.amb.pause(); } if (this.clipEl) this.clipEl.pause(); this.ambOn = false; } catch (x) { } };
+  GameAudio.prototype.silence = function () { try { if (this.amb) { this.amb.volume = 0; this.amb.pause(); } if (this.clipEl) this.clipEl.pause(); this.ambOn = false; clearTimeout(this.clipT); } catch (x) { } };
   GameAudio.prototype.setVolume = function (v, on) { this.vol = v; this.enabled = on; if (this.master) this.master.gain.setTargetAtTime(on ? v : 0, this.ctx.currentTime, 0.05); if (!on && root.speechSynthesis) root.speechSynthesis.cancel(); };
   GameAudio.prototype.setAnn = function (m) { this.annMode = m; if (m === 'off' || m === 'sub') { this.q = []; if (root.speechSynthesis) root.speechSynthesis.cancel(); } };
   GameAudio.prototype.tone = function (freq, dur, type, gain, delay, freq2) {
@@ -136,8 +142,8 @@
     while (this.q.length && performance.now() - this.q[0].t > 25000) this.q.shift();
     const it = this.q.shift(); if (!it) return;
     if (it.chime && this.ready) this.chime();
-    this.speaking = true;
-    const go = () => { const u = new SpeechSynthesisUtterance(it.text); u.lang = it.lang === 'ja' ? 'ja-JP' : 'en-US'; const v = this.pick(it.lang); if (v) u.voice = v; u.volume = Math.min(1, this.vol * 1.3); u.rate = 1.0;
+    this.speaking = true; clearTimeout(this.spkT); this.spkT = setTimeout(() => { if (this.speaking) { this.speaking = false; try { ss.cancel(); } catch (e) { } this.drain(); } }, 6000 + it.text.length * 160);      // onend không bao giờ đến trên một số trình duyệt di động: chống kẹt hàng đợi
+    const go = () => { const u = new SpeechSynthesisUtterance(it.text); u.lang = it.lang === 'ja' ? 'ja-JP' : 'en-US'; const v = this.pick(it.lang); if (v) { u.voice = v; u.lang = v.lang; } else if (it.lang === 'ja' && root.speechSynthesis.getVoices().length) { this.speaking = false; setTimeout(() => this.drain(), 50); return; }      // không có giọng Nhật trên máy: bỏ câu (phụ đề vẫn hiện) thay vì đọc sai bằng giọng khác u.volume = Math.min(1, this.vol * 1.3); u.rate = 1.0;
       u.onend = u.onerror = () => { this.speaking = false; setTimeout(() => this.drain(), 400); }; ss.speak(u); };
     if (it.chime) setTimeout(go, 1300); else go();
   };
@@ -181,7 +187,8 @@
       if (W.weatherKind === 'typhoon' || W.weatherKind === 'rain') { R.thunder -= dt; if (R.thunder < 0) { if (W.weatherKind === 'typhoon' || Math.random() < 0.4) this.thunder(); R.thunder = 35 + Math.random() * 70; } }
     }
     this.ambience(dw && !st.paused && st.scale <= 4 ? (T.door === 'open' ? 0.55 : 0.4) : 0);
-    if (dw && W.passers && W.passers[T.k]) for (const pa of W.passers[T.k]) { const u = (W.t - (pa.t - 4.5)) / 9; if (u > 0 && u < 1 && !pa.played) { pa.played = true; this.playClip(0.95, pa.t | 0); } if (u >= 1) pa.played = false; }
+    const mk0 = T.M[T.k], atEnd = !mk0 || mk0.i === 0 || mk0.i === W.line.stations.length - 1;      // ga đầu/cuối tuyến: tàu không lao qua ga
+    if (dw && !atEnd && W.passers && W.passers[T.k]) for (const pa of W.passers[T.k]) { const u = (W.t - (pa.t - 4.5)) / 9; if (u > 0 && u < 1 && !pa.played) { pa.played = true; this.playClip(0.95, pa.t | 0); } if (u >= 1) pa.played = false; }
     this.prevWt = W.t;
     // ---- thao tác cần: tiếng gạt, tiếp điểm ----
     const p = this.prev;
