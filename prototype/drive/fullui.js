@@ -249,7 +249,7 @@ function drawFull() {
     txt(dd.text, 576, 234, '#ffe9b0', 'bold 14px system-ui'); txt('Còn ' + Math.ceil(left) + ' s', 1340, 234, '#ffc247', 'bold 13px system-ui', 'right'); button(576, 248, 170, 24, dd.a.label, () => doAct('ack'), true, '#2a8f5a'); button(756, 248, 170, 24, dd.b.label, () => doAct('no'), true, '#8f3a3a'); }
   if (tutLessonActive) Tutorial.draw(ctx, (FW - 560) / 2, TOPH + 14, 560, W, T);
   if (T.finished && tutLessonActive) drawTutEnd();
-  else if (T.finished) { ctx.save(); ctx.translate(400, 60); curOX = 400; drawEnd(); ctx.restore(); curOX = 0; }
+  else if (T.finished) { ctx.save(); ctx.translate(400, 60); curOX = 400; curOY = 60; drawEnd(); ctx.restore(); curOX = 0; curOY = 0; }
   else if (!T.started && !tutLessonActive) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]); txt('Nhấn Enter để đóng cửa, rồi kéo cần gia tốc (W) khi đèn ĐÓNG CỬA sáng', FW / 2, 400, '#fff', 'bold 20px system-ui', 'center'); }
   if (T.atcOn === false && blink) { ctx.strokeStyle = 'rgba(255,60,60,.85)'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, FW - 8, FH - 8); } else if (T.cut) { ctx.strokeStyle = 'rgba(154,90,214,.8)'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, FW - 8, FH - 8); }
   drawTopBar(blink);

@@ -157,7 +157,7 @@
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 let W_ = cv.width, H_ = cv.height; const LINES = window.LINES;
 const CW = 1120, OX = 310;                    // vùng giữa (đồng hồ, cảnh) rộng 1120 px, lệch OX; cột trái = điện đàm, cột phải = nút điều khiển + phím tắt
-let curOX = 0;                                // độ lệch hiện tại khi đăng ký vùng bấm
+let curOY = 0, curOX = 0;                                // độ lệch hiện tại khi đăng ký vùng bấm
 const $ = id => document.getElementById(id);
 const AUD = new GameAudio();
 const SPR = {}; function loadSpr(name, meta) { const img = new Image(), o = { img, meta, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/' + name + '_strip.png'; SPR[name] = o; }
@@ -435,7 +435,7 @@ function advise(sc) {
 // ---- vẽ
 function txt(s, x, y, c, f, al) { ctx.fillStyle = c || '#e8eef5'; ctx.font = f || '14px system-ui'; ctx.textAlign = al || 'left'; ctx.fillText(s, x, y); }
 function panel(x, y, w, h, c) { ctx.fillStyle = c || '#18212c'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill(); }
-function button(x, y, w, h, label, fn, on, color) { ctx.fillStyle = on ? (color || '#2a6fd6') : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); txt(label, x + w / 2, y + h / 2 + 4, on ? '#fff' : '#c8d4e2', '12px system-ui', 'center'); btns.push({ x: x + curOX, y, w, h, fn }); }
+function button(x, y, w, h, label, fn, on, color, fs) { ctx.fillStyle = on ? (color || '#2a6fd6') : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); txt(label, x + w / 2, y + h / 2 + (fs ? 5 : 4), on ? '#fff' : '#c8d4e2', (fs || 12) + 'px system-ui', 'center'); btns.push({ x: x + curOX, y: y + curOY, w, h, fn }); }
 function lamp(x, y, label, on, color) { ctx.fillStyle = on ? color : '#243447'; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill(); if (on) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2; ctx.stroke(); } txt(label, x + 12, y + 4, on ? '#fff' : '#7a8ea5', '12px system-ui'); }
 const WHY = { turnout: 'ghi vào/ra đường ga (80 km/h)', line: 'giới hạn tuyến', stop: 'mẫu dừng ga', rain: 'mưa lớn', wind: 'gió', snow: 'tuyết', order: 'lệnh điều độ', fault: 'sự cố bệ trục', lead: 'tàu phía trước', eqk: 'sự cố/động đất', ga: 'đang đỗ ga', wire: 'dây điện' };
 const ZC = { rain: '#2f6fd6', wind: '#8a96a6', snow: '#dfe9f5', order: '#e08a2f', fault: '#d64a4a', eqk: '#9a5ad6', wire: '#d6c24a' };
@@ -479,12 +479,14 @@ function drawEnd() {
   const sc = endInfo ? endInfo.sc : Sim.score(T, W), last = T.M[T.M.length - 1];
   txt((replaying ? 'XEM LẠI · ' : '') + 'Kết thúc chuyến · ' + W.trip.label + ' · ' + Sim.DIFF[W.diffKey].name + ' · seed ' + (recipe ? recipe.seed : ''), 560, 138, '#fff', 'bold 21px system-ui', 'center');
   txt('Thời gian chạy ' + fmt(endT != null ? endT : W.t) + (last.arr != null ? ' (kế hoạch ' + fmt(last.arr) + ')' : '') + ' · miễn trừ do sự kiện ' + Math.round(T.excused) + ' s' + (W.trip.truncated ? ' · chuyến bị cắt ngắn (kế hoạch ngừng chạy)' : ''), 560, 162, '#8aa0b5', '14px system-ui', 'center');
-  button(60, 176, 150, 24, endPage === 0 ? 'Trang: Điểm (Tab)' : 'Trang: Tổng kết (Tab)', () => { endPage = (endPage + 1) % 2; }, true);
-  button(220, 176, 150, 24, 'Chạy lại (R)', () => { tutLessonActive ? startLesson(Tutorial.S.lesson) : startDrive(recipe); }, false);
-  if (!replaying) button(380, 176, 170, 24, 'Xem lại chuyến này', () => { if (!recActs.length && !auto) { W.say('info', 'Không có thao tác nào được ghi.'); return; } startDrive(recipe, { replay: { actions: recActs.slice() } }); }, false);
+  const bar = [];      // hàng nút ở giữa đáy hộp tổng kết
+  bar.push([endPage === 0 ? 'Trang: Điểm (Tab)' : 'Trang: Tổng kết (Tab)', 200, () => { endPage = (endPage + 1) % 2; }, true]);
+  bar.push(['Chạy lại (R)', 150, () => { tutLessonActive ? startLesson(Tutorial.S.lesson) : startDrive(recipe); }, false]);
+  if (!replaying) bar.push(['Xem lại chuyến này', 190, () => { if (!recActs.length && !auto) { W.say('info', 'Không có thao tác nào được ghi.'); return; } startDrive(recipe, { replay: { actions: recActs.slice() } }); }, false]);
   const bestRep = Store.get().replays[Store.scenarioKey({ kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed })];
-  if (bestRep && !replaying) button(560, 176, 190, 24, 'Xem lại bản tốt nhất', () => startDrive(Object.assign({}, bestRep.recipe, { rec: undefined }), { replay: { actions: bestRep.actions } }), false);
-  if (endInfo && endInfo.more) button(60, 144, 220, 24, 'Chặng tiếp theo (Enter) →', nextLeg, true, '#2a8f5a');
+  if (bestRep && !replaying) bar.push(['Xem lại bản tốt nhất', 210, () => startDrive(Object.assign({}, bestRep.recipe, { rec: undefined }), { replay: { actions: bestRep.actions } }), false]);
+  if (endInfo && endInfo.more) bar.push(['Chặng tiếp theo (Enter) →', 250, nextLeg, true, '#2a8f5a']);
+  { const gap = 12, tot = bar.reduce((a, b) => a + b[1], 0) + gap * (bar.length - 1); let bx = 560 - tot / 2; for (const b of bar) { button(bx, 838, b[1], 40, b[0], b[2], b[3], b[4], 15); bx += b[1] + gap; } }
   if (endPage === 0 && sc.mission) {
     let y = 226; txt('Cảm biến', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Phủ', 850, y, '#8aa0b5'); txt('Lỗi tìm thấy', 940, y, '#8aa0b5'); y += 26;
     sc.out.forEach(o => { txt(o[0], 60, y, '#fff', '14px system-ui'); txt(o[1], 230, y, '#fff', '14px system-ui'); txt(o[2] + '%', 850, y, '#fff', '14px system-ui'); txt(o[3] + '%', 940, y, '#fff', '14px system-ui'); y += 28; });
