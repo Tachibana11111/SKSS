@@ -24,7 +24,7 @@
    - **Ga:** chấm theo toạ độ có thật. Tokyo: chấm to; ga có đường rẽ nhánh từ tuyến cha sang tuyến con: chấm cỡ vừa; còn lại chấm nhỏ. Chấm vừa và nhỏ nhuộm màu tuyến cha đi qua ga đó. Đoạn ray giữa hai ga vẽ **đúng hình học như minimap** (dùng lại hoặc vẽ lại cho đồng nhất toàn bộ).
    - **Bấm vào ga:** tooltip gồm tàu sắp tới/đã rời ga (tên tàu, giờ ETA), tàu đang thông qua, tàu đỗ, tàu chờ xuất phát theo giờ...
    - **Tàu = tam giác chỉ hướng đi**, mọi tàu (chạy/dừng/đỗ) đều hiện; tàu của người chơi nổi bật hơn. Tooltip tàu: tên tàu, ga đi/ga đến, đang tới ga nào, tốc độ, trạng thái...
-   - **Kịch bản chạy tàu theo lịch:** chọn một chuyến (ví dụ Akita, một chiều trong ~15 chuyến) thì các chuyến còn lại chạy theo giờ chuẩn của lịch thật: chuyến trước đó đã chạy trước/về ga sớm; chuyến sau đó xuất hiện ở ga đầu tuyến trước giờ khởi hành khoảng 3 đến 5 phút. Phải tránh xung đột lịch giữa các tàu dùng chung ray, kể cả tàu ghép (Tohoku + Akita/Yamagata xuất phát chung một khung giờ từ Tokyo).
+   - **Kịch bản chạy tàu theo lịch:** chọn một chuyến (ví dụ Akita, một chiều trong ~15 chuyến) thì các chuyến còn lại chạy theo giờ chuẩn của lịch thật: chuyến trước đó đã chạy trước/về ga sớm; chuyến sau đó xuất hiện ở ga đầu tuyến trước giờ khởi hành 10 giây. Phải tránh xung đột lịch giữa các tàu dùng chung ray, kể cả tàu ghép (Tohoku + Akita/Yamagata xuất phát chung một khung giờ từ Tokyo).
    - **Nhất quán với giao diện lái:** tàu ngược chiều, tàu thông qua, tàu đỗ hiện trên minimap/buồng lái phải **cùng một nguồn kịch bản** với bản đồ toàn quốc. Trạng thái tàu đang dừng ở ga theo các sự kiện đã làm (chờ tàu vượt, mưa...). Chấp nhận ùn ứ lịch trình do ngoại cảnh (ví dụ động đất làm trễ các tàu đi qua vùng đó): ngoài lịch baseline cố định có thể **phát sinh lịch linh hoạt** do sự kiện ngoài ý muốn.
    - **Điều khiển bản đồ:** zoom bằng con lăn chuột, nền sáng/tối, nút định vị tàu của người chơi.
    - **Thời tiết, thiên tai ngẫu nhiên:** phủ thành layer lên vùng bị ảnh hưởng; ray và tàu trong vùng đó chịu ảnh hưởng đúng thực tế.
@@ -33,7 +33,7 @@
    - Cần xác minh trước khi làm: toạ độ ga thật của cả 10 tuyến (hiện dữ liệu có vĩ độ/kinh độ cho các ga trong 7 tuyến, chưa kể Okinawa/đảo; Okinawa không có Shinkansen nên cần hỏi ý định hiện đảo nhỏ: chỉ làm nền hay có nội dung), màu chính thức từng tuyến, và nguồn bản đồ nền (ranh giới hành chính, dữ liệu mở có giấy phép).
 
    - **Bổ sung (người dùng, 2026-10-27):**
-     - **Vòng đời tàu trên bản đồ:** tàu đến ga đích thì **biến mất sau 10 giây**; tàu chuẩn bị xuất phát ở ga đầu thì **hiện sớm 10 giây** (thay cho khoảng 3 đến 5 phút nêu ở trên: cần thống nhất lại con số, mặc định theo bổ sung mới này).
+     - **Vòng đời tàu trên bản đồ:** tàu đến ga đích thì **biến mất sau 10 giây**; tàu chuẩn bị xuất phát ở ga đầu thì **hiện sớm 10 giây** (**chốt 10 giây**, thay cho khoảng 3 đến 5 phút nêu ở trên).
      - **Đã chốt:** nhất quán nguồn kịch bản giữa bản đồ toàn quốc và giao diện lái.
      - **Đã chốt:** có đúng **10 tuyến**; ba tuyến gộp (Tokaido-Sanyo-Kyushu, Tohoku-Hokkaido, ...) vẫn tính là các tuyến riêng và **mỗi phân đoạn một màu** riêng.
      - **Đã chốt:** toạ độ ga phải là **toạ độ thật của cả 10 tuyến**; màu chính thức từng tuyến lấy trên **Wikipedia**; Okinawa và các đảo chỉ làm **nền** (không có nội dung).
