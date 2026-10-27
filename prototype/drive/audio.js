@@ -151,7 +151,7 @@
     const sp = Math.min(1, v / 80), frc = T.f, inTun = this.inTunnel(W, T), dw = T.phase === 'dwell', run = T.phase === 'run';
     // tiếng chạy; trong hầm ù to hơn và gió nhỏ đi
     const cabK = this.cabin ? 0.3 : 1;      // chế độ ù cabin: bớt tiếng chạy và gió thô
-    set(this.cab, this.cabin ? 0.13 + 0.4 * Math.pow(sp, 0.5) : 0, 0.8);      // ù liên tục (không phụ thuộc cột điện, ghi), to hơn bản đầu
+    set(this.cab, this.cabin && v > 0.5 ? 0.6 * Math.pow(sp, 0.6) : 0, 0.5); this.cab.f.frequency.setTargetAtTime(150 + 480 * sp, t, 0.4);      // tỉ lệ theo tốc độ: đứng yên thì im, nhanh thì to và cao dần      // ù liên tục (không phụ thuộc cột điện, ghi), to hơn bản đầu
     set(this.rumble, cabK * (0.55 * Math.pow(sp, 0.8) + (v > 0.3 ? 0.04 : 0)) * (inTun ? 1.5 : 1));
     this.rumble.f.frequency.setTargetAtTime(this.cabin ? 70 + 90 * sp : 90 + 420 * sp, t, 0.2);
     set(this.wind, (this.cabin ? 0.05 : 1) * 0.32 * Math.pow(sp, 2.2) * (inTun ? 0.55 : 1) * (1 + 0.15 * Math.sin(now / 1900)));
