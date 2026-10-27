@@ -111,7 +111,7 @@
     <p class="dim" style="font-size:12px;margin:14px 0 0">Chọn xong sẽ sang trang phím bấm. Đổi chế độ lúc nào cũng được ở thanh trên cùng. <button class="link" id="wSkip">Bỏ qua, tự khám phá</button></p></div>
   <div id="w2" style="display:none"><h2>Phím bấm</h2><p class="dim" id="w2sub"></p><div class="keys">
     <div><b>W / S</b> tăng / giảm cần kéo</div><div><b>↓ / ↑</b> tăng / giảm phanh</div><div><b>Space</b> về N</div><div><b>Q</b> phanh khẩn</div><div><b>Enter</b> đóng cửa</div><div><b>C</b> tốc độ không đổi</div>
-    <div><b>P</b> còi</div><div><b>Esc</b> tạm dừng</div><div><b>A / G</b> ATC / cần vẹt</div><div><b>V / L</b> gạt mưa / đèn pha</div><div><b>Y / N</b> nhắc lệnh / từ chối</div><div><b>M</b> phát thanh</div><div><b>Tab</b> đổi khung nhìn</div><div><b>F9</b> chụp cảnh</div><div><b>J</b> ù cabin máy bay</div></div>
+    <div><b>P</b> còi</div><div><b>Esc</b> tạm dừng</div><div><b>A / G</b> ATC / cần vẹt</div><div><b>V / L</b> gạt mưa / đèn pha</div><div><b>Y / N</b> nhắc lệnh / từ chối</div><div><b>M</b> phát thanh</div><div><b>Tab</b> đổi khung nhìn</div><div><b>F9</b> chụp cảnh</div><div><b>J</b> ù cabin máy bay</div><div><b>D</b> bản đồ toàn quốc</div></div>
     <p class="dim" style="font-size:12px;margin:12px 0 0">Bảng đầy đủ nằm ở cột phải (chế độ lái) và README.</p></div>
   <div id="w3" style="display:none"><h2>Ghi công tài nguyên</h2><p class="dim" style="font-size:13px">Game dùng tài nguyên của nhiều người. Mã nguồn theo MIT; các tài nguyên dưới đây giữ giấy phép riêng.</p>
     <table><tr><td>Hình tàu 2D, hình mặt trước</td><td>K.Y. Chung (rail.kychung.com), CC BY-NC-ND 4.0</td></tr><tr><td>Bản đồ, nhà, đường, cây</td><td>© OpenStreetMap contributors, ODbL</td></tr><tr><td>Tiếng nền ga Odawara</td><td>Flavien Gillié, Internet Archive, Public Domain</td></tr><tr><td>Biểu tượng tab</td><td>JR West, Wikimedia Commons</td></tr><tr><td>Bố trí ga</td><td>Wikipedia tiếng Nhật, CC BY-SA 4.0</td></tr><tr><td>Lịch tàu thật 10/2026</td><td>JR East, JR West (dữ liệu thuộc chủ sở hữu)</td></tr></table>
@@ -134,7 +134,7 @@
   </div>
   <div class="row">
     <div class="grp">Âm thanh và cảnh</div>
-    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60">
+    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label class="inl" title="Bản đồ nhỏ: ray hướng tàu ta đi tô theo màu chính thức của tuyến đang lái (mặc định xanh biển)"><input type="checkbox" id="topcol"> minimap: ray theo màu tuyến</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60">
     <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
     <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option></select></label>
   </div>
@@ -154,6 +154,8 @@
 <script src="cabview.js"></script>
 <script src="winview.js"></script>
 <script src="topview.js"></script>
+<script src="japanmap.js"></script>
+<script src="natmap.js"></script>
 <script src="fullui.js"></script>
 <script src="audio.js"></script>
 <script src="tutorial.js"></script>
@@ -291,7 +293,7 @@ $('tabTut').onclick = () => { if (mode === 'tutorial') return; if (tutLessonActi
 // ---- lưu cài đặt
 const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('scenery').value = S.scenery === 'lite' ? 'lite' : 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
-$('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
+$('snd').onchange = () => { AUD.unlock(); sndUpd(); }; window.TOPCOL = !!S.topcol; $('topcol').checked = !!S.topcol; $('topcol').onchange = () => { window.TOPCOL = $('topcol').checked; Store.setting('topcol', window.TOPCOL); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
 $('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
 AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('snd').checked;
 $('fsBtn').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); } catch (e) { } };
@@ -342,8 +344,10 @@ addEventListener('keydown', e => {
   if (mode === 'dispatch') { if (Dispatch.key(e)) e.preventDefault(); return; }
   if (!W || mode === 'profile') return;
   if (k === 'j' || k === 'J') { AUD.unlock(); cabinSet(!AUD.cabin); e.preventDefault(); return; }
+  if (k === 'Escape' && ui.nat) { ui.nat = false; e.preventDefault(); return; }
   if (k === 'Escape' || ((k === 'p' || k === 'P') && mode === 'dispatch')) { paused = !paused; e.preventDefault(); return; }
   if ((k === 'p' || k === 'P') && W) { doAct('horn'); e.preventDefault(); return; }
+  if ((k === 'd' || k === 'D') && W && mode !== 'dispatch') { ui.nat = !ui.nat; e.preventDefault(); return; }
   if (k === 'Tab' && T.finished) { endPage = (endPage + 1) % 2; e.preventDefault(); return; }
   if (k === 'Tab' && ui.cur === 'full') { cycleMain(); e.preventDefault(); return; }
   if ((k === ',' || k === '.') && ui.cur === 'full') { const v = k === ',' ? 'winL' : 'winR'; ui.main = ui.main === v ? 'cab' : v; e.preventDefault(); return; }
@@ -371,14 +375,15 @@ addEventListener('keydown', e => {
 });
 const radio = { w: null, scroll: 0, total: 0, max: 0, viewH: 0, top: 0, x0: 0, x1: 0, bar: null, drag: null };
 const cvXY = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W_ / r.width, (e.clientY - r.top) * H_ / r.height]; };
-cv.addEventListener('wheel', e => { if ((mode !== 'drive' && mode !== 'tutorial') || !W) return; const [x, y] = cvXY(e); if (x >= radio.x0 && x <= radio.x1 && y >= radio.top - 4 && radio.max > 0) { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + e.deltaY * 0.6)); e.preventDefault(); } }, { passive: false });
-cv.addEventListener('mousedown', e => { if (!radio.bar) return; const [x, y] = cvXY(e), b = radio.bar; if (x >= b.x - 4 && x <= b.x + b.w + 4) { if (y >= b.y && y <= b.y + b.h) radio.drag = { dy: y - b.y }; else { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + (y < b.y ? -1 : 1) * radio.viewH * 0.8)); } e.preventDefault(); } });
-window.addEventListener('mousemove', e => { if (!radio.drag) return; const [, y] = cvXY(e), th = radio.bar.h, f = (y - radio.drag.dy - radio.top) / Math.max(1, radio.viewH - th); radio.scroll = Math.max(0, Math.min(radio.max, f * radio.max)); });
-window.addEventListener('mouseup', () => { radio.drag = null; });
+cv.addEventListener('wheel', e => { if ((mode !== 'drive' && mode !== 'tutorial') || !W) return; const [x, y] = cvXY(e); if (ui.nat && NatMap.wheel(x, y, e.deltaY)) { e.preventDefault(); return; } if (x >= radio.x0 && x <= radio.x1 && y >= radio.top - 4 && radio.max > 0) { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + e.deltaY * 0.6)); e.preventDefault(); } }, { passive: false });
+cv.addEventListener('mousedown', e => { if (ui.nat) { const [nx, ny] = cvXY(e); NatMap.down(nx, ny); return; } if (!radio.bar) return; const [x, y] = cvXY(e), b = radio.bar; if (x >= b.x - 4 && x <= b.x + b.w + 4) { if (y >= b.y && y <= b.y + b.h) radio.drag = { dy: y - b.y }; else { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + (y < b.y ? -1 : 1) * radio.viewH * 0.8)); } e.preventDefault(); } });
+window.addEventListener('mousemove', e => { if (ui.nat) { const [nx, ny] = cvXY(e); NatMap.move(nx, ny); } if (!radio.drag) return; const [, y] = cvXY(e), th = radio.bar.h, f = (y - radio.drag.dy - radio.top) / Math.max(1, radio.viewH - th); radio.scroll = Math.max(0, Math.min(radio.max, f * radio.max)); });
+window.addEventListener('mouseup', () => { radio.drag = null; if (ui.nat) window.__natMoved = NatMap.up(); });
 cv.addEventListener('click', e => {
   const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * W_ / r.width, y = (e.clientY - r.top) * H_ / r.height;
   if (mode === 'dispatch') { Dispatch.click(x - OX, y); return; }
   for (const b of btns) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { b.fn(); return; }
+  if (ui.nat) { if (window.__natMoved) { window.__natMoved = false; return; } NatMap.click(x, y); }
 });
 
 // ---- vòng lặp

@@ -514,4 +514,15 @@ if (section('26. Tuyến mini: chỉ ga Tokyo chọn đường dừng / qua ghi 
       ok(W.termPick && W.termPick[last] === undefined, `${ln} ${dir}: ga cuối nhánh không có termPick (không qua ghi chữ X)`, JSON.stringify(W.termPick)); } }
 }
 
+if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu đoạn đi chung')) {
+  require(path.join(DRIVE, 'japanmap.js')); require(path.join(DRIVE, 'natmap.js')); const noop = () => {}, ctx = new Proxy({}, { get: (t, k) => k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop), set: (t, k, v) => { t[k] = v; return true; } });
+  ok(window.JPMAP && window.JPMAP.length === 47, 'japanmap.js có 47 tỉnh');
+  let err = null, n = 0; const o = { txt: noop, button: noop, close: noop, save: noop };
+  for (const ln of ['tsk', 'toh', 'nks', 'yam']) { const L = Sim.lineOf(ln), r = L.trains.find(t => t.d === 'down' && t.s.filter(e => !e[3]).length >= 2); if (!r) continue; const st = r.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld(ln, Sim.makeTrip(ln, r, st[0], st[st.length - 1]), { diff: 'easy', seed: 4, lead: false, events: false }), T = W.player;
+    for (const t of [0, 600, 3000, 9000]) { W.t = t; T.x = Sim.sOfKm(st.length * 7 % L.kmEnd, 'down', L.kmEnd); try { NatMap.draw(ctx, 0, 58, 1920, 618, W, T, o); n++; } catch (e) { err = ln + ' ' + e.message; } }
+    NatMap.V.sel = { en: 'Tokyo' }; try { NatMap.draw(ctx, 0, 58, 1920, 618, W, T, o); n++; } catch (e) { err = ln + ' thẻ ga ' + e.message; } NatMap.V.sel = null; }
+  ok(!err && n >= 20, 'vẽ bản đồ không lỗi (' + n + ' khung)', err);
+  ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

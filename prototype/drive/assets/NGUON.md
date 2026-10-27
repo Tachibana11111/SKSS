@@ -44,3 +44,6 @@ Hình mặt trước (`front_*`) cắt từ góc các ảnh này bằng `tools/b
 
 ## Biểu tượng tab trang (logo.png)
 `logo.png` (304×299): pictogram Shinkansen của 西日本旅客鉄道 (JR West), [File:Shinkansen-W.png](https://commons.wikimedia.org/wiki/File:Shinkansen-W.png) trên Wikimedia Commons, **CC BY-SA 4.0**; tải trực tiếp từ https://upload.wikimedia.org/wikipedia/commons/8/88/Shinkansen-W.png ngày 2026-10-23 theo yêu cầu của người dùng. Chưa chỉnh sửa. Dùng làm favicon (`<link rel="icon">` trong `index.html`).
+
+## Bản đồ nền toàn quốc (japanmap.js)
+Ranh giới 47 tỉnh Nhật Bản từ **geoBoundaries** (gbOpen, JPN ADM1, dữ liệu năm 2017), https://www.geoboundaries.org, giấy phép **ODbL 1.0**: phải ghi nguồn, bản dẫn xuất giữ cùng giấy phép. File gốc 2,2 MB nằm ở `tools/data-src/` (không đưa lên git); `tools/build_japan.py` đơn giản hoá thành `prototype/drive/japanmap.js` (~60 KB).

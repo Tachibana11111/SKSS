@@ -66,7 +66,7 @@
       const ys = Y(q.dm); if (ys > cy - Rr && ys < cy + Rr) { ctx.fillStyle = '#4cd68a'; ctx.fillRect(cx - (q.st.ours.x - lane) * kx - off(q.d) * kc - 9, ys - 1, 18, 2); } }
     const rail = (xf, z0, z1, col) => { for (const sx of [-0.72, 0.72]) line(z => xf(z) + sx, z0, z1, 1.2, col); };
     for (const [xf, z0, z1] of tracks) if (z1 > z0) rail(xf, z0, z1, dark ? '#7a8594' : '#d2d9e0');
-    rail(ourPath, zOff - len, zHi, '#4aa3ff');
+    rail(ourPath, zOff - len, zHi, (root.TOPCOL && root.NatMap && root.NatMap.playerCol(W, T)) || '#4aa3ff');      // tuỳ chọn: ray của ta theo màu tuyến đang lái
     for (const q of sts) for (const zc of [q.d - 1300, q.d + 720]) { if (zc + 150 < zLo || zc > zHi) continue; const sm = u => { const t = clamp(u, 0, 1); return t * t * (3 - 2 * t); };
       rail(z => lerp(0, oppAt(z), sm((z - zc) / 150)), zc, zc + 150, dark ? '#7a8594' : '#d2d9e0'); rail(z => lerp(oppAt(z), 0, sm((z - zc) / 150)), zc, zc + 150, dark ? '#7a8594' : '#d2d9e0'); }
     for (const z of S.turnoutZones(T)) { const a = z.s0 - T.x, b = z.s1 - T.x; if (b < zLo || a > zHi) continue; ctx.fillStyle = 'rgba(255,194,71,.10)'; ctx.fillRect(cx - Rr, Y(Math.min(b, zHi)), 2 * Rr, Y(Math.max(a, zLo)) - Y(Math.min(b, zHi))); }
