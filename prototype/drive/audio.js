@@ -150,11 +150,11 @@
     const set = (node, val, tc) => node.g.gain.setTargetAtTime(active ? val : 0, t, tc || 0.12);
     const sp = Math.min(1, v / 80), frc = T.f, inTun = this.inTunnel(W, T), dw = T.phase === 'dwell', run = T.phase === 'run';
     // tiếng chạy; trong hầm ù to hơn và gió nhỏ đi
-    const cabK = this.cabin ? 0.45 : 1;      // chế độ ù cabin: bớt tiếng chạy và gió thô
+    const cabK = this.cabin ? 0.3 : 1;      // chế độ ù cabin: bớt tiếng chạy và gió thô
     set(this.cab, this.cabin ? 0.04 + 0.2 * Math.pow(sp, 0.7) : 0, 0.6); this.cabG.gain.setTargetAtTime(this.cabin ? 0.02 + 0.08 * Math.pow(sp, 0.6) : 0, t, 0.6);
     set(this.rumble, cabK * (0.55 * Math.pow(sp, 0.8) + (v > 0.3 ? 0.04 : 0)) * (inTun ? 1.5 : 1));
-    this.rumble.f.frequency.setTargetAtTime(90 + 420 * sp, t, 0.2);
-    set(this.wind, cabK * 0.32 * Math.pow(sp, 2.2) * (inTun ? 0.55 : 1) * (1 + 0.15 * Math.sin(now / 1900)));
+    this.rumble.f.frequency.setTargetAtTime(this.cabin ? 70 + 90 * sp : 90 + 420 * sp, t, 0.2);
+    set(this.wind, (this.cabin ? 0.05 : 1) * 0.32 * Math.pow(sp, 2.2) * (inTun ? 0.55 : 1) * (1 + 0.15 * Math.sin(now / 1900)));
     this.wind.f.frequency.setTargetAtTime(500 + 1900 * sp, t, 0.2);
     set(this.rain, W.rainHere ? 0.1 : 0);
     const windy = W.zones.some(z => z.kind === 'wind' && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 - 25000 && T.x < z.s1 + 5000);
@@ -163,7 +163,7 @@
     const drive = frc > 0 ? frc : Math.min(0.4, -frc * 0.5);
     this.motorO.frequency.setTargetAtTime(60 + kmh * 3.2, t, 0.08); this.motorO2.frequency.setTargetAtTime((60 + kmh * 3.2) * 2.01, t, 0.08);
     this.motor.f.frequency.setTargetAtTime(500 + kmh * 7, t, 0.1);
-    set(this.motor, v > 1 && !T.cut ? 0.05 * drive * Math.min(1, v / 30) : 0, 0.15);
+    set(this.motor, v > 1 && !T.cut && !this.cabin ? 0.05 * drive * Math.min(1, v / 30) : 0, 0.15);
     set(this.hvac, 0.012 + 0.006 * sp, 0.4);
     set(this.squeal, frc < -0.15 && v > 0.5 && v < 22 ? 0.06 * Math.min(1, -frc) * (1 - v / 22) : 0, 0.05);
     set(this.hiss, T.prevF !== undefined && T.prevF < -0.3 && frc > T.prevF + 0.01 && v < 40 ? 0.12 : 0, 0.08);

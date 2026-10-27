@@ -194,7 +194,7 @@
     // camera sau: đèn đuôi đỏ của chính đoàn tàu ta (luôn có, rõ hơn ở vùng tối): hai đèn đỏ nhỏ và vệt đỏ mờ trên đường ngay sau đuôi
     if (W.rear) { const dk = clamp(night * 0.9 + (zExit !== null ? 0.9 : 0) + wx * 0.5, 0, 1), lvl = 0.5 + 0.5 * dk, cx0 = c.lane;
       const rg = ctx.createLinearGradient(0, py + ph, 0, c.hy + 4); rg.addColorStop(0, 'rgba(255,40,30,' + (0.10 + 0.34 * dk) + ')'); rg.addColorStop(0.35, 'rgba(255,40,30,' + (0.04 + 0.14 * dk) + ')'); rg.addColorStop(1, 'rgba(255,40,30,0)'); strip(z => cx0 - 2.2, z => cx0 + 2.2, 0.01, ZN, 70, rg);
-      for (const xs of [-0.95, 0.95]) { const a = P(cx0 + xs, 0.35, 9), gr = (7 + 26 * dk) * (c.f / 520), g = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], gr); g.addColorStop(0, 'rgba(255,70,50,' + Math.min(1, 0.95 * lvl) + ')'); g.addColorStop(0.3, 'rgba(255,40,30,' + 0.5 * lvl + ')'); g.addColorStop(1, 'rgba(255,40,30,0)'); ctx.fillStyle = g; ctx.fillRect(a[0] - gr, a[1] - gr, gr * 2, gr * 2); ctx.fillStyle = 'rgba(255,120,100,' + lvl + ')'; ctx.beginPath(); ctx.arc(a[0], a[1], Math.max(1.5, 2.2 * c.f / 520), 0, 7); ctx.fill(); } }
+}
     // ---- sân ga theo bố trí thật của từng ga (hàm: vẽ được cả bên ngoài lẫn nhìn qua cửa hầm vào ga ngầm)
     sink = items;
     // ---- tường bao quanh ga: hai bên phạm vi sân ga là tường bê tông + tấm chắn trong suốt cao (không còn hở ra ngoài), đoạn cổ ga (đường toả ra) là hàng rào thấp hơn;
