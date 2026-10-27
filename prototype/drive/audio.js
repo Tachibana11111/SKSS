@@ -192,7 +192,7 @@
     if (v > 40) { const sec = Math.floor(T.x / 20000); if (p.sec !== undefined && sec !== p.sec) this.insulator(); p.sec = sec; } else p.sec = undefined;
     if (inTun && !p.tun && v > 30) this.tunnelBoom(); if (!inTun && p.tun && v > 30) this.tunnelExit();
     // ---- sự kiện ----
-    if (T.horn > 1.3 && !(p.horn > 1.3)) this.horn();
+    if ((T.hornN || 0) !== (p.hornN || 0)) this.horn();      // đếm số lần bấm còi, không dựa vào T.horn (bấm một lần rồi giảm về 0 trong 0,1 s: khung hình chậm sẽ bỏ lỡ)
     if (T.atc && !p.atc) this.atcAlarm();
     if (T.needConfirm && t - this.lastConfirmBeep > 1.4) { this.tone(1000, 0.1, 'square', 0.08); this.lastConfirmBeep = t; }
     if (T.door === 'closing' && p.door !== 'closing') { this.doorChime(); if (T.k > 0 || T.started) this.platformBell(); }
@@ -211,7 +211,7 @@
     if ((W.wires || []).length > (p.wires || 0)) { this.burst(1.2, 0.4, 3000, 0.6, 'bandpass'); this.tone(90, 0.5, 'sawtooth', 0.12); } p.wires = (W.wires || []).length;
     if (W.paEvent !== undefined && W.paEvent !== p.pa) { this.tone(880, 0.15, 'sine', 0.14); this.tone(1175, 0.35, 'sine', 0.14, 0.18); } p.pa = W.paEvent;
     this.announce(W, T, p);
-    this.prev = Object.assign(p, { horn: T.horn, atc: T.atc, door: T.door, phase: T.phase, eqk: W.eqkActive, finished: T.finished, pw: T.pw, bk: T.bk, tun: inTun, animalHit: T.animalHit });
+    this.prev = Object.assign(p, { horn: T.horn, hornN: T.hornN, atc: T.atc, door: T.door, phase: T.phase, eqk: W.eqkActive, finished: T.finished, pw: T.pw, bk: T.bk, tun: inTun, animalHit: T.animalHit });
   };
   GameAudio.prototype.inTunnel = function (W, T) {
     return root.Sim.inTunnel(W, T.x);

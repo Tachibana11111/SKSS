@@ -290,7 +290,7 @@
   const lampOn = (W, T) => !T.cut && (T.lamp === 'on' || (T.lamp !== 'off' && needsLight(W, T)));
   function cycleLamp(T) { T.lamp = T.lamp === 'auto' ? 'on' : T.lamp === 'on' ? 'off' : 'auto'; }
   function honk(T) {
-    const W = T.W; if (W.t - T.hornAt < 0.6 && T.started) return; T.hornAt = W.t; T.horn = 1.4;
+    const W = T.W; if (W.t - T.hornAt < 0.6 && T.started) return; T.hornAt = W.t; T.horn = 1.4; T.hornN = (T.hornN || 0) + 1;
     for (const z of W.workers || []) if (!z.checked && T.x >= z.s0 - 800 && T.x <= z.s1) z.hornOK = true;
     for (const an of W.animals || []) if (!an.resolved && an.active && T.x >= an.s - 1500 && T.x <= an.s - 100) { an.hornOK = true; if (an.fleeT0 === undefined) an.fleeT0 = W.t; }
   }
