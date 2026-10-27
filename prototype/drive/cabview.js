@@ -153,7 +153,9 @@
     };
     const drawTracks = (zFrom) => {
       const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]];
-      for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj; if (b > zf && a < ZF) parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95], [z => S.trunkOff(W, T.x + z) + ADJ, Math.max(zf, a), Math.min(ZF, b), 0.95]); }       // đường chính của tuyến cha (Tohoku / Joetsu)
+      for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x; let a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj;
+        if (b > zf && a < ZF && S.inTunnel(W, T.x + sj)) { let lo = Infinity, hi = -Infinity; for (let z = Math.max(a, zf - 40); z <= Math.min(b, ZF); z += 15) if (Math.abs(S.trunkOff(W, T.x + z)) < TRUNK_SEP) { if (z < lo) lo = z; hi = z; } if (lo === Infinity) continue; a = Math.max(a, lo - 15); b = Math.min(b, hi + 15); }      // trong hầm: đường của nhánh kia bị khối đá che cho tới chỗ hai vỏ hầm nhập
+        if (b > zf && a < ZF) parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95], [z => S.trunkOff(W, T.x + z) + ADJ, Math.max(zf, a), Math.min(ZF, b), 0.95]); }       // đường chính của tuyến cha (Tohoku / Joetsu)
       for (const q of sts) for (const t of q.st.tracks) { if (t.main || t.in0 === undefined) continue; const za = rr ? q.d - t.out0 - t.len : q.d - t.in0, zb = rr ? q.d + t.in0 : q.d + t.out0 + t.len; if (zb < ZN || za > ZF) continue; parts.push([z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), Math.max(zf, za), zb, 0.95]); }      // mỗi đường ga chỉ tồn tại giữa điểm tách và điểm nhập (hình chữ Y)
       for (const [xf, z0, z1, a] of parts) ballastStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), a);       // đá dăm trước: đường nhánh không còn đè lên ray đường chính; đường ray dừng ở chắn cuối đường
       for (const [xf, z0, z1] of parts) railStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), true);
@@ -171,8 +173,8 @@
     };
     // khung cửa ra hầm: hầm thường là vòm; ga ngầm (Tokyo, Ueno của Tohoku) mở rộng bằng cả bề ngang sân ga
     // vỏ hầm hẹp ôm sát các đường ray: biên trái/phải = đường ngoài cùng (đường ngược chiều, đường ga, đường chính tuyến cha ở đoạn rẽ nhánh) ± chừa 2,7 m; rộng ra/hẹp lại theo ghi
-    const spanMemo = new Map(), tunSpan = z => { const key = Math.round(z * 2); let r = spanMemo.get(key); if (r) return r; let lo = 0, hi = 0; const add = x => { if (x < lo) lo = x; if (x > hi) hi = x; }; add(oppAt(z));
-      for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj; if (z >= a && z <= b) { add(S.trunkOff(W, T.x + z)); add(S.trunkOff(W, T.x + z) + ADJ); } }
+    const TRUNK_SEP = 5.4, spanMemo = new Map(), tunSpan = z => { const key = Math.round(z * 2); let r = spanMemo.get(key); if (r) return r; let lo = 0, hi = 0; const add = x => { if (x < lo) lo = x; if (x > hi) hi = x; }; add(oppAt(z));
+      for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj; if (z >= a && z <= b && S.inTunnel(W, T.x + sj)) { const o = S.trunkOff(W, T.x + z); if (Math.abs(o) < TRUNK_SEP) { add(o); add(o + ADJ); } } }      // hai vỏ hầm riêng (hướng A): vỏ của nhánh kia chỉ nhập vào khi hai đường đã sát nhau; khối đá giữa che đường của nhánh kia
       for (const q of sts) for (const t of q.st.tracks) { if (t.main || t.in0 === undefined) continue; const za = rr ? q.d - t.out0 - t.len : q.d - t.in0, zb = rr ? q.d + t.in0 : q.d + t.out0 + t.len; if (z >= za && z <= zb) add(lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s))); }
       r = [lo - 2.7, hi + 2.7]; spanMemo.set(key, r); return r; };
     const openingPoly = () => { if (zExit === null || zExit <= ZN) return null; const z = zExit, near = sts.filter(q => Math.abs(q.d - z) < 150 && q.st.extent), wide = near.length ? [Math.min(...near.map(q => q.st.extent[0])) - 0.8, Math.max(...near.map(q => q.st.extent[1])) + 0.8] : null, pts = [];
