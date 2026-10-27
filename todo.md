@@ -43,4 +43,4 @@
 
 10. **Âm thanh tàu ở tốc độ cao nghe như ngồi cạnh động cơ máy bay.** Bổ sung kiểu âm **ù ù như trong cabin máy bay thương mại** (tiếng nền trầm, đều, đã lọc bớt). Bật/tắt bằng **phím J** (đã chốt 2026-10-27; K bị trùng với đánh dấu lỗi và bỏ qua bước hướng dẫn), **không** thêm vào lưới 10 nút điều khiển tàu hiện tại; là **lựa chọn mới ở menu cột phải** (cạnh phần Âm thanh). Khi làm: kiểm lại bằng cách quét toàn bộ mã xem J có thật sự chưa dùng không, và ghi phím J vào wizard, README.
 
-11. ~~Camera sau (phím B) không có đèn của chính đoàn tàu~~ **Huỷ (2026-10-27): không phải lỗi.** Camera sau đặt ở đuôi đoàn, đèn pha là đèn ở đầu tàu nên nhìn lùi không có chùm đèn là đúng; người dùng xác nhận là nên không có.
+11. **[Lỗi] Camera sau (phím B) đang hiện chùm đèn pha** (làm rõ 2026-10-27): khi cho tàu xuất phát ban đêm, camera trước có đèn pha là đúng, nhưng camera sau (đặt ở đuôi đoàn) cũng bật chùm đèn pha chiếu phía sau thì sai, vì đèn pha là đèn ở đầu tàu. Cần tắt chùm đèn pha (`lampOn`/`lightLvl`, vệt sáng trên đường) khi vẽ ở chế độ camera sau (`W.rear`); nếu muốn có đèn thì chỉ là đèn đuôi đỏ nhỏ, tuỳ chọn.
