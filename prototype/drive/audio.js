@@ -151,7 +151,7 @@
     const sp = Math.min(1, v / 80), frc = T.f, inTun = this.inTunnel(W, T), dw = T.phase === 'dwell', run = T.phase === 'run';
     // tiếng chạy; trong hầm ù to hơn và gió nhỏ đi
     const cabK = this.cabin ? 0.3 : 1;      // chế độ ù cabin: bớt tiếng chạy và gió thô
-    set(this.cab, this.cabin ? 0.04 + 0.2 * Math.pow(sp, 0.7) : 0, 0.6); this.cabG.gain.setTargetAtTime(this.cabin ? 0.02 + 0.08 * Math.pow(sp, 0.6) : 0, t, 0.6);
+    set(this.cab, this.cabin ? 0.09 + 0.3 * Math.pow(sp, 0.5) : 0, 0.8); this.cabG.gain.setTargetAtTime(this.cabin ? 0.05 + 0.12 * Math.pow(sp, 0.5) : 0, t, 0.8);      // ù liên tục (không phụ thuộc cột điện, ghi), to hơn bản đầu
     set(this.rumble, cabK * (0.55 * Math.pow(sp, 0.8) + (v > 0.3 ? 0.04 : 0)) * (inTun ? 1.5 : 1));
     this.rumble.f.frequency.setTargetAtTime(this.cabin ? 70 + 90 * sp : 90 + 420 * sp, t, 0.2);
     set(this.wind, (this.cabin ? 0.05 : 1) * 0.32 * Math.pow(sp, 2.2) * (inTun ? 0.55 : 1) * (1 + 0.15 * Math.sin(now / 1900)));
@@ -169,8 +169,8 @@
     set(this.hiss, T.prevF !== undefined && T.prevF < -0.3 && frc > T.prevF + 0.01 && v < 40 ? 0.12 : 0, 0.08);
     T.prevF = frc;
     // trụ điện lướt qua (mỗi 50 m)
-    if (active && v > 3 && root.Sim.switchPoints) { const px0 = this.prevSw; if (px0 !== undefined && T.x > px0 && T.x - px0 < 200) for (const p of root.Sim.switchPoints(T)) if (px0 < p && T.x >= p) this.switchClatter(v); this.prevSw = T.x; } else this.prevSw = undefined;
-    if (active && v > 8) { const idx = Math.floor(T.x / 50); if (this.lastMast !== undefined && idx !== this.lastMast) this.burst(0.09, 0.05 + 0.18 * sp, 700 + 900 * sp, 0.8); this.lastMast = idx; } else this.lastMast = undefined;
+    if (active && v > 3 && root.Sim.switchPoints) { const px0 = this.prevSw; if (px0 !== undefined && T.x > px0 && T.x - px0 < 200 && !this.cabin) for (const p of root.Sim.switchPoints(T)) if (px0 < p && T.x >= p) this.switchClatter(v); this.prevSw = T.x; } else this.prevSw = undefined;
+    if (active && v > 8) { const idx = Math.floor(T.x / 50); if (this.lastMast !== undefined && idx !== this.lastMast && !this.cabin) this.burst(0.09, 0.05 + 0.18 * sp, 700 + 900 * sp, 0.8); this.lastMast = idx; } else this.lastMast = undefined;
     if (!this.enabled || st.paused) { this.ambience(0); return; }
     // ---- âm theo thời gian thực: máy nén khí, tàu ngược chiều, sấm, ho, em bé, bước chân ----
     const R = this.rt; if (st.scale <= 1) {
