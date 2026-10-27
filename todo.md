@@ -42,3 +42,5 @@
      - **Minimap của người chơi:** hiện đường ray (hai đường của hướng tàu ta đi) mặc định màu xanh biển; thêm tuỳ chọn **đổi sang màu của tuyến đang lái** (màu chính thức nói trên).
 
 10. **Âm thanh tàu ở tốc độ cao nghe như ngồi cạnh động cơ máy bay.** Bổ sung kiểu âm **ù ù như trong cabin máy bay thương mại** (tiếng nền trầm, đều, đã lọc bớt). Bật/tắt bằng **phím J** (đã chốt 2026-10-27; K bị trùng với đánh dấu lỗi và bỏ qua bước hướng dẫn), **không** thêm vào lưới 10 nút điều khiển tàu hiện tại; là **lựa chọn mới ở menu cột phải** (cạnh phần Âm thanh). Khi làm: kiểm lại bằng cách quét toàn bộ mã xem J có thật sự chưa dùng không, và ghi phím J vào wizard, README.
+
+11. **[Lỗi] Camera sau (phím B) không có đèn.** Ghi theo mô tả của người dùng (2026-10-27): "đã là cam sau thì không có đèn". Chưa rõ đèn nào bị thiếu (đèn trần trong hầm đô thị và ga ngầm, đèn cột sân ga ban đêm, đèn đuôi tàu, hay chùm đèn pha); cần tái hiện bằng F9 chụp cảnh ở cam sau rồi đối chiếu với cam trước. Nghi: camera sau dựng "thế giới phản chiếu" (`drawRear`), có thể mất các bước vẽ đèn phụ thuộc hướng hoặc phụ thuộc vị trí camera.
