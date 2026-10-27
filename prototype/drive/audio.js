@@ -33,7 +33,7 @@
     this.motorO.start(); this.motorO2.start();
     // quạt gió/điều hoà: tiếng ù thấp liên tục
     // tiếng ù cabin máy bay thương mại (bật bằng phím J): nhiễu trầm đã lọc mạnh + hai âm trầm lệch nhau tạo nhịp chậm; khi bật thì tiếng chạy/gió thô giảm bớt [I]
-    this.cab = mk(noise(), flt('lowpass', 380, 0.6), 0); this.cabO = [c.createOscillator(), c.createOscillator()]; const cg = c.createGain(); cg.gain.value = 0; this.cabO.forEach((o, i) => { o.type = 'sine'; o.frequency.value = i ? 91 : 86; o.connect(cg); o.start(); }); cg.connect(this.master); this.cabG = cg;
+    this.cab = mk(noise(), flt('lowpass', 380, 0.6), 0); this.cabO = [c.createOscillator(), c.createOscillator()]; const cg = c.createGain(); cg.gain.value = 0; this.cabO.forEach((o, i) => { o.type = 'sine'; o.frequency.value = i ? 84.4 : 84; o.connect(cg); o.start(); }); cg.connect(this.master); this.cabG = cg;
     this.hvacO = c.createOscillator(); this.hvacO.type = 'sine'; this.hvacO.frequency.value = 118; const hg = c.createGain(); hg.gain.value = 0; this.hvacO.connect(hg); hg.connect(this.master); this.hvac = { g: hg }; this.hvacO.start();
     // bản ghi thật: Odawara (Internet Archive, public domain): nền ga 10–118 s; tàu qua/rời ga ở các đoạn CLIPS
     try { const mk2 = () => { const e = new Audio('assets/audio/odawara_leaving.mp3'); e.preload = 'metadata'; e.volume = 0; return e; }; this.amb = mk2(); this.clipEl = mk2(); this.ambOn = false; this.clipT = 0; } catch (e) { this.amb = null; }
