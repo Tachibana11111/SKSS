@@ -31,3 +31,10 @@
    - **Động đất:** có thang shindo, độ sâu, toạ độ; hiện điểm chấn tâm, **sóng P (vòng lớn, đi trước)** rồi **sóng S (vòng nhỏ hơn, theo sau)**; hoạt ảnh rung chấn kích hoạt khi vành sóng S chạm tới tam giác tàu nào thì tàu đó dừng (liên quan cơ chế `eqk` hiện có).
    - **Giữ minimap hiện tại**, thêm công tắc chuyển sang chế độ toàn quốc (vị trí nút/cách kích hoạt chưa quyết, cần bàn).
    - Cần xác minh trước khi làm: toạ độ ga thật của cả 10 tuyến (hiện dữ liệu có vĩ độ/kinh độ cho các ga trong 7 tuyến, chưa kể Okinawa/đảo; Okinawa không có Shinkansen nên cần hỏi ý định hiện đảo nhỏ: chỉ làm nền hay có nội dung), màu chính thức từng tuyến, và nguồn bản đồ nền (ranh giới hành chính, dữ liệu mở có giấy phép).
+
+   - **Bổ sung (người dùng, 2026-10-27):**
+     - **Vòng đời tàu trên bản đồ:** tàu đến ga đích thì **biến mất sau 10 giây**; tàu chuẩn bị xuất phát ở ga đầu thì **hiện sớm 10 giây** (thay cho khoảng 3 đến 5 phút nêu ở trên: cần thống nhất lại con số, mặc định theo bổ sung mới này).
+     - **Đã chốt:** nhất quán nguồn kịch bản giữa bản đồ toàn quốc và giao diện lái.
+     - **Đã chốt:** có đúng **10 tuyến**; ba tuyến gộp (Tokaido-Sanyo-Kyushu, Tohoku-Hokkaido, ...) vẫn tính là các tuyến riêng và **mỗi phân đoạn một màu** riêng.
+     - **Đã chốt:** toạ độ ga phải là **toạ độ thật của cả 10 tuyến**; màu chính thức từng tuyến lấy trên **Wikipedia**; Okinawa và các đảo chỉ làm **nền** (không có nội dung).
+     - **Minimap của người chơi:** hiện đường ray (hai đường của hướng tàu ta đi) mặc định màu xanh biển; thêm tuỳ chọn **đổi sang màu của tuyến đang lái** (màu chính thức nói trên).
