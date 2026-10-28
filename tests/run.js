@@ -537,6 +537,13 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
         if (prev) for (const [k1, a] of cur) { const a0 = prev.get(k1); if (!a0) continue; for (const [k2, b] of cur) { if (k1 >= k2 || a.dir !== b.dir) continue; const b0 = prev.get(k2); if (!b0) continue; const sg = a.dir === 'down' ? 1 : -1; if ((sg * (a0.km - b0.km)) * (sg * (a.km - b.km)) < 0 && Math.abs(a.km - b.km) > 0.3) flips++; } }
         prev = cur; }
       ok(flips === 0, 'tàu cùng chiều không vượt nhau giữa hai ga trên bản đồ (' + flips + ' lần đổi thứ tự)'); }
+    // đường chung Tohoku–Akita: Komachi về Tokyo không đổi thứ tự với tàu Tohoku (hoặc tàu đi trước thật) giữa hai ga trên bản đồ
+    { const Lk = Sim.lineOf('aki'), rk = Lk.trains.find(t => t.d === 'up' && t.s.filter(e => !e[3]).length >= 2), sk = rk.s.filter(e => !e[3]).map(e => e[0]), Wk = Sim.createWorld('aki', Sim.makeTrip('aki', rk, sk[0], sk[sk.length - 1]), { diff: 'normal', seed: 4, lead: true, events: true }), Tk = Wk.player, LN = window.LINES; Sim.requestClose(Tk); Tk.pw = 13;
+      let n2 = 0, flips2 = 0, prevD = null; while (!Tk.finished && n2++ < 3e5 && Wk.t < 9000) { Sim.tick(Wk, 0.05, {}, true); if (n2 % 200 !== 0) continue; NatCat.step(Wk); const now = Wk.trip.t0 + Wk.t, kmMe = NatCat.refOf(LN, 'aki', Sim.kmOfS(Tk.x, Wk.dir, Wk.line.kmEnd)), cur = new Map();
+        for (const c of NatCat.build(LN)) { if (c.rec.d !== Wk.dir || c.rec === Wk.trip.rec) continue; const d = NatCat.delayOf(Wk, c.key), s2 = NatCat.stateOf(LN, c, now - (d ? d.delay : 0)); if (!s2 || s2.dwell) continue; const rf = NatCat.refOf(LN, c.line, s2.km); if (rf.g === kmMe.g) cur.set(c.key, rf.k); }
+        if (prevD) for (const [k1, v1] of cur) { const v0 = prevD.get(k1); if (v0 === undefined) continue; const sg = Wk.dir === 'down' ? 1 : -1; if ((sg * (v0 - kmMe0)) * (sg * (v1 - kmMe.k)) < 0 && Math.abs(v1 - kmMe.k) > 0.5 && kmMe.g === kmMe0g) flips2++; }
+        prevD = cur; var kmMe0 = kmMe.k, kmMe0g = kmMe.g; }
+      ok(flips2 <= 0, 'tàu của người chơi (Komachi) không vượt tàu Tohoku giữa hai ga trên bản đồ (' + flips2 + ' lần)'); }
     const q = { t: 0, lat: 35, lon: 139, mag: 7, depth: 10 }; ok(NatCat.shindoAt(q, 10) > NatCat.shindoAt(q, 300) && NatCat.shindoAt(q, 10) >= 5, 'shindo giảm theo khoảng cách'); }
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
