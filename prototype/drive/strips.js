@@ -85,7 +85,7 @@
       for (let ti = Math.floor((o.Tx + o.zStart) / TILE); ti <= Math.floor((o.Tx + ze) / TILE); ti++) want.push({ layer: k, side, ti, lvl }); }
     // sinh các tấm còn thiếu (gần trước) trong ngân sách thời gian; khi thiếu nhiều (vừa vào tuyến) thì cho phép lâu hơn
     const missing = want.filter(w => !cache.has(keyOf(o, w))); missing.sort((a, b) => (a.ti - b.ti) || (a.layer - b.layer));
-    const budget = missing.length > 10 ? 22 : 4;
+    const budget = o.tile ? 1.5 : missing.length > 10 ? 22 : 4;      // khung phụ (tile) chỉ được dùng ngân sách nhỏ để không giật khi chuyển sang góc nhìn khác
     for (const w of missing) { if (performance.now() - t0 > budget) break; if (!WD.loaded(o.lid, o.dir, o.kmEnd, w.ti * TILE - 60, (w.ti + 1) * TILE + 60)) continue; const key = keyOf(o, w); const cv = genTile(WD, { lid: o.lid, dir: o.dir, kmEnd: o.kmEnd, dO: o.dO, layer: w.layer, side: w.side, ti: w.ti, lvl }); cache.set(key, { cv, used: frameNo }); }
     if (cache.size > CAP) { const arr = [...cache.entries()].sort((a, b) => a[1].used - b[1].used); for (let i = 0; i < arr.length - CAP + 40; i++) cache.delete(arr[i][0]); }
     const px0 = o.px - 24, px1 = o.px + o.pw + 24, c = o.c, f = c.f, cx = c.cx, hy = c.hy + c.pitch, camX = c.camX, lane = c.lane || 0, CAMH = o.CAMH, MIR = o.MIR;

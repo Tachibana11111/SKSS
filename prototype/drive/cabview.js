@@ -127,7 +127,7 @@
     if (zExit === null) backdrop();
     // ---- dải tranh phong cảnh OSM hai bên (strips.js): thay các khối nhà 3D rời rạc; chỉ vẽ khi đã có dữ liệu và không ở trong hầm
     const useStrips = wdOn && !!root.Strips;
-    if (zExit === null && useStrips) root.Strips.draw(ctx, { WD, lid: W.lineId, dir: W.dir, kmEnd: L.kmEnd, dO: wdOurs, Tx: T.x, c, el: elAt, CAMH, MIR, f: c.f, px, pw, zStart: 4, zEnd: 3000, lite: root.SCENERY === 'lite', edge: (side, z) => side > 0 ? Math.max(xr(z), 0) : Math.max(-xl(z), 0),
+    if (zExit === null && useStrips) root.Strips.draw(ctx, { WD, lid: W.lineId, dir: W.dir, kmEnd: L.kmEnd, dO: wdOurs, Tx: T.x, c, el: elAt, CAMH, MIR, f: c.f, px, pw, zStart: 4, zEnd: 3000, lite: root.SCENERY === 'lite' || !!R.tile, tile: !!R.tile, edge: (side, z) => side > 0 ? Math.max(xr(z), 0) : Math.max(-xl(z), 0),
       tunnel: z => S.structAt(L, km(z)) === 't', alpha: z => fadeA(z), t: day * (1 - wx * 0.4) });
 
     // ---- cầu (sông bên dưới) và cầu cạn: bản mặt cầu bê tông rộng ra theo sân ga, lan can và gờ bệ

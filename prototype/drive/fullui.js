@@ -25,21 +25,27 @@ function cycleMain() { ui.main = VIEWS[(VIEWS.indexOf(ui.main) + 1) % VIEWS.leng
 function drawViewIn(kind, x, y, w, h, g) {
   g = g || ctx;
   g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
-  if (kind === 'cab') (ui.rear ? CabView.drawRear : CabView.draw)(g, x, y, w, h, W, T, { sprites: SPR, fronts: FR, aud: AUD });
+  if (kind === 'cab') (ui.rear ? CabView.drawRear : CabView.draw)(g, x, y, w, h, W, T, { sprites: SPR, fronts: FR, aud: AUD, tile: g !== ctx });
   else if (kind === 'nat') NatMap.drawMini(g, x, y, w, h, W, T, { txt: g === ctx ? txt : (t, tx, ty, col, f, al) => { g.fillStyle = col || '#e8eef5'; g.font = f || '14px system-ui'; g.textAlign = al || 'left'; g.fillText(t, tx, ty); }, button });
   else if (kind === 'top') { TopView.draw(g, x, y, w, h, W, T, { sprites: SPR, tops: TP, aud: AUD }); }
-  else if (kind === 'winL' || kind === 'winR') WinView.draw(g, x, y, w, h, W, T, { sprites: SPR, aud: AUD }, kind === 'winL' ? 1 : -1);
+  else if (kind === 'winL' || kind === 'winR') {
+    // cửa sổ hành khách là góc nhìn nặng nhất: khi làm khung chính chỉ dựng lại cảnh 30 lần/giây vào canvas đệm rồi dán lại mỗi khung (nhịp còn lại rẻ)
+    if (g === ctx && w > 1000) { const wc = WINC[kind] || (WINC[kind] = { cv: document.createElement('canvas'), t: -1e9 }), now = performance.now();
+      if (wc.cv.width !== w || wc.cv.height !== h) { wc.cv.width = w; wc.cv.height = h; wc.t = -1e9; }
+      if (now - wc.t >= 30 || wc.k !== kind) { const g2 = wc.cv.getContext('2d'); g2.clearRect(0, 0, w, h); WinView.draw(g2, 0, 0, w, h, W, T, { sprites: SPR, aud: AUD }, kind === 'winL' ? 1 : -1); wc.t = now; wc.k = kind; }
+      g.drawImage(wc.cv, x, y); }
+    else WinView.draw(g, x, y, w, h, W, T, { sprites: SPR, aud: AUD }, kind === 'winL' ? 1 : -1); }
   else { Scene.draw(g, x, y, w, h, W, T, { sprites: SPR, nextTarget: Sim.nextTarget, aud: AUD, rear: ui.rear }); if (Sim.inTunnel(W, T.x)) { g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x, y, w, h); } }
   g.restore();
 }
 
 // khung phụ (2D, bản đồ nhỏ, bản đồ toàn quốc): vẽ vào canvas đệm và chỉ làm mới ~11 lần/giây rồi dán lại mỗi khung; canvas chạy bằng CPU (không có tăng tốc phần cứng) nên mỗi lần vẽ lại đều tốn thật
-const TILE = {};
+const TILE = {}, WINC = {};
 function tileView(id, kind, x, y, w, h) {
   const now = performance.now(), pw_ = Math.max(1, Math.round(w * QS)), ph_ = Math.max(1, Math.round(h * QS)); let c = TILE[id];
   if (!c) c = TILE[id] = { cv: document.createElement('canvas'), t: -1e9, kind: '', q: 0 };
   if (c.cv.width !== pw_ || c.cv.height !== ph_) { c.cv.width = pw_; c.cv.height = ph_; c.t = -1e9; }
-  if (now - c.t > 90 || c.kind !== kind || c.nat !== ui.nat) { const g = c.cv.getContext('2d'); g.setTransform(QS, 0, 0, QS, 0, 0); g.clearRect(0, 0, w, h); drawViewIn(kind, 0, 0, w, h, g); c.t = now; c.kind = kind; c.nat = ui.nat; }
+  if (now - c.t > (kind === 'cab' ? 250 : 90) || c.kind !== kind || c.nat !== ui.nat) { const g = c.cv.getContext('2d'); g.setTransform(QS, 0, 0, QS, 0, 0); g.clearRect(0, 0, w, h); drawViewIn(kind, 0, 0, w, h, g); c.t = now; c.kind = kind; c.nat = ui.nat; }
   ctx.drawImage(c.cv, x, y, w, h);
 }
 
@@ -207,7 +213,7 @@ function drawFull() {
   const blink = Math.floor(performance.now() / 400) % 2 === 0, M = T.M, j = T.phase === 'dwell' ? T.k : Sim.nextTarget(T), d = M[j].s - T.x, pend = W.pending.filter(m => !m.done).length;
   // ---- khung chính + hai khung phụ: khung thứ nhất nằm trong bảng điều khiển (bên trái đồng hồ tốc độ), khung thứ hai ở góc trên phải
   drawViewIn(ui.main, MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]);
-  const others = VIEWS.filter(v => v !== ui.main), slotLabel = (v, x, y, w) => { ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y, Math.min(w, 206), 20); txt(VNAME[v] + ' · bấm để phóng to', x + 6, y + 14, '#cfe0f0', '11px system-ui'); };
+  const others = VIEWS.filter(v => v !== ui.main), slotLabel = (v, x, y, w) => { if (v === 'top') return; ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y, Math.min(w, 206), 20); txt(VNAME[v] + ' · bấm để phóng to', x + 6, y + 14, '#cfe0f0', '11px system-ui'); };
   const drawPip = () => { const [x, y, w, h] = SLOT_PIP, v = others[1]; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); tileView('pip', v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: () => { ui.main = v; } }); };
   // ô dưới khung 2D: bản đồ toàn quốc bám theo tàu ta; khi bản đồ toàn quốc đang là khung chính thì ô này hiện góc nhìn lái tàu hiện tại; bấm hoặc phím D để hoán đổi
   const drawNatTile = () => { const [x, y, w, h] = SLOT_NAT; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); tileView('nat', ui.nat ? ui.main : 'nat', x, y, w, h); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y, Math.min(w, 250), 20); txt((ui.nat ? VNAME[ui.main] : 'BẢN ĐỒ TOÀN QUỐC') + ' · bấm hoặc D để hoán đổi', x + 6, y + 14, '#cfe0f0', '11px system-ui'); btns.push({ x, y, w, h, fn: () => { ui.nat = !ui.nat; } }); };

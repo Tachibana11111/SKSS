@@ -95,9 +95,10 @@
     // mặt đất theo dải độ sâu (màu theo lớp phủ đất thật; cầu thì là mặt nước)
     const BANDS = [3000, 900, 450, 200, 90, 45, 22, 10, 4.5];
     for (let b = 0; b < BANDS.length - 1; b++) items.push({ d: BANDS[b], fn: () => { const dF = BANDS[b], dN = BANDS[b + 1];
-      for (let x = ox0 - 6; x < ox1 + 6; x += 10) { const s = sAt(x + 5, (dF + dN) / 2), e = (dF + dN) / 2 + EOFF, onBr = struct(s) === 'b', g0 = onBr ? [58, 110, 156] : gcol(s, e), base = g0 || gdef, gh = -elAt(s), y0 = Y(gh, dF), y1 = Y(gh, dN);
-        const fogm = clamp((dF - 60) / 700, 0, 1) * (0.25 + wx * 0.7); ctx.fillStyle = mixc([base[0] * 0.14 + 4, base[1] * 0.16 + 6, base[2] * 0.18 + 8], base, lit * (1 - wx * 0.15)); ctx.fillRect(x, y0 - 0.5, 10.6, y1 - y0 + 1.5);
-        if (fogm > 0) { ctx.fillStyle = 'rgba(150,160,170,' + fogm * 0.5 * day + ')'; ctx.fillRect(x, y0 - 0.5, 10.6, y1 - y0 + 1.5); } } } });
+      const stp = dF >= 200 ? 20 : 10, fogm = clamp((dF - 60) / 700, 0, 1) * (0.25 + wx * 0.7), fa = fogm * 0.5 * day;      // dải xa: cột rộng gấp đôi; sương trộn thẳng vào màu đất (một lệnh vẽ thay vì hai, kết quả nhìn y hệt vì nền đã đặc)
+      for (let x = ox0 - 6; x < ox1 + 6; x += stp) { const s = sAt(x + stp / 2, (dF + dN) / 2), e = (dF + dN) / 2 + EOFF, onBr = struct(s) === 'b', g0 = onBr ? [58, 110, 156] : gcol(s, e), base = g0 || gdef, gh = -elAt(s), y0 = Y(gh, dF), y1 = Y(gh, dN), lt = lit * (1 - wx * 0.15);
+        const r = lerp(base[0] * 0.14 + 4, base[0], lt), gg = lerp(base[1] * 0.16 + 6, base[1], lt), bb = lerp(base[2] * 0.18 + 8, base[2], lt);
+        ctx.fillStyle = fogm > 0 ? 'rgb(' + Math.round(lerp(r, 150, fa)) + ',' + Math.round(lerp(gg, 160, fa)) + ',' + Math.round(lerp(bb, 170, fa)) + ')' : 'rgb(' + Math.round(r) + ',' + Math.round(gg) + ',' + Math.round(bb) + ')'; ctx.fillRect(x, y0 - 0.5, stp + 0.6, y1 - y0 + 1.5); } } });
     // tranh xa (lớp 1)
     if (wdOn && root.Strips && !so.lite) items.push({ d: 110, fn: () => { const D = 110, sa = sAt(ox0, D), sb = sAt(ox1, D), TILE = root.Strips.TILE, Lh = root.Strips.LAYERS[1], k = f / D;
       for (let ti = Math.floor(sa / TILE); ti <= Math.floor(sb / TILE); ti++) { if (ti < 0) continue; const cv = root.Strips.tile(so, 1, sgn, ti, lvl); if (!cv) continue; const a = Math.max(sa, ti * TILE), b = Math.min(sb, (ti + 1) * TILE); if (b <= a) continue;
@@ -238,7 +239,7 @@
         if (urbanLamp && Math.floor((s + 9) / 18) !== Math.floor((s - 9) / 18)) { ctx.save(); ctx.translate(x, hy - 80); ctx.scale(2.2, 1); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 70); g.addColorStop(0, 'rgba(255,236,170,.75)'); g.addColorStop(1, 'rgba(255,236,170,0)'); ctx.fillStyle = g; ctx.fillRect(-70, -70, 140, 140); ctx.restore(); ctx.fillStyle = 'rgba(255,246,210,.95)'; ctx.fillRect(x - 9, hy - 82, 18, 4); } }
       if (any) { ctx.fillStyle = 'rgba(70,76,84,.55)'; ctx.fillRect(ox0, Y(EYE + 0.8, dd), ow, Math.max(2, 0.05 * f / dd)); ctx.fillRect(ox0, Y(EYE - 0.9, dd), ow, Math.max(2, 0.05 * f / dd)); } } });
 
-    items.sort((a, b) => b.d - a.d); for (const it of items) it.fn();
+    items.sort((a, b) => b.d - a.d); if (window.__wvProf) { for (const it of items) { window.__wvKey = 'd' + it.d; const t0 = performance.now(); it.fn(); const k = 'd' + it.d; window.__wvProf[k] = (window.__wvProf[k] || 0) + performance.now() - t0; } } else for (const it of items) it.fn();
 
     // ---- thời tiết trên kính: mưa (vệt xiên về phía sau tàu, hạt nước bám kính), tuyết lướt qua, chớp, động đất
     if (rain) { const sl = Math.min(90, v * 0.55 + 6), nR = 90; ctx.strokeStyle = 'rgba(190,210,235,' + (0.2 + 0.2 * day) + ')'; ctx.lineWidth = 1; ctx.beginPath(); for (let i = 0; i < nR; i++) { const tt = (now / 14 + i * 53) % 1000, x0 = ox0 + ((i * 97 + tt * 0.9) % ow), y0 = oy0 + ((i * 131 + tt * 2.6) % oh); ctx.moveTo(x0, y0); ctx.lineTo(x0 - sl * 0.6, y0 + 10 + sl * 0.12); } ctx.stroke();

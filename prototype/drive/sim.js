@@ -119,9 +119,12 @@
       if (L.struct) { const named = L.meta.tunnels; L.meta.tunnels = L.struct.filter(g => g[2] === 't').map(g => { const n = named.find(t => t[0] === g[0] && t[1] === g[1]); return n ? n : [g[0], g[1]]; }); }   // mọi hầm (kể cả hầm sinh theo tỷ lệ) [I]
     } return L; }
   // kết cấu nền (g đất / v cầu cạn / b cầu / t hầm) và đường cong tại km; cong: {R, sg} hoặc null
-  function structAt(L, km) { for (const [a, b, k] of L.struct || []) if (km >= a && km < b) return k; return 'g'; }
+  // tra cứu theo khoảng km: dựng một lần chỉ mục đã sắp xếp (nếu các khoảng không chồng nhau) rồi tìm nhị phân; kết quả giống hệt duyệt tuần tự. Các hàm này được gọi hàng nghìn lần mỗi khung ở góc nhìn cửa sổ hành khách.
+  function ivIndex(list) { const a = (list || []).slice().sort((x, y) => x[0] - y[0]); for (let i = 0; i + 1 < a.length; i++) if (a[i + 1][0] < a[i][1]) return null; return a; }
+  function ivFind(a, km) { let lo = 0, hi = a.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (a[m][0] <= km) { r = m; lo = m + 1; } else hi = m - 1; } return r >= 0 && km < a[r][1] ? a[r] : null; }
+  function structAt(L, km) { let ix = L._stIx; if (ix === undefined || L._stSrc !== L.struct) { ix = L._stIx = ivIndex(L.struct); L._stSrc = L.struct; } if (ix === null) { for (const [a, b, k] of L.struct || []) if (km >= a && km < b) return k; return 'g'; } const e = ivFind(ix, km); return e ? e[2] : 'g'; }
   function curveAt(L, km) { for (const [a, b, R, sg] of L.curves || []) if (km >= a && km < b) return { R, sg, a, b }; return null; }
-  function biomeAt(L, km) { for (const [a, b, t] of L.meta.biomes) if (km >= a && km < b) return t; return 'field'; }
+  function biomeAt(L, km) { const m = L.meta; let ix = m._bmIx; if (ix === undefined || m._bmSrc !== m.biomes) { ix = m._bmIx = ivIndex(m.biomes); m._bmSrc = m.biomes; } if (ix === null) { for (const [a, b, t] of m.biomes) if (km >= a && km < b) return t; return 'field'; } const e = ivFind(ix, km); return e ? e[2] : 'field'; }
   function gradeKm(L, km) {                                               // ‰ theo chiều tăng km: mô phỏng [I]
     let typ = 8, mx = 20; for (const [a, b, t, m] of L.meta.grade) if (km >= a && km < b) { typ = t; mx = m; }
     const n = Math.sin(km * 0.37 + 1.1) * 0.55 + Math.sin(km * 0.91 + 0.4) * 0.3 + Math.sin(km * 2.3 + 2.0) * 0.15;
@@ -136,7 +139,10 @@
   function staticBoundaries(W, T) {   // [s bắt đầu đoạn, tốc độ] theo chiều chạy
     const out = []; for (const [a, b, lv] of W.line.meta.limits) { const sa = sOfKm(a, W.dir, W.line.kmEnd), sb = sOfKm(b, W.dir, W.line.kmEnd); out.push([Math.min(sa, sb), Math.min(lv / 3.6, T.veh.vmax)]); } return out;
   }
-  function inTunnel(W, x) { for (const [k0, k1] of W.line.meta.tunnels) { const a = sOfKm(k0, W.dir, W.line.kmEnd), b = sOfKm(k1, W.dir, W.line.kmEnd); if (x >= Math.min(a, b) && x <= Math.max(a, b)) return true; } return false; }
+  function inTunnel(W, x) {      // khoảng s của các hầm theo chiều chạy, gộp chồng và sắp xếp một lần cho mỗi (tuyến, chiều)
+    const m = W.line.meta, key = '_tunIv' + W.dir; let c = m[key]; if (!c || c.src !== m.tunnels) { const iv = m.tunnels.map(([k0, k1]) => { const a = sOfKm(k0, W.dir, W.line.kmEnd), b = sOfKm(k1, W.dir, W.line.kmEnd); return [Math.min(a, b), Math.max(a, b)]; }).sort((p, q) => p[0] - q[0]), mg = []; for (const v of iv) { const l = mg[mg.length - 1]; if (l && v[0] <= l[1]) l[1] = Math.max(l[1], v[1]); else mg.push(v.slice()); } c = m[key] = { src: m.tunnels, iv: mg }; }
+    const a = c.iv; let lo = 0, hi = a.length - 1, r = -1; while (lo <= hi) { const mid = (lo + hi) >> 1; if (a[mid][0] <= x) { r = mid; lo = mid + 1; } else hi = mid - 1; } return r >= 0 && x <= a[r][1];
+  }
 
   // ---- Lịch tàu --------------------------------------------------------------
   const trainSeq = rec => rec.s.map(e => ({ i: e[0], arr: e[1], dep: e[2], stop: !e[3] }));

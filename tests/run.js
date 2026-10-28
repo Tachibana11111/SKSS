@@ -545,6 +545,12 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
         prevD = cur; var kmMe0 = kmMe.k, kmMe0g = kmMe.g; }
       ok(flips2 <= 0, 'tàu của người chơi (Komachi) không vượt tàu Tohoku giữa hai ga trên bản đồ (' + flips2 + ' lần)'); }
     const q = { t: 0, lat: 35, lon: 139, mag: 7, depth: 10 }; ok(NatCat.shindoAt(q, 10) > NatCat.shindoAt(q, 300) && NatCat.shindoAt(q, 10) >= 5, 'shindo giảm theo khoảng cách'); }
+  // tra cứu nhị phân (structAt / biomeAt / inTunnel) cho kết quả y hệt duyệt tuần tự
+  { let bad = 0, n3 = 0; for (const ln of Object.keys(window.LINES)) { const L = Sim.lineOf(ln); for (const dir of ['down', 'up']) { const W3 = { line: L, dir, lineId: ln };
+        for (let km = -1; km < L.kmEnd + 1; km += 0.137) { n3++; let st = 'g'; for (const [a1, b1, k1] of L.struct || []) if (km >= a1 && km < b1) { st = k1; break; } let bm = 'field'; for (const [a1, b1, t1] of L.meta.biomes) if (km >= a1 && km < b1) { bm = t1; break; }
+          const x = Sim.sOfKm(km, dir, L.kmEnd); let tn = false; for (const [k0, k1] of L.meta.tunnels) { const p1 = Sim.sOfKm(k0, dir, L.kmEnd), p2 = Sim.sOfKm(k1, dir, L.kmEnd); if (x >= Math.min(p1, p2) && x <= Math.max(p1, p2)) { tn = true; break; } }
+          if (Sim.structAt(L, km) !== st || Sim.biomeAt(L, km) !== bm || Sim.inTunnel(W3, x) !== tn) bad++; } } }
+    ok(bad === 0 && n3 > 1000, 'tra cứu nhị phân khớp duyệt tuần tự (' + n3 + ' điểm, ' + bad + ' lệch)'); }
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
 

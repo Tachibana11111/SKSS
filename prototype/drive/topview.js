@@ -31,8 +31,8 @@
     const Y = z => cy - (z - zOff) * ky, X = (xm, z) => cx - ((xm - lane) * kx + off(z) * kc);
     const zLo = zOff - VIEW_R - 40, zHi = zOff + VIEW_R + 40;
 
-    // ---- nền hình tròn (tàu luôn hướng lên)
-    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, Rr, 0, 7); ctx.clip();
+    // ---- nền hình tròn: khoá hướng Bắc ở trên; bản vẽ bên dưới dựng trong hệ toạ độ của tàu (mũi tàu hướng lên) rồi xoay cả khối đúng bằng hướng đi hiện tại, nên đoàn tàu và đường ray xoay/uốn theo hướng thật
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, Rr, 0, 7); ctx.clip(); ctx.translate(cx, cy); ctx.rotate(heading * Math.PI / 180); ctx.translate(-cx, -cy);
     ctx.fillStyle = dark ? '#0b1118' : '#1c2a22'; ctx.fillRect(cx - Rr, cy - Rr, 2 * Rr, 2 * Rr);
     const runs = []; { let prev = null; for (let z = zLo - 20; z <= zHi + 20; z += 20) { const k = S.structAt(L, km(z)); if (k === prev) runs[runs.length - 1][1] = z + 20; else { runs.push([z, z + 20, k]); prev = k; } } }
     for (const [za, zb, k] of runs) { const y0 = Y(zb), y1 = Y(za); ctx.fillStyle = k === 'b' ? (dark ? '#0d2234' : '#2a4a66') : k === 'v' ? (dark ? '#161d26' : '#2c3640') : (dark ? '#0f1a14' : '#27402f'); ctx.fillRect(cx - Rr, y0, 2 * Rr, y1 - y0); }
@@ -97,9 +97,9 @@
     // ---- viền, vòng la bàn (xoay theo hướng) và nhãn
     ctx.strokeStyle = '#6b7684'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, Rr + 1.5, 0, 7); ctx.stroke();
     ctx.save(); ctx.translate(cx, cy);
-    for (let b = 0; b < 360; b += 15) { const th = (b - heading) * Math.PI / 180, major = b % 45 === 0, r0 = Rr + 3, r1 = Rr + (major ? 9 : 6); ctx.strokeStyle = b === 0 ? '#ff5a5a' : major ? '#c8d4e2' : '#6f8096'; ctx.lineWidth = major ? 2 : 1; ctx.beginPath(); ctx.moveTo(Math.sin(th) * r0, -Math.cos(th) * r0); ctx.lineTo(Math.sin(th) * r1, -Math.cos(th) * r1); ctx.stroke(); }
+    for (let b = 0; b < 360; b += 15) { const th = b * Math.PI / 180, major = b % 45 === 0, r0 = Rr + 3, r1 = Rr + (major ? 9 : 6); ctx.strokeStyle = b === 0 ? '#ff5a5a' : major ? '#c8d4e2' : '#6f8096'; ctx.lineWidth = major ? 2 : 1; ctx.beginPath(); ctx.moveTo(Math.sin(th) * r0, -Math.cos(th) * r0); ctx.lineTo(Math.sin(th) * r1, -Math.cos(th) * r1); ctx.stroke(); }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    CARD.forEach((name, i) => { const th = (i * 45 - heading) * Math.PI / 180, rr = Rr + 16, x = Math.sin(th) * rr, y = -Math.cos(th) * rr; ctx.font = (i % 2 === 0 ? 'bold 12px' : '10px') + ' system-ui'; ctx.fillStyle = i === 0 ? '#ff6a6a' : i % 2 === 0 ? '#e8eef5' : '#8aa0b5'; ctx.fillText(name, x, y); });
+    CARD.forEach((name, i) => { const th = i * 45 * Math.PI / 180, rr = Rr + 16, x = Math.sin(th) * rr, y = -Math.cos(th) * rr; ctx.font = (i % 2 === 0 ? 'bold 12px' : '10px') + ' system-ui'; ctx.fillStyle = i === 0 ? '#ff6a6a' : i % 2 === 0 ? '#e8eef5' : '#8aa0b5'; ctx.fillText(name, x, y); });
     ctx.restore(); ctx.textBaseline = 'alphabetic';
     const card8 = CARD[Math.round(heading / 45) % 8];
     ctx.fillStyle = '#a9bacb'; ctx.font = '11px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Hướng ' + Math.round(heading) + '° (' + card8 + ')', px + 8, py + ph - 8); ctx.textAlign = 'right'; ctx.fillText('bán kính ' + VIEW_R + ' m', px + pw - 8, py + ph - 8);
