@@ -60,7 +60,8 @@
 
   function draw(ctx, x, y, w, h, W, T, o) {
     if (!ST && !build()) { ctx.fillStyle = '#0b0f14'; ctx.fillRect(x, y, w, h); return; }
-    const r = V.rect = [x, y, w, h], dk = !V.light, txt = o.txt, btn = o.button, mini = !!o.mini;
+    const r = V.rect = [x, y, w, h], dk = !V.light, txt0 = o.txt, btn0 = o.button, mini = !!o.mini, U = mini ? 1 : 1.35;      // U: hệ số phóng chữ và phần tử (bản đồ lớn dễ đọc hơn; ô nhỏ giữ nguyên)
+    const txt = U === 1 ? txt0 : (t, tx, ty, col, f, al) => txt0(t, tx, ty, col, f ? f.replace(/(\d+)px/, (m, n) => Math.round(n * U) + 'px') : f, al), btn = (bx0, by0, bw0, bh0, lab, fn, on, col, fs) => btn0(bx0, by0, Math.round(bw0 * U), Math.round(bh0 * U), lab, fn, on, col, Math.round((fs || 12) * U));
     NC().step(W); const H = W.haz || { cells: [], quakes: [] }, wt = W.t, kmPx = V.s / 111;
     if (!V.fit) { V.fit = true; V.s = h / 15.5; V.cx = 137.6; V.cy = 38.0; }
     ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
@@ -74,18 +75,18 @@
       ctx.strokeStyle = 'rgba(' + col + ',.6)'; ctx.lineWidth = 1; ctx.setLineDash(cl.kind === 'wind' ? [5, 4] : []); ctx.stroke(); ctx.setLineDash([]); txt(cl.kind === 'rain' ? 'mưa lớn' : cl.kind === 'snow' ? 'tuyết' : 'gió mạnh', q[0], q[1] + 4, dk ? 'rgba(220,235,255,.9)' : 'rgba(20,40,80,.9)', '11px system-ui', 'center'); }
     const z = Math.min(1.8, Math.max(0.8, Math.sqrt(V.s / 44)));
     for (const sg of SEGS) { const L = root.LINES[sg.line]; if (!L) continue; ctx.beginPath(); for (let i = sg.a; i <= sg.b && i < L.stations.length; i++) { const q = P(L.stations[i].lon, L.stations[i].lat, r); i === sg.a ? ctx.moveTo(q[0], q[1]) : ctx.lineTo(q[0], q[1]); }
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = dk ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.4)'; ctx.lineWidth = 5.4 * z; ctx.stroke(); ctx.strokeStyle = sg.col; ctx.lineWidth = 3.2 * z; ctx.stroke(); }
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = dk ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.4)'; ctx.lineWidth = 5.4 * z * (U > 1 ? 1.2 : 1); ctx.stroke(); ctx.strokeStyle = sg.col; ctx.lineWidth = 3.2 * z * (U > 1 ? 1.2 : 1); ctx.stroke(); }
     // ga: Tokyo to (pha màu cả 10 tuyến), ga rẽ nhánh/đổi tuyến vừa, còn lại nhỏ
     const names = Object.keys(ST), lab = V.s > 120;
     for (const en of names) { const s = ST[en], q = P(s.lon, s.lat, r); if (q[0] < x - 20 || q[0] > x + w + 20 || q[1] < y - 20 || q[1] > y + h + 20) continue;
-      const rad = (s.big ? 8 : s.mid ? 5.2 : 3.2) * z;
+      const rad = (s.big ? 8 : s.mid ? 5.2 : 3.2) * z * (U > 1 ? 1.3 : 1);
       if (s.big) { const n = SEGS.length; for (let k = 0; k < n; k++) { ctx.beginPath(); ctx.moveTo(q[0], q[1]); ctx.arc(q[0], q[1], rad, k / n * 6.2832 - 1.5708, (k + 1) / n * 6.2832 - 1.5708); ctx.closePath(); ctx.fillStyle = SEGS[k].col; ctx.fill(); } ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.stroke(); }
       else { ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.fillStyle = s.col; ctx.fill(); ctx.strokeStyle = dk ? '#fff' : '#223'; ctx.lineWidth = 1.2; ctx.stroke(); }
       if (V.sel && V.sel.en === en) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(q[0], q[1], rad + 4, 0, 7); ctx.stroke(); }
       if (s.big || s.mid || lab || (V.sel && V.sel.en === en)) txt(s.en, q[0] + rad + 4, q[1] + 4, dk ? '#e8eef5' : '#1b2633', (s.big ? 'bold 13px' : '11px') + ' system-ui'); }
     // tàu: tam giác chỉ hướng
     const tr = gather(W, T), hits = []; V.trains = hits;
-    for (const t of tr) { const q = P(t.s.lon, t.s.lat, r); if (q[0] < x - 20 || q[0] > x + w + 20 || q[1] < y - 20 || q[1] > y + h + 20) continue; const ang = Math.atan2(t.s.dy, t.s.dx), sz = (t.me ? 8.5 : 5.2) * z;
+    for (const t of tr) { const q = P(t.s.lon, t.s.lat, r); if (q[0] < x - 20 || q[0] > x + w + 20 || q[1] < y - 20 || q[1] > y + h + 20) continue; const ang = Math.atan2(t.s.dy, t.s.dx), sz = (t.me ? 8.5 : 5.2) * z * (U > 1 ? 1.3 : 1);
       if (t.held) { ctx.strokeStyle = 'rgba(255,80,60,.9)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(q[0], q[1], 9 * z, 0, 7); ctx.stroke(); }
       const shk = t.d && wt - (t.d.shake - W.trip.t0 * 0 ) < 6 && t.d.shake > -1e8 && wt >= t.d.shake ? (Math.random() - 0.5) * 4 : 0; q[0] += shk; q[1] += shk;
       ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(ang); ctx.beginPath(); ctx.moveTo(sz, 0); ctx.lineTo(-sz * 0.8, sz * 0.7); ctx.lineTo(-sz * 0.8, -sz * 0.7); ctx.closePath(); ctx.fillStyle = t.s.dwell || !t.s.moving && !t.me ? (dk ? '#8896a6' : '#6b7886') : t.col; ctx.fill(); ctx.strokeStyle = t.me ? '#fff' : dk ? 'rgba(255,255,255,.85)' : 'rgba(20,30,40,.85)'; ctx.lineWidth = t.me ? 2.2 : 1; ctx.stroke(); ctx.restore();
@@ -98,11 +99,11 @@
       txt('sóng P (vàng, đi trước) · sóng S (đỏ, theo sau)', q[0] + 12, q[1] + 6, dk ? '#e8d27a' : '#665500', '10px system-ui'); }
     if (!mini) {
     // chú giải và nút
-    const bx = x + w - 370 - 120, lx = x + 14; let ly = y + h - 14 - SEGS.length * 17; ctx.fillStyle = dk ? 'rgba(8,12,18,.78)' : 'rgba(255,255,255,.82)'; ctx.fillRect(lx - 8, ly - 18, 150, SEGS.length * 17 + 24);
-    txt('Tuyến', lx, ly - 4, dk ? '#8aa0b5' : '#445', 'bold 11px system-ui'); for (const sg of SEGS) { ctx.fillStyle = sg.col; ctx.fillRect(lx, ly + 6, 22, 5); txt(sg.name, lx + 30, ly + 12, dk ? '#e8eef5' : '#1b2633', '11px system-ui'); ly += 17; }
+    const bwU = Math.round(120 * U), bx = x + w - 390 - bwU, lx = x + 14, rowH = Math.round(17 * U); let ly = y + h - 14 - SEGS.length * rowH; ctx.fillStyle = dk ? 'rgba(8,12,18,.78)' : 'rgba(255,255,255,.82)'; ctx.fillRect(lx - 8, ly - 20 * U, Math.round(150 * U), SEGS.length * rowH + 26 * U);
+    txt('Tuyến', lx, ly - 4, dk ? '#8aa0b5' : '#445', 'bold 11px system-ui'); for (const sg of SEGS) { ctx.fillStyle = sg.col; ctx.fillRect(lx, ly + 6 * U, 22 * U, 5 * U); txt(sg.name, lx + 30 * U, ly + 12 * U, dk ? '#e8eef5' : '#1b2633', '11px system-ui'); ly += rowH; }
     btn(bx, y + 10, 120, 28, '✕ Đóng (D)', () => { o.close(); }, true, '#7a2d2d', 13);
-    btn(bx - 130, y + 10, 120, 28, dk ? '☀ Nền sáng' : '🌙 Nền tối', () => { V.light = !V.light; o.save && o.save(V.light); }, false, null, 13);
-    btn(bx - 270, y + 10, 130, 28, '📍 Tàu của tôi', () => { const me = tr.find(t => t.me); if (me) { V.cx = me.s.lon; V.cy = me.s.lat; V.s = Math.max(V.s, 160); } }, true, '#2a8f5a', 13);
+    btn(bx - bwU - 10, y + 10, 120, 28, dk ? '☀ Nền sáng' : '🌙 Nền tối', () => { V.light = !V.light; o.save && o.save(V.light); }, false, null, 13);
+    btn(bx - 2 * bwU - 20 - Math.round(10 * U), y + 10, 130, 28, '📍 Tàu của tôi', () => { const me = tr.find(t => t.me); if (me) { V.cx = me.s.lon; V.cy = me.s.lat; V.s = Math.max(V.s, 160); } }, true, '#2a8f5a', 13);
     txt('BẢN ĐỒ TOÀN QUỐC · ' + hhmm(W.trip.t0 + W.t) + ' · con lăn: zoom · kéo: di chuyển · bấm ga/tàu: chi tiết', x + 14, y + 22, dk ? '#cfe0f0' : '#1b2633', 'bold 13px system-ui');
     // thẻ chi tiết
     const selT = V.sel && V.sel.tk ? tr.find(t => (t.me ? 'me' : t.c.key) === V.sel.tk) : null; if (V.sel && V.sel.tk && !selT) V.sel = null;
@@ -116,9 +117,9 @@
       if (selT) { const LNs = root.LINES, rf = o2 => NC().refOf(LNs, o2.me || o2.s0km != null ? W.lineId : o2.c.line, o2.s.km), dirOf = o2 => o2.me ? W.dir : o2.c.rec.d, keyOf = o2 => rf(o2).g + dirOf(o2), sg = dirOf(selT) === 'down' ? 1 : -1, grp = tr.filter(o2 => o2 !== selT && keyOf(o2) === keyOf(selT)), k0 = rf(selT).k; let ah = null, bh = null;
         for (const o2 of grp) { const dd = sg * (rf(o2).k - k0); if (dd > 0 && (!ah || dd < ah.d)) ah = { o: o2, d: dd }; else if (dd <= 0 && (!bh || dd > bh.d)) bh = { o: o2, d: dd }; }
         const fk = v => (v < 10 ? v.toFixed(1) : Math.round(v)) + ' km'; rows.push([ah ? 'Tàu phía trước: ' + ah.o.label + ' · ' + fk(ah.d) : 'Không có tàu phía trước (cùng chiều, cùng tuyến)', ah ? ah.o.col : '#8896a6']); rows.push([bh ? 'Tàu phía sau: ' + bh.o.label + ' · ' + fk(-bh.d) : 'Không có tàu phía sau (cùng chiều, cùng tuyến)', bh ? bh.o.col : '#8896a6']); }
-      const cw = 440, ch = 54 + rows.length * 18 + (rows.length ? 6 : 0) + (selT && o.checkin ? 34 : 0), ax = V.sel.en ? P(V.sel.lon, V.sel.lat, r) : (() => { const hh = (V.trains || []).find(h => h.t === selT); return hh ? [hh.x, hh.y] : [x + 30, y + 60]; })(); let cx = ax[0] + 16, cy = ax[1] + 16; if (cx + cw > x + w - 8) cx = ax[0] - 16 - cw; if (cy + ch > y + h - 8) cy = y + h - 8 - ch; cx = Math.max(x + 8, cx); cy = Math.max(y + 8, cy); ctx.fillStyle = dk ? 'rgba(8,12,18,.9)' : 'rgba(255,255,255,.92)'; ctx.fillRect(cx, cy, cw, ch); ctx.strokeStyle = '#4aa3ff'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, cw, ch);
-      txt(title, cx + 12, cy + 22, dk ? '#fff' : '#111', 'bold 15px system-ui'); txt(sub, cx + 12, cy + 42, dk ? '#8aa0b5' : '#445', '12px system-ui'); rows.forEach((q, i) => { ctx.fillStyle = q[1]; ctx.fillRect(cx + 12, cy + 55 + i * 18, 8, 8); txt(q[0], cx + 26, cy + 63 + i * 18, dk ? '#e8eef5' : '#1b2633', '12px system-ui'); });
-      if (selT && o.checkin) btn(cx + 12, cy + ch - 32, 200, 26, '📍 Check-in địa điểm', () => o.checkin(selT), true, '#2a8f5a', 12);      // chụp cảnh buồng lái phía trước của đoàn này ngay lúc bấm (xem tạm, không lưu)
+      const cw = Math.round(440 * U), rh = Math.round(18 * U), ch = Math.round(54 * U) + rows.length * rh + (rows.length ? 6 : 0) + (selT && o.checkin ? Math.round(34 * U) : 0), ax = V.sel.en ? P(V.sel.lon, V.sel.lat, r) : (() => { const hh = (V.trains || []).find(h => h.t === selT); return hh ? [hh.x, hh.y] : [x + 30, y + 60]; })(); let cx = ax[0] + 16, cy = ax[1] + 16; if (cx + cw > x + w - 8) cx = ax[0] - 16 - cw; if (cy + ch > y + h - 8) cy = y + h - 8 - ch; cx = Math.max(x + 8, cx); cy = Math.max(y + 8, cy); ctx.fillStyle = dk ? 'rgba(8,12,18,.9)' : 'rgba(255,255,255,.92)'; ctx.fillRect(cx, cy, cw, ch); ctx.strokeStyle = '#4aa3ff'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, cw, ch);
+      txt(title, cx + 12, cy + 22 * U, dk ? '#fff' : '#111', 'bold 15px system-ui'); txt(sub, cx + 12, cy + 42 * U, dk ? '#8aa0b5' : '#445', '12px system-ui'); rows.forEach((q, i) => { ctx.fillStyle = q[1]; ctx.fillRect(cx + 12, cy + 55 * U + i * rh, 8 * U, 8 * U); txt(q[0], cx + 26 * U, cy + 63 * U + i * rh, dk ? '#e8eef5' : '#1b2633', '12px system-ui'); });
+      if (selT && o.checkin) btn(cx + 12, cy + ch - Math.round(32 * U), 200, 26, '📍 Check-in địa điểm', () => o.checkin(selT), true, '#2a8f5a', 12);      // chụp cảnh buồng lái phía trước của đoàn này ngay lúc bấm (xem tạm, không lưu)
     }
     }
     ctx.restore();
