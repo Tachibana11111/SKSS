@@ -188,7 +188,7 @@
     }
     this.ambience(dw && !st.paused && st.scale <= 4 ? (T.door === 'open' ? 0.55 : 0.4) : 0);
     const mk0 = T.M[T.k], atEnd = !mk0 || mk0.i === 0 || mk0.i === W.line.stations.length - 1;      // ga đầu/cuối tuyến: tàu không lao qua ga
-    if (dw && !atEnd && W.passers && W.passers[T.k]) for (const pa of W.passers[T.k]) { const u = (W.t - (pa.t - 4.5)) / 9; if (u > 0 && u < 1 && !pa.played) { pa.played = true; this.playClip(0.95, pa.t | 0); } if (u >= 1) pa.played = false; }
+    if (dw && !atEnd) for (const pa of root.Sim.passersAt(W, T.k)) { const u = (W.t - (pa.t - 4.5)) / 9; if (u > 0 && u < 1 && !pa.played) { pa.played = true; this.playClip(0.95, pa.t | 0); } if (u >= 1) pa.played = false; }
     this.prevWt = W.t;
     // ---- thao tác cần: tiếng gạt, tiếp điểm ----
     const p = this.prev;

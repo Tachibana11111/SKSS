@@ -21,7 +21,7 @@ Game lái tàu Shinkansen của 5 công ty JR, chạy hoàn toàn trong trình d
 | Tab · B · O | đổi khung nhìn · camera cuối đoàn · ẩn điện đàm |
 | , · . | cửa sổ hành khách bên trái · bên phải (toa giữa đoàn, bấm lại để về buồng lái) |
 | J | bật/tắt tiếng ù cabin máy bay (cũng có ô ở menu phải) |
-| D | mở/đóng bản đồ toàn quốc (47 tỉnh, 10 tuyến theo màu Wikipedia, mọi tàu chạy theo lịch thật; con lăn zoom, kéo di chuyển, bấm ga hoặc tàu xem chi tiết; cũng có nút trên bản đồ nhỏ) |
+| D | hoán đổi nhanh giữa bản đồ toàn quốc và góc nhìn lái đang dùng (47 tỉnh, 10 tuyến theo màu Wikipedia, mọi tàu chạy theo lịch thật, thời tiết và động đất; con lăn zoom rất sâu, kéo di chuyển, bấm ga/tàu xem chi tiết ngay cạnh điểm bấm). Ô nhỏ dưới khung 2D: bản đồ bám theo tàu ta, hoặc góc nhìn lái khi bản đồ đang là khung chính; bấm vào ô đó cũng hoán đổi |
 | P | còi (game cũng tự bấm còi ở khu làm việc, hươu, ga không dừng, đường ngang, tàu đứng phía trước) |
 | Esc · nút ⏸ · F9 | tạm dừng · chụp cảnh (ảnh + tệp JSON dựng lại cảnh) |
 | 1 2 3 · T · R | tua ×1/×4/×16 · tự lái · chạy lại |

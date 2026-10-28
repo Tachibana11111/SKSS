@@ -225,7 +225,7 @@
     // tàu ngược chiều lướt qua (bên phải đường ta khi nhìn cửa phải), tàu vượt trên đường thông qua khi ta đỗ ở ga tránh
     if ((v > 20 || W.oppCat) && !S.oppHidden(W, T) && side < 0) for (const t0 of W.opposing || []) { const key = S.oppKey(W, T, t0), veh = S.VEH[key] || S.VEH.N700, sn = T.x + (t0 - W.t) * 200, dd = dep(ADJ - 1.45);
       if (sn > sCam + 220 || sn + veh.len < sCam - 220) continue; items.push({ d: dd, fn: () => { const vr = v + 200; if (veh.parts) { let off = 0; for (const pk of veh.parts) { const pv = S.VEH[pk]; trainSide(pk, sn + off, pv.len, true, dd, vr); off += pv.len + (veh.gap || 2.5); } } else trainSide(key, sn, veh.len, true, dd, vr); const u = 1 - Math.abs(sn + veh.len / 2 - sCam) / 140; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.08 * u + ')'; ctx.fillRect(ox0, oy0, ow, oh); } } }); }
-    const pl = T.phase === 'dwell' ? (W.passers && W.passers[T.k]) : null;
+    const pl = T.phase === 'dwell' ? S.passersAt(W, T.k) : null;
     if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u <= 0 || u >= 1) continue; const key = p.v || L.meta.defVeh, veh = S.VEH[key] || S.VEH.N700, q = sts.find(z => z.i === T.k), thr = q && q.st.tracks.find(t => t.thr && t.own), eo = thr ? out(thr.x) : (side < 0 ? ADJ : -ADJ);
       if (eo <= 0) continue; const sFront = T.x + (-veh.len + u * (veh.len + 520)), dd = dep(eo - 1.45); items.push({ d: dd, fn: () => trainSide(key, sFront - veh.len, veh.len, false, dd, 70) }); }
 

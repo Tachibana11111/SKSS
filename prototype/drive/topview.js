@@ -90,7 +90,7 @@
     if ((T.v > 20 || W.oppCat) && !S.oppHidden(W, T)) for (const t0 of W.opposing || []) { const zN = (t0 - W.t) * 200, ov = S.VEH[S.oppKey(W, T, t0)]; if (zN < zHi && zN + ov.len > zLo) consist(z => oppAt(Math.max(0, z)), zN + ov.len, ov, true, false); }
     for (const pk of W.parked || []) { const pv = S.VEH[pk.key], zf = pk.front - T.x; if (zf > zLo && zf - pv.len < zHi) { const qL = sts.find(q => Math.abs(q.m.s - pk.front) < 400), px0 = qL ? qL.st.ours.x : 0; consist(pk.jn !== undefined ? (z => px0 + S.trunkOff(W, T.x + z, pk.jn)) : () => px0, zf, pv, false, false); } }      // đoàn Tohoku đợi ghép / phần đã tách ở lại
     for (const sb of W.stabled || []) { const pv = S.VEH[sb.key], zf = sb.front - T.x; if (zf > zLo && zf - pv.len < zHi) consist(() => sb.track.x, zf, pv, sb.face !== 1, false); }
-    if (T.phase === 'dwell' && W.passers && W.passers[T.k]) for (const p of W.passers[T.k]) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const pv = S.VEH[p.v] || S.VEH.N700, zf = -pv.len + u * (pv.len + 520); consist(() => 0, zf, pv, false, false); } }
+    if (T.phase === 'dwell') for (const p of S.passersAt(W, T.k)) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const pv = S.VEH[p.v] || S.VEH.N700, zf = -pv.len + u * (pv.len + 520); consist(() => 0, zf, pv, false, false); } }
     consist(ourPath, 0, T.veh, false, true, T.gapX || 0);
     ctx.restore();
 

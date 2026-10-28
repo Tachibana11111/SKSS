@@ -524,7 +524,7 @@
         if (T.forced === j) T.forced = -1;
         if (j === M.length - 1) { T.phase = 'end'; if (!T.isLead) T.finished = true; }
         else { T.phase = 'dwell'; T.dwellT = 0; startCoupling(T, mk); startCoupP(T, mk);
-          if (mk.xwait && !T.isLead) { W.passers = W.passers || {}; (W.passers[j] = W.passers[j] || []).push({ label: W.line.meta.defVeh + ' (ngược chiều)', t: W.t + Math.max(30, mk.xwait * 0.6), v: W.line.meta.defVeh }); T.holds[j] = Math.max(T.holds[j] || 0, W.t + mk.xwait); W.say('info', `${mk.name}: đang chờ tàu ngược chiều (đường đơn).`); } }
+          if (mk.xwait && !T.isLead) { W.passers = W.passers || {}; (W.passers[j] = W.passers[j] || []).push({ syn: true, label: W.line.meta.defVeh + ' (ngược chiều)', t: W.t + Math.max(30, mk.xwait * 0.6), v: W.line.meta.defVeh }); T.holds[j] = Math.max(T.holds[j] || 0, W.t + mk.xwait); W.say('info', `${mk.name}: đang chờ tàu ngược chiều (đường đơn).`); } }
       } else if (T.x > mk.s + G.stopTol + 80) {
         T.phase = 'end';
         if (!T.isLead) { T.finished = true; T.failed = true; T.log.push(['FAIL', W.t, 'Chạy quá ga']); W.say('bad', 'Chạy quá ga ' + mk.name); T.results.push({ station: mk.name, err: T.x - mk.s, delay: NaN, overrun: true }); }
@@ -686,9 +686,25 @@
         if (run.length > best.length) best = run; if (best.length >= 2) out.push({ id: id + rec.t + rec.n + rec.d, rec, pts: best }); } }
     return out;
   }
+  // tàu cùng chiều thông qua ga ta đang đỗ: lấy từ danh mục toàn quốc (mọi tuyến) theo giờ thật cộng độ trễ, cùng nguồn với bản đồ; giữ thêm các tàu giả lập đặt tay (syn)
+  function refreshPassers(W, T) {
+    const NC = root.NatCat, k = T.k; if (!NC) return;
+    if (!W.passCand || W.passCand.k !== k) { const en = W.line.stations[T.M[k].i].en, list = [];
+      for (const c of NC.build(root.LINES)) { if (c.rec.d !== W.dir || c.rec === W.trip.rec) continue; const LL = root.LINES[c.line], jj = LL.stations.findIndex(s => s.en === en); if (jj < 0) continue; const kmJ = LL.stations[jj].km, S = c.stops;
+        if (S.some(p => p.i === jj)) continue;
+        for (let q = 0; q < S.length - 1; q++) { const k0 = LL.stations[S[q].i].km, k1 = LL.stations[S[q + 1].i].km; if (kmJ > Math.min(k0, k1) && kmJ < Math.max(k0, k1)) { list.push({ c, tb: c.td(S[q]) + (c.ta(S[q + 1]) - c.td(S[q])) * ((kmJ - k0) / (k1 - k0)) }); break; } } }
+      W.passCand = { k, list }; W.passObj = new Map(); }
+    const out = [], t0 = W.trip.t0; if (NC && W.haz) NC.step(W);
+    for (const e of W.passCand.list) { const d = NC && W.haz ? NC.delayOf(W, e.c.key) : null; if (d && d.hold > 0) continue; const t = e.tb + (d ? d.delay : 0) - t0; if (t < W.t - 12 || t > W.t + 150) continue;
+      let o = W.passObj.get(e.c.key); if (!o) { o = { label: e.c.rec.t + ' ' + e.c.rec.n, v: e.c.rec.v }; W.passObj.set(e.c.key, o); } o.t = t; out.push(o); }
+    for (const p of (W.passers && W.passers[k]) || []) if (p.syn) out.push(p);
+    W.passDyn = { k, list: out };
+  }
+  const passersAt = (W, k) => (W.passDyn && W.passDyn.k === k ? W.passDyn.list : (W.passers && W.passers[k]) || []);
   function refreshOpposing(W, T) {
     if (!W.oppCat || (W.oppAt !== undefined && W.t - W.oppAt < 0.4 && W.t >= W.oppAt)) return; W.oppAt = W.t;
     const NC = root.NatCat; if (NC && W.haz) NC.step(W);
+    if (T.phase === 'dwell') refreshPassers(W, T);
     const now = W.trip.t0 + W.t, kmP = kmOfS(T.x, W.dir, W.line.kmEnd), down = W.dir === 'down', st = W.oppState || (W.oppState = new Map());
     for (const c of W.oppCat) { const p = c.pts, dl = NC && W.haz ? NC.delayOf(W, c.id) : null, nowE = now - (dl ? dl.delay : 0); let km = null, vo = 0;
       if (dl && dl.hold > 0) { st.delete(c.id); continue; }
@@ -1187,7 +1203,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { passersAt, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

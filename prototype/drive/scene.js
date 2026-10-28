@@ -267,7 +267,7 @@
     for (const pk of W.parked || []) { const pv = root.Sim.VEH[pk.key], dl = pk.front - T.x; if (dl > -pv.len - 20 && dl < 1800) { const xf = fx + dl * K, wv = pv.len * K; if (xf - wv < px + pw + 50 && xf > px - 50) fleet(ctx, R, pk.key, xf, base, wv, hOf(R, pk.key, K) * SV, 1); } }
     if (!flipX) drawOpp();
     // tàu vượt qua đường thông qua khi ta đỗ ở ga tránh (quét qua màn hình ~ 9 giây)
-    const pl = T.phase === 'dwell' ? (W.passers && W.passers[T.k]) : null;
+    const pl = T.phase === 'dwell' ? root.Sim.passersAt(W, T.k) : null;
     if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const wL = 404.7 * K * 1.18, hh = hOf(R, p.v || (W.line.meta.defVeh), K * 1.18) * SV, xF = px + u * (pw + wL); fleet(ctx, R, p.v || (W.line.meta.defVeh), xF, base + 9, wL * ((root.Sim.VEH[p.v] || {}).len ? root.Sim.VEH[p.v].len / 404.7 : 1), hh, 1, false); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(px, base - 40, pw, 50 * 0); txt2(ctx, p.label + ' thông qua', px + pw / 2, py + 16, '#ffd88a'); } }
     // hiệu ứng chớp khi hai tàu gặp nhau
     if ((T.v > 20 || W.oppCat) && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 0.4) { ctx.fillStyle = 'rgba(255,255,255,' + 0.15 * Math.sin(u / 0.4 * Math.PI) + ')'; ctx.fillRect(px, py, pw, ph); } }
