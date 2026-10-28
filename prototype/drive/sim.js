@@ -490,7 +490,7 @@
     T.bt = Math.max(0, T.bt - 0.003 * (1 + T.v / 30) * T.bt * dt); if (T.bt > (T.btMax || 0)) T.btMax = T.bt;
     if (Ft > 0) T.kwh += Ft * T.v / 0.9 * dt / 3.6e6;
     if (T.horn > 0) T.horn = Math.max(0, T.horn - dt);
-    deadStep(T); noteStep(T); xingStep(T);
+    deadStep(T); noteStep(T); xingStep(T); if (T === W.player) refreshOpposing(W, T);
     // bất an của hành khách khi đứng giữa đường
     if (!T.isLead) {
       if (T.phase === 'run' && T.v < 0.3 && W.running) { T.anx = Math.min(100, T.anx + dt * 100 / 900); } else if (T.anx > 0) T.anx = Math.max(0, T.anx - dt * 0.4);
@@ -676,7 +676,31 @@
   }
   // ---- Tàu ngược chiều có thể là đoàn ghép (Tohoku + mini) ở đoạn Tohoku; tàu đỗ ở đường phụ của ga
   const hash01 = (a, b) => { let x = Math.imul((a | 0) ^ 0x9e3779b9, 2654435761) ^ Math.imul(((b | 0) + 0x7f4a7c15) | 0, 1597334677); x ^= x >>> 15; x = Math.imul(x, 2246822519); x ^= x >>> 13; return ((x >>> 0) % 100000) / 100000; };
+  // ---- tàu ngược chiều theo lịch thật (cùng danh mục với bản đồ toàn quốc): vị trí mỗi đoàn ngược chiều theo giờ, đổi sang km của tuyến ta; giờ gặp nhau tính từ khoảng cách thật và tốc độ hiện tại của ta
+  function buildOppCat(W, trip) {
+    const L = W.line, oppDir = trip.dir === 'down' ? 'up' : 'down', out = [], idxOf = new Map(L.stations.map((s, i) => [s.en, i]));
+    for (const id of Object.keys(LINE_META)) { const LL = lineOf(id); if (!LL || !LL.trains) continue;
+      for (const rec of LL.trains) { if (rec.d !== oppDir || (id === W.lineId && rec === trip.rec)) continue;
+        let run = [], best = []; for (const e of rec.s) { if (e[3]) continue; const i = idxOf.get(LL.stations[e[0]].en);
+          if (i === undefined) { if (run.length > best.length) best = run; run = []; continue; } run.push({ km: L.stations[i].km, ta: e[1] != null ? e[1] : e[2], td: e[2] != null ? e[2] : e[1] }); }
+        if (run.length > best.length) best = run; if (best.length >= 2) out.push({ id: id + rec.t + rec.n + rec.d, rec, pts: best }); } }
+    return out;
+  }
+  function refreshOpposing(W, T) {
+    if (!W.oppCat || (W.oppAt !== undefined && W.t - W.oppAt < 0.4 && W.t >= W.oppAt)) return; W.oppAt = W.t;
+    const NC = root.NatCat; if (NC && W.haz) NC.step(W);
+    const now = W.trip.t0 + W.t, kmP = kmOfS(T.x, W.dir, W.line.kmEnd), down = W.dir === 'down', st = W.oppState || (W.oppState = new Map());
+    for (const c of W.oppCat) { const p = c.pts, dl = NC && W.haz ? NC.delayOf(W, c.id) : null, nowE = now - (dl ? dl.delay : 0); let km = null, vo = 0;
+      if (dl && dl.hold > 0) { st.delete(c.id); continue; }
+      for (let k = 0; k < p.length && km === null; k++) { if (nowE >= p[k].ta && nowE <= p[k].td) { km = p[k].km; vo = 0; } else if (k < p.length - 1 && nowE > p[k].td && nowE < p[k + 1].ta) { const f = (nowE - p[k].td) / ((p[k + 1].ta - p[k].td) || 1); km = p[k].km + (p[k + 1].km - p[k].km) * f; vo = Math.abs(p[k + 1].km - p[k].km) * 1000 / ((p[k + 1].ta - p[k].td) || 1); } }
+      if (km === null || vo < 5) { if (!st.has(c.id) || st.get(c.id).t0 > W.t) st.delete(c.id); continue; }
+      const gap = (down ? km - kmP : kmP - km) * 1000;
+      if (gap > 0 && gap < 40000) st.set(c.id, { t0: W.t + gap / Math.max(40, T.v + vo), v: c.rec.v, label: c.rec.t + ' ' + c.rec.n }); }
+    for (const [k, s] of st) if (W.t - s.t0 > 6) st.delete(k);
+    const arr = [...st.values()].filter(s => s.t0 - W.t < 150).sort((a, b) => a.t0 - b.t0); W.opposing = arr.map(s => s.t0); W.oppInfo = arr;
+  }
   function oppKey(W, T, t0) {
+    if (W.oppInfo) { let b = null; for (const s of W.oppInfo) if (!b || Math.abs(s.t0 - t0) < Math.abs(b.t0 - t0)) b = s; if (b && Math.abs(b.t0 - t0) < 1.5 && VEH[b.v]) return b.v; }
     const cm = W.line.meta.coupleMini; if (!cm) return W.line.meta.defVeh;
     const km = kmOfS(T.x, W.dir, W.line.kmEnd); if (km > cm.maxKm) return W.line.meta.defVeh;
     const sd = W.seed || 1, r = hash01(Math.round(t0), sd); if (r > cm.p) return 'E5';
@@ -884,7 +908,7 @@
           Ld.started = true; Ld.phase = 'run'; Ld.door = 'closed'; Ld.x = LM[0].s; Ld.v = Math.min(limitKm(L, kmOfS(Ld.x, trip.dir, L.kmEnd)) / 3.6, Ld.veh.vmax, Math.sqrt(2 * G.aATC * 0.7 * Math.max(ds - 300, 0))); }
       }
     }
-    if (opts.events === false) { W.weatherKind = 'clear'; W.opposing = []; } else genEvents(W, M, rnd);
+    if (opts.events === false) { W.weatherKind = 'clear'; W.opposing = []; } else { if (!trip.mission) W.oppCat = buildOppCat(W, trip); genEvents(W, M, rnd); if (!trip.mission && root.NatCat) root.NatCat.init(W); }
     W.t = W.lead ? W.leadStartT - 5 : 0;
     prerun(W);
     return W;
@@ -989,16 +1013,16 @@
       const at = Math.round(planT * (0.12 + rnd() * 0.6));
       if (kind === 'rain') {
         const c = sAtTime(at + 350 + rnd() * 400), hw = 20000 + rnd() * 20000, d50 = 900 + rnd() * 900, stop = rnd() < 0.4, stopDelay = 240 + rnd() * 300, stopDur = 600 + rnd() * 600;
-        const ss0 = Math.min(c - hw, c + hw), ss1 = Math.max(c - hw, c + hw);
+        const ss0 = Math.min(c - hw, c + hw), ss1 = Math.max(c - hw, c + hw); (W.hazPlan = W.hazPlan || []).push({ kind: 'rain', at, dur: d50, s: c, r: hw / 1000 + 25 });
         ev(at - 240, w => w.say('info', 'Cục Khí tượng: mưa lớn sắp tới đoạn phía trước (dự báo ~50 mm/h). Chuẩn bị chạy chậm, bật gạt mưa (V).'));
         ev(at, w => { w.zones.push({ s0: ss0, s1: ss1, v: 70 / 3.6, tA: w.t, tB: w.t + d50, kind: 'rain', label: 'mưa ≥ 50 mm/h' }); w.say('warn', 'Mưa 50 mm/h: chạy chậm 70 km/h trong vùng mưa (tài liệu 06 §5.3). Nhấn Y để nhắc lại lệnh.', { ack: true }); });
         if (stop) ev(at + stopDelay, w => { w.zones.push({ s0: ss0, s1: ss1, v: 0, tA: w.t, tB: w.t + stopDur, kind: 'rain', hold: true, label: 'mưa ≥ 60 mm/h' }); startHold(w, ss1, stopDur, 'rain'); w.say('bad', `Mưa ≥ 60 mm/h: DỪNG chạy. Về ga gần nhất rồi chờ lệnh (~${fmtT(stopDur)}). Nhấn Y để nhắc lại lệnh.`, { ack: true }); });
       } else if (kind === 'wind') {
-        const c = sAtTime(at + 300 + rnd() * 400), hw = 25000 + rnd() * 20000, dur = 600 + rnd() * 900, ss0 = Math.min(c - hw, c + hw), ss1 = Math.max(c - hw, c + hw);
+        const c = sAtTime(at + 300 + rnd() * 400), hw = 25000 + rnd() * 20000, dur = 600 + rnd() * 900, ss0 = Math.min(c - hw, c + hw), ss1 = Math.max(c - hw, c + hw); (W.hazPlan = W.hazPlan || []).push({ kind: 'wind', at, dur, s: c, r: hw / 1000 + 25 });
         ev(at - 300, w => w.say('info', 'Cảnh báo gió mạnh 25–30 m/s ở đoạn phía trước.'));
         ev(at, w => { w.zones.push({ s0: ss0, s1: ss1, v: 0, tA: w.t, tB: w.t + dur, kind: 'wind', hold: true, label: 'gió ≥ 30 m/s' }); startHold(w, ss1, dur, 'wind'); w.say('bad', `Gió ≥ 30 m/s: DỪNG chạy. Về ga gần nhất, chờ kiểm tra ray (~${fmtT(dur)}). Nhấn Y để nhắc lại lệnh.`, { ack: true }); });
       } else if (kind === 'eqk') {
-        const at2 = Math.round(planT * (0.2 + rnd() * 0.6)), dur = 480 + rnd() * 600;
+        const at2 = Math.round(planT * (0.2 + rnd() * 0.6)), dur = 480 + rnd() * 600; (W.hazPlan = W.hazPlan || []).push({ kind: 'eqk', at: at2, dur, s: sAtTime(at2) });
         ev(at2, w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', 'CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Phát thanh trấn an hành khách (M).'); });
       } else if (kind === 'leadstop') {
         const d = 240 + rnd() * 420;
@@ -1071,7 +1095,7 @@
           T.orderAt = w.t; w.say('warn', `Điều độ: tuyến đường đơn, DỪNG TRÁNH tàu ngược chiều tại ${M[j].name} (~${dwell} s). Dừng đúng vạch, chờ tàu ngược chiều vào ga rồi mới chạy tiếp.`); });
       }
     }
-    W.opposing = []; for (let t = 100 + rnd() * 120; t < planT + 900; t += 90 + rnd() * 140) W.opposing.push(Math.round(t));
+    W.opposing = []; if (!W.oppCat) for (let t = 100 + rnd() * 120; t < planT + 900; t += 90 + rnd() * 140) W.opposing.push(Math.round(t));      // có danh mục tàu thật (W.oppCat) thì tàu ngược chiều lấy từ lịch, không sinh ngẫu nhiên
     W.events.sort((a, b) => a.at - b.at);
   }
 
@@ -1163,7 +1187,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

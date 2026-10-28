@@ -236,7 +236,7 @@
     const Ld = W.lead;
     if (Ld && Ld.phase !== 'end') { const lenL = Ld.veh.len, dl = Ld.x - T.x; if (dl > 0 && dl - lenL < 1800) { const xf = map(dl), xr = map(Math.max(dl - lenL, 0)), q = sc(Math.max(dl - lenL, 0)); if (xf - xr > 2) fleet(ctx, R, Ld.veh.key, xf, base, xf - xr, hOf(R, Ld.veh.key, K) * SV * q, 0.95); } }
     // tàu ngược chiều: đi sang phải (đông/bắc) thì được vẽ ĐÈ lên tàu của ta; đi sang trái thì nằm phía SAU tàu của ta
-    const drawOpp = () => { if (T.v > 20 && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 1) { const ok_ = root.Sim.oppKey(W, T, t0), wv = K * 0.8 * root.Sim.VEH[ok_].len, hh = hOf(R, ok_, K * 0.8) * SV, front = px + pw - u * (pw + wv); fleet(ctx, R, ok_, front, base - 4, wv, hh, 0.92, true); } } };
+    const drawOpp = () => { if ((T.v > 20 || W.oppCat) && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 1) { const ok_ = root.Sim.oppKey(W, T, t0), wv = K * 0.8 * root.Sim.VEH[ok_].len, hh = hOf(R, ok_, K * 0.8) * SV, front = px + pw - u * (pw + wv); fleet(ctx, R, ok_, front, base - 4, wv, hh, 0.92, true); } } };
     if (flipX) drawOpp();
     // ---- đoàn tàu người lái
     const drawOwn = (fx, key, lead) => {
@@ -270,7 +270,7 @@
     const pl = T.phase === 'dwell' ? (W.passers && W.passers[T.k]) : null;
     if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const wL = 404.7 * K * 1.18, hh = hOf(R, p.v || (W.line.meta.defVeh), K * 1.18) * SV, xF = px + u * (pw + wL); fleet(ctx, R, p.v || (W.line.meta.defVeh), xF, base + 9, wL * ((root.Sim.VEH[p.v] || {}).len ? root.Sim.VEH[p.v].len / 404.7 : 1), hh, 1, false); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(px, base - 40, pw, 50 * 0); txt2(ctx, p.label + ' thông qua', px + pw / 2, py + 16, '#ffd88a'); } }
     // hiệu ứng chớp khi hai tàu gặp nhau
-    if (T.v > 20 && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 0.4) { ctx.fillStyle = 'rgba(255,255,255,' + 0.15 * Math.sin(u / 0.4 * Math.PI) + ')'; ctx.fillRect(px, py, pw, ph); } }
+    if ((T.v > 20 || W.oppCat) && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 0.4) { ctx.fillStyle = 'rgba(255,255,255,' + 0.15 * Math.sin(u / 0.4 * Math.PI) + ')'; ctx.fillRect(px, py, pw, ph); } }
     // ---- thời tiết phủ lên
     if (rain && !tun) { ctx.strokeStyle = 'rgba(160,190,255,.5)'; ctx.lineWidth = 1; const tt = now / 30; ctx.beginPath(); for (let q = 0; q < 90; q++) { const rx = px + ((q * 83 + tt * 3 + (windy ? tt * 3 : 0)) % pw), ry = py + ((q * 47 + tt * 9) % ph); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5 - (windy ? 6 : 0), ry + 12); } ctx.stroke(); }
     if (!tun && inSnow && T.x >= (W.zones.find(z => z.kind === 'snow') || { s0: 1e18 }).s0 - 4000) { ctx.fillStyle = 'rgba(245,250,255,.85)'; const tt = now / 25; ctx.beginPath(); for (let q = 0; q < 110; q++) { const rx = px + ((q * 61 + tt * (1.2 + (q % 3) * 0.5) + Math.sin(tt / 9 + q) * 8) % pw), ry = py + ((q * 37 + tt * (1.5 + (q % 4) * 0.6)) % ph); ctx.rect(rx, ry, 2, 2); } ctx.fill(); }

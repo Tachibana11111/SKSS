@@ -4,7 +4,7 @@ const DRIVE = path.join(__dirname, '..', 'prototype', 'drive');
 global.window = global;
 global.localStorage = (() => { const m = {}; return { getItem: k => m[k] || null, setItem: (k, v) => { m[k] = String(v); }, removeItem: k => { delete m[k]; } }; })();
 require(path.join(DRIVE, 'data-lines.js'));
-const Sim = require(path.join(DRIVE, 'sim.js')); global.Sim = Sim;
+const Sim = require(path.join(DRIVE, 'sim.js')); global.Sim = Sim; require(path.join(DRIVE, 'natcat.js'));
 require(path.join(DRIVE, 'layout.js')); require(path.join(DRIVE, 'store.js')); require(path.join(DRIVE, 'tutorial.js'));
 let pass = 0, fail = 0; const failures = [];
 function ok(cond, name, info) { if (cond) pass++; else { fail++; failures.push(name + (info !== undefined ? ' → ' + info : '')); } }
@@ -522,6 +522,15 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
     for (const t of [0, 600, 3000, 9000]) { W.t = t; T.x = Sim.sOfKm(st.length * 7 % L.kmEnd, 'down', L.kmEnd); try { NatMap.draw(ctx, 0, 58, 1920, 618, W, T, o); n++; } catch (e) { err = ln + ' ' + e.message; } }
     NatMap.V.sel = { en: 'Tokyo' }; try { NatMap.draw(ctx, 0, 58, 1920, 618, W, T, o); n++; } catch (e) { err = ln + ' thẻ ga ' + e.message; } NatMap.V.sel = null; }
   ok(!err && n >= 20, 'vẽ bản đồ không lỗi (' + n + ' khung)', err);
+  // tàu ngược chiều lấy từ lịch thật; thiên tai và độ trễ từ NatCat
+  { const L = Sim.lineOf('tsk'), r = L.trains.find(t => t.d === 'down' && !t.cp && t.s.filter(e => !e[3]).length >= 3 && t.t === 'Nozomi'), st = r.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', r, st[0], st[st.length - 1]), { diff: 'hard', seed: 3, lead: false, events: true }), T = W.player;
+    ok(Array.isArray(W.oppCat) && W.oppCat.length > 20, 'danh mục tàu ngược chiều có ' + (W.oppCat || []).length + ' đoàn');
+    ok(W.haz && W.haz.cells.length >= 1, 'có ô thời tiết (' + (W.haz ? W.haz.cells.length : 0) + ' ô, ' + (W.haz ? W.haz.quakes.length : 0) + ' động đất)');
+    Sim.requestClose(T); T.pw = 13; let n = 0, seen = 0; while (!T.finished && n++ < 3e5 && W.t < 6000) { Sim.tick(W, 0.05, {}, true); if ((W.opposing || []).some(t0 => Math.abs(t0 - W.t) < 0.2)) seen++; if (n % 400 === 0) { /* NatCat.step chạy trong refreshOpposing */ } }
+    ok(seen > 0, 'có tàu ngược chiều lướt qua theo lịch trong chuyến (' + seen + ' lần)');
+    NatCat.step(W); let held = 0, delayed = 0; for (const d of W.haz.delay.values()) { if (d.delay > 0) delayed++; if (d.why === 'eqk') held++; }
+    ok(W.haz.lastT >= W.trip.t0 + W.t - 6, 'độ trễ tích luỹ tới giờ hiện tại (' + delayed + ' đoàn trễ, ' + held + ' dừng vì động đất)');
+    const q = { t: 0, lat: 35, lon: 139, mag: 7, depth: 10 }; ok(NatCat.shindoAt(q, 10) > NatCat.shindoAt(q, 300) && NatCat.shindoAt(q, 10) >= 5, 'shindo giảm theo khoảng cách'); }
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
 

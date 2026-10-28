@@ -486,11 +486,11 @@
         z = z2;
       }
     };
-    if (T.v > 20 && !S.oppHidden(W, T)) for (const t0 of W.opposing || []) { const VR = 200, zN = (t0 - W.t) * VR, key = S.oppKey(W, T, t0), veh = S.VEH[key] || S.VEH.N700; if (zN > 900 || zN < -veh.len - 20) continue;
+    if ((T.v > 20 || W.oppCat) && !S.oppHidden(W, T)) for (const t0 of W.opposing || []) { const VR = 200, zN = (t0 - W.t) * VR, key = S.oppKey(W, T, t0), veh = S.VEH[key] || S.VEH.N700; if (zN > 900 || zN < -veh.len - 20) continue;
       const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), oic = iconFor(veh.parts ? veh.parts[0] : key);
       items.push({ z: Math.max(zN, ZN + 1), fn: () => { if (zN > ZN && oic) drawFront(oic, oppAt(zN), zN, 1, 'head'); if (zN < 60) slicesVeh(veh, zN, fxp, 1); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
     // camera sau: tàu ngược chiều đã lướt qua đầu tàu ta, chạy dọc thân rồi xa dần ra phía sau (mũi tàu ở xa, thân kéo về phía camera)
-    if (W.rear && T.v > 20 && !S.oppHidden(W, T)) for (const o of W.oppRear || []) { const VR = 200, veh = S.VEH[o.key] || S.VEH.N700, zN = (W.t - o.t0) * VR - W.rearLen; if (zN < -veh.len - 20 || zN > 900) continue;
+    if (W.rear && (T.v > 20 || W.oppCat) && !S.oppHidden(W, T)) for (const o of W.oppRear || []) { const VR = 200, veh = S.VEH[o.key] || S.VEH.N700, zN = (W.t - o.t0) * VR - W.rearLen; if (zN < -veh.len - 20 || zN > 900) continue;
       const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), ric = iconFor(veh.parts ? veh.parts[veh.parts.length - 1] : o.key), zTail = zN - veh.len;
       items.push({ z: Math.max(zN, ZN + 1), fn: () => { slicesVeh(veh, zN, fxp, -1); if (zTail > ZN && ric) drawFront(ric, oppAt(zTail), zTail, 1, 'tail'); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
     function slicesVeh(veh, zRef, fxp, sign, mv) {      // đoàn ghép: vẽ lần lượt từng đoàn, đoàn sau cách đoàn trước một khe nối

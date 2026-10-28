@@ -100,12 +100,11 @@ function drawTopBar(blink) {
   ctx.fillStyle = '#4aa3ff'; ctx.fillRect(pos(T.x) - 6, ly - 9, 12, 18);
 
   // nút nhỏ: điện đàm, HUD, toàn màn hình
-  // ba ô vuông biểu tượng cạnh nhau: điện đàm (O), HUD / tập trung (H), toàn màn hình (F11)
-  const SZ = 44, GAP = 6, nIcons = tutLessonActive ? 3 : 5, bx0 = FW - 16 - nIcons * SZ - (nIcons - 1) * GAP, by0 = 7;      // hướng dẫn: chỉ điện đàm, toàn màn hình, tạm dừng
+  // các ô vuông biểu tượng cạnh nhau, dồn sát mép phải: camera sau (B), điện đàm (O), toàn màn hình (F11), tạm dừng (Esc)
+  const SZ = 44, GAP = 6, nIcons = tutLessonActive ? 3 : 4, bx0 = FW - 16 - nIcons * SZ - (nIcons - 1) * GAP, by0 = 7;      // hướng dẫn: chỉ điện đàm, toàn màn hình, tạm dừng
   let ix = bx0; const nextX = () => { const x = ix; ix += SZ + GAP; return x; };
   if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'rear', ui.rear, 'B', () => { ui.rear = !ui.rear; });
   iconBtn(nextX(), by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
-  if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'hud', !ui.focus, 'H', () => { ui.focus = !ui.focus; });
   iconBtn(nextX(), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
   iconBtn(nextX(), by0, SZ, 'pause', paused, 'Esc', () => { paused = !paused; });
 }

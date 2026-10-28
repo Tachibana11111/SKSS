@@ -144,6 +144,7 @@
 <script src="assets/n700_strip.js"></script>
 <script src="assets/sprites.js"></script>
 <script src="sim.js"></script>
+<script src="natcat.js"></script>
 <script src="store.js"></script>
 <script src="assets/fronts.js"></script>
 <script src="transfers.js"></script>
@@ -351,7 +352,6 @@ addEventListener('keydown', e => {
   if (k === 'Tab' && T.finished) { endPage = (endPage + 1) % 2; e.preventDefault(); return; }
   if (k === 'Tab' && ui.cur === 'full') { cycleMain(); e.preventDefault(); return; }
   if ((k === ',' || k === '.') && ui.cur === 'full') { const v = k === ',' ? 'winL' : 'winR'; ui.main = ui.main === v ? 'cab' : v; e.preventDefault(); return; }
-  if ((k === 'h' || k === 'H') && ui.cur === 'full') { ui.focus = !ui.focus; return; }
   if ((k === 'o' || k === 'O') && ui.cur === 'full') { ui.radio = !ui.radio; return; }
   if (k === 'b' || k === 'B') { ui.rear = !ui.rear; return; }
   if (k === 'F11') { toggleFullscreen(); e.preventDefault(); return; }

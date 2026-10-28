@@ -18,7 +18,7 @@ Game lái tàu Shinkansen của 5 công ty JR, chạy hoàn toàn trong trình d
 | A · G · V · L | ATC (bấm 2 lần để cắt) · cần vẹt · gạt mưa · đèn pha |
 | Y / N · M | nhắc lại lệnh, chấp nhận / từ chối · phát thanh trấn an |
 | X · K | (tàu kiểm tra) bật đo · đánh dấu lỗi |
-| Tab · B · H · O | đổi khung nhìn · camera cuối đoàn · chế độ tập trung · ẩn điện đàm |
+| Tab · B · O | đổi khung nhìn · camera cuối đoàn · ẩn điện đàm |
 | , · . | cửa sổ hành khách bên trái · bên phải (toa giữa đoàn, bấm lại để về buồng lái) |
 | J | bật/tắt tiếng ù cabin máy bay (cũng có ô ở menu phải) |
 | D | mở/đóng bản đồ toàn quốc (47 tỉnh, 10 tuyến theo màu Wikipedia, mọi tàu chạy theo lịch thật; con lăn zoom, kéo di chuyển, bấm ga hoặc tàu xem chi tiết; cũng có nút trên bản đồ nhỏ) |

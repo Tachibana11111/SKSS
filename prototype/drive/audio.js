@@ -183,7 +183,7 @@
       R.comp -= dt; if (R.comp < 0) { this.compressor(); R.comp = 35 + Math.random() * 50; }
       { const xg = (W.xings || []).find(g => g.s - T.x > -25 && g.s - T.x < 520); R.bell = (R.bell || 0) - dt;      // chuông đường ngang (踏切警報機): kêu khi tàu cách đường ngang < 520 m
         if (xg && v > 3 && R.bell < 0) { const d = Math.max(0, xg.s - T.x), vol = 0.03 + 0.07 * (1 - d / 520); this.tone(2150, 0.09, 'sine', vol, 0); this.tone(1750, 0.09, 'sine', vol, 0.14); R.bell = 0.3; } }
-      if (this.prevWt !== undefined && v > 40 && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) if (this.prevWt < t0 - 2.3 && W.t >= t0 - 2.3) this.playClip(0.35 + 0.4 * sp, 0, 5.5);
+      if (this.prevWt !== undefined && (v > 40 || W.oppCat) && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) if (this.prevWt < t0 - 2.3 && W.t >= t0 - 2.3) this.playClip(0.35 + 0.4 * sp, 0, 5.5);
       if (W.weatherKind === 'typhoon' || W.weatherKind === 'rain') { R.thunder -= dt; if (R.thunder < 0) { if (W.weatherKind === 'typhoon' || Math.random() < 0.4) this.thunder(); R.thunder = 35 + Math.random() * 70; } }
     }
     this.ambience(dw && !st.paused && st.scale <= 4 ? (T.door === 'open' ? 0.55 : 0.4) : 0);
