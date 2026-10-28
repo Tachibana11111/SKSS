@@ -12,7 +12,8 @@ const SLOT_DASH = [276, DASH_Y + 22, 284, 284];          // khung phụ trong b�
 function syncLayout() {
   const want = (mode === 'drive' || mode === 'tutorial') ? 'full' : 'classic';      // lái tàu và hướng dẫn luôn dùng bố cục toàn màn hình; 'classic' chỉ là kích thước canvas nhỏ của chế độ điều độ
   if (want === ui.cur) return; ui.cur = want;
-  if (want === 'full') { cv.width = FW; cv.height = FH; W_ = FW; H_ = FH; } else { cv.width = 1780; cv.height = 900; W_ = 1780; H_ = 900; }
+  if (want === 'full') { W_ = FW; H_ = FH; } else { W_ = 1780; H_ = 900; }
+  cv.width = Math.round(W_ * QS); cv.height = Math.round(H_ * QS);
   document.body.classList.toggle('fullui', want === 'full');
 }
 function toggleFullscreen() { try { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); } catch (e) { } }
@@ -21,14 +22,25 @@ const VIEWS = ['cab', 'top', 'side', 'winL', 'winR'], VNAME = { cab: 'BUỒNG L�
 function cycleMain() { ui.main = VIEWS[(VIEWS.indexOf(ui.main) + 1) % VIEWS.length]; }
 
 // vẽ một góc nhìn vào hình chữ nhật (x,y,w,h)
-function drawViewIn(kind, x, y, w, h) {
-  ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-  if (kind === 'cab') (ui.rear ? CabView.drawRear : CabView.draw)(ctx, x, y, w, h, W, T, { sprites: SPR, fronts: FR, aud: AUD });
-  else if (kind === 'nat') NatMap.drawMini(ctx, x, y, w, h, W, T, { txt, button });
-  else if (kind === 'top') { TopView.draw(ctx, x, y, w, h, W, T, { sprites: SPR, tops: TP, aud: AUD }); }
-  else if (kind === 'winL' || kind === 'winR') WinView.draw(ctx, x, y, w, h, W, T, { sprites: SPR, aud: AUD }, kind === 'winL' ? 1 : -1);
-  else { Scene.draw(ctx, x, y, w, h, W, T, { sprites: SPR, nextTarget: Sim.nextTarget, aud: AUD, rear: ui.rear }); if (Sim.inTunnel(W, T.x)) { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x, y, w, h); } }
-  ctx.restore();
+function drawViewIn(kind, x, y, w, h, g) {
+  g = g || ctx;
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  if (kind === 'cab') (ui.rear ? CabView.drawRear : CabView.draw)(g, x, y, w, h, W, T, { sprites: SPR, fronts: FR, aud: AUD });
+  else if (kind === 'nat') NatMap.drawMini(g, x, y, w, h, W, T, { txt: g === ctx ? txt : (t, tx, ty, col, f, al) => { g.fillStyle = col || '#e8eef5'; g.font = f || '14px system-ui'; g.textAlign = al || 'left'; g.fillText(t, tx, ty); }, button });
+  else if (kind === 'top') { TopView.draw(g, x, y, w, h, W, T, { sprites: SPR, tops: TP, aud: AUD }); }
+  else if (kind === 'winL' || kind === 'winR') WinView.draw(g, x, y, w, h, W, T, { sprites: SPR, aud: AUD }, kind === 'winL' ? 1 : -1);
+  else { Scene.draw(g, x, y, w, h, W, T, { sprites: SPR, nextTarget: Sim.nextTarget, aud: AUD, rear: ui.rear }); if (Sim.inTunnel(W, T.x)) { g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x, y, w, h); } }
+  g.restore();
+}
+
+// khung phụ (2D, bản đồ nhỏ, bản đồ toàn quốc): vẽ vào canvas đệm và chỉ làm mới ~11 lần/giây rồi dán lại mỗi khung; canvas chạy bằng CPU (không có tăng tốc phần cứng) nên mỗi lần vẽ lại đều tốn thật
+const TILE = {};
+function tileView(id, kind, x, y, w, h) {
+  const now = performance.now(), pw_ = Math.max(1, Math.round(w * QS)), ph_ = Math.max(1, Math.round(h * QS)); let c = TILE[id];
+  if (!c) c = TILE[id] = { cv: document.createElement('canvas'), t: -1e9, kind: '', q: 0 };
+  if (c.cv.width !== pw_ || c.cv.height !== ph_) { c.cv.width = pw_; c.cv.height = ph_; c.t = -1e9; }
+  if (now - c.t > 90 || c.kind !== kind || c.nat !== ui.nat) { const g = c.cv.getContext('2d'); g.setTransform(QS, 0, 0, QS, 0, 0); g.clearRect(0, 0, w, h); drawViewIn(kind, 0, 0, w, h, g); c.t = now; c.kind = kind; c.nat = ui.nat; }
+  ctx.drawImage(c.cv, x, y, w, h);
 }
 
 // đồng hồ tròn nhỏ
@@ -196,9 +208,9 @@ function drawFull() {
   // ---- khung chính + hai khung phụ: khung thứ nhất nằm trong bảng điều khiển (bên trái đồng hồ tốc độ), khung thứ hai ở góc trên phải
   drawViewIn(ui.main, MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]);
   const others = VIEWS.filter(v => v !== ui.main), slotLabel = (v, x, y, w) => { ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y, Math.min(w, 206), 20); txt(VNAME[v] + ' · bấm để phóng to', x + 6, y + 14, '#cfe0f0', '11px system-ui'); };
-  const drawPip = () => { const [x, y, w, h] = SLOT_PIP, v = others[1]; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); drawViewIn(v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: () => { ui.main = v; } }); };
+  const drawPip = () => { const [x, y, w, h] = SLOT_PIP, v = others[1]; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); tileView('pip', v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: () => { ui.main = v; } }); };
   // ô dưới khung 2D: bản đồ toàn quốc bám theo tàu ta; khi bản đồ toàn quốc đang là khung chính thì ô này hiện góc nhìn lái tàu hiện tại; bấm hoặc phím D để hoán đổi
-  const drawNatTile = () => { const [x, y, w, h] = SLOT_NAT; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); drawViewIn(ui.nat ? ui.main : 'nat', x, y, w, h); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y, Math.min(w, 250), 20); txt((ui.nat ? VNAME[ui.main] : 'BẢN ĐỒ TOÀN QUỐC') + ' · bấm hoặc D để hoán đổi', x + 6, y + 14, '#cfe0f0', '11px system-ui'); btns.push({ x, y, w, h, fn: () => { ui.nat = !ui.nat; } }); };
+  const drawNatTile = () => { const [x, y, w, h] = SLOT_NAT; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); tileView('nat', ui.nat ? ui.main : 'nat', x, y, w, h); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(x, y, Math.min(w, 250), 20); txt((ui.nat ? VNAME[ui.main] : 'BẢN ĐỒ TOÀN QUỐC') + ' · bấm hoặc D để hoán đổi', x + 6, y + 14, '#cfe0f0', '11px system-ui'); btns.push({ x, y, w, h, fn: () => { ui.nat = !ui.nat; } }); };
   if (!ui.nat) { drawPip(); drawNatTile(); }
   // ---- điện đàm
   if (!ui.focus && ui.radio) drawRadioFull(16, 72, 496, 340);
@@ -222,7 +234,7 @@ function drawFull() {
   { const g = ctx.createLinearGradient(0, DASH_Y, 0, FH); g.addColorStop(0, '#0d1319'); g.addColorStop(1, '#070a0e'); ctx.fillStyle = g; ctx.fillRect(0, DASH_Y, FW, FH - DASH_Y); ctx.fillStyle = '#2a3b4f'; ctx.fillRect(0, DASH_Y, FW, 3); }
   lever(20, PY, 236, PH, 'pw'); lever(1664, PY, 236, PH, 'bk');
   // bảng trái: khung phụ (bản đồ nhỏ) + công tắc ATC ngay dưới
-  if (!ui.focus) { panel(268, PY, 300, PH); const [x, y, w, h] = SLOT_DASH, v = others[0]; drawViewIn(v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: () => { ui.main = v; } }); atcButton(276, PY + 300, 140, 66, blink); panButton(424, PY + 300, 136, 66); }
+  if (!ui.focus) { panel(268, PY, 300, PH); const [x, y, w, h] = SLOT_DASH, v = others[0]; tileView('dash', v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: () => { ui.main = v; } }); atcButton(276, PY + 300, 140, 66, blink); panButton(424, PY + 300, 136, 66); }
   // đồng hồ tốc độ (lệch trái), đèn báo xếp dọc bên phải, ba đồng hồ phụ nhỏ ngay dưới
   panel(580, PY, 600, PH); bigDial(820, PY + 150, 125, blink);
   { const lampsL = [['ĐÓNG CỬA', T.door === 'closed', '#4cd68a'], ['ATC', T.atc, '#ff5a5a'], ['定速', T.cs, '#3ad6e6'], ['GẠT MƯA', T.wiper, '#4aa3ff'], ['ĐÈN PHA', Sim.lampOn(W, T), '#fff2b0'], ['MƯA', W.rainHere, '#2f6fd6']];

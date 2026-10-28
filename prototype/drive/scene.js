@@ -83,7 +83,7 @@
     ctx.restore();
   }
   function stripTrain(ctx, spr, img, xFront, base, wPx, hPx, flip, alpha, railOff) {
-    ctx.save(); ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.save(); ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'low';
     const y = base - hPx * (spr.railY / spr.height) + (railOff || 0);
     if (flip) { ctx.translate(xFront, 0); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0, spr.width, spr.height, 0, y, wPx, hPx); }
     else ctx.drawImage(img, 0, 0, spr.width, spr.height, xFront - wPx, y, wPx, hPx);
@@ -245,7 +245,7 @@
     const psp = sprOf(R, key);
     if (psp) {
       const spr = psp.meta, img = psp.img, f = K / spr.pxPerMeter, srcW = Math.min(spr.width, Math.ceil((fx - px + 4) / f)), dh = spr.height * f * SV;
-      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(fx - srcW * f, base - 1, srcW * f, 3);
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'low'; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(fx - srcW * f, base - 1, srcW * f, 3);
       if (night > 0.3) {       // tô tối đúng hình tàu (không tô cả hình chữ nhật quanh tàu)
         const ow = Math.ceil(srcW * f), oh = Math.ceil(dh); if (!scene._tint || scene._tint.width < ow || scene._tint.height < oh) { scene._tint = document.createElement('canvas'); scene._tint.width = Math.max(ow, 600); scene._tint.height = Math.max(oh, 120); }
         const tc = scene._tint.getContext('2d'); tc.clearRect(0, 0, scene._tint.width, scene._tint.height); tc.drawImage(img, spr.width - srcW, 0, srcW, spr.height, 0, 0, srcW * f, dh); tc.globalCompositeOperation = 'source-atop'; tc.fillStyle = 'rgba(6,10,24,' + (0.5 * night) + ')'; tc.fillRect(0, 0, ow, oh); tc.globalCompositeOperation = 'source-over';

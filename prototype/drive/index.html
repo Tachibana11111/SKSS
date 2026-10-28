@@ -134,7 +134,7 @@
   </div>
   <div class="row">
     <div class="grp">Âm thanh và cảnh</div>
-    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label class="inl" title="Bản đồ nhỏ: ray hướng tàu ta đi tô theo màu chính thức của tuyến đang lái (mặc định xanh biển)"><input type="checkbox" id="topcol"> minimap: ray theo màu tuyến</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60">
+    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label title="Độ phân giải vẽ. Canvas của trình duyệt đang chạy bằng CPU thì nên hạ xuống 75% hoặc 50% để mượt hơn; Tự động sẽ tự hạ khi khung hình chậm">Chất lượng hình <select id="quality"><option value="auto">Tự động</option><option value="1">Cao (100%)</option><option value="0.75">Vừa (75%)</option><option value="0.5">Thấp (50%)</option></select></label> <label class="inl" title="Bản đồ nhỏ: ray hướng tàu ta đi tô theo màu chính thức của tuyến đang lái (mặc định xanh biển)"><input type="checkbox" id="topcol"> minimap: ray theo màu tuyến</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60">
     <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
     <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option></select></label>
   </div>
@@ -165,7 +165,7 @@
 <script src="strips.js"></script>
 <script>
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-let W_ = cv.width, H_ = cv.height; const LINES = window.LINES;
+let W_ = cv.width, H_ = cv.height, QS = 1, qMode = 'auto', fpsEma = 0.016, qLock = 0, qGood = 0, qT = 0;      // QS: hệ số độ phân giải vẽ (canvas = kích thước logic × QS); 'auto' tự hạ khi khung hình chậm const LINES = window.LINES;
 const CW = 1120, OX = 310;                    // vùng giữa (đồng hồ, cảnh) rộng 1120 px, lệch OX; cột trái = điện đàm, cột phải = nút điều khiển + phím tắt
 let curOY = 0, curOX = 0;                                // độ lệch hiện tại khi đăng ký vùng bấm
 const $ = id => document.getElementById(id);
@@ -294,7 +294,8 @@ $('tabTut').onclick = () => { if (mode === 'tutorial') return; if (tutLessonActi
 // ---- lưu cài đặt
 const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('scenery').value = S.scenery === 'lite' ? 'lite' : 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
-$('snd').onchange = () => { AUD.unlock(); sndUpd(); }; window.TOPCOL = !!S.topcol; $('topcol').checked = !!S.topcol; $('topcol').onchange = () => { window.TOPCOL = $('topcol').checked; Store.setting('topcol', window.TOPCOL); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
+$('snd').onchange = () => { AUD.unlock(); sndUpd(); }; qMode = S.quality || 'auto'; if (qMode !== 'auto') setQuality(+qMode); $('quality').value = qMode; $('quality').onchange = () => { qMode = $('quality').value; Store.setting('quality', qMode); if (qMode === 'auto') { $('quality').options[0].textContent = 'Tự động (đang ' + Math.round(QS * 100) + '%)'; } else setQuality(+qMode); };
+window.TOPCOL = !!S.topcol; $('topcol').checked = !!S.topcol; $('topcol').onchange = () => { window.TOPCOL = $('topcol').checked; Store.setting('topcol', window.TOPCOL); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
 $('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
 AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('snd').checked;
 $('fsBtn').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); } catch (e) { } };
@@ -387,8 +388,13 @@ cv.addEventListener('click', e => {
 });
 
 // ---- vòng lặp
+function setQuality(q) { q = Math.max(0.5, Math.min(1, q)); if (q === QS) return; QS = q; if (ui.cur === 'full') { cv.width = Math.round(FW * QS); cv.height = Math.round(FH * QS); } else { cv.width = Math.round(W_ * QS); cv.height = Math.round(H_ * QS); } const sel = $('quality'); if (sel && qMode === 'auto') sel.options[0].textContent = 'Tự động (đang ' + Math.round(QS * 100) + '%)'; }
 function frame(now) {
   const rdt = Math.min(0.25, (now - lastT) / 1000); lastT = now; syncLayout();
+  if (!paused && !document.hidden && (mode === 'drive' || mode === 'tutorial') && W) {      // tự chỉnh chất lượng hình theo thời gian khung thực tế (canvas chạy CPU nên khung >45 ms thì hạ độ phân giải; ổn định lâu mới nâng lại)
+    fpsEma = fpsEma * 0.92 + rdt * 0.08;
+    if (qMode === 'auto' && now > qLock) { if (fpsEma > 0.042 && QS > 0.5) { setQuality(QS - 0.25); qLock = now + 4000; fpsEma = 0.03; qGood = 0; } else if (fpsEma < 0.02 && QS < 1) { if (++qGood > 600) { setQuality(QS + 0.25); qLock = now + 20000; fpsEma = 0.03; qGood = 0; } } else qGood = 0; } }
+  ctx.setTransform(QS, 0, 0, QS, 0, 0);
   if (mode === 'dispatch' || mode === 'profile') AUD.silence();
   if (mode === 'dispatch') { Dispatch.frame(rdt); ctx.clearRect(0, 0, W_, H_); ctx.save(); ctx.translate(OX, 0); Dispatch.draw(ctx, CW, H_); ctx.restore(); drawKeys('dispatch'); requestAnimationFrame(frame); return; }
   if (W && !paused && mode !== 'profile') {
@@ -573,7 +579,7 @@ window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({
   const wrap = (obj, fn, key) => { if (!obj || !obj[fn] || obj[fn].__w) return; const o = obj[fn]; const w = function (...a) { if (!on) return o.apply(this, a); const t0 = performance.now(); try { return o.apply(this, a); } finally { acc[key] = (acc[key] || 0) + performance.now() - t0; } }; w.__w = 1; obj[fn] = w; };
   wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', 'bản đồ nhỏ'); wrap(window.Strips, 'draw', 'dải tranh'); wrap(window.Scene, 'draw', 'cảnh 2D');
   const f0 = window.frame; let rafPrev = performance.now();
-  const tick = t => { if (on) { const dt = t - rafPrev; frames++; tAcc += dt; worst = Math.max(worst, dt); if (t - tShow > 700) { const fps = 1000 * frames / tAcc; let txt = `FPS ${fps.toFixed(0)}  (khung chậm nhất ${worst.toFixed(0)} ms)
+  const tick = t => { if (on) { const dt = t - rafPrev; frames++; tAcc += dt; worst = Math.max(worst, dt); if (t - tShow > 700) { const fps = 1000 * frames / tAcc; let txt = `FPS ${fps.toFixed(0)}  (khung chậm nhất ${worst.toFixed(0)} ms)  chất lượng ${Math.round(QS * 100)}%${qMode === 'auto' ? ' (tự động)' : ''}
 `; for (const k in acc) txt += `${k.padEnd(12)} ${(acc[k] / frames).toFixed(1)} ms
 `; box.textContent = txt; frames = 0; tAcc = 0; worst = 0; for (const k in acc) acc[k] = 0; tShow = t; } } rafPrev = t; requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
