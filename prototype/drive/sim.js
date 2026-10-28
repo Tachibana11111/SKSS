@@ -695,6 +695,7 @@
   // tàu cùng chiều thông qua ga ta đang đỗ: lấy từ danh mục toàn quốc (mọi tuyến) theo giờ thật cộng độ trễ, cùng nguồn với bản đồ; giữ thêm các tàu giả lập đặt tay (syn)
   function refreshPassers(W, T) {
     const NC = root.NatCat, k = T.k; if (!NC) return;
+    if (!T.M[k].loop) { W.passDyn = { k, list: ((W.passers && W.passers[k]) || []).filter(p => p.syn) }; return; }      // ga chỉ có hai đường (không đường tránh): tàu cùng chiều không thể chạy xuyên qua tàu đang đỗ, nên không có tàu thông qua
     if (!W.passCand || W.passCand.k !== k) { const en = W.line.stations[T.M[k].i].en, list = [];
       for (const c of NC.build(root.LINES)) { if (c.rec.d !== W.dir || c.rec === W.trip.rec) continue; const LL = root.LINES[c.line], jj = LL.stations.findIndex(s => s.en === en); if (jj < 0) continue; const kmJ = LL.stations[jj].km, S = c.stops;
         if (S.some(p => p.i === jj)) continue;

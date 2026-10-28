@@ -551,6 +551,10 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
           const x = Sim.sOfKm(km, dir, L.kmEnd); let tn = false; for (const [k0, k1] of L.meta.tunnels) { const p1 = Sim.sOfKm(k0, dir, L.kmEnd), p2 = Sim.sOfKm(k1, dir, L.kmEnd); if (x >= Math.min(p1, p2) && x <= Math.max(p1, p2)) { tn = true; break; } }
           if (Sim.structAt(L, km) !== st || Sim.biomeAt(L, km) !== bm || Sim.inTunnel(W3, x) !== tn) bad++; } } }
     ok(bad === 0 && n3 > 1000, 'tra cứu nhị phân khớp duyệt tuần tự (' + n3 + ' điểm, ' + bad + ' lệch)'); }
+  // ga hai đường (không đường tránh, ví dụ Atami): không có tàu cùng chiều chạy xuyên qua tàu đang đỗ
+  { const L5 = Sim.lineOf('tsk'), r5 = L5.trains.find(t => t.d === 'down' && t.t === 'Kodama' && t.s.some(e => !e[3] && L5.stations[e[0]].en === 'Atami')), st5 = r5.s.filter(e => !e[3]).map(e => e[0]), W5 = Sim.createWorld('tsk', Sim.makeTrip('tsk', r5, st5[0], st5[st5.length - 1]), { diff: 'normal', seed: 2, lead: false, events: true }), T5 = W5.player, k5 = T5.M.findIndex(m => m.name === 'Atami');
+    let seen5 = 0; T5.k = k5; T5.phase = 'dwell'; for (let t = (T5.M[k5].arr || 0) - 60; t < (T5.M[k5].arr || 0) + 900; t += 5) { W5.t = t; Sim.refreshOpposing(W5, T5); seen5 += Sim.passersAt(W5, k5).filter(p => !p.syn).length; }
+    ok(k5 >= 0 && !T5.M[k5].loop && seen5 === 0, 'Atami (ga hai đường): không có tàu thông qua cùng chiều khi ta đỗ (' + seen5 + ' lần)'); }
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
 
