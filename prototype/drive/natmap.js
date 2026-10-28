@@ -36,9 +36,9 @@
       out.push({ me: true, s: { lon: a.lon, lat: a.lat, idx: a.idx, dx: a.dx * sg, dy: a.dy * sg, moving: T.v > 0.5, kmh: T.v * 3.6, km }, col: colAt(W.lineId, a.idx), label: (W.trip.label || 'Tàu của bạn'), line: W.lineId }); }
     return out;
   }
-  function stationRows(en, W) {
-    const now = W.trip.t0 + W.t, rows = [];
-    for (const c of CAT) {
+  function stationRows(en, W, T) {
+    const now = W.trip.t0 + W.t, rows = [], me = W.trip.rec, fmtKm = v => (v < 10 ? v.toFixed(1) : Math.round(v)) + ' km';
+    for (const c of CAT) { if (c.rec === me) continue;
       const L = root.LINES[c.line], j = L.stations.findIndex(s => s.en === en); if (j < 0) continue; const km = L.stations[j].km, S = c.stops; let ev = null;
       for (let k = 0; k < S.length && !ev; k++) {
         if (S[k].i === j) ev = { stop: true, arr: c.ta(S[k]), dep: c.td(S[k]), first: k === 0, last: k === S.length - 1 };
@@ -47,8 +47,10 @@
       if (!ev || now < ev.arr - 1800 || now > ev.dep + 300) continue;
       const dly = NC().delayOf(W, c.key); if (dly) { ev.arr += dly.delay; ev.dep += dly.delay; } if (!ev || now < ev.arr - 1800 || now > ev.dep + 300) continue;
       const stt = (dly && dly.hold > 0 ? '[DỪNG do ' + (dly.why === 'eqk' ? 'động đất' : 'thời tiết') + '] ' : dly && dly.delay > 90 ? '[trễ ' + Math.round(dly.delay / 60) + ' ph] ' : '') + (!ev.stop ? 'thông qua ' + hhmm(ev.arr) : now < ev.arr ? (ev.first ? 'chờ xuất phát ' + hhmm(ev.dep) : 'sắp tới, ETA ' + hhmm(ev.arr)) : now <= ev.dep ? (ev.last ? 'vừa đến, đang đỗ' : 'đang đỗ, đi ' + hhmm(ev.dep)) : 'vừa rời ' + hhmm(ev.dep));
-      rows.push([ev.arr, c.rec.t + ' ' + c.rec.n + ' · ' + stt, colAt(c.line, j)]);
+      const sNow = NC().stateOf(root.LINES, c, now - (dly ? dly.delay : 0)), dist = sNow ? Math.abs(sNow.km - km) : null;      // khoảng cách thật từ tàu tới ga (km đường), cả hai chiều
+      rows.push([ev.arr, c.rec.t + ' ' + c.rec.n + ' (' + (c.rec.d === 'down' ? 'xuống' : 'lên') + ') · ' + stt + (dist == null ? '' : dist < 0.05 ? ' · tại ga' : ' · cách ' + fmtKm(dist)), colAt(c.line, j)]);
     }
+    { const L = root.LINES[W.lineId], j = L && T ? L.stations.findIndex(s => s.en === en) : -1; if (j >= 0) { const kmP = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd), dist = Math.abs(kmP - L.stations[j].km); if (dist < 60) rows.push([now - 1e6, 'TÀU CỦA BẠN · ' + (dist < 0.05 ? 'tại ga' : 'cách ' + fmtKm(dist)), '#ffffff']); } }
     rows.sort((x, y) => x[0] - y[0]); return rows;
   }
 
@@ -102,12 +104,15 @@
     const selT = V.sel && V.sel.tk ? tr.find(t => (t.me ? 'me' : t.c.key) === V.sel.tk) : null; if (V.sel && V.sel.tk && !selT) V.sel = null;
     if (V.sel) {
       const rows = []; let title = '', sub = '';
-      if (V.sel.en) { title = V.sel.en + ' ' + (V.sel.jp || ''); const rr = stationRows(V.sel.en, W); sub = rr.length ? 'Tàu quanh giờ hiện tại:' : 'Không có tàu nào trong 30 phút tới.'; for (const q of rr.slice(0, 12)) rows.push([q[1], q[2]]); }
+      if (V.sel.en) { title = V.sel.en + ' ' + (V.sel.jp || ''); const rr = stationRows(V.sel.en, W, T); sub = rr.length ? 'Tàu quanh giờ hiện tại:' : 'Không có tàu nào trong 30 phút tới.'; for (const q of rr.slice(0, 12)) rows.push([q[1], q[2]]); }
       else if (selT) { const t = selT, L = t.me ? root.LINES[t.line] : root.LINES[t.c.line]; title = t.label; const st = t.s;
         if (t.me) { sub = 'TÀU CỦA BẠN · ' + Math.round(st.kmh) + ' km/h'; rows.push(['km ' + st.km.toFixed(1) + ' / ' + L.stations[L.stations.length - 1].km.toFixed(0), t.col]); }
         else { if (t.held) rows.push(['ĐANG DỪNG do ' + (t.d.why === 'eqk' ? 'động đất' : 'thời tiết') + ' (còn ~' + Math.max(1, Math.round(t.d.hold / 60)) + ' phút)', '#ff6b5a']); else if (t.d && t.d.delay > 90) rows.push(['trễ ~' + Math.round(t.d.delay / 60) + ' phút' + (t.d.why ? ' (' + (t.d.why === 'eqk' ? 'động đất' : t.d.why === 'rain' ? 'mưa' : t.d.why === 'snow' ? 'tuyết' : 'gió') + ')' : ''), '#ffb84a']); const S = t.c.stops, a = L.stations[S[0].i].en, b = L.stations[S[S.length - 1].i].en, nxt = S[Math.min(S.length - 1, (st.k || 0) + (st.dwell === 'wait' || st.dwell === 'stop' ? 0 : 1))];
           sub = (t.c.rec.v || '') + ' · ' + a + ' → ' + b; rows.push([st.dwell === 'wait' ? 'chờ xuất phát tại ' + a : st.dwell === 'end' ? 'đã tới ' + b : st.dwell ? 'đang đỗ tại ' + L.stations[S[st.k].i].en : 'đang chạy ~' + Math.round(st.kmh) + ' km/h', t.col]); if (!st.dwell && nxt) rows.push(['tới ' + L.stations[nxt.i].en + ' lúc ' + hhmm(t.c.ta(nxt)), t.col]); } }
-      const cw = 360, ch = 54 + rows.length * 18 + (rows.length ? 6 : 0), ax = V.sel.en ? P(V.sel.lon, V.sel.lat, r) : (() => { const hh = (V.trains || []).find(h => h.t === selT); return hh ? [hh.x, hh.y] : [x + 30, y + 60]; })(); let cx = ax[0] + 16, cy = ax[1] + 16; if (cx + cw > x + w - 8) cx = ax[0] - 16 - cw; if (cy + ch > y + h - 8) cy = y + h - 8 - ch; cx = Math.max(x + 8, cx); cy = Math.max(y + 8, cy); ctx.fillStyle = dk ? 'rgba(8,12,18,.9)' : 'rgba(255,255,255,.92)'; ctx.fillRect(cx, cy, cw, ch); ctx.strokeStyle = '#4aa3ff'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, cw, ch);
+      if (selT) { const keyOf = o2 => o2.me ? W.lineId + W.dir : o2.c.line + o2.c.rec.d, sg = (selT.me ? W.dir : selT.c.rec.d) === 'down' ? 1 : -1, grp = tr.filter(o2 => o2 !== selT && keyOf(o2) === keyOf(selT)), k0 = selT.s.km; let ah = null, bh = null;
+        for (const o2 of grp) { const dd = sg * (o2.s.km - k0); if (dd > 0 && (!ah || dd < ah.d)) ah = { o: o2, d: dd }; else if (dd <= 0 && (!bh || dd > bh.d)) bh = { o: o2, d: dd }; }
+        const fk = v => (v < 10 ? v.toFixed(1) : Math.round(v)) + ' km'; rows.push([ah ? 'Tàu phía trước: ' + ah.o.label + ' · ' + fk(ah.d) : 'Không có tàu phía trước (cùng chiều, cùng tuyến)', ah ? ah.o.col : '#8896a6']); rows.push([bh ? 'Tàu phía sau: ' + bh.o.label + ' · ' + fk(-bh.d) : 'Không có tàu phía sau (cùng chiều, cùng tuyến)', bh ? bh.o.col : '#8896a6']); }
+      const cw = 440, ch = 54 + rows.length * 18 + (rows.length ? 6 : 0), ax = V.sel.en ? P(V.sel.lon, V.sel.lat, r) : (() => { const hh = (V.trains || []).find(h => h.t === selT); return hh ? [hh.x, hh.y] : [x + 30, y + 60]; })(); let cx = ax[0] + 16, cy = ax[1] + 16; if (cx + cw > x + w - 8) cx = ax[0] - 16 - cw; if (cy + ch > y + h - 8) cy = y + h - 8 - ch; cx = Math.max(x + 8, cx); cy = Math.max(y + 8, cy); ctx.fillStyle = dk ? 'rgba(8,12,18,.9)' : 'rgba(255,255,255,.92)'; ctx.fillRect(cx, cy, cw, ch); ctx.strokeStyle = '#4aa3ff'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, cw, ch);
       txt(title, cx + 12, cy + 22, dk ? '#fff' : '#111', 'bold 15px system-ui'); txt(sub, cx + 12, cy + 42, dk ? '#8aa0b5' : '#445', '12px system-ui'); rows.forEach((q, i) => { ctx.fillStyle = q[1]; ctx.fillRect(cx + 12, cy + 55 + i * 18, 8, 8); txt(q[0], cx + 26, cy + 63 + i * 18, dk ? '#e8eef5' : '#1b2633', '12px system-ui'); });
     }
     }
@@ -133,5 +138,5 @@
     if (!best) { bd = 196; for (const h of V.trains || []) { const d = (h.x - px) ** 2 + (h.y - py) ** 2; if (d < bd) { bd = d; best = { tk: h.t.me ? 'me' : h.t.c.key }; } } }
     V.sel = best; return true;
   }
-  root.NatMap = { V, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
+  root.NatMap = { V, stationRows, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
 })(typeof window !== 'undefined' ? window : globalThis);

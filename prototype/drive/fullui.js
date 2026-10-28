@@ -27,7 +27,7 @@ function drawViewIn(kind, x, y, w, h) {
   else if (kind === 'nat') NatMap.drawMini(ctx, x, y, w, h, W, T, { txt, button });
   else if (kind === 'top') { TopView.draw(ctx, x, y, w, h, W, T, { sprites: SPR, tops: TP, aud: AUD }); }
   else if (kind === 'winL' || kind === 'winR') WinView.draw(ctx, x, y, w, h, W, T, { sprites: SPR, aud: AUD }, kind === 'winL' ? 1 : -1);
-  else { Scene.draw(ctx, x, y, w, h, W, T, { sprites: SPR, nextTarget: Sim.nextTarget, aud: AUD }); if (Sim.inTunnel(W, T.x)) { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x, y, w, h); } }
+  else { Scene.draw(ctx, x, y, w, h, W, T, { sprites: SPR, nextTarget: Sim.nextTarget, aud: AUD, rear: ui.rear }); if (Sim.inTunnel(W, T.x)) { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x, y, w, h); } }
   ctx.restore();
 }
 

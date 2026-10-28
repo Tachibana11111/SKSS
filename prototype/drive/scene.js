@@ -92,6 +92,8 @@
 
   function draw(ctx, px, py, pw, ph, W, T, R) {
     const now = performance.now();
+    // góc nhìn đuôi tàu (phím B): mốc camera dời về đuôi đoàn (kể cả đoàn ghép/tách: tổng chiều dài các đơn vị + khe nối), tàu ta vẽ lùi về phía mũi
+    let ownLen = 0; if (R && R.rear) { ownLen = T.veh.len; const ps = T.veh.parts; if (ps) { let off = 0; ps.forEach(pk => { const sp_ = sprOf(R, pk), w_ = sp_ ? sp_.meta.width / sp_.meta.pxPerMeter : root.Sim.VEH[pk].len; ownLen = off + w_; off += w_ + (T.gapX || 0); }); } T = Object.create(T); T.x = T.x - ownLen; }
     const base = py + Math.round(ph * 0.72), fx = px + Math.round(pw * 0.6), map = makeMap(fx, px, pw);
     const clock = ((W.trip.t0 + W.t) % 86400 + 86400) % 86400, hour = clock / 3600;
     const day = smooth(5.3, 7.3, hour) * (1 - smooth(16.8, 19.0, hour)), dusk = Math.max(0, 1 - Math.abs(hour - 6.3) / 1.2) + Math.max(0, 1 - Math.abs(hour - 17.8) / 1.3);
@@ -265,7 +267,8 @@
     // tàu vượt qua đường thông qua khi ta đỗ ở ga tránh (quét qua màn hình ~ 9 giây); đường thông qua nằm ở giữa, xa hơn đường ta đỗ nên vẽ DƯỚI tàu của ta
     const pl = T.phase === 'dwell' ? root.Sim.passersAt(W, T.k) : null;
     if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const wL = 404.7 * K * 0.96, hh = hOf(R, p.v || (W.line.meta.defVeh), K * 0.96) * SV, xF = px + u * (pw + wL); fleet(ctx, R, p.v || (W.line.meta.defVeh), xF, base - 2, wL * ((root.Sim.VEH[p.v] || {}).len ? root.Sim.VEH[p.v].len / 404.7 : 1), hh, 1, false); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(px, base - 40, pw, 50 * 0); txt2(ctx, p.label + ' thông qua', px + pw / 2, py + 16, '#ffd88a'); } }
-    { const parts = T.veh.parts; if (parts) { let off = 0; parts.forEach((pk, qi) => { const pxF = fx - off * K; if (pxF > px - 20) drawOwn(pxF, pk, qi === 0); const ps = sprOf(R, pk); off += (ps ? ps.meta.width / ps.meta.pxPerMeter : root.Sim.VEH[pk].len) + (T.gapX || 0); }); } else drawOwn(fx, T.veh.key, true); }      // nối mũi chạm mũi: dùng chiều dài thật của dải ảnh để hai đoàn không đè lên nhau
+    { const parts = T.veh.parts; if (parts) { let off = 0; parts.forEach((pk, qi) => { const pxF = fx + ownLen * K - off * K; if (pxF > px - 20) drawOwn(pxF, pk, qi === 0); const ps = sprOf(R, pk); off += (ps ? ps.meta.width / ps.meta.pxPerMeter : root.Sim.VEH[pk].len) + (T.gapX || 0); }); } else drawOwn(fx + ownLen * K, T.veh.key, true); }      // nối mũi chạm mũi: dùng chiều dài thật của dải ảnh để hai đoàn không đè lên nhau
+    if (R && R.rear) txt2(ctx, 'GÓC NHÌN ĐUÔI TÀU (B)', px + pw / 2, py + 34, '#9fd0ff');
     // phần đoàn đã tách ở lại sân ga phía sau (hoặc đoàn Tohoku đang chờ ở phía trước để ghép)
     for (const pk of W.parked || []) { const pv = root.Sim.VEH[pk.key], dl = pk.front - T.x; if (dl > -pv.len - 20 && dl < 1800) { const xf = fx + dl * K, wv = pv.len * K; if (xf - wv < px + pw + 50 && xf > px - 50) fleet(ctx, R, pk.key, xf, base, wv, hOf(R, pk.key, K) * SV, 1); } }
     if (!flipX) drawOpp();
