@@ -103,6 +103,7 @@
   <div id="modal"></div>
 <div id="rot"><div>📱 Xoay ngang màn hình để chơi.<br><span style="color:#8aa0b5;font-size:14px">Cần chạm: cần kéo/phanh ở bảng bên dưới, nút Còi/Cửa/Tạm dừng ở bảng nút điều khiển. Nên bật toàn màn hình.</span></div></div>
 <button id="fsBtn" title="Toàn màn hình">⛶ Toàn màn hình</button>
+<div id="ck" style="display:none;position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.82);align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:12px"><div style="color:#e8eef5;font:600 15px system-ui" id="ckTitle"></div><canvas id="ckCv" width="1920" height="618" style="width:min(96vw,1400px);height:auto;border-radius:8px;background:#0b0f14"></canvas><div style="color:#9fb4c9;font:13px system-ui;text-align:center" id="ckCap"></div><div style="display:flex;gap:8px"><button id="ckClose" style="background:#243447;color:#e8eef5;border:1px solid #33475e;border-radius:6px;padding:7px 18px;font:inherit;cursor:pointer">Đóng (Esc)</button></div><div style="color:#6b7f95;font:11px system-ui">Ảnh chỉ xem tạm, không được lưu; đóng cửa sổ là xoá.</div></div>
 <div id="wiz"><div class="box">
   <div class="top"><div class="dots" id="wDots"></div><span id="wStep"></span></div>
   <div id="w1"><h2>Chào mừng đến Lái Shinkansen</h2><p class="dim">Game lái tàu Shinkansen chạy ngay trong trình duyệt: 7 tuyến, lịch tàu thật tháng 10/2026, ATC, cần vẹt, thời tiết và sự cố. Dự án sở thích, không chính thức và không liên quan tới JR. Bạn muốn bắt đầu thế nào?</p>
@@ -240,6 +241,27 @@ function restoreScene(st) {
   paused = true; return true;
 }
 window.Snap = { state: sceneState, restore: restoreScene };
+// ---- check-in địa điểm (bản đồ toàn quốc): chụp cảnh buồng lái phía trước của một đoàn tàu tại thời điểm bấm, hiện xem tạm, đóng là xoá (không lưu)
+let ckOpen = false, ckWasPaused = false;
+function closeCheckin() { ckOpen = false; $('ck').style.display = 'none'; const c = $('ckCv'); c.width = 1; c.height = 1; paused = ckWasPaused; }
+async function checkinTrain(t) {
+  if (ckOpen || !W) return; ckOpen = true; ckWasPaused = paused; paused = true; $('ck').style.display = 'flex'; $('ckTitle').textContent = t.label + ' · đang dựng cảnh...'; $('ckCap').textContent = '';
+  const cvk = $('ckCv'); cvk.width = 1920; cvk.height = 618; const g = cvk.getContext('2d'); g.fillStyle = '#0b0f14'; g.fillRect(0, 0, 1920, 618);
+  const now = W.trip.t0 + W.t; let Wc = W, Tc = T, line = W.lineId, kmShow = 0, kmh = T.v * 3.6, status = '';
+  try {
+    if (!t.me) { const c = t.c, L = LINES[c.line], stops = c.rec.s.filter(e => !e[3]).map(e => e[0]), km = t.s0km != null ? t.s0km : t.s.km; line = c.line; kmShow = km; kmh = t.s.kmh || 0;
+      Wc = Sim.createWorld(c.line, Sim.makeTrip(c.line, c.rec, stops[0], stops[stops.length - 1]), { diff: 'easy', seed: W.seed || 1, lead: false, events: false }); Tc = Wc.player;
+      Wc.t = now - Wc.trip.t0; Tc.x = Sim.sOfKm(km, c.rec.d, L.kmEnd); Tc.v = (t.s.moving ? kmh : 0) / 3.6; Tc.phase = t.s.dwell || !t.s.moving ? 'dwell' : 'run'; Tc.started = true; Tc.door = 'closed';
+      const H = W.haz, cell = H && H.cells.find(cl => W.t >= cl.t0 && W.t <= cl.t1 && NatCat.hav(t.s.lat, t.s.lon, cl.lat, cl.lon) < cl.r); if (cell) Wc.weatherKind = cell.kind === 'wind' ? 'typhoon' : cell.kind; }
+    else kmShow = Sim.kmOfS(T.x, W.dir, W.line.kmEnd);
+    const Ln = LINES[line], nearI = Ln.stations.reduce((b, s, i) => Math.abs(s.km - kmShow) < Math.abs(Ln.stations[b].km - kmShow) ? i : b, 0), nd = Math.abs(Ln.stations[nearI].km - kmShow);
+    status = (t.held ? 'đang dừng vì sự cố · ' : kmh < 1 ? 'đang đứng · ' : Math.round(kmh) + ' km/h · ') + (nd < 0.1 ? 'tại ga ' + Ln.stations[nearI].en : 'gần ga ' + Ln.stations[nearI].en + ' (cách ' + nd.toFixed(1) + ' km)') + ' · ' + hhmm(now % 86400);
+    for (let k = 0; k < 7 && ckOpen; k++) { Wc.rear = false; g.clearRect(0, 0, 1920, 618); CabView.draw(g, 0, 0, 1920, 618, Wc, Tc, { sprites: SPR, fronts: FR, aud: AUD }); await new Promise(r => setTimeout(r, k < 2 ? 80 : 160)); }      // vài lần để các tấm cảnh vật tải xong
+    if (ckOpen) { $('ckTitle').textContent = '📍 Check-in · ' + t.label + ' · ' + Ln.name; $('ckCap').textContent = status; }
+  } catch (e) { $('ckTitle').textContent = 'Không dựng được cảnh cho đoàn này'; $('ckCap').textContent = String(e.message || e); }
+}
+$('ckClose').onclick = closeCheckin;
+addEventListener('keydown', e => { if (ckOpen) { e.stopImmediatePropagation(); if (e.key === 'Escape' || e.key === 'Enter') closeCheckin(); e.preventDefault(); } }, true);
 async function takeSnapshot() {
   if (!W || mode === 'profile' || mode === 'dispatch') return null; paused = true; snapMode = true; draw();
   const st = sceneState(), w = cv.width, h = cv.height, off = document.createElement('canvas'); off.width = w; off.height = h + 40; const g = off.getContext('2d');
