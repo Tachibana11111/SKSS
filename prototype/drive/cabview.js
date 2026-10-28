@@ -509,7 +509,8 @@
       // camera sau nhìn ngược từ đuôi tàu ta: tàu cùng chiều tới từ xa phía sau, mũi (đầu tàu) ở gần camera nhất rồi lướt qua; vị trí tính từ cùng mô hình với camera trước (mũi tàu cách mũi ta -len..520 m) cộng quãng từ mũi ta tới camera
       const zF0 = -veh.len + u * (veh.len + 520), zFront = W.rear ? -(W.rearLen || 0) - zF0 : zF0;
       if (W.rear && (zFront + veh.len < ZN || zFront > 1500)) continue;
-      items.push({ z: Math.max(zFront, ZN + 2), fn: () => slices(sp, veh.len, zFront, fxp, W.rear ? 1 : -1) }); } }
+      const fic = iconFor(veh.parts ? (W.rear ? veh.parts[0] : veh.parts[veh.parts.length - 1]) : key), zT = zFront - veh.len;      // mặt đầu tàu (camera sau: tàu tới gần) hoặc mặt đuôi (camera trước: tàu đã vượt lên phía trước), giống tàu ngược chiều có mặt đầu
+      items.push({ z: Math.max(zFront, ZN + 2), fn: () => { slices(sp, veh.len, zFront, fxp, W.rear ? 1 : -1); if (W.rear) { if (zFront > ZN && fic) drawFront(fic, 0, zFront, 1, 'head'); } else if (zT > ZN && fic) drawFront(fic, 0, zT, 1, 'tail'); } }); } }
 
     // phong cảnh bên ngoài hầm, nhìn qua cửa ra (vẽ sau cùng nhưng chỉ trong khung cửa ra, đè lên tường hầm tối)
     if (zExit !== null && outItems.length) { const op = openingPoly(); if (op) { ctx.save(); polyPath(op); ctx.clip(); outItems.sort((a, b) => b.z - a.z); for (const it of outItems) it.fn(); ctx.restore(); } }

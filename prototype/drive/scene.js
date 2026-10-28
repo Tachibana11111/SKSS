@@ -262,13 +262,13 @@
       if (lead && root.Sim.lampOn(W, T)) { ctx.fillStyle = 'rgba(255,245,190,' + (0.16 + 0.12 * night + 0.05 * Math.sin(now / 120)) + ')'; ctx.beginPath(); ctx.moveTo(fx - 2, base - 22); ctx.lineTo(fx + 100 + 60 * night, base - 32); ctx.lineTo(fx + 100 + 60 * night, base - 3); ctx.closePath(); ctx.fill(); }
     } else trainProc(ctx, fx, base, (root.Sim.VEH[key] || T.veh).len * K, 26, key, 1, false);
     };
+    // tàu vượt qua đường thông qua khi ta đỗ ở ga tránh (quét qua màn hình ~ 9 giây); đường thông qua nằm ở giữa, xa hơn đường ta đỗ nên vẽ DƯỚI tàu của ta
+    const pl = T.phase === 'dwell' ? root.Sim.passersAt(W, T.k) : null;
+    if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const wL = 404.7 * K * 0.96, hh = hOf(R, p.v || (W.line.meta.defVeh), K * 0.96) * SV, xF = px + u * (pw + wL); fleet(ctx, R, p.v || (W.line.meta.defVeh), xF, base - 2, wL * ((root.Sim.VEH[p.v] || {}).len ? root.Sim.VEH[p.v].len / 404.7 : 1), hh, 1, false); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(px, base - 40, pw, 50 * 0); txt2(ctx, p.label + ' thông qua', px + pw / 2, py + 16, '#ffd88a'); } }
     { const parts = T.veh.parts; if (parts) { let off = 0; parts.forEach((pk, qi) => { const pxF = fx - off * K; if (pxF > px - 20) drawOwn(pxF, pk, qi === 0); const ps = sprOf(R, pk); off += (ps ? ps.meta.width / ps.meta.pxPerMeter : root.Sim.VEH[pk].len) + (T.gapX || 0); }); } else drawOwn(fx, T.veh.key, true); }      // nối mũi chạm mũi: dùng chiều dài thật của dải ảnh để hai đoàn không đè lên nhau
     // phần đoàn đã tách ở lại sân ga phía sau (hoặc đoàn Tohoku đang chờ ở phía trước để ghép)
     for (const pk of W.parked || []) { const pv = root.Sim.VEH[pk.key], dl = pk.front - T.x; if (dl > -pv.len - 20 && dl < 1800) { const xf = fx + dl * K, wv = pv.len * K; if (xf - wv < px + pw + 50 && xf > px - 50) fleet(ctx, R, pk.key, xf, base, wv, hOf(R, pk.key, K) * SV, 1); } }
     if (!flipX) drawOpp();
-    // tàu vượt qua đường thông qua khi ta đỗ ở ga tránh (quét qua màn hình ~ 9 giây)
-    const pl = T.phase === 'dwell' ? root.Sim.passersAt(W, T.k) : null;
-    if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u > 0 && u < 1) { const wL = 404.7 * K * 1.18, hh = hOf(R, p.v || (W.line.meta.defVeh), K * 1.18) * SV, xF = px + u * (pw + wL); fleet(ctx, R, p.v || (W.line.meta.defVeh), xF, base + 9, wL * ((root.Sim.VEH[p.v] || {}).len ? root.Sim.VEH[p.v].len / 404.7 : 1), hh, 1, false); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(px, base - 40, pw, 50 * 0); txt2(ctx, p.label + ' thông qua', px + pw / 2, py + 16, '#ffd88a'); } }
     // hiệu ứng chớp khi hai tàu gặp nhau
     if ((T.v > 20 || W.oppCat) && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) { const u = (W.t - (t0 - 0.5)) / 4.5; if (u > 0 && u < 0.4) { ctx.fillStyle = 'rgba(255,255,255,' + 0.15 * Math.sin(u / 0.4 * Math.PI) + ')'; ctx.fillRect(px, py, pw, ph); } }
     // ---- thời tiết phủ lên

@@ -55,14 +55,18 @@
   // cập nhật độ trễ tới giờ hiện tại của game (bước 5 s; mở bản đồ muộn thì tự bù từ đầu chuyến)
   function step(W) {
     const LN = root.LINES; if (!LN || !W.trip) return; if (!W.haz) init(W); const H = W.haz, cat = build(LN), end = W.trip.t0 + W.t;
-    while (H.lastT < end - 0.01) { const dt = Math.min(5, end - H.lastT), tNow = H.lastT + dt, wt = tNow - W.trip.t0;
+    while (H.lastT < end - 0.01) { const dt = Math.min(5, end - H.lastT), tNow = H.lastT + dt, wt = tNow - W.trip.t0, act = [];
       for (const c of cat) { let d = H.delay.get(c.key); const eff = tNow - (d ? d.delay : 0); if (eff < c.t0 || eff > c.t1) continue;
         if (!d) { d = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9 }; H.delay.set(c.key, d); }
-        if (d.hold > 0) { d.hold -= dt; d.delay += dt; continue; }
-        const s = stateOf(LN, c, eff); if (!s) continue;
+        const s = stateOf(LN, c, eff); if (!s) continue; if (d.hold > 0) { act.push({ d, line: c.line, dir: c.rec.d, km: s.km, still: true }); d.hold -= dt; d.delay += dt; continue; }
         for (let qi = 0; qi < H.quakes.length; qi++) { const q = H.quakes[qi]; if (d.hit[qi] || wt < q.t) continue; const R = hav(s.lat, s.lon, q.lat, q.lon), tS = q.t + Math.hypot(R, q.depth) / VS;
           if (wt >= tS) { d.hit[qi] = 1; const sh = shindoAt(q, R); if (sh >= 4) { d.hold = (sh >= 5 ? 900 : 420) * (0.8 + hs(qi, c.rec.n | 0) * 0.5); d.why = 'eqk'; d.shake = wt; } } }
-        if (d.hold <= 0 && !s.dwell) for (const cl of H.cells) if (wt >= cl.t0 && wt <= cl.t1 && hav(s.lat, s.lon, cl.lat, cl.lon) < cl.r) { d.delay += dt * (WSLOW[cl.kind] || 0.05); if (!d.why) d.why = cl.kind; break; } }
+        if (d.hold <= 0 && !s.dwell) for (const cl of H.cells) if (wt >= cl.t0 && wt <= cl.t1 && hav(s.lat, s.lon, cl.lat, cl.lon) < cl.r) { d.delay += dt * (WSLOW[cl.kind] || 0.05); if (!d.why) d.why = cl.kind; break; }
+        act.push({ d, line: c.line, dir: c.rec.d, km: s.km, still: false, dwell: !!s.dwell }); }
+      // một đường mỗi chiều: tàu đi sau không thể vượt tàu phía trước giữa hai ga (chỉ vượt được ở ga khi tàu trước đang đỗ); tiến sát thì bị chậm dần
+      const grp = new Map(); for (const a of act) { const g = a.line + a.dir; (grp.get(g) || grp.set(g, []).get(g)).push(a); }
+      for (const [g, arr] of grp) { const sg = arr[0].dir === 'down' ? 1 : -1; arr.sort((x, y) => sg * (x.km - y.km));
+        for (let i = 0; i < arr.length - 1; i++) { const B = arr[i]; if (B.dwell || B.still) continue; let A = null; for (let j = i + 1; j < arr.length; j++) if (!arr[j].dwell || arr[j].still) { A = arr[j]; break; } if (!A) continue; const gap = sg * (A.km - B.km); if (gap < 2.5) B.d.delay += dt * Math.min(1, (2.5 - gap) / 1.5); } }
       H.lastT = tNow; }
   }
   const delayOf = (W, key) => { const d = W.haz && W.haz.delay.get(key); return d ? d : null; };

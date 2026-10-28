@@ -530,6 +530,13 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
     ok(seen > 0, 'có tàu ngược chiều lướt qua theo lịch trong chuyến (' + seen + ' lần)');
     NatCat.step(W); let held = 0, delayed = 0; for (const d of W.haz.delay.values()) { if (d.delay > 0) delayed++; if (d.why === 'eqk') held++; }
     ok(W.haz.lastT >= W.trip.t0 + W.t - 6, 'độ trễ tích luỹ tới giờ hiện tại (' + delayed + ' đoàn trễ, ' + held + ' dừng vì động đất)');
+    // một đường mỗi chiều: không có đôi tàu cùng chiều nào đổi thứ tự giữa hai ga (chỉ vượt ở ga khi tàu trước đang đỗ)
+    { const W2 = Sim.createWorld('tsk', Sim.makeTrip('tsk', r, st[0], st[st.length - 1]), { diff: 'hard', seed: 3, lead: false, events: true }), LN = window.LINES, cat = NatCat.build(LN).filter(c => c.line === 'tsk'); let flips = 0, prev = null;
+      for (let t = 0; t <= 9000; t += 30) { W2.t = t; NatCat.step(W2); const now = W2.trip.t0 + t, cur = new Map();
+        for (const c of cat) { const d = NatCat.delayOf(W2, c.key), s2 = NatCat.stateOf(LN, c, now - (d ? d.delay : 0)); if (s2 && !s2.dwell) cur.set(c.key, { km: s2.km, dir: c.rec.d }); }
+        if (prev) for (const [k1, a] of cur) { const a0 = prev.get(k1); if (!a0) continue; for (const [k2, b] of cur) { if (k1 >= k2 || a.dir !== b.dir) continue; const b0 = prev.get(k2); if (!b0) continue; const sg = a.dir === 'down' ? 1 : -1; if ((sg * (a0.km - b0.km)) * (sg * (a.km - b.km)) < 0 && Math.abs(a.km - b.km) > 0.3) flips++; } }
+        prev = cur; }
+      ok(flips === 0, 'tàu cùng chiều không vượt nhau giữa hai ga trên bản đồ (' + flips + ' lần đổi thứ tự)'); }
     const q = { t: 0, lat: 35, lon: 139, mag: 7, depth: 10 }; ok(NatCat.shindoAt(q, 10) > NatCat.shindoAt(q, 300) && NatCat.shindoAt(q, 10) >= 5, 'shindo giảm theo khoảng cách'); }
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
