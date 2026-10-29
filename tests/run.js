@@ -555,6 +555,19 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
   { const L5 = Sim.lineOf('tsk'), r5 = L5.trains.find(t => t.d === 'down' && t.t === 'Kodama' && t.s.some(e => !e[3] && L5.stations[e[0]].en === 'Atami')), st5 = r5.s.filter(e => !e[3]).map(e => e[0]), W5 = Sim.createWorld('tsk', Sim.makeTrip('tsk', r5, st5[0], st5[st5.length - 1]), { diff: 'normal', seed: 2, lead: false, events: true }), T5 = W5.player, k5 = T5.M.findIndex(m => m.name === 'Atami');
     let seen5 = 0; T5.k = k5; T5.phase = 'dwell'; for (let t = (T5.M[k5].arr || 0) - 60; t < (T5.M[k5].arr || 0) + 900; t += 5) { W5.t = t; Sim.refreshOpposing(W5, T5); seen5 += Sim.passersAt(W5, k5).filter(p => !p.syn).length; }
     ok(k5 >= 0 && !T5.M[k5].loop && seen5 === 0, 'Atami (ga hai đường): không có tàu thông qua cùng chiều khi ta đỗ (' + seen5 + ' lần)'); }
+  // vật cản từ danh mục lịch: ATC của người chơi giữ khoảng cách với đoàn đang dừng giữa đường (không thể vượt)
+  { const L6 = Sim.lineOf('tsk'), r6 = L6.trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), st6 = r6.s.filter(e => !e[3]).map(e => e[0]), W6 = Sim.createWorld('tsk', Sim.makeTrip('tsk', r6, st6[0], st6[st6.length - 1]), { diff: 'normal', seed: 3, lead: false, events: true }), T6 = W6.player;
+    Sim.requestClose(T6); T6.pw = 13; let n6 = 0; while (T6.phase === 'dwell' && n6++ < 1e4) Sim.tick(W6, 0.05, {}, false); T6.phase = 'run'; T6.v = 60; T6.x += 3000; W6.t += 60;
+    Sim.tick(W6, 0.05, {}, false); W6.obs = { x: T6.x + 1200, len: 400, v: 0, t: W6.t, label: 'thử' }; W6.obsT = W6.t; Sim.tick(W6, 0.05, {}, false);
+    const lim = Math.sqrt(2 * 0.72 * (1200 - 400 - 400));
+    ok(T6.why === 'lead' && T6.allowed <= lim + 1, 'ATC giữ khoảng cách với đoàn dừng giữa đường phía trước (giới hạn ' + (T6.allowed * 3.6).toFixed(0) + ' km/h, tối đa ' + (lim * 3.6).toFixed(0) + ')', 'why=' + T6.why + ' allowed=' + T6.allowed); }
+  // cả chuyến Nozomi (độ khó cao, có sự cố): tàu của người chơi không đổi thứ tự với đoàn nào cùng nhóm đường giữa hai ga
+  for (const sd of [3, 7]) { const L7 = Sim.lineOf('tsk'), r7 = L7.trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), st7 = r7.s.filter(e => !e[3]).map(e => e[0]), W7 = Sim.createWorld('tsk', Sim.makeTrip('tsk', r7, st7[0], st7[st7.length - 1]), { diff: 'hard', seed: sd, lead: true, events: true }), T7 = W7.player, LN7 = window.LINES;
+    Sim.requestClose(T7); T7.pw = 13; let n7 = 0, fl7 = 0, prev7 = null, me0 = null; while (!T7.finished && n7++ < 4e5 && W7.t < 9000) { Sim.tick(W7, 0.05, {}, true); if (n7 % 200 !== 0) continue; NatCat.step(W7); const now7 = W7.trip.t0 + W7.t, me7 = NatCat.refOf(LN7, 'tsk', Sim.kmOfS(T7.x, W7.dir, W7.line.kmEnd)), cur7 = new Map();
+      for (const c of NatCat.build(LN7)) { if (c.rec.d !== W7.dir || c.rec === W7.trip.rec) continue; const d7 = NatCat.delayOf(W7, c.key), s7 = NatCat.stateOf(LN7, c, now7 - (d7 ? d7.delay : 0)); if (!s7 || s7.dwell) continue; const rf7 = NatCat.refOf(LN7, c.line, s7.km); if (rf7.g === me7.g) cur7.set(c.key, rf7.k); }
+      if (prev7 && me0 !== null) for (const [k7, v7] of cur7) { const v0 = prev7.get(k7); if (v0 === undefined) continue; if ((v0 - me0) * (v7 - me7.k) < 0 && Math.abs(v7 - me7.k) > 0.5) fl7++; }
+      prev7 = cur7; me0 = me7.k; }
+    ok(fl7 === 0 && !T7.collision, 'Nozomi (seed ' + sd + '): tàu của ta không vượt đoàn nào giữa hai ga, không va chạm (' + fl7 + ' lần đổi thứ tự)'); }
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
 

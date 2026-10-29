@@ -65,7 +65,8 @@
     const LN = root.LINES; if (!LN || !W.trip) return; if (!W.haz) init(W); const H = W.haz, cat = build(LN), end = W.trip.t0 + W.t;
     while (H.lastT < end - 0.01) { const dt = Math.min(5, end - H.lastT), tNow = H.lastT + dt, wt = tNow - W.trip.t0, act = [];
       for (const c of cat) { let d = H.delay.get(c.key); const eff = tNow - (d ? d.delay : 0); if (eff < c.t0 || eff > c.t1) continue;
-        if (!d) { d = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9 }; H.delay.set(c.key, d); }
+        if (!d) { d = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; H.delay.set(c.key, d); }
+        d._d0 = d.delay;
         const s = stateOf(LN, c, eff); if (!s) continue; if (d.hold > 0) { act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: true }); d.hold -= dt; d.delay += dt; continue; }
         for (let qi = 0; qi < H.quakes.length; qi++) { const q = H.quakes[qi]; if (d.hit[qi] || wt < q.t) continue; const R = hav(s.lat, s.lon, q.lat, q.lon), tS = q.t + Math.hypot(R, q.depth) / VS;
           if (wt >= tS) { d.hit[qi] = 1; const sh = shindoAt(q, R); if (sh >= 4) { d.hold = (sh >= 5 ? 900 : 420) * (0.8 + hs(qi, c.rec.n | 0) * 0.5); d.why = 'eqk'; d.shake = wt; } } }
@@ -77,8 +78,21 @@
       for (const [g, arr] of grp) { const sg = arr[0].dir === 'down' ? 1 : -1; arr.sort((x, y) => sg * (x.km - y.km));
         // tàu trước đang đỗ ở ga có đường tránh thì tàu sau mới vượt được; ga hai đường (Atami...) vẫn chặn tàu sau
         for (let i = 0; i < arr.length - 1; i++) { const B = arr[i]; if (B.dwell || B.still) continue; let A = null; for (let j = i + 1; j < arr.length; j++) if (!(arr[j].dwell && arr[j].loop) || arr[j].still) { A = arr[j]; break; } if (!A) continue; const gap = sg * (A.km - B.km); if (!B.me && gap < 2.5) B.d.delay += dt * Math.min(1, (2.5 - gap) / 1.5); } }
+      for (const a of act) if (!a.me && a.d._d0 !== undefined) { const r = Math.max(0, Math.min(1, (a.d.delay - a.d._d0) / dt)); a.d.rate = (a.d.rate || 0) * 0.6 + r * 0.4; }      // tỉ lệ thời gian bị chậm/chặn: tốc độ thực = tốc độ lịch × (1 − rate), giảm dần mượt
       H.lastT = tNow; }
   }
+  // vật cản trước tàu người chơi cho ATC: đoàn cùng chiều, cùng đường (cùng nhóm tuyến), đang chạy hoặc dừng giữa đường (không tính tàu đang đỗ ga), gần nhất phía trước trong 15 km; cập nhật 0,5 s một lần
+  function updateObstacle(W, T) {
+    if (W.obsT !== undefined && W.t - W.obsT < 0.5 && W.t >= W.obsT) return; W.obsT = W.t;
+    const LN = root.LINES, L = LN && LN[W.lineId]; if (!L || !W.trip) { W.obs = null; return; } if (!W.haz) init(W);
+    const cat = build(LN), now = W.trip.t0 + W.t, sg = W.dir === 'down' ? 1 : -1, me = refOf(LN, W.lineId, root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd)), lr = W.leadRef; let best = null;
+    for (const c of cat) { if (c.rec.d !== W.dir || c.rec === W.trip.rec) continue; if (lr && c.rec.t === lr.t && c.rec.n === lr.n && c.rec.d === lr.d) continue;
+      const d = W.haz.delay.get(c.key), s = stateOf(LN, c, now - (d ? d.delay : 0)); if (!s || s.dwell) continue; const rf = refOf(LN, c.line, s.km); if (rf.g !== me.g) continue;
+      const dist = sg * (rf.k - me.k) * 1000; if (dist <= 0 || dist > 15000) continue; if (!best || dist < best.dist) best = { dist, c, d, s }; }
+    if (!best) { W.obs = null; return; }
+    const veh = root.Sim.VEH[best.c.rec.v] || root.Sim.VEH.N700, held = best.d && best.d.hold > 0, rate = best.d ? best.d.rate || 0 : 0;
+    W.obs = { x: T.x + best.dist, len: veh.len, v: held ? 0 : (best.s.kmh || 0) * (1 - rate) / 3.6, t: W.t, label: best.c.rec.t + ' ' + best.c.rec.n };
+  }
   const delayOf = (W, key) => { const d = W.haz && W.haz.delay.get(key); return d ? d : null; };
-  root.NatCat = { refOf, KX, VP, VS, hav, shindoAt, build, atKm, stateOf, init, step, delayOf };
+  root.NatCat = { updateObstacle, refOf, KX, VP, VS, hav, shindoAt, build, atKm, stateOf, init, step, delayOf };
 })(typeof window !== 'undefined' ? window : globalThis);

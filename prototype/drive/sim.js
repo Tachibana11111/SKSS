@@ -276,6 +276,8 @@
       const gap = L.x - L.veh.len - x - G.atcBuf;
       if (gap < 15000) { const qq = gap > 0 ? Math.sqrt(2 * G.aATC * gap) : 0; if (qq < a) { a = qq; why = 'lead'; } }
     }
+    { const ob = T === W.player ? W.obs : null;      // đoàn khác (từ danh mục lịch toàn quốc) chạy hoặc dừng giữa đường phía trước: ATC giữ khoảng cách như với tàu đi trước thật, không thể vượt
+      if (ob) { const gap = ob.x + ob.v * (W.t - ob.t) - ob.len - x - G.atcBuf; if (gap < 15000) { const qq = gap > 0 ? Math.sqrt(2 * G.aATC * gap) : 0; if (qq < a) { a = qq; why = 'lead'; W.obsLabel = ob.label; } } } }
     T.why = why; return a;
   }
 
@@ -710,7 +712,7 @@
   const passersAt = (W, k) => (W.passDyn && W.passDyn.k === k ? W.passDyn.list : (W.passers && W.passers[k]) || []);
   function refreshOpposing(W, T) {
     if (!W.oppCat || (W.oppAt !== undefined && W.t - W.oppAt < 0.4 && W.t >= W.oppAt)) return; W.oppAt = W.t;
-    const NC = root.NatCat; if (NC && W.haz) NC.step(W);
+    const NC = root.NatCat; if (NC && W.haz) NC.step(W); if (NC) NC.updateObstacle(W, T);
     if (T.phase === 'dwell') refreshPassers(W, T);
     const now = W.trip.t0 + W.t, kmP = kmOfS(T.x, W.dir, W.line.kmEnd), down = W.dir === 'down', st = W.oppState || (W.oppState = new Map());
     for (const c of W.oppCat) { const p = c.pts, dl = NC && W.haz ? NC.delayOf(W, c.id) : null, nowE = now - (dl ? dl.delay : 0); let km = null, vo = 0;
