@@ -686,10 +686,10 @@
   const hash01 = (a, b) => { let x = Math.imul((a | 0) ^ 0x9e3779b9, 2654435761) ^ Math.imul(((b | 0) + 0x7f4a7c15) | 0, 1597334677); x ^= x >>> 15; x = Math.imul(x, 2246822519); x ^= x >>> 13; return ((x >>> 0) % 100000) / 100000; };
   // ---- tàu ngược chiều theo lịch thật (cùng danh mục với bản đồ toàn quốc): vị trí mỗi đoàn ngược chiều theo giờ, đổi sang km của tuyến ta; giờ gặp nhau tính từ khoảng cách thật và tốc độ hiện tại của ta
   function buildOppCat(W, trip) {
-    const L = W.line, oppDir = trip.dir === 'down' ? 'up' : 'down', out = [], idxOf = new Map(L.stations.map((s, i) => [s.en, i]));
+    const L = W.line, oppDir = trip.dir === 'down' ? 'up' : 'down', out = [], idxOf = new Map(L.stations.map((s, i) => [s.jp, i]));
     for (const id of Object.keys(LINE_META)) { const LL = lineOf(id); if (!LL || !LL.trains) continue;
       for (const rec of LL.trains) { if (rec.d !== oppDir || (id === W.lineId && rec === trip.rec)) continue;
-        let run = [], best = []; for (const e of rec.s) { if (e[3]) continue; const i = idxOf.get(LL.stations[e[0]].en);
+        let run = [], best = []; for (const e of rec.s) { if (e[3]) continue; const i = idxOf.get(LL.stations[e[0]].jp);
           if (i === undefined) { if (run.length > best.length) best = run; run = []; continue; } run.push({ km: L.stations[i].km, ta: e[1] != null ? e[1] : e[2], td: e[2] != null ? e[2] : e[1] }); }
         if (run.length > best.length) best = run; if (best.length >= 2) out.push({ id: id + rec.t + rec.n + rec.d, rec, pts: best }); } }
     return out;
@@ -698,8 +698,8 @@
   function refreshPassers(W, T) {
     const NC = root.NatCat, k = T.k; if (!NC) return;
     if (!T.M[k].loop) { W.passDyn = { k, list: ((W.passers && W.passers[k]) || []).filter(p => p.syn) }; return; }      // ga chỉ có hai đường (không đường tránh): tàu cùng chiều không thể chạy xuyên qua tàu đang đỗ, nên không có tàu thông qua
-    if (!W.passCand || W.passCand.k !== k) { const en = W.line.stations[T.M[k].i].en, list = [];
-      for (const c of NC.build(root.LINES)) { if (c.rec.d !== W.dir || c.rec === W.trip.rec) continue; const LL = root.LINES[c.line], jj = LL.stations.findIndex(s => s.en === en); if (jj < 0) continue; const kmJ = LL.stations[jj].km, S = c.stops;
+    if (!W.passCand || W.passCand.k !== k) { const en = W.line.stations[T.M[k].i].jp, list = [];
+      for (const c of NC.build(root.LINES)) { if (c.rec.d !== W.dir || c.rec === W.trip.rec) continue; const LL = root.LINES[c.line], jj = LL.stations.findIndex(s => s.jp === en); if (jj < 0) continue; const kmJ = LL.stations[jj].km, S = c.stops;
         if (S.some(p => p.i === jj)) continue;
         for (let q = 0; q < S.length - 1; q++) { const k0 = LL.stations[S[q].i].km, k1 = LL.stations[S[q + 1].i].km; if (kmJ > Math.min(k0, k1) && kmJ < Math.max(k0, k1)) { list.push({ c, tb: c.td(S[q]) + (c.ta(S[q + 1]) - c.td(S[q])) * ((kmJ - k0) / (k1 - k0)) }); break; } } }
       W.passCand = { k, list }; W.passObj = new Map(); }

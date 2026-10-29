@@ -80,7 +80,7 @@
       for (let i = 0; i < n; i++) { const z1 = zFront - i * cl, z2 = z1 - cl; if (z1 < zLo || z2 > zHi) continue; const xa = X(pathFn(z1), z1), xb = X(pathFn(z2), z2), ya = Y(z1), yb = Y(z2), dx = xa - xb, dy = ya - yb, ln = Math.hypot(dx, dy) + 0.6;
         const part = i === 0 ? 'head' : i === n - 1 ? 'tail' : 'mid', im = o && o[part] && o[part].ready ? o[part].img : null;
         ctx.save(); ctx.translate((xa + xb) / 2, (ya + yb) / 2); ctx.rotate(Math.atan2(dx, -dy) + (rev ? Math.PI : 0));
-        if (im) { ctx.imageSmoothingEnabled = true; ctx.drawImage(im, -w / 2, -ln / 2, w, ln); } else { ctx.fillStyle = COL[k]; ctx.fillRect(-w / 2, -ln / 2 + 0.3, w, ln - 0.6); }
+        if (im) { ctx.imageSmoothingEnabled = true; ctx.drawImage(im, -w / 2, -ln / 2, w, ln); } else { ctx.fillStyle = COL[k] || '#dde3e8'; ctx.fillRect(-w / 2, -ln / 2 + 0.3, w, ln - 0.6); if (i === 0) { ctx.fillStyle = 'rgba(40,90,170,.75)'; ctx.fillRect(-w / 2, -ln / 2 + 0.3, w, Math.max(2, ln * 0.35)); } }      // mẫu chưa có ảnh nhìn từ trên (E2...): thân sáng, đầu tàu tô xanh để phân biệt, không còn dùng màu cũ (tối)
         ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1; ctx.strokeRect(-w / 2, -ln / 2, w, ln);
         ctx.restore(); }
       if (head) { const xh = X(pathFn(zFront), zFront), yh = Y(zFront); ctx.fillStyle = '#ffd24a'; ctx.beginPath(); ctx.moveTo(xh, yh - 7); ctx.lineTo(xh - 4, yh); ctx.lineTo(xh + 4, yh); ctx.closePath(); ctx.fill(); } };

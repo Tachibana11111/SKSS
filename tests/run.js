@@ -563,10 +563,10 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
     ok(T6.why === 'lead' && T6.allowed <= lim + 1, 'ATC giữ khoảng cách với đoàn dừng giữa đường phía trước (giới hạn ' + (T6.allowed * 3.6).toFixed(0) + ' km/h, tối đa ' + (lim * 3.6).toFixed(0) + ')', 'why=' + T6.why + ' allowed=' + T6.allowed); }
   // cả chuyến Nozomi (độ khó cao, có sự cố): tàu của người chơi không đổi thứ tự với đoàn nào cùng nhóm đường giữa hai ga
   for (const sd of [3, 7]) { const L7 = Sim.lineOf('tsk'), r7 = L7.trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), st7 = r7.s.filter(e => !e[3]).map(e => e[0]), W7 = Sim.createWorld('tsk', Sim.makeTrip('tsk', r7, st7[0], st7[st7.length - 1]), { diff: 'hard', seed: sd, lead: true, events: true }), T7 = W7.player, LN7 = window.LINES;
-    Sim.requestClose(T7); T7.pw = 13; let n7 = 0, fl7 = 0, prev7 = null, me0 = null; while (!T7.finished && n7++ < 4e5 && W7.t < 9000) { Sim.tick(W7, 0.05, {}, true); if (n7 % 200 !== 0) continue; NatCat.step(W7); const now7 = W7.trip.t0 + W7.t, me7 = NatCat.refOf(LN7, 'tsk', Sim.kmOfS(T7.x, W7.dir, W7.line.kmEnd)), cur7 = new Map();
+    Sim.requestClose(T7); T7.pw = 13; let n7 = 0, fl7 = 0, prev7 = null, me0 = null, dwPrev = false; while (!T7.finished && n7++ < 4e5 && W7.t < 9000) { Sim.tick(W7, 0.05, {}, true); if (n7 % 200 !== 0) continue; NatCat.step(W7); const now7 = W7.trip.t0 + W7.t, me7 = NatCat.refOf(LN7, 'tsk', Sim.kmOfS(T7.x, W7.dir, W7.line.kmEnd)), cur7 = new Map();
       for (const c of NatCat.build(LN7)) { if (c.rec.d !== W7.dir || c.rec === W7.trip.rec) continue; const d7 = NatCat.delayOf(W7, c.key), s7 = NatCat.stateOf(LN7, c, now7 - (d7 ? d7.delay : 0)); if (!s7 || s7.dwell) continue; const rf7 = NatCat.refOf(LN7, c.line, s7.km); if (rf7.g === me7.g) cur7.set(c.key, rf7.k); }
-      if (prev7 && me0 !== null) for (const [k7, v7] of cur7) { const v0 = prev7.get(k7); if (v0 === undefined) continue; if ((v0 - me0) * (v7 - me7.k) < 0 && Math.abs(v7 - me7.k) > 0.5) fl7++; }
-      prev7 = cur7; me0 = me7.k; }
+      if (prev7 && me0 !== null && !dwPrev && T7.phase !== 'dwell') for (const [k7, v7] of cur7) { const v0 = prev7.get(k7); if (v0 === undefined) continue; if ((v0 - me0) * (v7 - me7.k) < 0 && Math.abs(v7 - me7.k) > 0.5) fl7++; }      // khi ta đang đỗ ở ga có đường tránh, tàu thông qua vượt ta là hợp lệ
+      prev7 = cur7; me0 = me7.k; dwPrev = T7.phase === 'dwell'; }
     ok(fl7 === 0 && !T7.collision, 'Nozomi (seed ' + sd + '): tàu của ta không vượt đoàn nào giữa hai ga, không va chạm (' + fl7 + ' lần đổi thứ tự)'); }
   // nhóm đường chung: Tokyo–Omiya chung cho cả 5 tuyến (nhóm A), Omiya–Takasaki chung Joetsu/Hokuriku (nhóm B); ga cho vượt khi có đường thông qua hoặc >= 2 đường dừng cùng chiều
   { const LNg = window.LINES, om = LNg.jts.stations.find(x => x.en === 'Omiya').km, tk = LNg.jts.stations.find(x => x.en === 'Takasaki').km;
@@ -585,6 +585,12 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
     const rowsOf = t => { NatMap.V.sel = { tk: t.c.key }; log9.length = 0; NatMap.draw(ctx, 0, 58, 1920, 618, W9, T9, o9); return log9.filter(l => /phía trước|phía sau/.test(l)).join(' | '); };
     const rToki = tk9 ? rowsOf(tk9) : '', rYam = ym9 ? rowsOf(ym9) : '';
     ok(/trước: Yamabiko 51/.test(rToki) && /sau: Toki 301/.test(rYam), 'tooltip khác tuyến trên đoạn đường chung: Toki 301 [' + rToki + '] / Yamabiko 51 [' + rYam + ']'); NatMap.V.sel = null; }
+  // trùng tên ga giữa các tuyến (Sendai: Tohoku 仙台 / Kyushu 川内) phải là hai ga riêng; đoàn ghép (Yamabiko + Tsubasa cùng giờ) không bị tách bởi quy tắc giãn cách
+  { const LNs = window.LINES; ok(NatMap.stations && Object.values(NatMap.stations()).filter(x => x.en === 'Sendai').length === 2, 'hai ga Sendai (Tohoku và Kyushu) là hai ga riêng trên bản đồ');
+    const W10 = Sim.createWorld('tsk', Sim.makeTrip('tsk', Sim.lineOf('tsk').trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), 0, 12), { diff: 'hard', seed: 5, lead: false, events: true }), cat10 = NatCat.build(LNs);
+    const pr10 = cat10.find(c => c.line === 'yam' && c.rec.d === 'down' && cat10.some(x => x.line === 'toh' && x.rec.d === 'down' && x.cid === c.cid)), a10 = pr10 && cat10.find(c => c.line === 'toh' && c.rec.d === 'down' && c.cid === pr10.cid); let maxGap = 0;
+    if (a10 && pr10) for (let t = a10.t0 + 60; t < a10.t0 + 3600; t += 60) { W10.t = t - W10.trip.t0; NatCat.step(W10); const da = NatCat.delayOf(W10, a10.key), db = NatCat.delayOf(W10, pr10.key), sa = NatCat.stateOf(LNs, a10, t - (da ? da.delay : 0)), sb = NatCat.stateOf(LNs, pr10, t - (db ? db.delay : 0)); if (sa && sb && sa.km !== undefined) maxGap = Math.max(maxGap, Math.abs(NatCat.refOf(LNs, 'toh', sa.km).k - NatCat.refOf(LNs, 'yam', sb.km).k)); }
+    ok(a10 && pr10 && maxGap < 0.5, 'đoàn ghép ' + (a10 ? a10.rec.t + ' ' + a10.rec.n : '?') + ' + ' + (pr10 ? pr10.rec.t + ' ' + pr10.rec.n : '?') + ' luôn đi cùng nhau trên đường chung (lệch tối đa ' + maxGap.toFixed(2) + ' km)'); }
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
 
