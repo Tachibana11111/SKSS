@@ -162,7 +162,13 @@
     this.rumble.f.frequency.setTargetAtTime(this.cabin ? 70 + 90 * sp : 90 + 420 * sp, t, 0.2);
     set(this.wind, (this.cabin ? 0.05 : 1) * 0.32 * Math.pow(sp, 2.2) * (inTun ? 0.55 : 1) * (1 + 0.15 * Math.sin(now / 1900)));
     this.wind.f.frequency.setTargetAtTime(500 + 1900 * sp, t, 0.2);
-    set(this.rain, W.rainHere ? 0.1 : 0);
+    const raining = W.rainHere && !inTun;
+    set(this.rain, raining ? (this.cabin ? 0.01 : 0.1) : 0);      // ù cabin: bỏ tiếng rít mưa ngoài, thay bằng tiếng hạt mưa tí tách trên mái (bên dưới)
+    if (this.cabin && raining && active) {
+      this.dropAcc = (this.dropAcc || 0) + dt * 45 * (W.weatherKind === 'typhoon' ? 1.7 : 1) * (0.75 + 0.45 * sp); let nd = 0;
+      while (this.dropAcc >= 1 && nd < 6) { this.dropAcc -= 1; nd++; const thud = Math.random() < 0.35;      // một phần là tiếng "bộp" trầm của hạt to, phần còn lại là tiếng tách khô
+        this.burst(thud ? 0.05 + Math.random() * 0.04 : 0.014 + Math.random() * 0.03, thud ? 0.03 + Math.random() * 0.05 : 0.018 + Math.random() * 0.045, thud ? 500 + Math.random() * 600 : 1500 + Math.random() * 2400, thud ? 1.4 : 3 + Math.random() * 3, 'bandpass', Math.random() * dt); }
+      if (this.dropAcc > 4) this.dropAcc = 0; }
     const windy = W.zones.some(z => z.kind === 'wind' && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 - 25000 && T.x < z.s1 + 5000);
     set(this.howl, windy ? 0.11 * (1 + 0.6 * Math.sin(now / 700) * Math.sin(now / 2300)) : 0, 0.3);
     set(this.quake, W.eqkActive || T.cut ? 0.5 : 0, 0.2);

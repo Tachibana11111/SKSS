@@ -578,6 +578,13 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
     for (let t = 0; t <= 12000; t += 30) { W8.t = t; NatCat.step(W8); const now8 = W8.trip.t0 + t, cur8 = new Map(); for (const c of cat8) { const d8 = NatCat.delayOf(W8, c.key), s8 = NatCat.stateOf(LNg, c, now8 - (d8 ? d8.delay : 0)); if (!s8 || s8.dwell) continue; const rf8 = NatCat.refOf(LNg, c.line, s8.km); cur8.set(c.key, { g: rf8.g + c.rec.d, k: rf8.k }); }
       if (pr8) for (const [k1, a1] of cur8) { const a0 = pr8.get(k1); if (!a0) continue; for (const [k2, b1] of cur8) { if (k1 >= k2 || a1.g !== b1.g) continue; const b0 = pr8.get(k2); if (!b0 || b0.g !== a0.g || a0.g !== a1.g) continue; if ((a0.k - b0.k) * (a1.k - b1.k) < 0 && Math.abs(a1.k - b1.k) > 0.3) fl8++; } } pr8 = cur8; }
     ok(fl8 === 0, 'toàn quốc: không đoàn cùng nhóm đường và cùng chiều nào đổi thứ tự giữa hai ga (' + fl8 + ' lần)'); }
+  // tooltip: tàu trên đoạn đường chung Tokyo–Omiya ghi đúng tàu phía trước/sau dù khác tuyến (Yamabiko 51 / Toki 301 / Tsubasa 121)
+  { const L9 = Sim.lineOf('tsk'), r9 = L9.trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), st9 = r9.s.filter(e => !e[3]).map(e => e[0]), W9 = Sim.createWorld('tsk', Sim.makeTrip('tsk', r9, st9[0], st9[st9.length - 1]), { diff: 'normal', seed: 1, lead: false, events: false }), T9 = W9.player, log9 = [];
+    const o9 = { txt: t => log9.push(String(t)), button: noop, close: noop, save: noop, checkin: noop }; W9.t = 22440 - W9.trip.t0; NatCat.step(W9); NatMap.V.sel = null; NatMap.draw(ctx, 0, 58, 1920, 618, W9, T9, o9);
+    const tk9 = NatMap.V.trains.map(h => h.t).find(t => !t.me && t.label === 'Toki 301'), ym9 = NatMap.V.trains.map(h => h.t).find(t => !t.me && t.label === 'Yamabiko 51');
+    const rowsOf = t => { NatMap.V.sel = { tk: t.c.key }; log9.length = 0; NatMap.draw(ctx, 0, 58, 1920, 618, W9, T9, o9); return log9.filter(l => /phía trước|phía sau/.test(l)).join(' | '); };
+    const rToki = tk9 ? rowsOf(tk9) : '', rYam = ym9 ? rowsOf(ym9) : '';
+    ok(/trước: Yamabiko 51/.test(rToki) && /sau: Toki 301/.test(rYam), 'tooltip khác tuyến trên đoạn đường chung: Toki 301 [' + rToki + '] / Yamabiko 51 [' + rYam + ']'); NatMap.V.sel = null; }
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
 
