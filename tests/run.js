@@ -568,6 +568,16 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
       if (prev7 && me0 !== null) for (const [k7, v7] of cur7) { const v0 = prev7.get(k7); if (v0 === undefined) continue; if ((v0 - me0) * (v7 - me7.k) < 0 && Math.abs(v7 - me7.k) > 0.5) fl7++; }
       prev7 = cur7; me0 = me7.k; }
     ok(fl7 === 0 && !T7.collision, 'Nozomi (seed ' + sd + '): tàu của ta không vượt đoàn nào giữa hai ga, không va chạm (' + fl7 + ' lần đổi thứ tự)'); }
+  // nhóm đường chung: Tokyo–Omiya chung cho cả 5 tuyến (nhóm A), Omiya–Takasaki chung Joetsu/Hokuriku (nhóm B); ga cho vượt khi có đường thông qua hoặc >= 2 đường dừng cùng chiều
+  { const LNg = window.LINES, om = LNg.jts.stations.find(x => x.en === 'Omiya').km, tk = LNg.jts.stations.find(x => x.en === 'Takasaki').km;
+    ok(NatCat.refOf(LNg, 'jts', om * 0.5).g === 'A' && NatCat.refOf(LNg, 'hok', om * 0.5).g === 'A' && NatCat.refOf(LNg, 'toh', 20).g === 'A' && NatCat.refOf(LNg, 'jts', (om + tk) / 2).g === 'B' && NatCat.refOf(LNg, 'hok', (om + tk) / 2).g === 'B' && NatCat.refOf(LNg, 'hok', tk + 60).g === 'hok', 'nhóm đường chung (Tokyo–Omiya: A cho cả năm tuyến, Omiya–Takasaki: B, sau đó riêng)');
+    const stI = (ln, en) => LNg[ln].stations.findIndex(x => x.en === en);
+    ok(!NatCat.canPass(LNg, 'tsk', stI('tsk', 'Atami'), 'down') && NatCat.canPass(LNg, 'tsk', stI('tsk', 'Odawara'), 'down'), 'Atami (hai đường) không cho vượt tàu đỗ; Odawara (có đường thông qua) cho vượt');
+    // mọi tuyến cùng lúc: không cặp đoàn cùng nhóm đường và cùng chiều nào đổi thứ tự giữa hai ga (cả khác tuyến)
+    const L8 = Sim.lineOf('tsk'), r8 = L8.trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), st8 = r8.s.filter(e => !e[3]).map(e => e[0]), W8 = Sim.createWorld('tsk', Sim.makeTrip('tsk', r8, st8[0], st8[st8.length - 1]), { diff: 'hard', seed: 5, lead: false, events: true }), cat8 = NatCat.build(LNg); let fl8 = 0, pr8 = null;
+    for (let t = 0; t <= 12000; t += 30) { W8.t = t; NatCat.step(W8); const now8 = W8.trip.t0 + t, cur8 = new Map(); for (const c of cat8) { const d8 = NatCat.delayOf(W8, c.key), s8 = NatCat.stateOf(LNg, c, now8 - (d8 ? d8.delay : 0)); if (!s8 || s8.dwell) continue; const rf8 = NatCat.refOf(LNg, c.line, s8.km); cur8.set(c.key, { g: rf8.g + c.rec.d, k: rf8.k }); }
+      if (pr8) for (const [k1, a1] of cur8) { const a0 = pr8.get(k1); if (!a0) continue; for (const [k2, b1] of cur8) { if (k1 >= k2 || a1.g !== b1.g) continue; const b0 = pr8.get(k2); if (!b0 || b0.g !== a0.g || a0.g !== a1.g) continue; if ((a0.k - b0.k) * (a1.k - b1.k) < 0 && Math.abs(a1.k - b1.k) > 0.3) fl8++; } } pr8 = cur8; }
+    ok(fl8 === 0, 'toàn quốc: không đoàn cùng nhóm đường và cùng chiều nào đổi thứ tự giữa hai ga (' + fl8 + ' lần)'); }
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
 

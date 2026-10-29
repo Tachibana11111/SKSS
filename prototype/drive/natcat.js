@@ -52,13 +52,19 @@
     if (hs(seed, 99) < 0.6) H.quakes.push({ t: rl(100, 900, 6000), lat: rl(101, 34, 41.5), lon: rl(102, 132, 142.5), mag: rl(103, 5.6, 6.6), depth: rl(104, 10, 60) });
   }
   // các tuyến đi chung đường: Tohoku–Akita–Yamagata (tham chiếu km Tohoku) và Joetsu–Hokuriku (tham chiếu km Joetsu), để tàu khác tuyến cũng không vượt nhau giữa hai ga
-  const GR = { toh: ['A', null], aki: ['A', 'toh'], yam: ['A', 'toh'], jts: ['B', null], hok: ['B', 'jts'] }, pairCache = new Map();
+  const GR = { toh: [['A', null]], aki: [['A', 'toh']], yam: [['A', 'toh']], jts: [['A', 'toh'], ['B', null]], hok: [['A', 'toh'], ['B', 'jts']] }, pairCache = new Map();      // đoạn Tokyo–Omiya dùng chung cho cả năm tuyến (nhóm A, tham chiếu km Tohoku); sau Omiya Joetsu/Hokuriku vào nhóm B (km Joetsu)
   function refOf(LN, line, km) {
-    const g = GR[line]; if (!g) return { g: line, k: km }; if (!g[1]) return { g: g[0], k: km };
-    const key = line + g[1]; let P = pairCache.get(key); if (!P) { const A = LN[line].stations, B = LN[g[1]].stations; P = []; for (const a of A) { const b = B.find(x => x.en === a.en); if (b) P.push([a.km, b.km]); } pairCache.set(key, P); }
-    if (P.length < 2 || km < P[0][0] || km > P[P.length - 1][0]) return { g: line, k: km };
-    let i = 0; while (i < P.length - 2 && P[i + 1][0] < km) i++; const f = (km - P[i][0]) / ((P[i + 1][0] - P[i][0]) || 1); return { g: g[0], k: P[i][1] + (P[i + 1][1] - P[i][1]) * f };
+    const cands = GR[line]; if (!cands) return { g: line, k: km };
+    for (const [g, refLine] of cands) {
+      if (!refLine) return { g, k: km };
+      const key = line + refLine; let P = pairCache.get(key); if (!P) { const A = LN[line].stations, B = LN[refLine].stations; P = []; for (const a of A) { const b = B.find(x => x.en === a.en); if (b) P.push([a.km, b.km]); } pairCache.set(key, P); }
+      if (P.length < 2 || km < P[0][0] || km > P[P.length - 1][0]) continue;
+      let i = 0; while (i < P.length - 2 && P[i + 1][0] < km) i++; const f = (km - P[i][0]) / ((P[i + 1][0] - P[i][0]) || 1); return { g, k: P[i][1] + (P[i + 1][1] - P[i][1]) * f };
+    }
+    return { g: line, k: km };
   }
+  // ga cho phép vượt tàu đang đỗ: có đường thông qua, hoặc có từ 2 đường dừng cùng chiều (tàu sau vào đường dừng còn trống)
+  function canPass(LN, line, idx, dir) { const st = LN[line] && LN[line].stations[idx]; if (!st) return false; if (st.loop) return true; const LY = root.Layout; return !!(LY && LY.stopCount && LY.stopCount(st.lay || '2-2-0', dir) >= 2); }
   const WSLOW = { rain: 0.06, snow: 0.09, wind: 0.2 };
   // cập nhật độ trễ tới giờ hiện tại của game (bước 5 s; mở bản đồ muộn thì tự bù từ đầu chuyến)
   function step(W) {
@@ -71,8 +77,8 @@
         for (let qi = 0; qi < H.quakes.length; qi++) { const q = H.quakes[qi]; if (d.hit[qi] || wt < q.t) continue; const R = hav(s.lat, s.lon, q.lat, q.lon), tS = q.t + Math.hypot(R, q.depth) / VS;
           if (wt >= tS) { d.hit[qi] = 1; const sh = shindoAt(q, R); if (sh >= 4) { d.hold = (sh >= 5 ? 900 : 420) * (0.8 + hs(qi, c.rec.n | 0) * 0.5); d.why = 'eqk'; d.shake = wt; } } }
         if (d.hold <= 0 && !s.dwell) for (const cl of H.cells) if (wt >= cl.t0 && wt <= cl.t1 && hav(s.lat, s.lon, cl.lat, cl.lon) < cl.r) { d.delay += dt * (WSLOW[cl.kind] || 0.05); if (!d.why) d.why = cl.kind; break; }
-        act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: false, dwell: !!s.dwell, loop: !!(s.dwell && LN[c.line].stations[s.idx] && LN[c.line].stations[s.idx].loop) }); }
-      { const P0 = W.player; if (P0 && !P0.finished && LN[W.lineId]) act.push({ d: { delay: 0 }, g: refOf(LN, W.lineId, root.Sim.kmOfS(P0.x, W.dir, W.line.kmEnd)), dir: W.dir, still: false, dwell: P0.phase === 'dwell', loop: P0.phase === 'dwell' && !!P0.M[P0.k].loop, me: true }); }      // tàu của người chơi cũng là vật cản (không bị chậm)
+        act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: false, dwell: !!s.dwell, loop: !!(s.dwell && canPass(LN, c.line, s.idx, c.rec.d)) }); }
+      { const P0 = W.player; if (P0 && !P0.finished && LN[W.lineId]) act.push({ d: { delay: 0 }, g: refOf(LN, W.lineId, root.Sim.kmOfS(P0.x, W.dir, W.line.kmEnd)), dir: W.dir, still: false, dwell: P0.phase === 'dwell', loop: P0.phase === 'dwell' && canPass(LN, W.lineId, P0.M[P0.k].i, W.dir), me: true }); }      // tàu của người chơi cũng là vật cản (không bị chậm)
       // một đường mỗi chiều: tàu đi sau không thể vượt tàu phía trước giữa hai ga (chỉ vượt được ở ga khi tàu trước đang đỗ); tiến sát thì bị chậm dần
       const grp = new Map(); for (const a of act) { a.km = a.g.k; const g = a.g.g + a.dir; (grp.get(g) || grp.set(g, []).get(g)).push(a); }
       for (const [g, arr] of grp) { const sg = arr[0].dir === 'down' ? 1 : -1; arr.sort((x, y) => sg * (x.km - y.km));
@@ -87,12 +93,12 @@
     const LN = root.LINES, L = LN && LN[W.lineId]; if (!L || !W.trip) { W.obs = null; return; } if (!W.haz) init(W);
     const cat = build(LN), now = W.trip.t0 + W.t, sg = W.dir === 'down' ? 1 : -1, me = refOf(LN, W.lineId, root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd)), lr = W.leadRef; let best = null;
     for (const c of cat) { if (c.rec.d !== W.dir || c.rec === W.trip.rec) continue; if (lr && c.rec.t === lr.t && c.rec.n === lr.n && c.rec.d === lr.d) continue;
-      const d = W.haz.delay.get(c.key), s = stateOf(LN, c, now - (d ? d.delay : 0)); if (!s || s.dwell) continue; const rf = refOf(LN, c.line, s.km); if (rf.g !== me.g) continue;
+      const d = W.haz.delay.get(c.key), s = stateOf(LN, c, now - (d ? d.delay : 0)); if (!s || (s.dwell && canPass(LN, c.line, s.idx, c.rec.d))) continue; const rf = refOf(LN, c.line, s.km); if (rf.g !== me.g) continue;
       const dist = sg * (rf.k - me.k) * 1000; if (dist <= 0 || dist > 15000) continue; if (!best || dist < best.dist) best = { dist, c, d, s }; }
     if (!best) { W.obs = null; return; }
     const veh = root.Sim.VEH[best.c.rec.v] || root.Sim.VEH.N700, held = best.d && best.d.hold > 0, rate = best.d ? best.d.rate || 0 : 0;
     W.obs = { x: T.x + best.dist, len: veh.len, v: held ? 0 : (best.s.kmh || 0) * (1 - rate) / 3.6, t: W.t, label: best.c.rec.t + ' ' + best.c.rec.n };
   }
   const delayOf = (W, key) => { const d = W.haz && W.haz.delay.get(key); return d ? d : null; };
-  root.NatCat = { updateObstacle, refOf, KX, VP, VS, hav, shindoAt, build, atKm, stateOf, init, step, delayOf };
+  root.NatCat = { canPass, updateObstacle, refOf, KX, VP, VS, hav, shindoAt, build, atKm, stateOf, init, step, delayOf };
 })(typeof window !== 'undefined' ? window : globalThis);
