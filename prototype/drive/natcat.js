@@ -53,15 +53,32 @@
   }
   // các tuyến đi chung đường: Tohoku–Akita–Yamagata (tham chiếu km Tohoku) và Joetsu–Hokuriku (tham chiếu km Joetsu), để tàu khác tuyến cũng không vượt nhau giữa hai ga
   const GR = { toh: [['A', null]], aki: [['A', 'toh']], yam: [['A', 'toh']], jts: [['A', 'toh'], ['B', null]], hok: [['A', 'toh'], ['B', 'jts']] }, pairCache = new Map();      // đoạn Tokyo–Omiya dùng chung cho cả năm tuyến (nhóm A, tham chiếu km Tohoku); sau Omiya Joetsu/Hokuriku vào nhóm B (km Joetsu)
+  function pairsOf(LN, line, refLine) { const key = line + refLine; let P = pairCache.get(key); if (!P) { const A = LN[line].stations, B = LN[refLine].stations; P = []; for (const a of A) { const b = B.find(x => x.jp === a.jp); if (b) P.push([a.km, b.km]); } pairCache.set(key, P); } return P; }
   function refOf(LN, line, km) {
     const cands = GR[line]; if (!cands) return { g: line, k: km };
     for (const [g, refLine] of cands) {
       if (!refLine) return { g, k: km };
-      const key = line + refLine; let P = pairCache.get(key); if (!P) { const A = LN[line].stations, B = LN[refLine].stations; P = []; for (const a of A) { const b = B.find(x => x.jp === a.jp); if (b) P.push([a.km, b.km]); } pairCache.set(key, P); }
+      const P = pairsOf(LN, line, refLine);
       if (P.length < 2 || km < P[0][0] || km > P[P.length - 1][0]) continue;
       let i = 0; while (i < P.length - 2 && P[i + 1][0] < km) i++; const f = (km - P[i][0]) / ((P[i + 1][0] - P[i][0]) || 1); return { g, k: P[i][1] + (P[i + 1][1] - P[i][1]) * f };
     }
     return { g: line, k: km };
+  }
+  // ngược của refOf: từ toạ độ tham chiếu của một nhóm về km của một tuyến cụ thể (null nếu tuyến đó không đi qua điểm này)
+  function fromRef(LN, line, rf) {
+    const cands = GR[line]; if (!cands) return rf.g === line ? rf.k : null;
+    for (const [g, refLine] of cands) { if (g !== rf.g) continue; if (!refLine) return rf.k; const P = pairsOf(LN, line, refLine); if (P.length < 2 || rf.k < P[0][1] || rf.k > P[P.length - 1][1]) continue;
+      let i = 0; while (i < P.length - 2 && P[i + 1][1] < rf.k) i++; const f = (rf.k - P[i][1]) / ((P[i + 1][1] - P[i][1]) || 1); return P[i][0] + (P[i + 1][0] - P[i][0]) * f; }
+    return rf.g === line ? rf.k : null;
+  }
+  // giờ (theo lịch) mà đoàn c đi qua vị trí km của tuyến mình (nội suy giữa hai ga dừng; null nếu ngoài hành trình)
+  function timeAtKm(LN, c, km) { const L = LN[c.line], S = c.stops; for (let k = 0; k < S.length - 1; k++) { const k0 = L.stations[S[k].i].km, k1 = L.stations[S[k + 1].i].km; if (km >= Math.min(k0, k1) && km <= Math.max(k0, k1)) { const f = (km - k0) / ((k1 - k0) || 1); return c.td(S[k]) + (c.ta(S[k + 1]) - c.td(S[k])) * f; } } return null; }
+  // tàu đi trước thật của người chơi (W.lead) có vị trí thật trong mô phỏng: ép độ trễ của đoàn đó trong danh mục sao cho vị trí theo lịch trùng vị trí thật, để giãn cách với các tàu khác tính đúng
+  function alignLead(W, LN, H, tNow) {
+    const Ld = W.lead, lr = W.leadRef; if (!Ld || !lr || Ld.phase !== 'run') return;
+    if (W._leadC === undefined) W._leadC = build(LN).find(c => c.rec.t === lr.t && c.rec.n === lr.n && c.rec.d === lr.d) || null; const c = W._leadC; if (!c || !LN[W.lineId]) return;
+    const kmP = root.Sim.kmOfS(Ld.x, W.dir, W.line.kmEnd); let km = kmP; if (c.line !== W.lineId) { km = fromRef(LN, c.line, refOf(LN, W.lineId, kmP)); if (km == null) return; }
+    const t = timeAtKm(LN, c, km); if (t == null) return; let d = H.delay.get(c.key); if (!d) { d = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; H.delay.set(c.key, d); } d.delay = tNow - t; d.hold = 0;
   }
   // ga cho phép vượt tàu đang đỗ: có đường thông qua, hoặc có từ 2 đường dừng cùng chiều (tàu sau vào đường dừng còn trống)
   function canPass(LN, line, idx, dir) { const st = LN[line] && LN[line].stations[idx]; if (!st) return false; if (st.loop) return true; const LY = root.Layout; return !!(LY && LY.stopCount && LY.stopCount(st.lay || '2-2-0', dir) >= 2); }
@@ -69,7 +86,7 @@
   // cập nhật độ trễ tới giờ hiện tại của game (bước 5 s; mở bản đồ muộn thì tự bù từ đầu chuyến)
   function step(W) {
     const LN = root.LINES; if (!LN || !W.trip) return; if (!W.haz) init(W); const H = W.haz, cat = build(LN), end = W.trip.t0 + W.t;
-    while (H.lastT < end - 0.01) { const dt = Math.min(5, end - H.lastT), tNow = H.lastT + dt, wt = tNow - W.trip.t0, act = [];
+    while (H.lastT < end - 0.01) { const dt = Math.min(5, end - H.lastT), tNow = H.lastT + dt, wt = tNow - W.trip.t0, act = []; alignLead(W, LN, H, tNow);
       for (const c of cat) { let d = H.delay.get(c.key); const eff = tNow - (d ? d.delay : 0); if (eff < c.t0 || eff > c.t1) continue;
         if (!d) { d = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; H.delay.set(c.key, d); }
         d._d0 = d.delay;
