@@ -38,7 +38,7 @@
   #menu.dim{background:rgba(8,12,18,.78)}
   #mWall{position:fixed;inset:0;overflow:hidden;pointer-events:none;display:none}
   #menu.solid #mWall{display:block}
-  #mWall .in{position:absolute;left:0;top:0;transform-origin:0 0;display:flex;flex-direction:column;opacity:.1}
+  #mWall .in{position:absolute;left:50%;top:50%;transform-origin:50% 50%;display:flex;flex-direction:column;opacity:.1}
   #menu[data-s=home] #mWall .in{opacity:.24}
   #mWall .wr{position:relative;flex:none;display:flex;align-items:center;white-space:nowrap;padding:3px 0}
   #mWall .wr img{flex:none;margin-right:36px;max-width:none}
@@ -724,20 +724,22 @@ const M = (function () {
   };
   // hình nền: các mẫu Shinkansen xếp theo năm ra mắt (hình dải toa có sẵn trong assets/, chỉ dùng cá nhân); thiếu hình thì hàng đó bị bỏ, không còn hình nào thì chỉ còn nền phẳng
   const WALL = [['w500', '500', 1997], ['e3', 'E3', 1997], ['e2', 'E2', 1997], ['e4', 'E4 Max', 1997], ['t4', '923 Doctor Yellow', 2001], ['e926', 'E926 East i', 2001], ['s800', '800', 2004], ['n700', 'N700', 2007], ['e5', 'E5', 2011], ['e6', 'E6', 2013], ['e7', 'E7 / W7', 2014], ['h5', 'H5', 2016], ['n700s', 'N700S', 2020], ['kamome', 'N700S-8000', 2022], ['e8', 'E8', 2024]];
-  let wallBuilt = false;      // cả bức tường được thu nhỏ để đủ hết các mẫu trong một màn hình, các hàng sát nhau (cao bằng hình tàu)
+  let wallBuilt = false;      // 15 hàng chính nằm vừa chiều cao màn hình sau khi thu nhỏ; bức tường nghiêng nên thêm 4 hàng lặp ở mỗi đầu (không có nhãn) để phủ kín các góc
+  const WE = 4;
   function layoutWall() {
-    const box = el.querySelector('#mWall .in'); let tot = 0; for (const r of box.children) tot += r.offsetHeight; if (!tot) return;
-    const f = innerHeight / tot; box.style.width = Math.ceil(innerWidth / f) + 'px'; box.style.transform = 'scale(' + f + ')';
+    const box = el.querySelector('#mWall .in'); let main = 0, tot = 0; [...box.children].forEach((r, i) => { tot += r.offsetHeight; if (i >= WE && i < WE + WALL.length) main += r.offsetHeight; }); if (!main) return;
+    const f = innerHeight * 0.9 / main, wn = Math.ceil(innerWidth / f * 1.3);
+    box.querySelectorAll('.cap').forEach(c => { c.style.left = ((wn - innerWidth / f) / 2 + 120 - parseFloat(c.parentNode.style.marginLeft)) + 'px'; }); box.style.width = wn + 'px'; box.style.height = tot + 'px'; box.style.marginLeft = (-wn / 2) + 'px'; box.style.marginTop = (-tot / 2) + 'px'; box.style.transform = 'rotate(-7deg) scale(' + f + ')';
   }
   function buildWall() {
     if (!wallBuilt) {
-      wallBuilt = true; const box = el.querySelector('#mWall .in');
-      WALL.forEach((w, i) => {      // mỗi mẫu một hàng; hàng lẻ lệch trái, hàng chẵn lệch phải, dải lặp 5 lần để phủ kín bề ngang
-        const row = document.createElement('div'); row.className = 'wr'; const ml = i % 2 ? -380 : -520; row.style.marginLeft = ml + 'px';
-        const cap = document.createElement('div'); cap.className = 'cap'; cap.textContent = w[2] + ' · ' + w[1]; cap.style.left = (60 - ml) + 'px'; row.appendChild(cap);
+      wallBuilt = true; const box = el.querySelector('#mWall .in'), n = WALL.length;
+      for (let i = -WE; i < n + WE; i++) {      // mỗi mẫu một hàng; hàng lẻ lệch trái, hàng chẵn lệch phải, dải lặp 5 lần để phủ kín bề ngang
+        const w = WALL[((i % n) + n) % n], row = document.createElement('div'); row.className = 'wr'; const ml = (((i % 2) + 2) % 2) ? -380 : -520; row.style.marginLeft = ml + 'px';
+        if (i >= 0 && i < n) { const cap = document.createElement('div'); cap.className = 'cap'; cap.textContent = w[2] + ' · ' + w[1]; cap.style.left = (60 - ml) + 'px'; row.appendChild(cap); }
         for (let k = 0; k < 5; k++) { const im = new Image(); im.src = 'assets/' + w[0] + '_strip.png'; im.alt = ''; im.onload = layoutWall; im.onerror = () => { row.remove(); layoutWall(); }; row.appendChild(im); }
         box.appendChild(row);
-      });
+      }
     }
     layoutWall();
   }

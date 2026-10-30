@@ -232,7 +232,7 @@ def build_wall_strip(name):
     src, ncars, carlen, flip, SCALE = SPECS[name]; cfg = WALL[name]
     im, cars = build_ref(name)
     if len(cars) != ncars: print(name, 'cảnh báo:', len(cars), 'dải', cars); return None
-    H, W, _ = im.shape
+    H, W, _ = im.shape; sks = []
     def margins(k): return cfg['head'] if k == 0 else cfg['tail'] if k == len(cars) - 1 else cfg['mid']
     boxes = [(max(0, a - cfg['up']), min(H, a + cfg['down']), max(0, x0 - margins(k)[0] - 80), min(W, x1 + margins(k)[1] + 80)) for k, (a, b, x0, x1) in enumerate(cars)]
     diff = np.abs(im - fit_bg(im, boxes)).max(axis=2); imgs = []
@@ -242,15 +242,16 @@ def build_wall_strip(name):
         if cfg['blue_strip']:      # tia sáng xanh của nền: màu xanh bão hoà chỉ được giữ ở các hàng thuộc thân tàu (hàng có phần lớn là điểm không xanh); phần dưới (bánh xe) chỉ giữ điểm không xanh
             blue = (crop[:, :, 2] - crop[:, :, 0] > 90) & (crop[:, :, 2] > 150); nb = (m & ~blue).sum(axis=1) > 0.5 * (x1 - x0); rr = np.where(nb)[0]
             if len(rr): r0, r1 = rr.min(), rr.max(); keep_blue = (np.arange(m.shape[0]) >= r0) & (np.arange(m.shape[0]) <= r1) & (blue.sum(axis=1) > 0.3 * (x1 - x0)); m &= ~(blue & ~keep_blue[:, None])
+        rows_ok = np.where(m.sum(axis=1) > 0.5 * (x1 - x0))[0]; skirt = int(rows_ok.max()) if len(rows_ok) else m.shape[0] - 1      # hàng đáy váy thân: mốc căn các toa theo cùng đường ray
         m = ndi.binary_closing(m, iterations=2); lab, n = ndi.label(m)
         if n == 0: print(name, 'toa', k + 1, 'rỗng'); return None
         mm = lab == (1 + int(np.argmax(ndi.sum(m, lab, range(1, n + 1))))); mm = ndi.binary_opening(ndi.binary_fill_holes(mm), iterations=1)
         al = ndi.gaussian_filter(mm.astype(np.float32), 0.8)
-        img = Image.fromarray(np.dstack([crop.astype(np.uint8), (al * 255).astype(np.uint8)]), 'RGBA'); bb = img.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox(); imgs.append(img.crop(bb) if bb else img)
-    Hh = max(i.height for i in imgs); OVER = 2; x = 0; xs = []
+        img = Image.fromarray(np.dstack([crop.astype(np.uint8), (al * 255).astype(np.uint8)]), 'RGBA'); bb = img.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox(); imgs.append(img.crop(bb) if bb else img); sks.append(skirt - (bb[1] if bb else 0))
+    up = max(sks); Hh = up + 1 + max(i.height - 1 - r for i, r in zip(imgs, sks)); OVER = 2; x = 0; xs = []
     for k, i in enumerate(imgs): xs.append(x); x += i.width - (OVER if k < len(imgs) - 1 else 0)
     strip = Image.new('RGBA', (x, Hh), (0, 0, 0, 0))
-    for i, px in zip(imgs, xs): strip.alpha_composite(i, (px, Hh - i.height))
+    for i, px, r in zip(imgs, xs, sks): strip.alpha_composite(i, (px, up - r))
     strip = strip.resize((int(strip.width * SCALE), int(Hh * SCALE)), Image.LANCZOS)
     out = os.path.join(ROOT, name + '_strip.png'); strip.save(out, optimize=True); print(name, strip.size, os.path.getsize(out), 'byte', len(imgs), 'toa (chỉ cho hình nền menu)'); return strip
 
