@@ -71,7 +71,7 @@
       ctx.fillStyle = dk ? '#1c2b3b' : '#f3f0e6'; ctx.fill('evenodd'); ctx.strokeStyle = dk ? '#2c3f54' : '#c9c4b4'; ctx.lineWidth = 0.8; ctx.stroke();
     }
     for (const cl of H.cells) { if (wt < cl.t0 || wt > cl.t1) continue; const q = P(cl.lon, cl.lat, r), rad = cl.r * kmPx; if (q[0] + rad < x || q[0] - rad > x + w || q[1] + rad < y || q[1] - rad > y + h) continue;
-      const col = cl.kind === 'rain' ? '59,130,246' : cl.kind === 'snow' ? '226,238,255' : '170,180,190'; const g = ctx.createRadialGradient(q[0], q[1], rad * 0.2, q[0], q[1], rad); g.addColorStop(0, 'rgba(' + col + ',.34)'); g.addColorStop(1, 'rgba(' + col + ',.08)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.fill();
+      const col = cl.kind === 'rain' ? '59,130,246' : cl.kind === 'snow' ? '226,238,255' : '170,180,190'; ctx.fillStyle = 'rgba(' + col + ',.2)'; ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.fill();
       ctx.strokeStyle = 'rgba(' + col + ',.6)'; ctx.lineWidth = 1; ctx.setLineDash(cl.kind === 'wind' ? [5, 4] : []); ctx.stroke(); ctx.setLineDash([]); txt(cl.kind === 'rain' ? 'mưa lớn' : cl.kind === 'snow' ? 'tuyết' : 'gió mạnh', q[0], q[1] + 4, dk ? 'rgba(220,235,255,.9)' : 'rgba(20,40,80,.9)', '11px system-ui', 'center'); }
     const z = Math.min(1.8, Math.max(0.8, Math.sqrt(V.s / 44)));
     for (const sg of SEGS) { const L = root.LINES[sg.line]; if (!L) continue; ctx.beginPath(); for (let i = sg.a; i <= sg.b && i < L.stations.length; i++) { const q = P(L.stations[i].lon, L.stations[i].lat, r); i === sg.a ? ctx.moveTo(q[0], q[1]) : ctx.lineTo(q[0], q[1]); }
@@ -101,9 +101,15 @@
     // chú giải và nút
     const bwU = Math.round(120 * U), bx = x + w - 390 - bwU, lx = x + 14, rowH = Math.round(17 * U); let ly = y + h - 14 - SEGS.length * rowH; ctx.fillStyle = dk ? 'rgba(8,12,18,.78)' : 'rgba(255,255,255,.82)'; ctx.fillRect(lx - 8, ly - 20 * U, Math.round(150 * U), SEGS.length * rowH + 26 * U);
     txt('Tuyến', lx, ly - 4, dk ? '#8aa0b5' : '#445', 'bold 11px system-ui'); for (const sg of SEGS) { ctx.fillStyle = sg.col; ctx.fillRect(lx, ly + 6 * U, 22 * U, 5 * U); txt(sg.name, lx + 30 * U, ly + 12 * U, dk ? '#e8eef5' : '#1b2633', '11px system-ui'); ly += rowH; }
-    btn(bx, y + 10, 120, 28, '✕ Đóng (D)', () => { o.close(); }, true, '#7a2d2d', 13);
-    btn(bx - bwU - 10, y + 10, 120, 28, dk ? '☀ Nền sáng' : '🌙 Nền tối', () => { V.light = !V.light; o.save && o.save(V.light); }, false, null, 13);
-    btn(bx - 2 * bwU - 20 - Math.round(10 * U), y + 10, 130, 28, '📍 Tàu của tôi', () => { const me = tr.find(t => t.me); if (me) { V.cx = me.s.lon; V.cy = me.s.lat; V.s = Math.max(V.s, 160); } }, true, '#2a8f5a', 13);
+    // ba nút vuông ở góc trên phải: định vị tàu của tôi · nền sáng/tối · đóng (D); biểu tượng vẽ bằng nét
+    const sq = 32, ss = Math.round(sq * U), ex = bx + bwU - ss, ey = y + 10, ic = (px, py, col, fn) => {
+      ctx.save(); ctx.translate(px + ss / 2, py + ss / 2); ctx.scale(U, U); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.lineCap = 'round'; fn(0, 0); ctx.restore(); };
+    btn(ex, ey, sq, sq, '', () => { o.close(); }, true, '#7a2d2d', 13);
+    ic(ex, ey, '#fff', (cx, cy) => { ctx.beginPath(); ctx.moveTo(cx - 7, cy - 7); ctx.lineTo(cx + 7, cy + 7); ctx.moveTo(cx + 7, cy - 7); ctx.lineTo(cx - 7, cy + 7); ctx.stroke(); });
+    const lx2 = ex - ss - 8; btn(lx2, ey, sq, sq, '', () => { V.light = !V.light; o.save && o.save(V.light); }, false, null, 13);
+    ic(lx2, ey, '#dbe6f2', (cx, cy) => { ctx.beginPath(); ctx.arc(cx, cy, 9, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, 9, Math.PI / 2, Math.PI * 1.5); ctx.closePath(); ctx.fill(); });
+    const px2 = lx2 - ss - 8; btn(px2, ey, sq, sq, '', () => { const me = tr.find(t => t.me); if (me) { V.cx = me.s.lon; V.cy = me.s.lat; V.s = Math.max(V.s, 160); } }, true, '#2a8f5a', 13);
+    ic(px2, ey, '#fff', (cx, cy) => { ctx.beginPath(); ctx.arc(cx, cy, 6.5, 0, 7); ctx.stroke(); ctx.beginPath(); for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) { ctx.moveTo(cx + dx * 9, cy + dy * 9); ctx.lineTo(cx + dx * 13, cy + dy * 13); } ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, 2, 0, 7); ctx.fill(); });
     txt('BẢN ĐỒ TOÀN QUỐC · ' + hhmm(W.trip.t0 + W.t) + ' · con lăn: zoom · kéo: di chuyển · bấm ga/tàu: chi tiết', x + 14, y + 22, dk ? '#cfe0f0' : '#1b2633', 'bold 13px system-ui');
     // thẻ chi tiết
     const selT = V.sel && V.sel.tk ? tr.find(t => (t.me ? 'me' : t.c.key) === V.sel.tk) : null; if (V.sel && V.sel.tk && !selT) V.sel = null;
