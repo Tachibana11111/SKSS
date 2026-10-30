@@ -20,7 +20,7 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 - **Weather and random incidents (seeded):** rain, snow, typhoon, earthquakes, fire in a tunnel, ill passengers, animals, a vehicle stuck on a level crossing, dispatcher orders you must repeat back, extra stops to let a fast train overtake. 4 difficulty levels.
 - **Many viewpoints:** a pseudo-3D cab, a 2D side view, a top-down minimap (north up), left and right passenger windows, and a rear-of-train camera.
 - **Nationwide map** ([screenshot](#screenshots)): 47 prefectures with **every island in the data** (including the Northern Territories, drawn dashed), 10 line segments in Wikipedia colours, **every train running on the real timetable** plus weather and earthquakes; click a station or train for details, including the trains ahead and behind and their gaps.
-- **On-board announcements** in Japanese or English with subtitles: next stop, connecting lines, which side the doors open, delays, incidents.
+- **On-board announcements** spoken in Japanese, with subtitles (the Japanese interface shows a single subtitle line): next stop, connecting lines, which side the doors open, delays, incidents.
 - **Tutorial:** 4 step-by-step lessons (driving and stopping, equipment, incidents, pantograph and ATC). **Profile:** 14 achievements, best results, history and replays of past trips.
 - **Sound:** running noise, wind, rain, horn, station ambience; airliner cabin hum (J); a **music player** in the menu with 21 Shinkansen station melodies.
 - **Multilingual:** English, 日本語 (station names in kanji, train names like のぞみ1号), Tiếng Việt.
@@ -37,7 +37,7 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 - **Home screen:** Drive · Learn to drive · Profile · Settings · Asset credits (plus the logos of the five JR companies, each linking to its official site).
 - **Trip setup:** line, direction, train, from/to stations, difficulty, weather, seed, branch-train coupling; the same seed gives the same trip.
 - **Pause (P or Esc):** Resume · Settings · Profile · Snapshot (F9) · Restart · Back to main menu.
-- **Settings:** language, announcements (Japanese/English + subtitles, subtitles only, off), scenery (full/light), return to ×1 on radio calls, and the **complete keyboard shortcut table**.
+- **Settings:** language, scenery (full/light) and the **complete keyboard shortcut table**. Fast-forward always returns to ×1 on a radio call.
 - **Music player** (bottom left, menus only): play/pause, previous/next, one button cycling repeat all / repeat one / shuffle, track list, mute and volume, progress bar, collapsible; it plays through the embedded YouTube player (needs a connection) and starts automatically after your first click or key press.
 
 ## Controls

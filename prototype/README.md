@@ -8,7 +8,7 @@ Mở `prototype/drive/index.html` trực tiếp bằng Chrome/Edge (không cần
 Mở game là vào **màn hình chủ**: Lái tàu · Học lái · Hồ sơ · Cài đặt. Bấm **P** (hoặc Esc) khi đang chơi để mở menu **Tạm dừng**: Tiếp tục · Cài đặt · Hồ sơ · Chụp cảnh (F9) · Chơi lại · Về menu chính (hai nút cuối có hộp xác nhận). Esc quay lại màn trước.
 - **Lái tàu:** màn Thiết lập chuyến đi: tuyến (7 tuyến: Tokaido–Sanyo–Kyushu, Tohoku–Hokkaido, Joetsu, Hokuriku, Nishi-Kyushu, Yamagata, Akita; xem `docs/11-mo-rong-tuyen.md`), chiều, tàu, ga đi/đến, độ khó, thời tiết, seed, ghép tàu nhánh. Sự kiện ngẫu nhiên theo seed.
 - **Học lái:** 4 bài từng bước, mỗi bài một thẻ (đánh dấu bài đã xong). **Hồ sơ:** thành tích, kết quả tốt nhất, lịch sử, xoá dữ liệu.
-- **Cài đặt:** ngôn ngữ, phát thanh, cảnh vật, về ×1 khi có điện đàm. Âm lượng và ù cabin ở nút loa trên thanh biểu tượng.
+- **Cài đặt:** ngôn ngữ, cảnh vật, bảng phím tắt. Phát thanh cố định giọng Nhật + phụ đề; có điện đàm thì tua tự về ×1 (không còn tuỳ chọn). Âm lượng và ù cabin ở nút loa trên thanh biểu tượng.
 - Chế độ **Điều độ** (`dispatch.js`) hiện không có nút vào trong menu.
 
 ## Trình phát nhạc (music.js)

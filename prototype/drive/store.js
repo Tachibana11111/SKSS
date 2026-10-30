@@ -17,7 +17,7 @@
     { id: 'mini', name: 'Mini-Shinkansen', desc: _t('Hoàn thành một chuyến Yamagata hoặc Akita mà không va chạm ở đường ngang'), test: (c) => c.kind === 'drive' && ['yam', 'aki'].includes(c.line) && c.finished && !c.xingHit },
     { id: 'tutorial', name: _t('Học xong'), desc: _t('Hoàn thành mọi bài hướng dẫn'), test: (c) => c.kind === 'tutorial' && c.allDone }
   ];
-  function empty() { return { v: 1, settings: { vol: 60, snd: true, ann: 'ja', pax: true, diff: 'normal' }, history: [], best: {}, ach: {}, replays: {}, tutorial: {}, lastSetup: null }; }
+  function empty() { return { v: 1, settings: { vol: 60, snd: true, pax: true, diff: 'normal' }, history: [], best: {}, ach: {}, replays: {}, tutorial: {}, lastSetup: null }; }
   function load() { try { const s = root.localStorage && root.localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) return Object.assign(empty(), d); } } catch (e) { } return empty(); }
   let mem = load();
   function save() { try { root.localStorage && root.localStorage.setItem(KEY, JSON.stringify(mem)); return true; } catch (e) { return false; } }

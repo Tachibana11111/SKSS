@@ -20,7 +20,7 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 - **Thời tiết và sự cố ngẫu nhiên (theo seed):** mưa, tuyết, bão, động đất, cháy trong hầm, hành khách bệnh, động vật, xe kẹt ở đường ngang, lệnh điều độ phải nhắc lại, dừng nhường tàu nhanh. 4 độ khó.
 - **Nhiều góc nhìn:** buồng lái 3D giả, nhìn ngang 2D, bản đồ nhỏ nhìn từ trên (bắc ở trên), cửa sổ hành khách trái/phải, camera cuối đoàn.
 - **Bản đồ toàn quốc** ([ảnh](#ảnh-chụp)): 47 tỉnh với **mọi đảo có trong dữ liệu** (kể cả các đảo Lãnh thổ phương Bắc vẽ nét đứt), 10 đoạn tuyến theo màu Wikipedia, **mọi tàu chạy theo lịch thật** cùng thời tiết và động đất; bấm ga hoặc tàu để xem chi tiết, kể cả tàu phía trước/sau và khoảng cách.
-- **Phát thanh trên tàu** tiếng Nhật hoặc tiếng Anh, kèm phụ đề, báo ga kế tiếp, tuyến đổi tàu, cửa mở bên nào, trễ giờ, sự cố.
+- **Phát thanh trên tàu bằng giọng tiếng Nhật**, kèm phụ đề (giao diện tiếng Nhật chỉ có một dòng phụ đề), báo ga kế tiếp, tuyến đổi tàu, cửa mở bên nào, trễ giờ, sự cố.
 - **Học lái:** 4 bài từng bước (lái và dừng ga, thiết bị, sự cố, cần vẹt và ATC). **Hồ sơ:** 14 thành tích, kết quả tốt nhất, lịch sử, xem lại chuyến đã chơi.
 - **Âm thanh:** tiếng chạy, gió, mưa, còi, tiếng nền ga; ù cabin máy bay (J); **trình phát nhạc** ở menu với 21 giai điệu ga Shinkansen.
 - **Đa ngôn ngữ:** English, 日本語 (tên ga bằng chữ Hán, tên chuyến dạng のぞみ1号), Tiếng Việt.
@@ -37,7 +37,7 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 - **Màn hình chủ:** Lái tàu · Học lái · Hồ sơ · Cài đặt · Ghi công tài nguyên (và logo 5 công ty JR, bấm vào mở trang chính thức).
 - **Thiết lập chuyến đi:** tuyến, chiều, tàu, ga đi/đến, độ khó, thời tiết, seed, ghép tàu nhánh; cùng một seed cho cùng một chuyến.
 - **Tạm dừng (P hoặc Esc):** Tiếp tục · Cài đặt · Hồ sơ · Chụp cảnh (F9) · Chơi lại · Về menu chính.
-- **Cài đặt:** ngôn ngữ, phát thanh (Nhật/Anh + phụ đề, chỉ phụ đề, tắt), cảnh vật (đầy đủ/nhẹ), về ×1 khi có điện đàm, và **bảng phím tắt đầy đủ**.
+- **Cài đặt:** ngôn ngữ, cảnh vật (đầy đủ/nhẹ) và **bảng phím tắt đầy đủ**. Khi có điện đàm, tua tự về ×1.
 - **Trình phát nhạc** (góc dưới trái, chỉ ở menu): phát/tạm dừng, bài trước/sau, đổi chế độ lặp danh sách/lặp một bài/ngẫu nhiên, danh sách bài, tắt tiếng và âm lượng, thanh tiến trình, thu gọn; phát qua trình nhúng YouTube (cần mạng), tự phát từ lần bấm đầu tiên.
 
 ## Điều khiển nhanh

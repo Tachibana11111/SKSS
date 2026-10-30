@@ -179,12 +179,10 @@
 <aside id="sideR">
   <div class="row" id="rowDrive2">
     <div class="grp">Tuỳ chọn</div>
-    <label class="inl"><input type="checkbox" id="stopmsg" checked> về ×1 khi có điện đàm</label>
   </div>
   <div class="row">
     <div class="grp">Âm thanh và cảnh</div>
     <div id="sndHidden" style="display:none"><label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60"></div>
-    <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
     <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option></select></label>
   </div>
 </aside>
@@ -419,13 +417,13 @@ function setMode(m) {
 $('tabDrive').onclick = () => { if (mode === 'drive') return; if (tutLessonActive || !W) { tutorialRun = false; tutLessonActive = false; setMode('drive'); startDrive(); } else setMode('drive'); };
 $('tabTut').onclick = () => { if (mode === 'tutorial') return; if (tutLessonActive && W) { setMode('tutorial'); return; } const done = Object.assign({}, (Store.get().tutorial || {}), Tutorial.S.done), i = Tutorial.LESSONS.findIndex(l => !done[l.id]); startLesson(i < 0 ? 0 : i); }; $('tabProf').onclick = () => setMode('profile');
 // ---- lưu cài đặt
-const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('scenery').value = S.scenery === 'lite' ? 'lite' : 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
+const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('scenery').value = S.scenery === 'lite' ? 'lite' : 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
 function setVolFromX(px) { if (!volRect) return; const v = Math.max(0, Math.min(100, Math.round((px - volRect[0] - 10) / (volRect[2] - 20) * 100))); $('vol').value = v; $('vol').oninput && $('vol').oninput(); if (!$('snd').checked && v > 0) soundSet(true); }
 function soundSet(on) { $('snd').checked = on; $('snd').onchange && $('snd').onchange(); }
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
 $('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
-$('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
-AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('snd').checked;
+$('diff').onchange = () => Store.setting('diff', $('diff').value);
+AUD.vol = +$('vol').value / 100; AUD.enabled = $('snd').checked;
 $('fsBtn').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); } catch (e) { } };
 // mất focus / ẩn tab: tạm dừng thật (như Esc), tắt hẳn âm nền, tiếng chạy qua và giọng PA; quay lại người chơi tự bấm Esc để chạy tiếp
 const focusLost = () => { if (W && !paused && (mode === 'drive' || mode === 'tutorial')) paused = true; try { AUD.silence(); if (window.speechSynthesis) speechSynthesis.cancel(); AUD.q = []; AUD.speaking = false; } catch (e) { } };
@@ -534,7 +532,7 @@ function frame(now) {
     for (let i = 0; i < n; i++) {
       if (replaying) { while (ptr < replaying.actions.length && replaying.actions[ptr][0] <= tickCount) { const a = replaying.actions[ptr++]; act[a[1]](a[2]); } }
       Sim.tick(W, 0.05, {}, auto); tickCount++;
-      if (W.newMsg) { W.newMsg = false; if ($('stopmsg').checked && scale > 1 && !replaying) { scale = 1; break; } }
+      if (W.newMsg) { W.newMsg = false; if (scale > 1 && !replaying) { scale = 1; break; } }
       if (T.finished) break;
     }
     if (W.camReq !== undefined && W.camSeen !== W.camReq) { W.camSeen = W.camReq; if (!replaying) ui.rear = W.camReq.rear; }      // cảnh nối ở đuôi: tự bật camera sau, nối xong tự tắt
@@ -698,7 +696,7 @@ const M = (function () {
   for (const id of ['line', 'dir', 'train']) A.appendChild($(id).parentElement);
   A.appendChild($('vehBox')); A.appendChild($('from').parentElement); A.appendChild($('to').parentElement); A.appendChild($('legBox'));
   B.appendChild($('driveOpts')); $('mStartHold').appendChild($('start'));
-  C.appendChild($('ann').parentElement); C.appendChild($('scenery').parentElement); C.appendChild($('stopmsg').parentElement);
+  C.appendChild($('scenery').parentElement);
   // chọn ngôn ngữ: ô thả xuống, cờ tròn ở bên trái tên ngôn ngữ; đổi ngôn ngữ = lưu cài đặt rồi tải lại trang (mọi chuỗi được dịch lúc nạp trang)
   const FLAG = {
     en: '<svg viewBox="0 0 60 60"><rect width="60" height="60" fill="#012169"/><path d="M0 0L60 60M60 0L0 60" stroke="#fff" stroke-width="12"/><path d="M0 0L60 60M60 0L0 60" stroke="#C8102E" stroke-width="4"/><path d="M30 0V60M0 30H60" stroke="#fff" stroke-width="20"/><path d="M30 0V60M0 30H60" stroke="#C8102E" stroke-width="12"/></svg>',

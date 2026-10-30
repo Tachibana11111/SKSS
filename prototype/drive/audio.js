@@ -7,7 +7,7 @@
   const VI = { Tokyo: 'Tokyo', Shinagawa: 'Shinagawa' };
   const TYPEJ = { Nozomi: 'のぞみ', Hikari: 'ひかり', Kodama: 'こだま', Mizuho: 'みずほ', Sakura: 'さくら', Tsubame: 'つばめ', Kamome: 'かもめ', Hayabusa: 'はやぶさ', Hayate: 'はやて', Yamabiko: 'やまびこ', Nasuno: 'なすの', Komachi: 'こまち', Tsubasa: 'つばさ', Toki: 'とき', Tanigawa: 'たにがわ', Asama: 'あさま', Hakutaka: 'はくたか', Kagayaki: 'かがやき', Tsurugi: 'つるぎ', 'Doctor Yellow': 'ドクターイエロー', 'East i': 'イーストアイ' };
   function GameAudio() {
-    this.ctx = null; this.cabin = false; this.enabled = true; this.vol = 0.6; this.ready = false; this.annMode = 'ja';
+    this.ctx = null; this.cabin = false; this.enabled = true; this.vol = 0.6; this.ready = false;
     this.prev = {}; this.msgCount = 0; this.lastConfirmBeep = 0; this.lastResults = 0; this.q = []; this.ann = {}; this.next = {};
   }
   // trình duyệt di động chỉ cho SpeechSynthesis nói sau một cử chỉ của người dùng: "mồi" bằng một câu im lặng ở lần chạm/bấm đầu tiên; danh sách giọng nạp muộn nên lắng nghe voiceschanged
@@ -66,7 +66,6 @@
   };
   GameAudio.prototype.silence = function () { try { if (this.amb) { this.amb.volume = 0; this.amb.pause(); } if (this.clipEl) this.clipEl.pause(); this.ambOn = false; clearTimeout(this.clipT); } catch (x) { } };
   GameAudio.prototype.setVolume = function (v, on) { this.vol = v; this.enabled = on; if (this.master) this.master.gain.setTargetAtTime(on ? v : 0, this.ctx.currentTime, 0.05); if (!on && root.speechSynthesis) root.speechSynthesis.cancel(); };
-  GameAudio.prototype.setAnn = function (m) { this.annMode = m; if (m === 'off' || m === 'sub') { this.q = []; if (root.speechSynthesis) root.speechSynthesis.cancel(); } };
   GameAudio.prototype.tone = function (freq, dur, type, gain, delay, freq2) {
     if (!this.ready) return; const c = this.ctx, t = c.currentTime + (delay || 0);
     const o = c.createOscillator(), g = c.createGain(); o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t); if (freq2) o.frequency.linearRampToValueAtTime(freq2, t + dur);
@@ -129,14 +128,13 @@
     const ss = root.speechSynthesis; if (!ss) return null; const vs = ss.getVoices() || [];
     return vs.find(v => v.lang && v.lang.toLowerCase().startsWith(lang) && /google|microsoft|natural|haruka|ichiro|kyoko|samantha|aria|zira/i.test(v.name)) || vs.find(v => v.lang && v.lang.toLowerCase().startsWith(lang)) || null;
   };
-  // a = {ja, en, vi}; urgent = true: ngắt câu đang nói
+  // a = {ja, vi}: ja = câu đọc (giọng Nhật), vi = phụ đề theo ngôn ngữ giao diện; urgent = true: ngắt câu đang nói
   GameAudio.prototype.say = function (W, a, urgent, chime) {
-    if (this.annMode === 'off') return;
-    const text = this.annMode === 'en' ? a.en : a.ja;
+    const text = a.ja;      // phát thanh cố định: giọng tiếng Nhật + phụ đề
     W.say('pa', 'PA: ' + text + (I18N.lang === 'ja' ? '' : '  —  ' + a.vi));      // giao diện tiếng Nhật: chỉ một dòng phụ đề theo đúng giọng đọc (không lặp bản dịch)
-    if (this.annMode === 'sub' || !this.enabled || !root.speechSynthesis) return;
+    if (!this.enabled || !root.speechSynthesis) return;
     if (urgent) { this.q = []; root.speechSynthesis.cancel(); }
-    this.q.push({ text, lang: this.annMode === 'en' ? 'en' : 'ja', t: performance.now(), chime });
+    this.q.push({ text, lang: 'ja', t: performance.now(), chime });
     this.drain();
   };
   GameAudio.prototype.drain = function () {
@@ -236,50 +234,49 @@
   GameAudio.prototype.doorSide = function (W, T, j) {
     const m = T.M[j], Ly = root.Layout, ls = W.line.stations[m.i]; if (!Ly || !ls || !ls.lay || m.mainStop) return null;
     const st = Ly.station(ls.lay, W.dir, Ly.pickOf(ls, m.i)); if (!st.plat) return null;
-    return st.platSign > 0 ? { ja: '左側', en: 'left', vi: _t('trái') } : { ja: '右側', en: 'right', vi: _t('phải') };
+    return st.platSign > 0 ? { ja: '左側', vi: _t('trái') } : { ja: '右側', vi: _t('phải') };
   };
   GameAudio.prototype.announce = function (W, T, p) {
-    if (this.annMode === 'off') return;
     const M = T.M, A = this.ann;
     const nameJ = k => M[k].jp || M[k].name, typeJ = TYPEJ[W.trip.rec.t] || '', no = W.trip.rec.n;
     const last = M.length - 1, destJ = nameJ(last), dest = M[last].rom || M[last].name;
     const j = root.Sim.nextTarget(T), nxt = M[j];
     // lúc bắt đầu chuyến
     if (T.started && !A.start) { A.start = true;
-      this.say(W, { ja: `本日も、${W.line.meta.pa}新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, en: `Thank you for riding the Shinkansen. This is the ${W.trip.rec.t} number ${no} bound for ${dest}.`, vi: _t('Cảm ơn quý khách đã đi Shinkansen. Đây là {0} số {1} đi {2}.', W.trip.rec.t, no, dest) }, false, true); }
+      this.say(W, { ja: `本日も、${W.line.meta.pa}新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, vi: _t('Cảm ơn quý khách đã đi Shinkansen. Đây là {0} số {1} đi {2}.', W.trip.rec.t, no, dest) }, false, true); }
     // đóng cửa
-    if (T.door === 'closing' && p.door !== 'closing' && T.started) this.say(W, { ja: 'ドアが閉まります。ご注意ください。', en: 'The doors are closing. Please stand clear.', vi: _t('Cửa sắp đóng, xin quý khách chú ý.') }, false, false);
+    if (T.door === 'closing' && p.door !== 'closing' && T.started) this.say(W, { ja: 'ドアが閉まります。ご注意ください。', vi: _t('Cửa sắp đóng, xin quý khách chú ý.') }, false, false);
     // sau khi rời ga: ga dừng kế tiếp, và xin lỗi nếu trễ
     if (T.phase === 'run' && p.phase === 'dwell') {
       const delay = W.t - root.Sim.plannedTime(T);
       if (T.k > 0 || delay > 120) { }
-      this.say(W, { ja: `次は、${nameJ(j)}に止まります。`, en: `The next stop is ${nxt.rom || nxt.name}.`, vi: _t('Ga dừng tiếp theo là {0}.', nxt.name) }, false, true);
-      if (delay > 120) this.say(W, { ja: `お急ぎのところ、列車が約${Math.round(delay / 60)}分遅れております。お詫び申し上げます。`, en: `We apologize for the delay of about ${Math.round(delay / 60)} minutes.`, vi: _t('Tàu đang trễ khoảng {0} phút, xin lỗi quý khách.', Math.round(delay / 60)) }, false, false);
+      this.say(W, { ja: `次は、${nameJ(j)}に止まります。`, vi: _t('Ga dừng tiếp theo là {0}.', nxt.name) }, false, true);
+      if (delay > 120) this.say(W, { ja: `お急ぎのところ、列車が約${Math.round(delay / 60)}分遅れております。お詫び申し上げます。`, vi: _t('Tàu đang trễ khoảng {0} phút, xin lỗi quý khách.', Math.round(delay / 60)) }, false, false);
       A.apr = -1;
     }
     // sắp tới ga: tên ga, các tuyến đổi tàu và bên cửa sẽ mở
     if (T.phase === 'run') { const d = M[j].s - T.x; if (d < 3500 && A.apr !== j && T.v > 15) { A.apr = j;
-      this.say(W, { ja: `まもなく、${nameJ(j)}、${nameJ(j)}です。`, en: `We will soon be arriving at ${nxt.rom || nxt.name}.`, vi: _t('Sắp tới ga {0}.', nxt.name) }, false, true);
+      this.say(W, { ja: `まもなく、${nameJ(j)}、${nameJ(j)}です。`, vi: _t('Sắp tới ga {0}.', nxt.name) }, false, true);
       const tr = (root.TRANSFERS || {})[M[j].jp] || [], rail = tr.filter(x => x !== '路線バス');
-      if (rail.length) this.say(W, { ja: `${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, en: `You can change here to ${rail.map(n => (root.TRANSFERS_EN || {})[n] || n).join(', ')}.`, vi: _t('Quý khách có thể đổi tàu tại {0}: {1}.', nxt.name, rail.map(railName).join(', ')) }, false, false);
-      else if (tr.length) this.say(W, { ja: `${nameJ(j)}では、路線バスはお乗り換えです。`, en: 'Bus connections are available here.', vi: _t('Tại ga {0} có xe buýt kết nối.', nxt.name) }, false, false);
+      if (rail.length) this.say(W, { ja: `${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, vi: _t('Quý khách có thể đổi tàu tại {0}: {1}.', nxt.name, rail.map(railName).join(', ')) }, false, false);
+      else if (tr.length) this.say(W, { ja: `${nameJ(j)}では、路線バスはお乗り換えです。`, vi: _t('Tại ga {0} có xe buýt kết nối.', nxt.name) }, false, false);
       const sd = this.doorSide(W, T, j);
-      if (sd) this.say(W, { ja: `${nameJ(j)}では、${sd.ja}のドアが開きます。`, en: `The doors on the ${sd.en} side will open at ${nxt.rom || nxt.name}.`, vi: _t('Tại ga {0}, cửa mở ở bên {1}.', nxt.name, sd.vi) }, false, true); } }
+      if (sd) this.say(W, { ja: `${nameJ(j)}では、${sd.ja}のドアが開きます。`, vi: _t('Tại ga {0}, cửa mở ở bên {1}.', nxt.name, sd.vi) }, false, true); } }
     // tới ga
     if (T.results.length > (A.res || 0)) { A.res = T.results.length; const r = T.results[T.results.length - 1];
-      if (!r.overrun) { if (T.phase === 'end') this.say(W, { ja: `終点、${nameJ(last)}、${nameJ(last)}です。ご乗車ありがとうございました。`, en: `This is ${dest}, the last stop. Thank you for riding.`, vi: _t('Ga cuối {0}. Cảm ơn quý khách.', dest) }, false, true);
-        else if (T.holds[T.k] > W.t) this.say(W, { ja: 'ダイヤ調整のため、しばらく停車いたします。ご迷惑をおかけします。', en: 'We will stop here for a while due to schedule adjustment.', vi: _t('Tàu dừng lại một lúc để điều chỉnh lịch chạy.') }, false, false); } }
+      if (!r.overrun) { if (T.phase === 'end') this.say(W, { ja: `終点、${nameJ(last)}、${nameJ(last)}です。ご乗車ありがとうございました。`, vi: _t('Ga cuối {0}. Cảm ơn quý khách.', dest) }, false, true);
+        else if (T.holds[T.k] > W.t) this.say(W, { ja: 'ダイヤ調整のため、しばらく停車いたします。ご迷惑をおかけします。', vi: _t('Tàu dừng lại một lúc để điều chỉnh lịch chạy.') }, false, false); } }
     // mưa, tuyết, gió, động đất, va chạm, tàu trước dừng
-    if (W.rainHere && !p.rain) this.say(W, { ja: 'ただいま、大雨のため、速度を落として運転しております。', en: 'We are running at reduced speed due to heavy rain.', vi: _t('Tàu đang chạy chậm do mưa lớn.') }, false, false);
+    if (W.rainHere && !p.rain) this.say(W, { ja: 'ただいま、大雨のため、速度を落として運転しております。', vi: _t('Tàu đang chạy chậm do mưa lớn.') }, false, false);
     p.rain = W.rainHere;
     const snow = W.zones.some(z => z.kind === 'snow' && T.x >= z.s0 && T.x < z.s1);
-    if (snow && !p.snow) this.say(W, { ja: '雪のため、徐行運転をしております。', en: 'We are running slowly because of snow.', vi: _t('Tàu chạy chậm do tuyết.') }, false, false); p.snow = snow;
+    if (snow && !p.snow) this.say(W, { ja: '雪のため、徐行運転をしております。', vi: _t('Tàu chạy chậm do tuyết.') }, false, false); p.snow = snow;
     if (W.lastHold && W.lastHold.seq !== A.holdSeq) { A.holdSeq = W.lastHold.seq; const rain = W.lastHold.why === 'rain';
-      this.say(W, { ja: rain ? 'ただいま、大雨のため、運転を見合わせております。' : 'ただいま、強風のため、運転を見合わせております。', en: rain ? 'Service is suspended due to heavy rain.' : 'Service is suspended due to strong winds.', vi: rain ? _t('Tạm ngừng chạy do mưa lớn.') : _t('Tạm ngừng chạy do gió mạnh.') }, true, true); }
-    if (W.eqkActive && !p.eqk) this.say(W, { ja: 'ただいま、地震のため、緊急停止いたしました。そのまま、しばらくお待ちください。', en: 'The train has made an emergency stop due to an earthquake. Please remain seated.', vi: _t('Tàu dừng khẩn cấp do động đất. Xin quý khách ngồi yên chờ.') }, true, true);
-    if (!W.eqkActive && p.eqk) this.say(W, { ja: '安全が確認できましたので、運転を再開いたします。', en: 'Safety has been confirmed. We will resume service.', vi: _t('Đã xác nhận an toàn, tàu chạy lại.') }, false, true);
-    if (T.animalHit > (p.animalHit || 0)) this.say(W, { ja: 'ただいま、動物と衝突したため、停車しております。', en: 'The train has stopped after hitting an animal.', vi: _t('Tàu dừng do va chạm động vật.') }, true, true);
-    if (W.leadStopAt !== undefined && W.leadStopAt !== A.leadStop) { A.leadStop = W.leadStopAt; this.say(W, { ja: '前を走る列車で、急病のお客様が出たため、間隔をあけて運転しております。', en: 'A passenger on the train ahead is ill, so we are keeping a distance.', vi: _t('Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.') }, false, true); }
+      this.say(W, { ja: rain ? 'ただいま、大雨のため、運転を見合わせております。' : 'ただいま、強風のため、運転を見合わせております。', vi: rain ? _t('Tạm ngừng chạy do mưa lớn.') : _t('Tạm ngừng chạy do gió mạnh.') }, true, true); }
+    if (W.eqkActive && !p.eqk) this.say(W, { ja: 'ただいま、地震のため、緊急停止いたしました。そのまま、しばらくお待ちください。', vi: _t('Tàu dừng khẩn cấp do động đất. Xin quý khách ngồi yên chờ.') }, true, true);
+    if (!W.eqkActive && p.eqk) this.say(W, { ja: '安全が確認できましたので、運転を再開いたします。', vi: _t('Đã xác nhận an toàn, tàu chạy lại.') }, false, true);
+    if (T.animalHit > (p.animalHit || 0)) this.say(W, { ja: 'ただいま、動物と衝突したため、停車しております。', vi: _t('Tàu dừng do va chạm động vật.') }, true, true);
+    if (W.leadStopAt !== undefined && W.leadStopAt !== A.leadStop) { A.leadStop = W.leadStopAt; this.say(W, { ja: '前を走る列車で、急病のお客様が出たため、間隔をあけて運転しております。', vi: _t('Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.') }, false, true); }
   };
   GameAudio.prototype.reset = function (W) { this.silence(); this.prev = {}; this.ann = {}; this.q = []; if (root.speechSynthesis) root.speechSynthesis.cancel(); this.speaking = false; this.msgCount = W ? W.msgs.length : 0; this.lastResults = 0; this.lastMast = undefined; };
   root.GameAudio = GameAudio;
