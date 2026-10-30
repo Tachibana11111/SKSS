@@ -716,6 +716,7 @@ const M = (function () {
   langList.onclick = e => {
     const b = e.target.closest('button'); if (!b) return; e.stopPropagation(); const l = b.dataset.l; langClose(); if (l === I18N.lang) return;
     if (W && T && T.started && !T.finished && !confirm(_t('Đổi ngôn ngữ sẽ tải lại trang và chuyến đang chạy sẽ không được lưu. Tiếp tục?'))) return;
+    try { sessionStorage.setItem('mScr', 'settings'); } catch (e) { }      // sau khi tải lại, mở lại màn Cài đặt thay vì về màn hình chủ
     Store.setting('lang', l); location.reload();
   };
   document.addEventListener('click', () => { if (langList.style.display !== 'none') langClose(); });
@@ -807,7 +808,7 @@ const M = (function () {
   ['show', 'hide', 'openProfile', 'closeProfile'].forEach(k => { const f = m[k]; m[k] = function () { const r = f.apply(this, arguments); musicVis(); return r; }; });      // cập nhật ngay khi đổi màn hình (không đợi khung vẽ)
   return m;
 })();
-trainList(); vehUpd(); $('from').onchange(); setMode('drive'); startDrive(); paused = true; M.show('home'); requestAnimationFrame(frame);
+trainList(); vehUpd(); $('from').onchange(); setMode('drive'); startDrive(); paused = true; M.show('home'); try { if (sessionStorage.getItem('mScr') === 'settings') { sessionStorage.removeItem('mScr'); M.show('settings', 'home'); } } catch (e) { } requestAnimationFrame(frame);
 </script>
 </body>
 </html>
