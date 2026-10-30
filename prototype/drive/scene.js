@@ -285,5 +285,5 @@
   }
   function txt2(ctx, s, x, y, c) { ctx.fillStyle = c; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText(s, x, y); }
   const scene = { _tint: null };
-  root.Scene = { draw, K };
+  root.Scene = { draw, K, SMAP };
 })(typeof window !== 'undefined' ? window : globalThis);

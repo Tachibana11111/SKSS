@@ -81,7 +81,7 @@ GitHub Actions: `ci.yml` はプッシュごとにテストを実行し、`pages.
 |---|---|---|
 | ブラウザのタブアイコン(`prototype/drive/assets/logo.png`) | 西日本旅客鉄道(JR西日本)、[File:Shinkansen-W.png](https://commons.wikimedia.org/wiki/File:Shinkansen-W.png)、Wikimedia Commons | CC BY-SA 4.0 |
 | ホーム画面のJR北海道・東日本・東海・西日本・九州のロゴ(`jr_*.png`) | 各JR会社 | 各社の商標。イラスト用途のみで、クリックすると公式サイトを開きます |
-| 2D車両画像(N700、N700S、E5、E6、E7/W7、E8、H5、800、N700S-8000、923、E926、E2、500、E3、E4)とそこから切り出した前面画像 | Nanyue Express / K.Y. Chung — [rail.kychung.com](https://rail.kychung.com/) | CC BY-NC-ND 4.0。`prototype/drive/assets/*_strip.*` の車両ストリップは原画から切り出して組み合わせたもの。**非営利利用のみ**。権利者の求めがあれば削除します。`prototype/drive/assets/NGUON.md` を参照 |
+| 2D車両画像(N700、N700S、E5、E6、E7/W7、E8、H5、800、N700S-8000、923、E926、E2、500、E3、E4)とそこから切り出した前面画像 | Nanyue Express / K.Y. Chung — [rail.kychung.com](https://rail.kychung.com/) | CC BY-NC-ND 4.0。`prototype/drive/assets/*_strip.*` の車両ストリップと運行設定画面のプレビュー画像 `pv_*.png` は原画から切り出して組み合わせたもの。**非営利利用のみ**。権利者の求めがあれば削除します。`prototype/drive/assets/NGUON.md` を参照 |
 | 地図、建物、道路、公園、樹木、北方領土の海岸線 | © OpenStreetMap contributors — [openstreetmap.org/copyright](https://www.openstreetmap.org/copyright)、データは [Geofabrik](https://download.geofabrik.de/) とOverpass APIから取得 | ODbL 1.0。`prototype/drive/world/` と `japanmap_nt.js` のコンパイル済みデータは派生データベースであり、同じくODbL |
 | 47都道府県の境界(全国マップ、`japanmap.js`) | [geoBoundaries](https://www.geoboundaries.org) gbOpen JPN ADM1(2017) | ODbL 1.0 |
 | 駅の環境音と通過列車の音 | Flavien Gillié, "Odawara Station, Préfecture de Kanagawa, Japon – Shinkansen train leaving for Tokyo"、Internet Archive `aporee_70029_81567` | Public Domain Mark 1.0 |

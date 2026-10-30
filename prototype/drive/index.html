@@ -62,6 +62,10 @@
   #menu .logo .jra{display:inline-block;border-radius:10px;line-height:0;padding:4px 6px;transition:filter .15s,transform .15s}
   #menu .logo .jra:hover,#menu .logo .jra:focus-visible{outline:0;transform:translateY(-2px);filter:drop-shadow(0 0 1.5px var(--c)) drop-shadow(0 0 7px var(--c)) drop-shadow(0 0 14px var(--c))}
   #menu .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 36px} @media (max-width:760px){#menu .cols{grid-template-columns:1fr}}
+  #menu #mTrainPrev{position:relative;height:134px;margin:8px 0 70px;overflow:hidden;pointer-events:none}
+  #menu #mTrainPrev img{position:absolute;bottom:4px;max-width:none;display:none}
+  #menu #mTrainPrev.hr{-webkit-mask-image:linear-gradient(to left,#000 70%,transparent);mask-image:linear-gradient(to left,#000 70%,transparent)} #menu #mTrainPrev.hl{-webkit-mask-image:linear-gradient(to right,#000 70%,transparent);mask-image:linear-gradient(to right,#000 70%,transparent)}
+  #menu #mTrainPrev.hr img{right:12px} #menu #mTrainPrev.hl img{left:12px;transform:scaleX(-1)}
   #menu .grp{font-size:12px;color:var(--mut);font-weight:600;margin:0 0 4px;letter-spacing:.5px}
   #menu label{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #243447;font-size:14px;color:var(--fg);margin:0}
   #menu label.inl{justify-content:flex-start}
@@ -201,6 +205,7 @@
   <div class="scr" id="m-setup"><div class="wm">
     <div class="hd"><button data-m="home">‹ Quay lại</button><h2>Thiết lập chuyến đi</h2></div>
     <div class="cols"><div><div class="grp">CHUYẾN</div><div id="mSetA"></div></div><div><div class="grp">ĐỘ KHÓ VÀ ĐIỀU KIỆN</div><div id="mSetB"></div></div></div>
+    <div id="mTrainPrev"><img id="mTpImg" alt=""></div>
     <div class="bar"><button data-m="settings">Cài đặt</button><span id="mStartHold"></span></div>
   </div></div>
   <div class="scr" id="m-learn"><div class="wm">
@@ -241,6 +246,7 @@
 <script src="data-lines.js"></script>
 <script src="assets/n700_strip.js"></script>
 <script src="assets/sprites.js"></script>
+<script src="assets/pv.js"></script>
 <script src="sim.js"></script>
 <script src="natcat.js"></script>
 <script src="store.js"></script>
@@ -296,7 +302,7 @@ function trainList() {
     const opt = new Option(`${_tl(t.t, t.n)} · ${hhmm(a[2] != null ? a[2] : a[1])} ${_s(L.stations[a[0]])} → ${_s(L.stations[b[0]])} · ${Sim.VEH[t.v].name}${t.mir ? _t(' (ước)') : ''}`, i); opt.dataset.rom = `${t.t} ${t.n} · ${hhmm(a[2] != null ? a[2] : a[1])} ${L.stations[a[0]].en} → ${L.stations[b[0]].en}`; $('train').add(opt);
   });
   const pref = [...$('train').options].find(o => /Nozomi|Hayabusa/.test(o.dataset.rom || o.text) && /→ (Shin-Osaka|Hakata|Shin-Aomori|Tokyo)/.test(o.dataset.rom || o.text)) || $('train').options[0]; if (pref) pref.selected = true;
-  stopList();
+  stopList(); tpUpd();
 }
 let legsExtra = [], campaign = [];
 function legUpd() {
@@ -317,7 +323,13 @@ function stopList() {
   seq.forEach((e, k) => { if (k < seq.length - 1) $('from').add(stOpt(L.stations[e[0]], e[0])); if (k > 0) $('to').add(stOpt(L.stations[e[0]], e[0])); });
   $('from').selectedIndex = 0; const pt = [...$('to').options].find(o => /^(Nagoya|Sendai)$/.test(o.dataset.rom || o.text)); if (pt) pt.selected = true; else $('to').selectedIndex = $('to').options.length - 1;
 }
-$('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = () => { stopList(); vehUpd(); }; $('line').addEventListener('change', () => setTimeout(vehUpd, 0)); $('dir').addEventListener('change', () => setTimeout(vehUpd, 0));
+$('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = () => { stopList(); vehUpd(); tpUpd(); }; $('vehSel').addEventListener('change', () => tpUpd()); $('line').addEventListener('change', () => setTimeout(vehUpd, 0)); $('dir').addEventListener('change', () => setTimeout(vehUpd, 0));
+function tpUpd() {      // hình đầu đoàn + các toa kế sau của tàu đang chọn (ảnh pv_*.png dựng sẵn ở độ phân giải cao, tỉ lệ thật, mũi quay theo hướng chạy như màn 2D); không có ảnh thì ẩn
+  const box = $('mTrainPrev'), im = $('mTpImg'), L = Lc(), rec = L && L.trains[+$('train').value]; if (!rec) { im.style.display = 'none'; return; }
+  const key = $('vehSel').value || rec.v, nm = Scene.SMAP[key] || 'n700', m = window.PREVIEW && PREVIEW[nm], down = $('dir').value === 'down', fd = !!Sim.lineOf($('line').value).meta.flipDown, hr = down ? !fd : fd;
+  box.className = hr ? 'hr' : 'hl'; if (!m) { im.style.display = 'none'; return; }
+  const k = 1.7 * 13.9 / m.ppm; im.style.height = Math.round(m.h * k) + 'px'; im.style.width = Math.round(m.w * k) + 'px'; im.onerror = () => { im.style.display = 'none'; }; im.src = 'assets/pv_' + nm + '.png'; im.style.display = 'block';
+}
 function vehUpd() { const rec = Lc().trains[+$('train').value], ok = rec && /^(E5|E7)$/.test(rec.v); $('vehBox').style.display = ok ? '' : 'none'; if (!ok) $('vehSel').value = ''; }
 $('to').addEventListener('change', () => { legsExtra = []; legUpd(); });
 $('from').onchange = () => {
@@ -724,7 +736,7 @@ const M = (function () {
   const m = { solid: false, screen: null, from: 'home', prevMode: 'drive', prevRun: false, conf: null };
   m.show = function (name, from) {
     if (from) m.from = from;
-    if (name === 'setup') $('driveOpts').style.display = 'contents';
+    if (name === 'setup') { $('driveOpts').style.display = 'contents'; tpUpd(); }
     if (name === 'learn') m.learnRender();
     for (const k in scr) scr[k].classList.toggle('on', k === name);
     m.screen = name; el.style.display = 'block'; el.scrollTop = 0;
