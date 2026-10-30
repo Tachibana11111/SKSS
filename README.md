@@ -20,7 +20,7 @@ Game lái tàu Shinkansen của 5 công ty JR, chạy hoàn toàn trong trình d
 | X · K | (tàu kiểm tra) bật đo · đánh dấu lỗi |
 | Tab · B · O | đổi khung nhìn · camera cuối đoàn (cả buồng lái lẫn góc nhìn 2D, kể cả đoàn ghép/tách) · ẩn điện đàm |
 | , · . | cửa sổ hành khách bên trái · bên phải (toa giữa đoàn, bấm lại để về buồng lái) |
-| J | bật/tắt tiếng ù cabin máy bay (cũng có ô ở menu phải); khi bật, tiếng mưa đổi thành hạt mưa tí tách trên mái |
+| J · nút loa (góc trên phải) | bật/tắt tiếng ù cabin máy bay; khi bật, tiếng mưa đổi thành hạt mưa tí tách trên mái. Nút loa: bấm 1 lần xổ thanh âm lượng (kèm nút ù cabin), bấm lần 2 tắt tiếng (loa gạch chéo, nút đỏ), bấm tiếp để bật lại |
 | D | hoán đổi nhanh giữa bản đồ toàn quốc và góc nhìn lái đang dùng (47 tỉnh, 10 tuyến theo màu Wikipedia, mọi tàu chạy theo lịch thật, thời tiết và động đất; con lăn zoom rất sâu, kéo di chuyển, bấm ga/tàu xem chi tiết ngay cạnh điểm bấm). Ô nhỏ dưới khung 2D: bản đồ bám theo tàu ta, hoặc góc nhìn lái khi bản đồ đang là khung chính; bấm vào ô đó cũng hoán đổi |
 | H | còi (game cũng tự bấm còi ở khu làm việc, hươu, ga không dừng, đường ngang, tàu đứng phía trước) |
 | P (hoặc Esc) · nút ⏸ · F9 | tạm dừng · chụp cảnh (khi đang tạm dừng có nút Chụp cảnh; ảnh + tệp JSON dựng lại cảnh) |

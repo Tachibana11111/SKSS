@@ -121,9 +121,18 @@ function drawTopBar(blink) {
 
   // nút nhỏ: điện đàm, HUD, toàn màn hình
   // các ô vuông biểu tượng cạnh nhau, dồn sát mép phải: camera sau (B), điện đàm (O), toàn màn hình (F11), tạm dừng (Esc)
-  const SZ = 44, GAP = 6, nIcons = tutLessonActive ? 3 : 5, bx0 = FW - 16 - nIcons * SZ - (nIcons - 1) * GAP, by0 = 7;      // hướng dẫn: chỉ điện đàm, toàn màn hình, tạm dừng
+  const SZ = 44, GAP = 6, nIcons = tutLessonActive ? 4 : 6, bx0 = FW - 16 - nIcons * SZ - (nIcons - 1) * GAP, by0 = 7;      // hướng dẫn: chỉ điện đàm, toàn màn hình, tạm dừng
   let ix = bx0; const nextX = () => { const x = ix; ix += SZ + GAP; return x; };
   if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'rear', ui.rear, 'B', () => { ui.rear = !ui.rear; });
+  // nút âm thanh: bấm 1 lần xổ thanh âm lượng (kèm nút bật/tắt ù cabin), bấm lần 2 tắt tiếng (loa gạch chéo, nút đỏ), bấm tiếp để bật lại
+  const sx = nextX(); iconBtn(sx, by0, SZ, 'sound', !!ui.sndOpen, 'Âm', () => { if (!$('snd').checked) { soundSet(true); ui.sndOpen = false; } else if (ui.sndOpen) { soundSet(false); ui.sndOpen = false; } else ui.sndOpen = true; }); btns[btns.length - 1].keep = true;
+  volRect = null; if (ui.sndOpen) { const pw = 330, ph = 62, px = sx + SZ - pw, py = by0 + SZ + 8, vol = +$('vol').value, on = $('snd').checked;
+    panel(px, py, pw, ph, 'rgba(14,20,28,.96)'); ctx.strokeStyle = '#3b516a'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 8); ctx.stroke();
+    button(px + 10, py + 12, 86, 38, 'ù cabin (J)', () => { cabinSet(!AUD.cabin); }, !!AUD.cabin, '#2a8f5a', 12); btns[btns.length - 1].keep = true; btns.unshift(btns.pop());      // các nút của bảng âm thanh được ưu tiên bấm trước các nút nằm dưới
+    const x0 = px + 116, x1 = px + pw - 36, ty = py + 34; volRect = [x0 - 10, py + 10, x1 - x0 + 20, 42];
+    ctx.fillStyle = '#243447'; ctx.beginPath(); ctx.roundRect(x0, ty - 4, x1 - x0, 8, 4); ctx.fill(); ctx.fillStyle = on ? '#4aa3ff' : '#6b7684'; ctx.beginPath(); ctx.roundRect(x0, ty - 4, (x1 - x0) * vol / 100, 8, 4); ctx.fill();
+    ctx.fillStyle = on ? '#fff' : '#9aa6b2'; ctx.beginPath(); ctx.arc(x0 + (x1 - x0) * vol / 100, ty, 9, 0, 7); ctx.fill(); txt('Âm lượng', x0, py + 20, '#9fb4c9', '11px system-ui'); txt(vol + '%', x1 + 6, ty + 5, '#e8eef5', 'bold 12px system-ui');
+    btns.unshift({ x: volRect[0], y: volRect[1], w: volRect[2], h: volRect[3], fn: () => setVolFromX(clk[0]), keep: true }); }
   if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'speed', scale > 1, 'Tua', () => { scale = scale === 1 ? 4 : scale === 4 ? 16 : 1; });      // nút tua: bấm để đổi ×1 → ×4 → ×16 → ×1
   iconBtn(nextX(), by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
   iconBtn(nextX(), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
@@ -147,11 +156,14 @@ function panButton(x0, y0, w0, h0) {
 
 // ô vuông chỉ có biểu tượng (vẽ bằng nét, không dùng emoji để khỏi lệch giữa các máy)
 function iconBtn(x, y, sz, kind, on, key, fn) {
-  ctx.fillStyle = on ? '#2a6fd6' : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.fill(); ctx.strokeStyle = on ? '#6fb0ff' : '#3b516a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.stroke();
-  const cx = x + sz / 2, cy = y + sz / 2 - 2; ctx.strokeStyle = on ? '#fff' : '#9fb4c9'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const muted = kind === 'sound' && !$('snd').checked;      // nút âm thanh: đỏ khi tắt tiếng
+  ctx.fillStyle = muted ? '#b3342b' : on ? '#2a6fd6' : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.fill(); ctx.strokeStyle = muted ? '#ff8a80' : on ? '#6fb0ff' : '#3b516a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x, y, sz, sz, 8); ctx.stroke();
+  const cx = x + sz / 2, cy = y + sz / 2 - 2; ctx.strokeStyle = on || muted ? '#fff' : '#9fb4c9'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   if (kind === 'rear') { ctx.beginPath(); ctx.roundRect(cx - 13, cy - 10, 26, 18, 3); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy - 1, 5, Math.PI * 0.2, Math.PI * 1.55); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 6, cy - 7); ctx.lineTo(cx - 3, cy - 1); ctx.lineTo(cx - 9, cy - 2); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(cx - 9, cy + 8); ctx.lineTo(cx - 9, cy + 13); ctx.moveTo(cx + 9, cy + 8); ctx.lineTo(cx + 9, cy + 13); ctx.stroke(); }
   else if (kind === 'radio') { ctx.beginPath(); ctx.roundRect(cx - 12, cy - 10, 24, 17, 4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 5, cy + 7); ctx.lineTo(cx - 8, cy + 13); ctx.lineTo(cx + 1, cy + 7); ctx.stroke(); for (const dy of [-4, 1]) { ctx.beginPath(); ctx.moveTo(cx - 7, cy + dy); ctx.lineTo(cx + 7, cy + dy); ctx.stroke(); } }
   else if (kind === 'hud') { ctx.beginPath(); ctx.roundRect(cx - 13, cy - 10, 26, 20, 3); ctx.stroke(); ctx.fillRect(cx - 9, cy - 6, 10, 4); ctx.fillRect(cx - 9, cy + 1, 18, 3); }
+  else if (kind === 'sound') { ctx.beginPath(); ctx.moveTo(cx - 12, cy - 4); ctx.lineTo(cx - 6, cy - 4); ctx.lineTo(cx + 1, cy - 11); ctx.lineTo(cx + 1, cy + 11); ctx.lineTo(cx - 6, cy + 4); ctx.lineTo(cx - 12, cy + 4); ctx.closePath(); ctx.fill();
+    if (muted) { ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx - 13, cy - 13); ctx.lineTo(cx + 13, cy + 13); ctx.stroke(); } else { ctx.beginPath(); ctx.arc(cx + 2, cy, 7, -0.9, 0.9); ctx.stroke(); ctx.beginPath(); ctx.arc(cx + 2, cy, 12, -0.9, 0.9); ctx.stroke(); } }
   else if (kind === 'speed') { txt('×' + scale, cx, cy + 8, on ? '#fff' : '#cfe0f0', 'bold ' + (scale >= 10 ? 19 : 24) + 'px system-ui', 'center'); }
   else if (kind === 'pause') { if (on) { ctx.beginPath(); ctx.moveTo(cx - 7, cy - 11); ctx.lineTo(cx + 10, cy); ctx.lineTo(cx - 7, cy + 11); ctx.closePath(); ctx.fill(); } else { ctx.fillRect(cx - 9, cy - 11, 6, 22); ctx.fillRect(cx + 3, cy - 11, 6, 22); } }
   else { for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.moveTo(cx + sx * 4, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 4); ctx.stroke(); } }

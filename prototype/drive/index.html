@@ -133,7 +133,7 @@
   </div>
   <div class="row">
     <div class="grp">Âm thanh và cảnh</div>
-    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60">
+    <div id="sndHidden" style="display:none"><label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60"></div>
     <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
     <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option></select></label>
   </div>
@@ -164,6 +164,7 @@
 <script src="strips.js"></script>
 <script>
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let clk = [0, 0], volDrag = false, volRect = null;      // vị trí lần bấm gần nhất (cho thanh âm lượng) / đang kéo / vùng thanh
 let W_ = cv.width, H_ = cv.height, QS = 1;      // QS: hệ số độ phân giải vẽ (cố định 1) const LINES = window.LINES;
 const CW = 1120, OX = 310;                    // vùng giữa (đồng hồ, cảnh) rộng 1120 px, lệch OX; cột trái = điện đàm, cột phải = nút điều khiển + phím tắt
 let curOY = 0, curOX = 0;                                // độ lệch hiện tại khi đăng ký vùng bấm
@@ -313,6 +314,8 @@ $('tabDrive').onclick = () => { if (mode === 'drive') return; if (tutLessonActiv
 $('tabTut').onclick = () => { if (mode === 'tutorial') return; if (tutLessonActive && W) { setMode('tutorial'); return; } const done = Object.assign({}, (Store.get().tutorial || {}), Tutorial.S.done), i = Tutorial.LESSONS.findIndex(l => !done[l.id]); startLesson(i < 0 ? 0 : i); }; $('tabProf').onclick = () => setMode('profile');
 // ---- lưu cài đặt
 const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('scenery').value = S.scenery === 'lite' ? 'lite' : 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
+function setVolFromX(px) { if (!volRect) return; const v = Math.max(0, Math.min(100, Math.round((px - volRect[0] - 10) / (volRect[2] - 20) * 100))); $('vol').value = v; $('vol').oninput && $('vol').oninput(); if (!$('snd').checked && v > 0) soundSet(true); }
+function soundSet(on) { $('snd').checked = on; $('snd').onchange && $('snd').onchange(); }
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
 $('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
 $('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
@@ -395,13 +398,15 @@ addEventListener('keydown', e => {
 const radio = { w: null, scroll: 0, total: 0, max: 0, viewH: 0, top: 0, x0: 0, x1: 0, bar: null, drag: null };
 const cvXY = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W_ / r.width, (e.clientY - r.top) * H_ / r.height]; };
 cv.addEventListener('wheel', e => { if ((mode !== 'drive' && mode !== 'tutorial') || !W) return; const [x, y] = cvXY(e); if (ui.nat && NatMap.wheel(x, y, e.deltaY)) { e.preventDefault(); return; } if (x >= radio.x0 && x <= radio.x1 && y >= radio.top - 4 && radio.max > 0) { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + e.deltaY * 0.6)); e.preventDefault(); } }, { passive: false });
-cv.addEventListener('mousedown', e => { if (ui.nat) { const [nx, ny] = cvXY(e); NatMap.down(nx, ny); return; } if (!radio.bar) return; const [x, y] = cvXY(e), b = radio.bar; if (x >= b.x - 4 && x <= b.x + b.w + 4) { if (y >= b.y && y <= b.y + b.h) radio.drag = { dy: y - b.y }; else { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + (y < b.y ? -1 : 1) * radio.viewH * 0.8)); } e.preventDefault(); } });
-window.addEventListener('mousemove', e => { if (ui.nat) { const [nx, ny] = cvXY(e); NatMap.move(nx, ny); } if (!radio.drag) return; const [, y] = cvXY(e), th = radio.bar.h, f = (y - radio.drag.dy - radio.top) / Math.max(1, radio.viewH - th); radio.scroll = Math.max(0, Math.min(radio.max, f * radio.max)); });
-window.addEventListener('mouseup', () => { radio.drag = null; if (ui.nat) window.__natMoved = NatMap.up(); });
+cv.addEventListener('mousedown', e => { if (ui.sndOpen && volRect) { const [vx, vy] = cvXY(e); if (vx >= volRect[0] && vx <= volRect[0] + volRect[2] && vy >= volRect[1] && vy <= volRect[1] + volRect[3]) { volDrag = true; setVolFromX(vx); return; } } if (ui.nat) { const [nx, ny] = cvXY(e); NatMap.down(nx, ny); return; } if (!radio.bar) return; const [x, y] = cvXY(e), b = radio.bar; if (x >= b.x - 4 && x <= b.x + b.w + 4) { if (y >= b.y && y <= b.y + b.h) radio.drag = { dy: y - b.y }; else { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + (y < b.y ? -1 : 1) * radio.viewH * 0.8)); } e.preventDefault(); } });
+window.addEventListener('mousemove', e => { if (volDrag) { setVolFromX(cvXY(e)[0]); return; } if (ui.nat) { const [nx, ny] = cvXY(e); NatMap.move(nx, ny); } if (!radio.drag) return; const [, y] = cvXY(e), th = radio.bar.h, f = (y - radio.drag.dy - radio.top) / Math.max(1, radio.viewH - th); radio.scroll = Math.max(0, Math.min(radio.max, f * radio.max)); });
+window.addEventListener('mouseup', () => { radio.drag = null; volDrag = false; if (ui.nat) window.__natMoved = NatMap.up(); });
 cv.addEventListener('click', e => {
   const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * W_ / r.width, y = (e.clientY - r.top) * H_ / r.height;
   if (mode === 'dispatch') { Dispatch.click(x - OX, y); return; }
-  for (const b of btns) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { b.fn(); return; }
+  clk = [x, y];
+  for (const b of btns) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { if (ui.sndOpen && !b.keep) ui.sndOpen = false; b.fn(); return; }
+  if (ui.sndOpen) { ui.sndOpen = false; return; }
   if (ui.nat) { if (window.__natMoved) { window.__natMoved = false; return; } NatMap.click(x, y); }
 });
 
