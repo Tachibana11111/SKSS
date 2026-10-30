@@ -20,6 +20,10 @@ SPECS = {
     't4':    ('doctor yellow.png', 7, 25.0, False, 0.30), # 923 Dr. Yellow
     'e926':  ('east-i.png', 6, 25.0, False, 0.30),        # E926 East i
     'e2':    ('src_e2.png', 10, 25.0, False, 0.30),       # E2-1000 (Tohoku/Joetsu cũ, 10 toa)
+    # ba mẫu cũ chỉ dùng cho hình nền menu (không đăng ký vào sprites.js, game không nạp): chạy bằng build_wall_sprites() bên dưới
+    'w500':  ('jrwest_500_7000_large.webp', 8, 27.0, False, 0.30),   # 500 series 7000 (Kodama, 8 toa)
+    'e4':    ('jreast_e4_pink_large.png', 8, 25.0, False, 0.30),     # E4 Max (8 toa, 2 tầng)
+    'e3':    ('jreast_e3-2000_large.webp', 7, 20.0, False, 0.30),    # E3-2000 Tsubasa (mini, 7 toa)
 }
 
 def bg_model(im):
@@ -125,13 +129,13 @@ def build_ref(name):
         if seg.max() - seg.min() > im.shape[1] * 0.35: cars.append((a, b, int(seg.min()), int(seg.max())))
     return im, cars
 
-def car_image_ref(im, c, up=30, down=150, cut_top=False, white_fill=False, xpl=60, xpr=90):
+def car_image_ref(im, c, up=30, down=150, cut_top=False, white_fill=False, xpl=60, xpr=90, ref_rows=(28, 6)):
     a, b, x0, x1 = c; H, W, _ = im.shape
     pad = 10; xl = max(0, x0 - xpl); xr = min(W, x1 + xpr)         # nới ra để lấy mũi tàu cong
     ya = max(0, a - up); yb = min(H, a + down)
     crop = im[ya:yb, xl:xr]
-    ref = im[max(0, a - up - 28):max(1, a - up - 6), xl:xr].mean(axis=0)
-    mL = im[ya:yb, 6:50].mean(axis=1); mref = im[max(0, a - up - 28):max(1, a - up - 6), 6:50].mean(axis=(0, 1))
+    r0, r1 = ref_rows; ref = im[max(0, a - up - r0):max(1, a - up - r1), xl:xr].mean(axis=0)      # hàng nền mẫu phía trên mái (Kamome: ảnh có dòng chữ tối ở mép trên nên lấy sát mái hơn)
+    mL = im[ya:yb, 6:50].mean(axis=1); mref = im[max(0, a - up - r0):max(1, a - up - r1), 6:50].mean(axis=(0, 1))
     bg = ref[None, :, :] + (mL - mref)[:, None, :]
     d = np.abs(crop - bg).max(axis=2); al = np.clip((d - 14) / 30.0, 0, 1)
     h, w = d.shape; m = (d > 22)
@@ -165,7 +169,7 @@ def main(names):
         if name in ('n700s', 'kamome', 'e2'):
             im, cars = build_ref(name)
             if len(cars) != ncars: print(name, 'cảnh báo:', len(cars), 'dải', cars); continue
-            imgs = [car_image_ref(im, c, down=(190 if name == 'kamome' else 175 if name == 'e2' else 150), cut_top=(name in ('n700s', 'e2')), white_fill=(name == 'n700s'), **({'xpl': 90 if k == 0 else 4, 'xpr': 90 if k == len(cars) - 1 else 6} if name == 'e2' else {})) for k, c in enumerate(cars)]
+            imgs = [car_image_ref(im, c, down=(190 if name == 'kamome' else 175 if name == 'e2' else 150), cut_top=(name in ('n700s', 'e2')), white_fill=(name == 'n700s'), **({'ref_rows': (14, 4)} if name == 'kamome' else {}), **({'xpl': 90 if k == 0 else 4, 'xpr': 90 if k == len(cars) - 1 else 6} if name == 'e2' else {})) for k, c in enumerate(cars)]
         else:
             im, B, diff, mask, cars = build(name)
             if len(cars) != ncars: continue
@@ -201,13 +205,67 @@ def main(names):
         chk.crop((0, 0, min(1500, strip.width), h2)).save(os.path.join(ROOT, '..', '_tmp', 'chk_' + name + '_rear.png'))
     return reg
 
+WALL_ONLY = ('w500', 'e4', 'e3')
+
+# ---- hai mẫu cũ (500 series, E4) có nền chuyển sắc kèm tia sáng chéo / vân xoáy: trừ nền bằng đa thức bậc 5 khớp trên vùng ngoài các toa, rồi lấy thành phần liên thông lớn nhất của mỗi toa
+# mui tàu (mũi đầu ở trái toa 1, mũi đuôi ở phải toa cuối) cần lề rộng hơn các toa giữa; (lề trái, lề phải) tính theo toa
+WALL = {
+    'w500': dict(up=60, down=200, head=(280, 6), mid=(6, 6), tail=(6, 450), thr=34, blue_strip=True),
+    'e4':   dict(up=100, down=230, head=(190, 6), mid=(6, 6), tail=(6, 280), thr=34, blue_strip=False),
+}
+
+def fit_bg(im, boxes, deg=5, step=6):
+    import scipy.ndimage as ndi
+    h, w, _ = im.shape; ys, xs = np.mgrid[0:h:step, 0:w:step]; keep = np.ones(ys.shape, bool)
+    for (y0, y1, x0, x1) in boxes: keep &= ~((ys >= y0) & (ys < y1) & (xs >= x0) & (xs < x1))
+    keep &= ~((ys < 140) & (xs < 260)); keep &= ~((ys < 130) & (xs > w * 0.55)); keep &= ~((ys > h - 120) & (xs < 420))      # biểu tượng mặt trước, tiêu đề, dòng ghi nguồn
+    X = (xs[keep] / w).ravel(); Y = (ys[keep] / h).ravel(); C = im[ys[keep], xs[keep]]
+    def design(x, y): return np.stack([(x ** i) * (y ** j) for i in range(deg + 1) for j in range(deg + 1 - i)], axis=1)
+    A = design(X, Y); k = np.ones(len(X), bool)
+    for _ in range(5):
+        coef = np.linalg.lstsq(A[k], C[k], rcond=None)[0]; res = np.abs(A @ coef - C).max(axis=1); k = res < max(8, np.percentile(res[k], 92) * 1.6)
+    gy, gx = np.mgrid[0:h, 0:w]; D = design((gx / w).ravel(), (gy / h).ravel())
+    return np.stack([D @ coef[:, c] for c in range(3)], axis=1).reshape(h, w, 3)
+
+def build_wall_strip(name):
+    import scipy.ndimage as ndi
+    src, ncars, carlen, flip, SCALE = SPECS[name]; cfg = WALL[name]
+    im, cars = build_ref(name)
+    if len(cars) != ncars: print(name, 'cảnh báo:', len(cars), 'dải', cars); return None
+    H, W, _ = im.shape
+    def margins(k): return cfg['head'] if k == 0 else cfg['tail'] if k == len(cars) - 1 else cfg['mid']
+    boxes = [(max(0, a - cfg['up']), min(H, a + cfg['down']), max(0, x0 - margins(k)[0] - 80), min(W, x1 + margins(k)[1] + 80)) for k, (a, b, x0, x1) in enumerate(cars)]
+    diff = np.abs(im - fit_bg(im, boxes)).max(axis=2); imgs = []
+    for k, (a, b, x0, x1) in enumerate(cars):
+        ya = max(0, a - cfg['up']); yb = min(H, a + cfg['down']); xa = max(0, x0 - margins(k)[0]); xb = min(W, x1 + margins(k)[1])
+        crop = im[ya:yb, xa:xb]; m = diff[ya:yb, xa:xb] > cfg['thr']
+        if cfg['blue_strip']:      # tia sáng xanh của nền: màu xanh bão hoà chỉ được giữ ở các hàng thuộc thân tàu (hàng có phần lớn là điểm không xanh); phần dưới (bánh xe) chỉ giữ điểm không xanh
+            blue = (crop[:, :, 2] - crop[:, :, 0] > 90) & (crop[:, :, 2] > 150); nb = (m & ~blue).sum(axis=1) > 0.5 * (x1 - x0); rr = np.where(nb)[0]
+            if len(rr): r0, r1 = rr.min(), rr.max(); keep_blue = (np.arange(m.shape[0]) >= r0) & (np.arange(m.shape[0]) <= r1) & (blue.sum(axis=1) > 0.3 * (x1 - x0)); m &= ~(blue & ~keep_blue[:, None])
+        m = ndi.binary_closing(m, iterations=2); lab, n = ndi.label(m)
+        if n == 0: print(name, 'toa', k + 1, 'rỗng'); return None
+        mm = lab == (1 + int(np.argmax(ndi.sum(m, lab, range(1, n + 1))))); mm = ndi.binary_opening(ndi.binary_fill_holes(mm), iterations=1)
+        al = ndi.gaussian_filter(mm.astype(np.float32), 0.8)
+        img = Image.fromarray(np.dstack([crop.astype(np.uint8), (al * 255).astype(np.uint8)]), 'RGBA'); bb = img.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox(); imgs.append(img.crop(bb) if bb else img)
+    Hh = max(i.height for i in imgs); OVER = 2; x = 0; xs = []
+    for k, i in enumerate(imgs): xs.append(x); x += i.width - (OVER if k < len(imgs) - 1 else 0)
+    strip = Image.new('RGBA', (x, Hh), (0, 0, 0, 0))
+    for i, px in zip(imgs, xs): strip.alpha_composite(i, (px, Hh - i.height))
+    strip = strip.resize((int(strip.width * SCALE), int(Hh * SCALE)), Image.LANCZOS)
+    out = os.path.join(ROOT, name + '_strip.png'); strip.save(out, optimize=True); print(name, strip.size, os.path.getsize(out), 'byte', len(imgs), 'toa (chỉ cho hình nền menu)'); return strip
+
 if __name__ == '__main__':
-    reg = main(sys.argv[1:] or list(SPECS))
-    # đăng ký (gộp với dải N700 cũ nếu có)
-    p = os.path.join(ROOT, 'sprites.js'); old = {}
-    if os.path.exists(p):
-        txt = open(p, encoding='utf-8').read(); i = txt.find('{');
-        try: old = json.loads(txt[i:txt.rfind('}') + 1])
-        except Exception: old = {}
-    old.update(reg)
-    open(p, 'w', encoding='utf-8').write('// sinh tự động bởi tools/build_vehicle_sprites.py' + chr(10) + 'window.SPRITES = ' + json.dumps(old) + ';' + chr(10))
+    args = sys.argv[1:]
+    for n in [a for a in args if a in WALL]: build_wall_strip(n)
+    rest = [a for a in args if a not in WALL] if args else [n for n in SPECS if n not in WALL]
+    if not args or [a for a in rest]:
+        reg = main(rest)
+        for n in WALL_ONLY: reg.pop(n, None)      # mẫu chỉ dùng cho hình nền không đăng ký vào sprites.js
+        # đăng ký (gộp với dải N700 cũ nếu có)
+        p = os.path.join(ROOT, 'sprites.js'); old = {}
+        if os.path.exists(p):
+            txt = open(p, encoding='utf-8').read(); i = txt.find('{');
+            try: old = json.loads(txt[i:txt.rfind('}') + 1])
+            except Exception: old = {}
+        old.update(reg)
+        open(p, 'w', encoding='utf-8').write('// sinh tự động bởi tools/build_vehicle_sprites.py' + chr(10) + 'window.SPRITES = ' + json.dumps(old) + ';' + chr(10))

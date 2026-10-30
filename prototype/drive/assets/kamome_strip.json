@@ -2,7 +2,7 @@
  "name": "kamome",
  "scale": 0.3,
  "width": 2148,
- "height": 66,
+ "height": 61,
  "pxPerMeter": 13.944,
  "cars": [
   {
@@ -36,6 +36,6 @@
    "w": 379
   }
  ],
- "railY": 64,
+ "railY": 59,
  "source": "rail.kychung.com 2D drawing (CC BY-NC-ND 4.0), personal use only"
 }

@@ -40,6 +40,17 @@ Cùng nguồn Nanyue Express / K.Y. Chung, cùng giấy phép CC BY-NC-ND 4.0, c
 | `east-i.png` | E926 East i -> `e926_strip.*` (tàu kiểm tra JR East) |
 | `jreast_e2-1000_large.png` (sao chép thành `src_e2.png`) | E2-1000 (10 toa) -> `e2_strip.*`, `front_e2.png`; người dùng tự tải 23/10/2026 từ rail.kychung.com (CC BY-NC-ND 4.0) |
 
+## Bổ sung 2026-10-30 (người dùng tự tải về, chỉ cho hình nền menu)
+Cùng nguồn Nanyue Express / K.Y. Chung (rail.kychung.com), cùng giấy phép CC BY-NC-ND 4.0, chỉ dùng cá nhân. Ba mẫu cũ này **chỉ** dùng làm hình nền menu chính (không nạp vào game, không có trong `sprites.js`); ảnh gốc không đưa vào git.
+
+| Tệp gốc | Mẫu | Dải sinh ra |
+|---|---|---|
+| `jrwest_500_7000_large.webp` | 500 series 7000 (Kodama, 8 toa) | `w500_strip.png` |
+| `jreast_e4_pink_large.png` | E4 Max (8 toa) | `e4_strip.png` |
+| `jreast_e3-2000_large.webp` | E3-2000 Tsubasa (7 toa) | `e3_strip.*` |
+
+Dựng bằng `python -X utf8 tools/build_vehicle_sprites.py w500 e4 e3` (500 series và E4 có nền chuyển sắc nên cắt bằng cách trừ nền đa thức rồi giữ thành phần liên thông lớn nhất; còn sót vài mảnh nền xanh rất mờ ở 500 series).
+
 Hình mặt trước (`front_*`) cắt từ góc các ảnh này bằng `tools/build_front_sprites.py`. Hình nhìn từ trên (`top_*`) vẫn dựng từ ảnh SimplePlanes, chỉ đổi màu theo mẫu tàu.
 
 ## Biểu tượng tab trang (logo.png)

@@ -5,6 +5,7 @@ node_modules/
 # tài nguyên có giấy phép NC/ND hoặc chỉ dùng cá nhân: không đưa vào repo (xem prototype/drive/assets/NGUON.md và docs/data/README.md)
 docs/data/raw-pdf/
 prototype/drive/assets/*.webp
+prototype/drive/assets/jreast_e4_pink_large.png
 prototype/drive/_*
 prototype/drive/assets/src_*
 
