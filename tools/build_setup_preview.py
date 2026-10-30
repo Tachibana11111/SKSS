@@ -72,8 +72,14 @@ def n700():
         core = ndi.binary_opening(a > 0.5, structure=np.ones((3, 3)), iterations=7); lab, n = ndi.label(core)
         if n: core = lab == 1 + int(np.argmax(ndi.sum(core, lab, range(1, n + 1)))); a = np.where(ndi.binary_dilation(core, iterations=8), a, 0)
         am = Image.fromarray((a * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.8))
-        return Image.fromarray(np.dstack([crop.astype(np.uint8), np.asarray(am)]), 'RGBA')
-    imgs = [car(i) for i in (13, 14, 15)]; strip = compose(imgs, 0, 0); w2, h2 = int(strip.width * SCALE), int(strip.height * SCALE)
+        blue = (crop[:, :, 2] - crop[:, :, 0] > 60) & (crop[:, :, 0] < 90) & (a > 0.5); blue[:, :int(w * 0.15)] = False; blue[:, int(w * 0.7):] = False      # vạch xanh dọc thân (bỏ mũi và đầu toa)
+        rows = np.where(blue.sum(axis=1) > 0.3 * w)[0]
+        return Image.fromarray(np.dstack([crop.astype(np.uint8), np.asarray(am)]), 'RGBA'), float(rows.mean())      # hàng của vạch xanh để căn các toa cùng độ cao
+    cs = [car(i) for i in (13, 14, 15)]; print('vạch xanh (hàng):', [round(k, 1) for _, k in cs]); up = int(round(max(k for _, k in cs)))
+    imgs = []
+    for im_, k in cs:      # bản vẽ gốc đặt toa mũi lệch vài px so với các toa giữa: căn lại theo vạch xanh
+        d = up - int(round(k)); t = Image.new('RGBA', (im_.width, im_.height + d), (0, 0, 0, 0)); t.alpha_composite(im_, (0, d)); imgs.append(t)
+    strip = compose(imgs, 0, 0); w2, h2 = int(strip.width * SCALE), int(strip.height * SCALE)
     strip = strip.resize((w2, h2), Image.LANCZOS); strip.save(os.path.join(ROOT, 'pv_n700.png'), optimize=True)
     return {'w': w2, 'h': h2, 'ppm': round(1157 * SCALE / 25.0, 3)}
 
