@@ -602,4 +602,17 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
   ok(NatMap.colAt('hok', 3) === NatMap.SEGS.find(s => s.key === 'joetsu').col && NatMap.colAt('jts', 1) === NatMap.SEGS.find(s => s.key === 'tohoku').col, 'đoạn đi chung lấy màu tuyến cha');
 }
 
+if (section('28. Khởi động ở nhiều giờ trong ngày: tàu cùng chiều không đổi thứ tự (kể cả vài giây đầu, nhờ khởi động trước)')) {
+  const LNs = window.LINES, cat = NatCat.build(LNs); let worlds = 0, flips = 0, firstBad = '';
+  for (const lid of Object.keys(LNs)) for (const dir of ['down', 'up']) {
+    const recs = Sim.lineOf(lid).trains.filter(t => t.d === dir && !t.cp && t.s.filter(e => !e[3]).length > 3).filter((_, i) => i % 12 === 0).slice(0, 8);
+    for (const r of recs) { const st = r.s.filter(e => !e[3]).map(e => e[0]); let W; try { W = Sim.createWorld(lid, Sim.makeTrip(lid, r, st[0], st[st.length - 1]), { diff: 'normal', seed: 1, lead: true, events: false }); } catch (e) { continue; } worlds++; let prev = null;
+      for (let t = 0; t <= 300; t += 5) { W.t = t; NatCat.step(W); const now = W.trip.t0 + t, cur = new Map();
+        for (const c of cat) { const d = NatCat.delayOf(W, c.key), sx = NatCat.stateOf(LNs, c, now - (d ? d.delay : 0)); if (!sx) continue; const rf = NatCat.refOf(LNs, c.line, sx.km); cur.set(c.key, { g: rf.g + c.rec.d, k: rf.k, dw: !!sx.dwell, lab: c.rec.t + ' ' + c.rec.n + '(' + c.line + ')', cid: c.cid }); }
+        if (prev) { const keys = [...cur.keys()]; for (let i = 0; i < keys.length; i++) for (let j = i + 1; j < keys.length; j++) { const a = cur.get(keys[i]), bb = cur.get(keys[j]), a0 = prev.get(keys[i]), b0 = prev.get(keys[j]); if (!a0 || !b0 || a.g !== bb.g || a0.g !== a.g || b0.g !== bb.g) continue; if (a.cid && a.cid === bb.cid) continue; if (a.dw || bb.dw || a0.dw || b0.dw) continue;
+            if ((a0.k - b0.k) * (a.k - bb.k) < 0 && Math.abs(a.k - bb.k) > 0.05) { flips++; if (!firstBad) firstBad = a.lab + ' x ' + bb.lab + ' @' + W.trip.label + ' t=' + t; } } }
+        prev = cur; } } }
+  ok(worlds > 40 && flips === 0, 'khởi động ở ' + worlds + ' giờ khác nhau: ' + flips + ' lần tàu cùng chiều đổi thứ tự trong 5 phút đầu', firstBad);
+}
+
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

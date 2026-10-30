@@ -53,6 +53,9 @@ Dựng bằng `python -X utf8 tools/build_vehicle_sprites.py w500 e4 e3` (500 se
 
 Hình mặt trước (`front_*`) cắt từ góc các ảnh này bằng `tools/build_front_sprites.py`. Hình nhìn từ trên (`top_*`) vẫn dựng từ ảnh SimplePlanes, chỉ đổi màu theo mẫu tàu.
 
+## Logo JR (jr_hokkaido/east/central/west/kyushu.png)
+Cắt từ ảnh tổng hợp logo các công ty JR do người dùng cung cấp (2026-10-30), tách nền thành trong suốt (logo một màu phẳng). Là nhãn hiệu của JR Hokkaido, JR East, JR Central, JR West, JR Kyushu; dùng cá nhân ở màn hình chủ, **không đưa vào git** (`.gitignore`); thiếu tệp thì trang tự ẩn logo.
+
 ## Biểu tượng tab trang (logo.png)
 `logo.png` (304×299): pictogram Shinkansen của 西日本旅客鉄道 (JR West), [File:Shinkansen-W.png](https://commons.wikimedia.org/wiki/File:Shinkansen-W.png) trên Wikimedia Commons, **CC BY-SA 4.0**; tải trực tiếp từ https://upload.wikimedia.org/wikipedia/commons/8/88/Shinkansen-W.png ngày 2026-10-23 theo yêu cầu của người dùng. Chưa chỉnh sửa. Dùng làm favicon (`<link rel="icon">` trong `index.html`).
 

@@ -57,6 +57,7 @@
   #menu .cen{max-width:300px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
   #menu .cen button{height:46px;font-size:15px}
   #menu .logo{text-align:center;margin:7vh 0 26px} #menu .logo b{display:block;font-size:56px;letter-spacing:10px;font-weight:600;font-family:'Yu Mincho','Hiragino Mincho ProN','Noto Serif JP','MS Mincho',serif;padding-left:10px} #menu .logo span{color:var(--mut);font-size:13px}
+  #menu .logo .jr{display:flex;justify-content:center;align-items:center;gap:30px;margin-top:18px} #menu .logo .jr img{height:54px;width:auto}
   #menu .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 36px} @media (max-width:760px){#menu .cols{grid-template-columns:1fr}}
   #menu .grp{font-size:12px;color:var(--mut);font-weight:600;margin:0 0 4px;letter-spacing:.5px}
   #menu label{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #243447;font-size:14px;color:var(--fg);margin:0}
@@ -202,7 +203,7 @@
 </div>
 <div id="menu">
   <div class="scr" id="m-home"><div class="wm">
-    <div class="logo"><b>新幹線</b><span>Lái Shinkansen · bản thử 0.4</span></div>
+    <div class="logo"><b>新幹線</b><span class="jr"><img src="assets/jr_hokkaido.png" alt="JR Hokkaido" onerror="this.style.display=\'none\'"><img src="assets/jr_east.png" alt="JR East" onerror="this.style.display=\'none\'"><img src="assets/jr_central.png" alt="JR Central" onerror="this.style.display=\'none\'"><img src="assets/jr_west.png" alt="JR West" onerror="this.style.display=\'none\'"><img src="assets/jr_kyushu.png" alt="JR Kyushu" onerror="this.style.display=\'none\'"></span></div>
     <div class="cen">
       <button class="go" data-m="setup">Lái tàu</button>
       <button data-m="learn">Học lái</button>

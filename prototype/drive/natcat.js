@@ -38,7 +38,7 @@
   // ---- thiên tai: tạo từ kế hoạch sự kiện của tuyến người chơi (W.hazPlan: {kind, at, dur, s}) + vài hiện tượng ở nơi khác theo hạt giống
   function init(W) {
     const LN = root.LINES, L = LN && LN[W.lineId]; if (!L) { W.haz = { cells: [], quakes: [], delay: new Map(), lastT: 0 }; return; }
-    const H = W.haz = { cells: [], quakes: [], delay: new Map(), lastT: W.trip.t0 }, seed = W.seed || 1, WL = W.line;
+    const H = W.haz = { cells: [], quakes: [], delay: new Map(), lastT: W.trip.t0 - WARM }, seed = W.seed || 1, WL = W.line;
     const at = s => { const km = root.Sim.kmOfS(s, W.dir, WL.kmEnd); return atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))); };
     const mid = at((W.trip.M[0].s + W.trip.M[W.trip.M.length - 1].s) / 2);
     if (W.weatherKind === 'rain' || W.weatherKind === 'typhoon' || W.weatherKind === 'snow') H.cells.push({ kind: W.weatherKind === 'typhoon' ? 'wind' : W.weatherKind, lat: mid.lat, lon: mid.lon, r: 170, t0: -1e9, t1: 1e9 });
@@ -82,11 +82,12 @@
   }
   // ga cho phép vượt tàu đang đỗ: có đường thông qua, hoặc có từ 2 đường dừng cùng chiều (tàu sau vào đường dừng còn trống)
   function canPass(LN, line, idx, dir) { const st = LN[line] && LN[line].stations[idx]; if (!st) return false; if (st.loop) return true; const LY = root.Layout; return !!(LY && LY.stopCount && LY.stopCount(st.lay || '2-2-0', dir) >= 2); }
-  const WSLOW = { rain: 0.06, snow: 0.09, wind: 0.2 };
+  // khởi động trước: chạy cơ chế giãn cách từ WARM giây trước giờ xuất phát để các tàu đã sát nhau (lịch nội suy cho vượt nhau giữa hai ga) được giữ thứ tự và chỉ vượt ở ga có đường tránh; trong lúc đó chưa tính tàu của người chơi
+  const WARM = 1800, WSLOW = { rain: 0.06, snow: 0.09, wind: 0.2 };
   // cập nhật độ trễ tới giờ hiện tại của game (bước 5 s; mở bản đồ muộn thì tự bù từ đầu chuyến)
   function step(W) {
     const LN = root.LINES; if (!LN || !W.trip) return; if (!W.haz) init(W); const H = W.haz, cat = build(LN), end = W.trip.t0 + W.t;
-    while (H.lastT < end - 0.01) { const dt = Math.min(5, end - H.lastT), tNow = H.lastT + dt, wt = tNow - W.trip.t0, act = []; alignLead(W, LN, H, tNow);
+    while (H.lastT < end - 0.01) { const dt = Math.min(5, end - H.lastT), tNow = H.lastT + dt, wt = tNow - W.trip.t0, act = []; if (tNow >= W.trip.t0) alignLead(W, LN, H, tNow);
       for (const c of cat) { let d = H.delay.get(c.key); const eff = tNow - (d ? d.delay : 0); if (eff < c.t0 || eff > c.t1) continue;
         if (!d) { d = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; H.delay.set(c.key, d); }
         d._d0 = d.delay;
@@ -95,7 +96,7 @@
           if (wt >= tS) { d.hit[qi] = 1; const sh = shindoAt(q, R); if (sh >= 4) { d.hold = (sh >= 5 ? 900 : 420) * (0.8 + hs(qi, c.rec.n | 0) * 0.5); d.why = 'eqk'; d.shake = wt; } } }
         if (d.hold <= 0 && !s.dwell) for (const cl of H.cells) if (wt >= cl.t0 && wt <= cl.t1 && hav(s.lat, s.lon, cl.lat, cl.lon) < cl.r) { d.delay += dt * (WSLOW[cl.kind] || 0.05); if (!d.why) d.why = cl.kind; break; }
         act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: false, cid: c.cid, dwell: !!s.dwell, loop: !!(s.dwell && canPass(LN, c.line, s.idx, c.rec.d)) }); }
-      { const P0 = W.player; if (P0 && !P0.finished && LN[W.lineId]) act.push({ d: { delay: 0 }, g: refOf(LN, W.lineId, root.Sim.kmOfS(P0.x, W.dir, W.line.kmEnd)), dir: W.dir, still: false, dwell: P0.phase === 'dwell', loop: P0.phase === 'dwell' && canPass(LN, W.lineId, P0.M[P0.k].i, W.dir), me: true, cid: (function () { const r0 = W.trip.rec, s0 = r0 && r0.s.find(e => !e[3]); return s0 ? r0.d + '|' + LN[W.lineId].stations[s0[0]].jp + '|' + Math.round((s0[2] != null ? s0[2] : s0[1]) / 5) : ''; })() }); }      // tàu của người chơi cũng là vật cản (không bị chậm)
+      { const P0 = W.player; if (P0 && !P0.finished && tNow > W.trip.t0 && LN[W.lineId]) act.push({ d: { delay: 0 }, g: refOf(LN, W.lineId, root.Sim.kmOfS(P0.x, W.dir, W.line.kmEnd)), dir: W.dir, still: false, dwell: P0.phase === 'dwell', loop: P0.phase === 'dwell' && canPass(LN, W.lineId, P0.M[P0.k].i, W.dir), me: true, cid: (function () { const r0 = W.trip.rec, s0 = r0 && r0.s.find(e => !e[3]); return s0 ? r0.d + '|' + LN[W.lineId].stations[s0[0]].jp + '|' + Math.round((s0[2] != null ? s0[2] : s0[1]) / 5) : ''; })() }); }      // tàu của người chơi cũng là vật cản (không bị chậm)
       // một đường mỗi chiều: tàu đi sau không thể vượt tàu phía trước giữa hai ga (chỉ vượt được ở ga khi tàu trước đang đỗ); tiến sát thì bị chậm dần
       const grp = new Map(); for (const a of act) { a.km = a.g.k; const g = a.g.g + a.dir; (grp.get(g) || grp.set(g, []).get(g)).push(a); }
       for (const [g, arr] of grp) { const sg = arr[0].dir === 'down' ? 1 : -1; arr.sort((x, y) => sg * (x.km - y.km));
