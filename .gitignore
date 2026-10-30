@@ -6,7 +6,6 @@ node_modules/
 docs/data/raw-pdf/
 prototype/drive/assets/*.webp
 prototype/drive/assets/jreast_e4_pink_large.png
-prototype/drive/assets/jr_*.png
 prototype/drive/_*
 prototype/drive/assets/src_*
 
@@ -26,3 +25,4 @@ data-osm/
 
 tools/_tmp/
 tools/data-src/
+prototype/drive/assets/JR_logo.png
