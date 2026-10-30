@@ -117,7 +117,7 @@
       const dist = sg * (rf.k - me.k) * 1000; if (dist <= 0 || dist > 15000) continue; if (!best || dist < best.dist) best = { dist, c, d, s }; }
     if (!best) { W.obs = null; return; }
     const veh = root.Sim.VEH[best.c.rec.v] || root.Sim.VEH.N700, held = best.d && best.d.hold > 0, rate = best.d ? best.d.rate || 0 : 0;
-    W.obs = { x: T.x + best.dist, len: veh.len, v: held ? 0 : (best.s.kmh || 0) * (1 - rate) / 3.6, t: W.t, label: best.c.rec.t + ' ' + best.c.rec.n };
+    W.obs = { x: T.x + best.dist, len: veh.len, v: held ? 0 : (best.s.kmh || 0) * (1 - rate) / 3.6, t: W.t, label: _tl(best.c.rec.t, best.c.rec.n) };
   }
   const delayOf = (W, key) => { const d = W.haz && W.haz.delay.get(key); return d ? d : null; };
   root.NatCat = { canPass, updateObstacle, refOf, KX, VP, VS, hav, shindoAt, build, atKm, stateOf, init, step, delayOf };

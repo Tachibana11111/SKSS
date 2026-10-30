@@ -28,5 +28,8 @@
   // tên ga hiển thị: tiếng Nhật dùng chữ Hán (jp), các ngôn ngữ khác giữ chữ La-tinh (en); tên tuyến tiếng Nhật lấy từ meta.pa (+ 新幹線)
   I18N.stn = s => (I18N.lang === 'ja' && s.jp) ? s.jp : s.en;
   I18N.ln = L => (I18N.lang === 'ja' && L.meta && L.meta.pa) ? L.meta.pa + '新幹線' : L.name;
-  root.I18N = I18N; root._t = I18N.t; root._s = I18N.stn; root._ln = I18N.ln;
+  // tên chuyến: tiếng Nhật dùng tên kana (のぞみ1号), ngôn ngữ khác giữ 'Nozomi 1'
+  const JAT = { Nozomi: 'のぞみ', Hikari: 'ひかり', Kodama: 'こだま', Mizuho: 'みずほ', Sakura: 'さくら', Tsubame: 'つばめ', Kamome: 'かもめ', Hayabusa: 'はやぶさ', Hayate: 'はやて', Yamabiko: 'やまびこ', Nasuno: 'なすの', Komachi: 'こまち', Tsubasa: 'つばさ', Toki: 'とき', Tanigawa: 'たにがわ', Asama: 'あさま', Kagayaki: 'かがやき', Hakutaka: 'はくたか', Tsurugi: 'つるぎ' }, JAX = { 'Doctor Yellow': 'ドクターイエロー' };
+  I18N.tl = (t, n) => { if (I18N.lang === 'ja') { if (JAT[t]) return JAT[t] + n + '号'; if (JAX[t]) return JAX[t] + ' ' + n; } return t + ' ' + n; };
+  root.I18N = I18N; root._t = I18N.t; root._tl = I18N.tl; root._s = I18N.stn; root._ln = I18N.ln;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -625,12 +625,13 @@ if (section('29. Đa ngôn ngữ (i18n.js, lang-en.js, lang-ja.js): đủ bản 
   const reKey = /(?<![\w$.])_t\(\s*('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")/g;
   for (const f of files) { const src = fs.readFileSync(path.join(DRIVE, f), 'utf8'); let m; while ((m = reKey.exec(src))) { try { keys.add(new Function('return ' + m[1])()); } catch (e) { bad++; } } }
   { const src = fs.readFileSync(path.join(DRIVE, 'cabview.js'), 'latin1'); const m = src.match(/_t\('(V[^']{0,4}CH)'\)/); if (m) keys.add('VẠCH'); }
+  const codeKeys = new Set(keys), NEUTRAL = new Set(['×']);      // khoá _t trong mã: phải có bản dịch dù không có dấu tiếng Việt
   // văn bản tĩnh trong HTML (ngoài <script>/<style>), đã chuẩn hoá khoảng trắng
   { const h = fs.readFileSync(path.join(DRIVE, 'index.html'), 'utf8').replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<!--[\s\S]*?-->/g, ''), norm = x => x.replace(/\s+/g, ' ').trim(); let m;
     const rt = />([^<>]+)</g; while ((m = rt.exec(h))) { const k = norm(m[1]); if (k && VNK.test(k)) keys.add(k); }
     const ra = /(?:title|alt|placeholder|aria-label)="([^"]*)"/g; while ((m = ra.exec(h))) { const k = norm(m[1]); if (k && VNK.test(k)) keys.add(k); }
     const mt = h.match(/<title>([\s\S]*?)<\/title>/); if (mt) keys.add(norm(mt[1])); }
-  const vnKeys = [...keys].filter(k => VNK.test(k)), EN = I18N.dict.en, JA = I18N.dict.ja;
+  const vnKeys = [...keys].filter(k => VNK.test(k) || (codeKeys.has(k) && /[A-Za-z]{2}/.test(k) && !NEUTRAL.has(k))), EN = I18N.dict.en, JA = I18N.dict.ja;
   ok(bad === 0 && vnKeys.length > 650, 'thu được ' + vnKeys.length + ' khoá tiếng Việt cần dịch trong mã và HTML (' + bad + ' khoá không đọc được)');
   // 2) đủ bản dịch, đủ chỗ điền, không lọt tiếng Việt
   const ph = s => [...new Set(s.match(/\{\d+\}/g) || [])].sort().join(',');

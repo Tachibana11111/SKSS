@@ -1,6 +1,6 @@
 # Việc cần làm
 
-> **Nhắc chung:** mỗi khi thêm hoặc đổi một phím/nút điều khiển, phải cập nhật bảng phím ở **README** và **trang 2 của wizard** (`prototype/drive/index.html`), cùng bảng phím nằm trong mã (nếu còn). Đừng quên kiểm lại phím mới có trùng phím đang dùng không.
+> **Nhắc chung:** mỗi khi thêm hoặc đổi một phím/nút điều khiển, phải cập nhật bảng phím ở **README** (wizard 3 trang đã bỏ 2026-10-30; `prototype/drive/index.html`), cùng bảng phím nằm trong mã (nếu còn). Đừng quên kiểm lại phím mới có trùng phím đang dùng không.
 
 1. ~~Làm sàn nền của ga theo màu cố định~~ **Xong (2026-10-24, chờ người dùng thử):** nền đất đúng trong đoạn hàng rào của ga (từ đầu rào tới cuối rào, cùng hằng số FA/FB với tường rào, chuyển êm 60 m nằm bên trong) cố định màu xi măng/đá dăm, không đổi theo quần xã; có tuyết thì vẫn trắng. Chỉ đổi màu nền đất trong `cabview.js`, không đụng hàng rào.
 
@@ -48,4 +48,4 @@
 
 12. **[ĐÃ LÀM 2026-10-30, chờ người dùng thử]** Đa ngôn ngữ (English, 日本語, Tiếng Việt): ô thả xuống có cờ tròn ở Cài đặt, mặc định theo ngôn ngữ trình duyệt, đổi ngôn ngữ = lưu cài đặt rồi tải lại trang. Khoá dịch là câu tiếng Việt gốc, `_t('...')`; bản dịch ở `lang-en.js`, `lang-ja.js`; xem README mục "Đa ngôn ngữ". Tiếng Nhật hiển thị tên ga bằng chữ Hán và tên tuyến bằng tên Nhật.
     - **Việc còn lại:** nhờ người bản ngữ xem lại bản dịch tiếng Nhật (thuật ngữ đường sắt); chế độ Điều độ (`dispatch.js`) và tài liệu `docs/`/README chưa dịch; chữ có thể dài hơn ở vài nút HUD khi dùng tiếng Anh, cần xem tay ở độ phân giải thấp.
-    - **Khi thêm phím/nút mới:** cập nhật README, trang 2 của wizard, và bản dịch ở hai tệp `lang-*.js`.
+    - **Khi thêm phím/nút mới:** cập nhật README và bản dịch ở hai tệp `lang-*.js`.

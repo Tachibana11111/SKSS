@@ -133,7 +133,7 @@ function drawTopBar(blink) {
     ctx.fillStyle = '#243447'; ctx.beginPath(); ctx.roundRect(x0, ty - 4, x1 - x0, 8, 4); ctx.fill(); ctx.fillStyle = on ? '#4aa3ff' : '#6b7684'; ctx.beginPath(); ctx.roundRect(x0, ty - 4, (x1 - x0) * vol / 100, 8, 4); ctx.fill();
     ctx.fillStyle = on ? '#fff' : '#9aa6b2'; ctx.beginPath(); ctx.arc(x0 + (x1 - x0) * vol / 100, ty, 9, 0, 7); ctx.fill(); txt(_t('Âm lượng'), x0, py + 20, '#9fb4c9', '11px system-ui'); txt(vol + '%', x1 + 6, ty + 5, '#e8eef5', 'bold 12px system-ui');
     btns.unshift({ x: volRect[0], y: volRect[1], w: volRect[2], h: volRect[3], fn: () => setVolFromX(clk[0]), keep: true }); }
-  if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'speed', scale > 1, _t('Tua'), () => { scale = scale === 1 ? 4 : scale === 4 ? 16 : 1; });      // nút tua: bấm để đổi ×1 → ×4 → ×16 → ×1
+  if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'speed', scale > 1, '', () => { scale = scale === 1 ? 4 : scale === 4 ? 16 : 1; });      // nút tua: bấm để đổi ×1 → ×4 → ×16 → ×1
   iconBtn(nextX(), by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
   iconBtn(nextX(), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
   iconBtn(nextX(), by0, SZ, 'pause', paused, 'P', () => { paused = !paused; });

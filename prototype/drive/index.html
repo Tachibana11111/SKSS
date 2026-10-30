@@ -87,19 +87,8 @@
   .flag{display:inline-block;flex:none;width:24px;height:24px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.28);line-height:0} .flag svg{width:100%;height:100%;display:block}
   #menu .lk{background:none;border:0;color:var(--mut);text-decoration:underline;height:auto;padding:0;font-size:12px}
   #menu .lk:hover{background:none;color:var(--fg)}
-  #wiz{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}
-  #wiz .box{background:#18212c;border:1px solid #33475e;border-radius:12px;width:100%;max-width:640px;max-height:92vh;overflow:auto;padding:20px 24px;color:var(--fg)}
-  #wiz h2{margin:0 0 6px;font-size:21px} #wiz p{line-height:1.6} #wiz .dim{color:var(--mut)}
-  #wiz .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:13px;color:var(--mut)}
-  #wiz .dots span{display:inline-block;height:8px;width:8px;border-radius:4px;background:#33475e;margin-right:6px} #wiz .dots span.on{background:#4aa3ff} #wiz .dots span.cur{width:22px}
-  #wiz .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media (max-width:520px){#wiz .cards{grid-template-columns:1fr}}
-  #wiz .card{background:#223042;border:1px solid #33475e;border-radius:10px;padding:14px;text-align:left;color:var(--fg);font:inherit;cursor:pointer}
-  #wiz .card:hover{border-color:#4aa3ff;background:#26384d} #wiz .card b{display:block;font-size:15px;margin-bottom:4px} #wiz .card span{font-size:13px;color:var(--mut);line-height:1.5;display:block}
-  #wiz .tag{display:inline-block;margin-top:8px;font-size:12px;padding:2px 8px;border-radius:6px;background:#1c3b66;color:#9fc3ff;font-style:normal}
-  #wiz .keys{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:13px} #wiz .keys b{font-weight:600;color:#fff}
-  #wiz table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #33475e} #wiz td{padding:7px 10px;border-bottom:1px solid #2a3b4f} #wiz td+td{text-align:right;color:var(--mut)}
-  #wiz .nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px} #wiz .nav button{background:#243447;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:7px 16px;font:inherit;cursor:pointer} #wiz .nav button.go{background:#2a6fd6;border-color:#4aa3ff;font-weight:600}
-  #wiz .link{background:none;border:none;color:var(--mut);text-decoration:underline;padding:0;font:inherit;font-size:12px;cursor:pointer}
+  #menu .cred h2{margin:0 0 6px;font-size:21px} #menu .cred p{line-height:1.6} #menu .cred .dim{color:var(--mut)}
+  #menu .cred table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #33475e} #menu .cred td{padding:7px 10px;border-bottom:1px solid #2a3b4f} #menu .cred td+td{text-align:right;color:var(--mut)}
   #picker{position:fixed;z-index:58;background:#18212c;border:1px solid #33475e;border-radius:8px;display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.55)}
   #picker input{margin:6px;background:#223042;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:5px 8px;font:inherit}
   #picker .list{overflow:auto;padding:0 4px 6px}
@@ -181,21 +170,6 @@
 <div id="rot"><div>📱 Xoay ngang màn hình để chơi.<br><span style="color:#8aa0b5;font-size:14px">Cần chạm: cần kéo/phanh ở bảng bên dưới, nút Còi/Cửa/Tạm dừng ở bảng nút điều khiển. Nên bật toàn màn hình.</span></div></div>
 <button id="fsBtn" title="Toàn màn hình">⛶ Toàn màn hình</button>
 <div id="ck" style="display:none;position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.82);align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:12px"><div style="color:#e8eef5;font:600 15px system-ui" id="ckTitle"></div><canvas id="ckCv" width="1920" height="618" style="width:min(96vw,1400px);height:auto;border-radius:8px;background:#0b0f14"></canvas><div style="color:#9fb4c9;font:13px system-ui;text-align:center" id="ckCap"></div><div style="display:flex;gap:8px"><button id="ckClose" style="background:#243447;color:#e8eef5;border:1px solid #33475e;border-radius:6px;padding:7px 18px;font:inherit;cursor:pointer">Đóng (Esc)</button></div><div style="color:#6b7f95;font:11px system-ui">Ảnh chỉ xem tạm, không được lưu; đóng cửa sổ là xoá.</div></div>
-<div id="wiz"><div class="box">
-  <div class="top"><div class="dots" id="wDots"></div><span id="wStep"></span></div>
-  <div id="w1"><h2>Chào mừng đến Lái Shinkansen</h2><p class="dim">Game lái tàu Shinkansen chạy ngay trong trình duyệt: 7 tuyến, lịch tàu thật tháng 10/2026, ATC, cần vẹt, thời tiết và sự cố. Dự án sở thích, không chính thức và không liên quan tới JR. Bạn muốn bắt đầu thế nào?</p>
-    <div class="cards"><button class="card" data-m="tut"><b>Học lái (Hướng dẫn)</b><span>4 bài ngắn: lái và dừng đúng vạch, thiết bị, sự cố, cần vẹt và ATC. Khoảng 15 phút.</span><i class="tag">Nên chọn nếu mới chơi</i></button>
-    <button class="card" data-m="drive"><b>Lái luôn (Lái tàu)</b><span>Chọn tuyến, chuyến, độ khó, thời tiết rồi chạy theo lịch thật. Bảng phím có ở trang sau và trong game.</span><i class="tag" style="background:#243447;color:#9fb4c9">Đã quen game lái tàu</i></button></div>
-    <p class="dim" style="font-size:12px;margin:14px 0 0">Chọn xong sẽ sang trang phím bấm. Đổi chế độ lúc nào cũng được ở menu chính (bấm P rồi chọn Về menu chính). <button class="link" id="wSkip">Bỏ qua, tự khám phá</button></p></div>
-  <div id="w2" style="display:none"><h2>Phím bấm</h2><p class="dim" id="w2sub"></p><div class="keys">
-    <div><b>W / S</b> tăng / giảm cần kéo</div><div><b>↓ / ↑</b> tăng / giảm phanh</div><div><b>Space</b> về N</div><div><b>Q</b> phanh khẩn</div><div><b>Enter</b> đóng cửa</div><div><b>C</b> tốc độ không đổi</div>
-    <div><b>H</b> còi</div><div><b>P</b> tạm dừng (Esc cũng được)</div><div><b>A / G</b> ATC / cần vẹt</div><div><b>V / L</b> gạt mưa / đèn pha</div><div><b>Y / N</b> nhắc lệnh / từ chối</div><div><b>M</b> phát thanh</div><div><b>Tab</b> đổi khung nhìn</div><div><b>F9</b> chụp cảnh</div><div><b>J</b> ù cabin máy bay</div><div><b>D</b> bản đồ toàn quốc</div></div>
-    <p class="dim" style="font-size:12px;margin:12px 0 0">Bảng đầy đủ nằm trong README.</p></div>
-  <div id="w3" style="display:none"><h2>Ghi công tài nguyên</h2><p class="dim" style="font-size:13px">Game dùng tài nguyên của nhiều người. Mã nguồn theo MIT; các tài nguyên dưới đây giữ giấy phép riêng.</p>
-    <table><tr><td>Hình tàu 2D, hình mặt trước</td><td>K.Y. Chung (rail.kychung.com), CC BY-NC-ND 4.0</td></tr><tr><td>Bản đồ, nhà, đường, cây</td><td>© OpenStreetMap contributors, ODbL</td></tr><tr><td>Tiếng nền ga Odawara</td><td>Flavien Gillié, Internet Archive, Public Domain</td></tr><tr><td>Biểu tượng tab</td><td>JR West, Wikimedia Commons</td></tr><tr><td>Bố trí ga</td><td>Wikipedia tiếng Nhật, CC BY-SA 4.0</td></tr><tr><td>Lịch tàu thật 10/2026</td><td>JR East, JR West (dữ liệu thuộc chủ sở hữu)</td></tr></table>
-    <p class="dim" style="font-size:12px;margin:10px 0 0">Bản rút gọn. Danh sách đầy đủ và cách báo gỡ tài nguyên nằm ở README và assets/NGUON.md.</p></div>
-  <div class="nav"><button id="wBack">Quay lại</button><button id="wNext" class="go">Tiếp tục</button></div>
-</div></div>
 </div>
 <aside id="sideR">
   <div class="row" id="rowDrive2">
@@ -219,7 +193,7 @@
       <button data-m="profile">Hồ sơ</button>
       <button data-m="settings">Cài đặt</button>
     </div>
-    <p style="text-align:center;margin-top:26px"><button class="lk" id="mIntro">Xem lại giới thiệu, phím bấm và ghi công</button></p>
+    <p style="text-align:center;margin-top:26px"><button class="lk" data-m="credits">Ghi công tài nguyên</button></p>
   </div></div>
   <div class="scr" id="m-setup"><div class="wm">
     <div class="hd"><button data-m="home">‹ Quay lại</button><h2>Thiết lập chuyến đi</h2></div>
@@ -230,6 +204,12 @@
     <div class="hd"><button data-m="home">‹ Quay lại</button><h2>Học lái</h2><span class="dim" id="mLearnSum" style="margin-left:auto"></span></div>
     <div class="lc" id="mCards"></div>
     <p class="dim" style="font-size:12px;margin-top:14px">Khi đang học: phím K bỏ qua bước, R làm lại bài.</p>
+  </div></div>
+  <div class="scr" id="m-credits"><div class="wm" style="max-width:720px">
+    <div class="hd"><button data-m="home">‹ Quay lại</button></div>
+    <div class="cred"><h2>Ghi công tài nguyên</h2><p class="dim" style="font-size:13px">Game dùng tài nguyên của nhiều người. Mã nguồn theo MIT; các tài nguyên dưới đây giữ giấy phép riêng.</p>
+    <table><tr><td>Hình tàu 2D, hình mặt trước</td><td>K.Y. Chung (rail.kychung.com), CC BY-NC-ND 4.0</td></tr><tr><td>Bản đồ, nhà, đường, cây</td><td>© OpenStreetMap contributors, ODbL</td></tr><tr><td>Tiếng nền ga Odawara</td><td>Flavien Gillié, Internet Archive, Public Domain</td></tr><tr><td>Biểu tượng tab</td><td>JR West, Wikimedia Commons</td></tr><tr><td>Bố trí ga</td><td>Wikipedia tiếng Nhật, CC BY-SA 4.0</td></tr><tr><td>Lịch tàu thật 10/2026</td><td>JR East, JR West (dữ liệu thuộc chủ sở hữu)</td></tr></table>
+    <p class="dim" style="font-size:12px;margin:10px 0 0">Bản rút gọn. Danh sách đầy đủ và cách báo gỡ tài nguyên nằm ở README và assets/NGUON.md.</p></div>
   </div></div>
   <div class="scr" id="m-settings"><div class="wm" style="max-width:560px">
     <div class="hd"><button data-m="back">‹ Quay lại</button><h2>Cài đặt</h2></div>
@@ -304,7 +284,7 @@ function trainList() {
   const L = Lc(), dir = $('dir').value; $('train').innerHTML = '';
   L.trains.map((t, i) => [t, i]).filter(([t]) => t.d === dir).sort((a, b) => (a[0].s[0][2] || a[0].s[0][1]) - (b[0].s[0][2] || b[0].s[0][1])).forEach(([t, i]) => {
     const a = t.s[0], b = t.s[t.s.length - 1];
-    const opt = new Option(`${t.t} ${t.n} · ${hhmm(a[2] != null ? a[2] : a[1])} ${_s(L.stations[a[0]])} → ${_s(L.stations[b[0]])} · ${Sim.VEH[t.v].name}${t.mir ? _t(' (ước)') : ''}`, i); opt.dataset.rom = `${t.t} ${t.n} · ${hhmm(a[2] != null ? a[2] : a[1])} ${L.stations[a[0]].en} → ${L.stations[b[0]].en}`; $('train').add(opt);
+    const opt = new Option(`${_tl(t.t, t.n)} · ${hhmm(a[2] != null ? a[2] : a[1])} ${_s(L.stations[a[0]])} → ${_s(L.stations[b[0]])} · ${Sim.VEH[t.v].name}${t.mir ? _t(' (ước)') : ''}`, i); opt.dataset.rom = `${t.t} ${t.n} · ${hhmm(a[2] != null ? a[2] : a[1])} ${L.stations[a[0]].en} → ${L.stations[b[0]].en}`; $('train').add(opt);
   });
   const pref = [...$('train').options].find(o => /Nozomi|Hayabusa/.test(o.dataset.rom || o.text) && /→ (Shin-Osaka|Hakata|Shin-Aomori|Tokyo)/.test(o.dataset.rom || o.text)) || $('train').options[0]; if (pref) pref.selected = true;
   stopList();
@@ -679,31 +659,13 @@ function drawSummary() {
   txt(_t('Điều cần cải thiện / ghi nhớ'), 70, 488, '#ffc247', 'bold 14px system-ui'); (endInfo ? endInfo.advice : []).forEach((s, i) => txt('• ' + s, 70, 512 + i * 24, '#e8eef5', '13px system-ui'));
 }
 function closeModal() { $('modal').style.display = 'none'; }
-// ---- wizard lần đầu: chọn chế độ → phím bấm → ghi công tài nguyên. Cờ lưu ở Store.settings.wizard (xoá dữ liệu trang thì hiện lại); nút xem lại ở Hồ sơ
-const wiz = { el: $('wiz'), cur: 1, mode: null, wasPaused: false, open: false };
-function wizRender() {
-  for (let i = 1; i <= 3; i++) $('w' + i).style.display = i === wiz.cur ? '' : 'none';
-  $('wDots').innerHTML = [1, 2, 3].map(i => '<span class="' + (i <= wiz.cur ? 'on' : '') + (i === wiz.cur ? ' cur' : '') + '"></span>').join(''); $('wStep').textContent = _t('Trang {0} / 3', wiz.cur);
-  $('wBack').style.visibility = wiz.cur === 1 ? 'hidden' : 'visible'; $('wNext').style.display = wiz.cur === 1 ? 'none' : ''; $('wNext').textContent = wiz.cur === 3 ? _t('Xong') : _t('Tiếp tục');
-  $('w2sub').textContent = wiz.mode === 'tut' ? _t('Bạn sẽ dùng các phím này trong 4 bài hướng dẫn; hộp hướng dẫn luôn nhắc phím cần bấm.') : _t('Bạn sẽ dùng các phím này khi lái. Nhấn Enter để đóng cửa, rồi kéo cần W để khởi hành.');
-}
-function openWizard() { wiz.cur = 1; wiz.mode = null; wiz.open = true; wiz.wasPaused = paused; paused = true; wiz.el.style.display = 'flex'; wizRender(); }
-function closeWizard(launch) {
-  wiz.open = false; wiz.el.style.display = 'none'; paused = wiz.wasPaused; try { Store.setting('wizard', 1); } catch (e) { }
-  if (launch === 'tut') { paused = false; startLesson(0); } else if (launch === 'drive') { tutorialRun = false; setMode('drive'); if (!W) startDrive(); M.show('setup'); }
-}
-wiz.el.querySelectorAll('.card').forEach(b => b.onclick = () => { wiz.mode = b.dataset.m; wiz.cur = 2; wizRender(); });
-$('wSkip').onclick = () => closeWizard(null);
-$('wBack').onclick = () => { if (wiz.cur > 1) { wiz.cur--; wizRender(); } };
-$('wNext').onclick = () => { if (wiz.cur < 3) { wiz.cur++; wizRender(); } else closeWizard(wiz.mode); };
-addEventListener('keydown', e => { if (wiz.open) { e.stopImmediatePropagation(); if (e.key === 'Escape') closeWizard(null); else if (e.key !== 'Tab') e.preventDefault(); } }, true);
 function showProfile() {
   const st = Store.get(), m = $('modal'); m.style.display = 'block';
   const ach = Store.ACH.map(a => `<tr><td>${st.ach[a.id] ? '<span class="ok">★</span>' : '<span class="dim">☆</span>'}</td><td>${a.name}</td><td class="dim">${a.desc}</td><td class="dim">${st.ach[a.id] ? new Date(st.ach[a.id]).toLocaleDateString(I18N.locale) : ''}</td></tr>`).join('');
   const hist = st.history.slice(0, 15).map(h => `<tr><td>${new Date(h.t).toLocaleString(I18N.locale)}</td><td>${h.kind === 'dispatch' ? _t('Điều độ') : _t('Lái')}</td><td>${h.line || ''}</td><td>${h.train || ''}</td><td>${(Sim.DIFF[h.diff] && Sim.DIFF[h.diff].name) || h.diff || ''}</td><td>${Sim.WEATHER[h.weather] || h.weather || ''}</td><td><b>${h.score}</b></td></tr>`).join('') || _t('<tr><td colspan="7" class="dim">Chưa có lần chơi nào.</td></tr>');
   const best = Object.entries(st.best).sort((a, b) => b[1].score - a[1].score).slice(0, 10).map(([k, v]) => `<tr><td>${v.label}</td><td class="dim">${k.split('|').slice(1, 3).join(' ')}</td><td><b>${v.score}</b></td></tr>`).join('') || _t('<tr><td colspan="3" class="dim">Chưa có.</td></tr>');
-  m.innerHTML = _t('<div class="pbar"><h2>Hồ sơ người chơi</h2><div class="pbtn"><button id="mWiz">Xem lại giới thiệu</button><button id="mReset" class="dn">Xoá dữ liệu hồ sơ</button><button id="mClose" class="go">‹ Quay lại</button></div></div><p class="dim">Dữ liệu lưu trong trình duyệt này (localStorage). Đã mở khoá {0}/{1} thành tích · {2} lần chơi.</p>\n    <h3>Thành tích</h3><table>{3}</table><h3>Kết quả tốt nhất (theo cấu hình)</h3><table>{4}</table><h3>15 lần chơi gần nhất</h3><table><tr><th>Lúc</th><th>Loại</th><th>Tuyến</th><th>Chuyến</th><th>Độ khó</th><th>Thời tiết</th><th>Điểm</th></tr>{5}</table>', Object.keys(st.ach).length, Store.ACH.length, st.history.length, ach, best, hist);
-  $('mWiz').onclick = () => openWizard(); $('mClose').onclick = () => M.closeProfile(); $('mReset').onclick = () => { if (confirm(_t('Xoá toàn bộ hồ sơ, thành tích và bản ghi?'))) { Store.reset(); showProfile(); } };
+  m.innerHTML = _t('<div class="pbar"><h2>Hồ sơ người chơi</h2><div class="pbtn"><button id="mReset" class="dn">Xoá dữ liệu hồ sơ</button><button id="mClose" class="go">‹ Quay lại</button></div></div><p class="dim">Dữ liệu lưu trong trình duyệt này (localStorage). Đã mở khoá {0}/{1} thành tích · {2} lần chơi.</p>\n    <h3>Thành tích</h3><table>{3}</table><h3>Kết quả tốt nhất (theo cấu hình)</h3><table>{4}</table><h3>15 lần chơi gần nhất</h3><table><tr><th>Lúc</th><th>Loại</th><th>Tuyến</th><th>Chuyến</th><th>Độ khó</th><th>Thời tiết</th><th>Điểm</th></tr>{5}</table>', Object.keys(st.ach).length, Store.ACH.length, st.history.length, ach, best, hist);
+  $('mClose').onclick = () => M.closeProfile(); $('mReset').onclick = () => { if (confirm(_t('Xoá toàn bộ hồ sơ, thành tích và bản ghi?'))) { Store.reset(); showProfile(); } };
 }
 window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({ kind: 'dispatch', line: o.lineId, trainLabel: Sim.lineOf(o.lineId).name + ' ' + (o.dir === 'down' ? _t('xuống') : _t('lên')) + ' ' + hhmm(o.t0), diff: o.diff, weather: o.weather, seed: o.seed, score: r.score, finished: true, scenario: { kind: 'dispatch', line: o.lineId, dir: o.dir, train: o.t0, from: '', to: o.span, diff: o.diff, weather: o.weather, seed: o.seed } }); };
 // ---- bảng đo hiệu năng (phím F3): fps thật và thời gian từng thành phần (ms/khung) để tìm chỗ giật
@@ -783,7 +745,7 @@ const M = (function () {
   m.setSolid = v => { m.solid = v; document.body.classList.toggle('mSolid', v); };
   m.hide = function () { m.screen = null; m.setSolid(false); document.body.dataset.m = 'play'; el.style.display = 'none'; };
   m.sync = function () {      // hiện menu Tạm dừng khi game tạm dừng (P, Esc, mất focus, nút ⏸), ẩn khi chạy lại
-    const ok = W && paused && !snapMode && !ckOpen && !wiz.open && (mode === 'drive' || mode === 'tutorial');
+    const ok = W && paused && !snapMode && !ckOpen && (mode === 'drive' || mode === 'tutorial');
     if (!m.screen && ok) m.show('pause'); else if (m.screen === 'pause' && !paused) m.hide();
   };
   m.openProfile = function (from) {
@@ -827,13 +789,11 @@ const M = (function () {
   });
   $('mResume').onclick = () => { paused = false; };
   $('mSnap').onclick = () => { takeSnapshot(); };
-  $('mIntro').onclick = () => openWizard();
   $('mcOk').onclick = () => { if (m.conf === 'restart') m.restart(); else m.toHome(); };
-  addEventListener('keydown', e => { if (!m.screen || picker || wiz.open) return; if (e.key === 'Escape' && m.screen !== 'pause') { m.back(); e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  addEventListener('keydown', e => { if (!m.screen || picker) return; if (e.key === 'Escape' && m.screen !== 'pause') { m.back(); e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   return m;
 })();
 trainList(); vehUpd(); $('from').onchange(); setMode('drive'); startDrive(); paused = true; M.show('home'); requestAnimationFrame(frame);
-{ let seen = false; try { seen = !!Store.setting('wizard'); } catch (e) { } if (!seen) openWizard(); }
 </script>
 </body>
 </html>

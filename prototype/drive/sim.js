@@ -163,7 +163,7 @@
     const t0 = seq[a].dep != null ? seq[a].dep : seq[a].arr;
     const M = seq.slice(a, b + 1).map(e => ({ name: _s(L.stations[e.i]), rom: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, rec.d, L.kmEnd), stop: e.stop, loop: !!L.stations[e.i].loop, arr: e.arr != null ? e.arr - t0 : null, dep: e.dep != null ? e.dep - t0 : null }));
     M[0].arr = null; M[0].dep = 0; M[M.length - 1].dep = null;
-    return { lineId, rec, dir: rec.d, M, t0, label: `${rec.t} ${rec.n}`, seq };
+    return { lineId, rec, dir: rec.d, M, t0, label: _tl(rec.t, rec.n), seq };
   }
   function fillPlan(M) {
     const stops = M.map((m, k) => m.stop ? k : -1).filter(k => k >= 0);
@@ -198,14 +198,14 @@
       for (const rec of catalog) {
         if (rec === trip.rec) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
         const t = timeAt(L, rec, m.i); if (t == null) continue;
-        if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: rec.t + ' ' + rec.n, t: t - trip.t0, v: rec.v });
+        if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: _tl(rec.t, rec.n), t: t - trip.t0, v: rec.v });
       }
       for (const sh of shareInfo(L)) {            // tàu của tuyến cha chạy chung đường (trước ngã rẽ) thông qua ga ta đang đỗ ở đường tránh
         if (!sh.j.shared || m.i > sh.maxI) continue;
         for (const rec of sh.LF.trains) {
           if (rec.d !== trip.dir) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
           const t = timeAt(sh.LF, rec, m.i); if (t == null) continue;
-          if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: rec.t + ' ' + rec.n, t: t - trip.t0, v: rec.v });
+          if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: _tl(rec.t, rec.n), t: t - trip.t0, v: rec.v });
         }
       }
     });
@@ -705,7 +705,7 @@
       W.passCand = { k, list }; W.passObj = new Map(); }
     const out = [], t0 = W.trip.t0; if (NC && W.haz) NC.step(W);
     for (const e of W.passCand.list) { const d = NC && W.haz ? NC.delayOf(W, e.c.key) : null; if (d && d.hold > 0) continue; const t = e.tb + (d ? d.delay : 0) - t0; if (t < W.t - 12 || t > W.t + 150) continue;
-      let o = W.passObj.get(e.c.key); if (!o) { o = { label: e.c.rec.t + ' ' + e.c.rec.n, v: e.c.rec.v }; W.passObj.set(e.c.key, o); } o.t = t; out.push(o); }
+      let o = W.passObj.get(e.c.key); if (!o) { o = { label: _tl(e.c.rec.t, e.c.rec.n), v: e.c.rec.v }; W.passObj.set(e.c.key, o); } o.t = t; out.push(o); }
     for (const p of (W.passers && W.passers[k]) || []) if (p.syn) out.push(p);
     W.passDyn = { k, list: out };
   }
@@ -720,7 +720,7 @@
       for (let k = 0; k < p.length && km === null; k++) { if (nowE >= p[k].ta && nowE <= p[k].td) { km = p[k].km; vo = 0; } else if (k < p.length - 1 && nowE > p[k].td && nowE < p[k + 1].ta) { const f = (nowE - p[k].td) / ((p[k + 1].ta - p[k].td) || 1); km = p[k].km + (p[k + 1].km - p[k].km) * f; vo = Math.abs(p[k + 1].km - p[k].km) * 1000 / ((p[k + 1].ta - p[k].td) || 1); } }
       if (km === null || vo < 5) { if (!st.has(c.id) || st.get(c.id).t0 > W.t) st.delete(c.id); continue; }
       const gap = (down ? km - kmP : kmP - km) * 1000;
-      if (gap > 0 && gap < 40000) st.set(c.id, { t0: W.t + gap / Math.max(40, T.v + vo), v: c.rec.v, label: c.rec.t + ' ' + c.rec.n }); }
+      if (gap > 0 && gap < 40000) st.set(c.id, { t0: W.t + gap / Math.max(40, T.v + vo), v: c.rec.v, label: _tl(c.rec.t, c.rec.n) }); }
     for (const [k, s] of st) if (W.t - s.t0 > 6) st.delete(k);
     const arr = [...st.values()].filter(s => s.t0 - W.t < 150).sort((a, b) => a.t0 - b.t0); W.opposing = arr.map(s => s.t0); W.oppInfo = arr;
   }
@@ -918,7 +918,7 @@
     if (leadRec) {
       const seq = trainSeq(leadRec);
       const LM = fgn ? foreignLeadM(L, trip, fgn) : fillPlan(seq.map(e => ({ name: _s(L.stations[e.i]), rom: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, trip.dir, L.kmEnd), stop: e.stop, arr: e.arr != null ? e.arr - trip.t0 : null, dep: e.dep != null ? e.dep - trip.t0 : null })));
-      LM[0].arr = null; LM[LM.length - 1].dep = null; W.leadLabel = leadRec.t + ' ' + leadRec.n; W.leadRef = { t: leadRec.t, n: leadRec.n, d: leadRec.d };
+      LM[0].arr = null; LM[LM.length - 1].dep = null; W.leadLabel = _tl(leadRec.t, leadRec.n); W.leadRef = { t: leadRec.t, n: leadRec.n, d: leadRec.d };
       if (opts.events !== false && L.single && L.single.length) {      // tàu chạy trước cũng dừng tránh tàu ngược chiều trên đường đơn
         const rr = rng((opts.seed || 1) * 977 + 3), inS = km => L.single.some(([a, b]) => km > a && km < b), cpI = leadRec.cp ? leadRec.cp[0] : -1;
         const cand = LM.map((m, k) => k).filter(k => k > 0 && k < LM.length - 1 && !LM[k].stop && LM[k].pt != null && LM[k].i !== cpI && inS(L.stations[LM[k].i].km));
@@ -1150,7 +1150,7 @@
     for (const rec of cat) {
       const seq = trainSeq(rec), M = fillPlan(seq.map(e => ({ name: _s(L.stations[e.i]), rom: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, dir, L.kmEnd), stop: e.stop, loop: !!L.stations[e.i].loop, arr: e.arr != null ? e.arr - t0 : null, dep: e.dep != null ? e.dep - t0 : null })));
       M[0].arr = null; M[M.length - 1].dep = null;
-      const T = newTrain(M, W, { lead: true, veh: rec.v, label: rec.t + ' ' + rec.n, load: 0.4 + rnd() * 0.6, id: rec.t + rec.n, cp: rec.cp }); T.rec = rec; T.cls = rec.t; W.net.trains.push(T);
+      const T = newTrain(M, W, { lead: true, veh: rec.v, label: _tl(rec.t, rec.n), load: 0.4 + rnd() * 0.6, id: rec.t + rec.n, cp: rec.cp }); T.rec = rec; T.cls = rec.t; W.net.trains.push(T);
     }
     // sự kiện ngẫu nhiên cho mạng: thời tiết, tàu hỏng/bệnh nhân, động đất
     const ev = (at, fn) => W.events.push({ at, fire: fn, done: false });

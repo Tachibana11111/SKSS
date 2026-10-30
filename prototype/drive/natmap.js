@@ -35,7 +35,7 @@
       if (Ld && lr && Ld.phase !== 'end' && c.rec.t === lr.t && c.rec.n === lr.n && c.rec.d === lr.d && LN[W.lineId]) {      // tàu đi trước của ta: vẽ đúng vị trí thật trong mô phỏng thay vì theo lịch, để không bị ta vượt mặt
         const L2 = LN[W.lineId], km2 = root.Sim.kmOfS(Ld.x, W.dir, W.line.kmEnd), a2 = atKm(L2, Math.max(L2.stations[0].km, Math.min(L2.stations[L2.stations.length - 1].km, km2))), sg2 = W.dir === 'down' ? 1 : -1; s0km = s.km;
         s.lon = a2.lon; s.lat = a2.lat; s.idx = a2.idx; s.dx = a2.dx * sg2; s.dy = a2.dy * sg2; s.moving = Ld.v > 0.5; s.kmh = Ld.v * 3.6; s.km = km2; s.dwell = Ld.phase === 'dwell' ? 'stop' : undefined; if (!s.dwell && s.k === undefined) s.k = 0; }
-      out.push({ c, s, s0km, d, held, col: colAt(c.line, s.idx), label: c.rec.t + ' ' + c.rec.n }); }
+      out.push({ c, s, s0km, d, held, col: colAt(c.line, s.idx), label: _tl(c.rec.t, c.rec.n) }); }
     const L = LN[W.lineId]; if (L && T) { const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd), a = atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))), sg = W.dir === 'down' ? 1 : -1;
       out.push({ me: true, s: { lon: a.lon, lat: a.lat, idx: a.idx, dx: a.dx * sg, dy: a.dy * sg, moving: T.v > 0.5, kmh: T.v * 3.6, km }, col: colAt(W.lineId, a.idx), label: (W.trip.label || _t('Tàu của bạn')), line: W.lineId }); }
     return out;
@@ -52,7 +52,7 @@
       const dly = NC().delayOf(W, c.key); if (dly) { ev.arr += dly.delay; ev.dep += dly.delay; } if (!ev || now < ev.arr - 1800 || now > ev.dep + 300) continue;
       const stt = (dly && dly.hold > 0 ? _t('[DỪNG do ') + (dly.why === 'eqk' ? _t('động đất') : _t('thời tiết')) + '] ' : dly && dly.delay > 90 ? _t('[trễ {0} ph] ', Math.round(dly.delay / 60)) : '') + (!ev.stop ? _t('thông qua ') + hhmm(ev.arr) : now < ev.arr ? (ev.first ? _t('chờ xuất phát ') + hhmm(ev.dep) : _t('sắp tới, ETA ') + hhmm(ev.arr)) : now <= ev.dep ? (ev.last ? _t('vừa đến, đang đỗ') : _t('đang đỗ, đi ') + hhmm(ev.dep)) : _t('vừa rời ') + hhmm(ev.dep));
       const sNow = NC().stateOf(root.LINES, c, now - (dly ? dly.delay : 0)), dist = sNow ? Math.abs(sNow.km - km) : null;      // khoảng cách thật từ tàu tới ga (km đường), cả hai chiều
-      rows.push([ev.arr, c.rec.t + ' ' + c.rec.n + ' (' + (c.rec.d === 'down' ? _t('xuống') : _t('lên')) + ') · ' + stt + (dist == null ? '' : dist < 0.05 ? _t(' · tại ga') : _t(' · cách ') + fmtKm(dist)), colAt(c.line, j)]);
+      rows.push([ev.arr, _tl(c.rec.t, c.rec.n) + ' (' + (c.rec.d === 'down' ? _t('xuống') : _t('lên')) + ') · ' + stt + (dist == null ? '' : dist < 0.05 ? _t(' · tại ga') : _t(' · cách ') + fmtKm(dist)), colAt(c.line, j)]);
     }
     { const L = root.LINES[W.lineId], j = L && T ? L.stations.findIndex(s => s.jp === en) : -1; if (j >= 0) { const kmP = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd), dist = Math.abs(kmP - L.stations[j].km); if (dist < 60) rows.push([now - 1e6, _t('TÀU CỦA BẠN · ') + (dist < 0.05 ? _t('tại ga') : _t('cách ') + fmtKm(dist)), '#ffffff']); } }
     rows.sort((x, y) => x[0] - y[0]); return rows;
