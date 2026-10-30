@@ -616,6 +616,11 @@ if (section('28. Khởi động ở nhiều giờ trong ngày: tàu cùng chiề
   ok(worlds > 40 && flips === 0, 'khởi động ở ' + worlds + ' giờ khác nhau: ' + flips + ' lần tàu cùng chiều đổi thứ tự trong 5 phút đầu', firstBad);
 }
 
+if (section('29b. Furigana tên ga (stations-kana.js): mọi ga đều có cách đọc hiragana')) {
+  require(path.join(DRIVE, 'stations-kana.js')); require(path.join(DRIVE, 'data-lines.js'));
+  let miss = 0; for (const id in global.LINES) for (const st of global.LINES[id].stations) if (!/^[ぁ-ゖー]+$/.test(global.STATION_KANA[st.jp] || '')) { miss++; console.log('  thiếu/sai cách đọc:', st.jp); }
+  ok(miss === 0, 'mọi ga có cách đọc toàn hiragana', miss);
+}
 if (section('29. Đa ngôn ngữ (i18n.js, lang-en.js, lang-ja.js): đủ bản dịch, đúng chỗ điền, không lọt tiếng Việt')) {
   const fs = require('fs'); require(path.join(DRIVE, 'lang-en.js')); require(path.join(DRIVE, 'lang-ja.js'));
   const VNX = /[ăâđêôơưĂÂĐÊÔƠƯàáảãạằắẳẵặầấẩẫậèẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]/;      // chữ đặc trưng tiếng Việt (không gồm é: có trong tên riêng)

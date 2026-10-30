@@ -88,7 +88,10 @@
       if (s.big) { const n = SEGS.length; for (let k = 0; k < n; k++) { ctx.beginPath(); ctx.moveTo(q[0], q[1]); ctx.arc(q[0], q[1], rad, k / n * 6.2832 - 1.5708, (k + 1) / n * 6.2832 - 1.5708); ctx.closePath(); ctx.fillStyle = SEGS[k].col; ctx.fill(); } ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.stroke(); }
       else { ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.fillStyle = s.col; ctx.fill(); ctx.strokeStyle = dk ? '#fff' : '#223'; ctx.lineWidth = 1.2; ctx.stroke(); }
       if (V.sel && V.sel.jp === s.jp) { ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(q[0], q[1], rad + 4, 0, 7); ctx.stroke(); }
-      if (s.big || s.mid || lab || (V.sel && V.sel.jp === s.jp)) txt(_s(s), q[0] + rad + 4, q[1] + 4, dk ? '#e8eef5' : '#1b2633', (s.big ? 'bold 13px' : '11px') + ' system-ui'); }
+      if (s.big || s.mid || lab || (V.sel && V.sel.jp === s.jp)) {
+        const col = dk ? '#e8eef5' : '#1b2633', kana = I18N.lang === 'ja' && root.STATION_KANA && root.STATION_KANA[s.jp];
+        if (kana) txt(kana, q[0] + rad + 4, q[1] + 3 - (s.big ? 13 : 11) * U, col, '7px system-ui');      // furigana phía trên chữ kanji
+        txt(_s(s), q[0] + rad + 4, q[1] + 4, col, (s.big ? 'bold 13px' : '11px') + ' system-ui'); } }
     // tàu: tam giác chỉ hướng
     const tr = gather(W, T), hits = []; V.trains = hits;
     for (const t of tr) { const q = P(t.s.lon, t.s.lat, r); if (q[0] < x - 20 || q[0] > x + w + 20 || q[1] < y - 20 || q[1] > y + h + 20) continue; const ang = Math.atan2(t.s.dy, t.s.dx), sz = (t.me ? 8.5 : 5.2) * z * (U > 1 ? 1.3 : 1);
@@ -120,7 +123,7 @@
     const selT = V.sel && V.sel.tk ? tr.find(t => (t.me ? 'me' : t.c.key) === V.sel.tk) : null; if (V.sel && V.sel.tk && !selT) V.sel = null;
     if (V.sel) {
       const rows = []; let title = '', sub = '';
-      if (V.sel.en) { title = I18N.lang === 'ja' ? (V.sel.jp || V.sel.en) : V.sel.en + ' ' + (V.sel.jp || ''); const rr = stationRows(V.sel.jp, W, T); sub = rr.length ? _t('Tàu quanh giờ hiện tại:') : _t('Không có tàu nào trong 30 phút tới.'); for (const q of rr.slice(0, 12)) rows.push([q[1], q[2]]); }
+      if (V.sel.en) { title = I18N.lang === 'ja' ? (V.sel.jp || V.sel.en) + (root.STATION_KANA && root.STATION_KANA[V.sel.jp] ? '(' + root.STATION_KANA[V.sel.jp] + ')' : '') : V.sel.en + ' ' + (V.sel.jp || ''); const rr = stationRows(V.sel.jp, W, T); sub = rr.length ? _t('Tàu quanh giờ hiện tại:') : _t('Không có tàu nào trong 30 phút tới.'); for (const q of rr.slice(0, 12)) rows.push([q[1], q[2]]); }
       else if (selT) { const t = selT, L = t.me ? root.LINES[t.line] : root.LINES[t.c.line]; title = t.label; const st = t.s;
         if (t.me) { sub = _t('TÀU CỦA BẠN · ') + Math.round(st.kmh) + ' km/h'; rows.push(['km ' + st.km.toFixed(1) + ' / ' + L.stations[L.stations.length - 1].km.toFixed(0), t.col]); { const jN = root.Sim.nextTarget(T), mN = T.M[jN]; if (mN && T.phase !== 'dwell') { const rem = Math.max(0, (mN.s - T.x) / 1000); rows.push([_t('tới ') + mN.name + (mN.arr != null ? _t(' lúc ') + hhmm(W.trip.t0 + mN.arr) : '') + _t(' · còn ') + (rem < 10 ? rem.toFixed(1) : Math.round(rem)) + ' km', t.col]); } } }
         else { if (t.held) rows.push([_t('ĐANG DỪNG do ') + (t.d.why === 'eqk' ? _t('động đất') : _t('thời tiết')) + _t(' (còn ~{0} phút)', Math.max(1, Math.round(t.d.hold / 60))), '#ff6b5a']); else if (t.d && t.d.delay > 90) rows.push([_t('trễ ~{0} phút', Math.round(t.d.delay / 60)) + (t.d.why ? ' (' + (t.d.why === 'eqk' ? _t('động đất') : t.d.why === 'rain' ? _t('mưa') : t.d.why === 'snow' ? _t('tuyết') : _t('gió')) + ')' : ''), '#ffb84a']); const S = t.c.stops, a = _s(L.stations[S[0].i]), b = _s(L.stations[S[S.length - 1].i]), nxt = S[Math.min(S.length - 1, (st.k || 0) + (st.dwell === 'wait' || st.dwell === 'stop' ? 0 : 1))];
