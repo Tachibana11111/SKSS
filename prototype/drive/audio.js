@@ -2,6 +2,8 @@
 // Mọi âm đều là mô phỏng gần đúng [I], không phải ghi âm tàu thật (còi: không có bản ghi miễn phí đã kiểm chứng, xem docs/10). Lời phát thanh là mẫu tự soạn [I].
 (function (root) {
   const JPN = ['東京', '品川', '新横浜', '小田原', '熱海', '三島', '新富士', '静岡', '掛川', '浜松', '豊橋', '三河安城', '名古屋', '岐阜羽島', '米原', '京都', '新大阪'];
+  // tên tuyến đổi tàu: tiếng Anh theo TRANSFERS_EN; giao diện tiếng Việt dùng "Tuyến X" cho các tuyến tên '... Line'
+  const railName = n => { const en = (root.TRANSFERS_EN || {})[n] || n; if (!root.I18N || root.I18N.lang !== 'vi') return en; return en === 'Subway' ? 'Tàu điện ngầm' : en.replace(/^(.*) Line$/, 'Tuyến $1'); };
   const VI = { Tokyo: 'Tokyo', Shinagawa: 'Shinagawa' };
   const TYPEJ = { Nozomi: 'のぞみ', Hikari: 'ひかり', Kodama: 'こだま', Mizuho: 'みずほ', Sakura: 'さくら', Tsubame: 'つばめ', Kamome: 'かもめ', Hayabusa: 'はやぶさ', Hayate: 'はやて', Yamabiko: 'やまびこ', Nasuno: 'なすの', Komachi: 'こまち', Tsubasa: 'つばさ', Toki: 'とき', Tanigawa: 'たにがわ', Asama: 'あさま', Hakutaka: 'はくたか', Kagayaki: 'かがやき', Tsurugi: 'つるぎ', 'Doctor Yellow': 'ドクターイエロー', 'East i': 'イーストアイ' };
   function GameAudio() {
@@ -259,7 +261,7 @@
     if (T.phase === 'run') { const d = M[j].s - T.x; if (d < 3500 && A.apr !== j && T.v > 15) { A.apr = j;
       this.say(W, { ja: `まもなく、${nameJ(j)}、${nameJ(j)}です。`, en: `We will soon be arriving at ${nxt.rom || nxt.name}.`, vi: _t('Sắp tới ga {0}.', nxt.name) }, false, true);
       const tr = (root.TRANSFERS || {})[M[j].jp] || [], rail = tr.filter(x => x !== '路線バス');
-      if (rail.length) this.say(W, { ja: `${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, en: `You can change here to other railway lines: ${rail.length} connections.`, vi: _t('Quý khách có thể đổi tàu tại {0}: {1}.', nxt.name, rail.join(', ')) }, false, false);
+      if (rail.length) this.say(W, { ja: `${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, en: `You can change here to ${rail.map(n => (root.TRANSFERS_EN || {})[n] || n).join(', ')}.`, vi: _t('Quý khách có thể đổi tàu tại {0}: {1}.', nxt.name, rail.map(railName).join(', ')) }, false, false);
       else if (tr.length) this.say(W, { ja: `${nameJ(j)}では、路線バスはお乗り換えです。`, en: 'Bus connections are available here.', vi: _t('Tại ga {0} có xe buýt kết nối.', nxt.name) }, false, false);
       const sd = this.doorSide(W, T, j);
       if (sd) this.say(W, { ja: `${nameJ(j)}では、${sd.ja}のドアが開きます。`, en: `The doors on the ${sd.en} side will open at ${nxt.rom || nxt.name}.`, vi: _t('Tại ga {0}, cửa mở ở bên {1}.', nxt.name, sd.vi) }, false, true); } }

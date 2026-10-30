@@ -645,6 +645,8 @@ if (section('29. Đa ngôn ngữ (i18n.js, lang-en.js, lang-ja.js): đủ bản 
   ok(leak.length === 0, 'bản dịch không lẫn chữ tiếng Việt', leak.slice(0, 3).join(' | '));
   const stale = Object.keys(EN).concat(Object.keys(JA)).filter(k => !keys.has(k));
   ok(stale.length === 0, 'từ điển không còn khoá thừa (' + stale.length + ')', stale.slice(0, 3).join(' | '));
+  // tên tuyến đổi tàu (transfers.js) đều có tên tiếng Anh (transfers-en.js)
+  { require(path.join(DRIVE, 'transfers.js')); require(path.join(DRIVE, 'transfers-en.js')); const miss2 = [...new Set(Object.values(window.TRANSFERS).flat())].filter(n => !window.TRANSFERS_EN[n]); ok(miss2.length === 0, 'mọi tuyến đổi tàu có tên tiếng Anh', miss2.slice(0, 3).join(' | ')); }
   // 3) hàm t(): điền chỗ, dự phòng tiếng Việt
   const L0 = I18N.lang;
   I18N.lang = 'vi'; ok(_t('Chuyến {0} ({1}) · {2} → {3} · {4} · tải khách {5}%', 'N1', 'N700', 'A', 'B', 'x', 80) === 'Chuyến N1 (N700) · A → B · x · tải khách 80%', 'vi: _t điền đúng chỗ {n}');

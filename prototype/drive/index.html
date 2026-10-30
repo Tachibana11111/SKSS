@@ -86,6 +86,10 @@
   #menu .llist{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;background:#171c25;border:1px solid #33475e;border-radius:8px;padding:4px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
   #menu .llist button{border:0;background:transparent;height:38px} #menu .llist button.cur{background:#1d2a3a} #menu .llist button:hover{background:#2c4059}
   .flag{display:inline-block;flex:none;width:24px;height:24px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.28);line-height:0} .flag svg{width:100%;height:100%;display:block}
+  #menu kbd{display:inline-block;min-width:22px;text-align:center;background:#223042;border:1px solid #33475e;border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--fg);font:600 12px/1.5 system-ui,sans-serif}
+  #menu .kl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 28px;font-size:13px} @media (max-width:640px){#menu .kl{grid-template-columns:1fr}}
+  #menu .kl>div{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #243447}
+  #menu .kl .kc{display:flex;gap:4px;flex:none;min-width:92px} #menu .kl span:last-child{color:#c8d4e2}
   #menu .lk{background:none;border:0;color:var(--mut);text-decoration:underline;height:auto;padding:0;font-size:12px}
   #menu .lk:hover{background:none;color:var(--fg)}
   #menu .cred h2{margin:0 0 6px;font-size:21px} #menu .cred p{line-height:1.6} #menu .cred .dim{color:var(--mut)}
@@ -212,10 +216,12 @@
     <table><tr><td>Hình tàu 2D, hình mặt trước</td><td>K.Y. Chung (rail.kychung.com), CC BY-NC-ND 4.0</td></tr><tr><td>Bản đồ, nhà, đường, cây</td><td>© OpenStreetMap contributors, ODbL</td></tr><tr><td>Tiếng nền ga Odawara</td><td>Flavien Gillié, Internet Archive, Public Domain</td></tr><tr><td>Biểu tượng tab</td><td>JR West, Wikimedia Commons</td></tr><tr><td>Bố trí ga</td><td>Wikipedia tiếng Nhật, CC BY-SA 4.0</td></tr><tr><td>Lịch tàu thật 10/2026</td><td>JR East, JR West (dữ liệu thuộc chủ sở hữu)</td></tr><tr><td>Giai điệu ga Shinkansen</td><td>YouTube (bddFo2Vzi4A), phát qua trình nhúng, không lưu tệp</td></tr></table>
     <p class="dim" style="font-size:12px;margin:10px 0 0">Bản rút gọn. Danh sách đầy đủ và cách báo gỡ tài nguyên nằm ở README và assets/NGUON.md.</p></div>
   </div></div>
-  <div class="scr" id="m-settings"><div class="wm" style="max-width:560px">
+  <div class="scr" id="m-settings"><div class="wm" style="max-width:780px">
     <div class="hd"><button data-m="back">‹ Quay lại</button><h2>Cài đặt</h2></div>
-    <div id="mSetC"></div>
+    <div id="mSetC" style="max-width:560px"></div>
     <p class="dim" style="font-size:12px;margin-top:14px">Âm lượng và ù cabin chỉnh bằng nút loa trên thanh biểu tượng khi đang lái.</p>
+    <div class="grp" style="margin-top:26px">Phím tắt</div>
+    <div class="kl"><div><span class="kc"><kbd>W</kbd><kbd>S</kbd></span><span>tăng / giảm cần kéo</span></div><div><span class="kc"><kbd>↓</kbd><kbd>↑</kbd></span><span>tăng / giảm phanh</span></div><div><span class="kc"><kbd>Space</kbd></span><span>về N</span></div><div><span class="kc"><kbd>Q</kbd></span><span>phanh khẩn</span></div><div><span class="kc"><kbd>Enter</kbd></span><span>đóng cửa</span></div><div><span class="kc"><kbd>C</kbd></span><span>tốc độ không đổi</span></div><div><span class="kc"><kbd>[</kbd><kbd>]</kbd></span><span>chỉnh tốc độ không đổi ±5 km/h</span></div><div><span class="kc"><kbd>H</kbd></span><span>còi</span></div><div><span class="kc"><kbd>A</kbd><kbd>G</kbd></span><span>ATC / cần vẹt</span></div><div><span class="kc"><kbd>V</kbd><kbd>L</kbd></span><span>gạt mưa / đèn pha</span></div><div><span class="kc"><kbd>Y</kbd><kbd>N</kbd></span><span>nhắc lệnh / từ chối</span></div><div><span class="kc"><kbd>M</kbd></span><span>phát thanh</span></div><div><span class="kc"><kbd>T</kbd></span><span>tự lái</span></div><div><span class="kc"><kbd>Tab</kbd></span><span>đổi khung nhìn</span></div><div><span class="kc"><kbd>,</kbd><kbd>.</kbd></span><span>cửa sổ trái / phải</span></div><div><span class="kc"><kbd>B</kbd></span><span>camera phía sau</span></div><div><span class="kc"><kbd>O</kbd></span><span>ẩn / hiện điện đàm</span></div><div><span class="kc"><kbd>D</kbd></span><span>bản đồ toàn quốc</span></div><div><span class="kc"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></span><span>tốc độ ×1 / ×4 / ×16</span></div><div><span class="kc"><kbd>P</kbd><kbd>Esc</kbd></span><span>tạm dừng (Esc cũng được)</span></div><div><span class="kc"><kbd>R</kbd></span><span>chạy lại</span></div><div><span class="kc"><kbd>F9</kbd></span><span>chụp cảnh</span></div><div><span class="kc"><kbd>F11</kbd></span><span>Toàn màn hình</span></div><div><span class="kc"><kbd>J</kbd></span><span>ù cabin máy bay</span></div><div><span class="kc"><kbd>K</kbd></span><span>bỏ qua bước hướng dẫn</span></div></div>
   </div></div>
   <div class="scr" id="m-pause"><div class="box">
     <h2>Tạm dừng</h2>
@@ -242,6 +248,7 @@
 <script src="store.js"></script>
 <script src="assets/fronts.js"></script>
 <script src="transfers.js"></script>
+<script src="transfers-en.js"></script>
 <script src="assets/tops.js"></script>
 <script src="winlit.js"></script>
 <script src="scene.js"></script>
