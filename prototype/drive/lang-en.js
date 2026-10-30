@@ -665,6 +665,7 @@ I18N.add("en", {
 "Cảnh vật": "Scenery",
 "Đầy đủ (2 lớp)": "Full (2 layers)",
 "Nhẹ (1 lớp)": "Light (1 layer)",
+"Tân Cán Tuyến": "Shinkansen",
 "Học lái": "Learn to drive",
 "Cài đặt": "Settings",
 "Ghi công tài nguyên": "Asset credits",
