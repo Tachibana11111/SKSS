@@ -209,7 +209,7 @@
   <div class="scr" id="m-credits"><div class="wm" style="max-width:720px">
     <div class="hd"><button data-m="home">‹ Quay lại</button></div>
     <div class="cred"><h2>Ghi công tài nguyên</h2><p class="dim" style="font-size:13px">Game dùng tài nguyên của nhiều người. Mã nguồn theo MIT; các tài nguyên dưới đây giữ giấy phép riêng.</p>
-    <table><tr><td>Hình tàu 2D, hình mặt trước</td><td>K.Y. Chung (rail.kychung.com), CC BY-NC-ND 4.0</td></tr><tr><td>Bản đồ, nhà, đường, cây</td><td>© OpenStreetMap contributors, ODbL</td></tr><tr><td>Tiếng nền ga Odawara</td><td>Flavien Gillié, Internet Archive, Public Domain</td></tr><tr><td>Biểu tượng tab</td><td>JR West, Wikimedia Commons</td></tr><tr><td>Bố trí ga</td><td>Wikipedia tiếng Nhật, CC BY-SA 4.0</td></tr><tr><td>Lịch tàu thật 10/2026</td><td>JR East, JR West (dữ liệu thuộc chủ sở hữu)</td></tr></table>
+    <table><tr><td>Hình tàu 2D, hình mặt trước</td><td>K.Y. Chung (rail.kychung.com), CC BY-NC-ND 4.0</td></tr><tr><td>Bản đồ, nhà, đường, cây</td><td>© OpenStreetMap contributors, ODbL</td></tr><tr><td>Tiếng nền ga Odawara</td><td>Flavien Gillié, Internet Archive, Public Domain</td></tr><tr><td>Biểu tượng tab</td><td>JR West, Wikimedia Commons</td></tr><tr><td>Bố trí ga</td><td>Wikipedia tiếng Nhật, CC BY-SA 4.0</td></tr><tr><td>Lịch tàu thật 10/2026</td><td>JR East, JR West (dữ liệu thuộc chủ sở hữu)</td></tr><tr><td>Giai điệu ga Shinkansen</td><td>YouTube (bddFo2Vzi4A), phát qua trình nhúng, không lưu tệp</td></tr></table>
     <p class="dim" style="font-size:12px;margin:10px 0 0">Bản rút gọn. Danh sách đầy đủ và cách báo gỡ tài nguyên nằm ở README và assets/NGUON.md.</p></div>
   </div></div>
   <div class="scr" id="m-settings"><div class="wm" style="max-width:560px">
@@ -250,6 +250,7 @@
 <script src="winview.js"></script>
 <script src="topview.js"></script>
 <script src="japanmap.js"></script>
+<script src="japanmap_nt.js"></script>
 <script src="natmap.js"></script>
 <script src="fullui.js"></script>
 <script src="audio.js"></script>
@@ -257,6 +258,7 @@
 <script src="dispatch.js"></script>
 <script src="world.js"></script>
 <script src="strips.js"></script>
+<script src="music.js"></script>
 <script>
 I18N.applyDom(document.body); document.title = _t('Lái Shinkansen - bản thử 0.4'); document.documentElement.lang = I18N.lang;      // dịch văn bản tĩnh trong HTML theo ngôn ngữ đã chọn
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
@@ -748,7 +750,10 @@ const M = (function () {
   m.sync = function () {      // hiện menu Tạm dừng khi game tạm dừng (P, Esc, mất focus, nút ⏸), ẩn khi chạy lại
     const ok = W && paused && !snapMode && !ckOpen && (mode === 'drive' || mode === 'tutorial');
     if (!m.screen && ok) m.show('pause'); else if (m.screen === 'pause' && !paused) m.hide();
+    // trình phát nhạc chỉ hiện ở menu (không hiện khi đang lái và ở lớp tạm dừng cùng các màn con của nó)
+    musicVis();
   };
+  const musicVis = () => Music.setVisible(m.screen && m.screen !== 'pause' && m.screen !== 'confirm' && !((m.screen === 'settings' || m.screen === 'profile') && m.from === 'pause'));
   m.openProfile = function (from) {
     m.setSolid(false); document.body.dataset.m = 'profile'; m.from = from || 'home'; m.prevMode = mode; m.prevRun = tutorialRun; el.style.display = 'none'; m.screen = 'profile'; setMode('profile');
   };
@@ -792,6 +797,7 @@ const M = (function () {
   $('mSnap').onclick = () => { takeSnapshot(); };
   $('mcOk').onclick = () => { if (m.conf === 'restart') m.restart(); else m.toHome(); };
   addEventListener('keydown', e => { if (!m.screen || picker) return; if (e.key === 'Escape' && m.screen !== 'pause') { m.back(); e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  ['show', 'hide', 'openProfile', 'closeProfile'].forEach(k => { const f = m[k]; m[k] = function () { const r = f.apply(this, arguments); musicVis(); return r; }; });      // cập nhật ngay khi đổi màn hình (không đợi khung vẽ)
   return m;
 })();
 trainList(); vehUpd(); $('from').onchange(); setMode('drive'); startDrive(); paused = true; M.show('home'); requestAnimationFrame(frame);

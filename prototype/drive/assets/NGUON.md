@@ -61,3 +61,7 @@ Cắt từ ảnh tổng hợp logo các công ty JR do người dùng cung cấp
 
 ## Bản đồ nền toàn quốc (japanmap.js)
 Ranh giới 47 tỉnh Nhật Bản từ **geoBoundaries** (gbOpen, JPN ADM1, dữ liệu năm 2017), https://www.geoboundaries.org, giấy phép **ODbL 1.0**: phải ghi nguồn, bản dẫn xuất giữ cùng giấy phép. File gốc 2,2 MB nằm ở `tools/data-src/` (không đưa lên git); `tools/build_japan.py` đơn giản hoá thành `prototype/drive/japanmap.js` (~60 KB).
+
+## Các đảo Lãnh thổ phương Bắc (japanmap_nt.js)
+Đường bờ Kunashiri (国後島), Etorofu (択捉島), Shikotan (色丹島) và nhóm Habomai (歯舞群島) lấy từ **OpenStreetMap** (`natural=coastline`, © OpenStreetMap contributors, **ODbL 1.0**: phải ghi nguồn, bản dẫn xuất giữ cùng giấy phép). Tải ngày 2026-10-30 qua Overpass API (bản sao https://maps.mail.ru/osm/tools/overpass/api/interpreter, vì overpass-api.de không truy cập được từ máy này) theo yêu cầu của người dùng; truy vấn `way["natural"="coastline"](43.2,145.2,45.6,148.95); out geom;`, kết quả 6,9 MB đặt ở `tools/data-src/kurils_overpass.json` (không đưa lên git). `python -X utf8 tools/build_kurils.py` nối các đoạn bờ thành vành khép kín, đơn giản hoá và ghi `prototype/drive/japanmap_nt.js` (~7 KB). Các đảo này do Nga quản lý thực tế, Nhật coi là lãnh thổ của mình; game chỉ vẽ nét đứt, tô nhạt để phân biệt với ranh giới 47 tỉnh.
+`japanmap.js` từ 2026-10-30 giữ mọi đảo có trong nguồn geoBoundaries (424 đa giác, đảo nhỏ được đơn giản hoá nhẹ hơn), không còn bỏ đảo nhỏ hơn ~40 km².

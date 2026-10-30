@@ -6,7 +6,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(ROOT, 'tools', 'data-src', 'geoBoundaries-JPN-ADM1_simplified.geojson')
 OUT = os.path.join(ROOT, 'prototype', 'drive', 'japanmap.js')
 TOL = 0.015            # độ, ngưỡng Douglas-Peucker
-MIN_AREA = 0.004       # độ², bỏ đảo nhỏ hơn
+MIN_AREA = 0.0         # độ², bỏ đảo nhỏ hơn (0 = giữ mọi đảo có trong nguồn; đảo nhỏ được đơn giản hoá nhẹ hơn để không biến mất)
 def dp(pts, tol):
     if len(pts) < 3: return pts
     a, b = pts[0], pts[-1]; dx, dy = b[0] - a[0], b[1] - a[1]; n = math.hypot(dx, dy); best, bi = -1, 0
@@ -22,7 +22,7 @@ for f in d['features']:
     for poly in polys:
         r = poly[0]
         if area(r) < MIN_AREA: continue
-        s = dp([(x, y) for x, y in r], TOL)
+        s = dp([(x, y) for x, y in r], min(TOL, max(0.0008, 0.12 * math.sqrt(area(r)))))      # đảo nhỏ: dung sai nhỏ theo cỡ đảo
         if len(s) < 4: continue
         rings.append([round(v * 1000) for p in s for v in p])      # lon,lat xen kẽ, đơn vị 0,001 độ
     out.append({'n': f['properties']['shapeName'], 'r': rings})

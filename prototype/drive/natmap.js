@@ -3,6 +3,7 @@
 // Đường giữa hai ga vẽ thẳng theo toạ độ ga [I] (không phải hình học đường ray thật). Chưa có thời tiết/thiên tai (giai đoạn 3).
 (function (root) {
   // màu: Wikipedia, Module:Adjacent stations/JR_* (tra 28/10/2026) [N]; Nishi-Kyushu không có màu riêng nên lấy màu hệ thống JR Kyushu [I]
+  const SEGJA = { tohoku: '東北', hokkaido: '北海道', joetsu: '上越', hokuriku: '北陸', yamagata: '山形', akita: '秋田', tokaido: '東海道', sanyo: '山陽', kyushu: '九州', nishikyushu: '西九州' };      // tên đoạn tuyến ở chú giải khi dùng tiếng Nhật
   const SEGS = [
     { key: 'tohoku', name: 'Tohoku', line: 'toh', a: 0, b: 22, col: '#41934c' }, { key: 'hokkaido', name: 'Hokkaido', line: 'toh', a: 22, b: 25, col: '#9ACD32' },
     { key: 'joetsu', name: 'Joetsu', line: 'jts', a: 2, b: 11, col: '#f58d79' }, { key: 'hokuriku', name: 'Hokuriku', line: 'hok', a: 5, b: 23, col: '#800080' },
@@ -70,6 +71,10 @@
       ctx.beginPath(); for (const p of M) for (const ring of p.r) { for (let i = 0; i < ring.length; i += 2) { const q = P(ring[i] / 1000, ring[i + 1] / 1000, r); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.closePath(); }
       ctx.fillStyle = dk ? '#1c2b3b' : '#f3f0e6'; ctx.fill('evenodd'); ctx.strokeStyle = dk ? '#2c3f54' : '#c9c4b4'; ctx.lineWidth = 0.8; ctx.stroke();
     }
+    const NT = root.JPMAP_NT; if (NT) {      // Lãnh thổ phương Bắc (Nhật coi là của mình, Nga quản lý): tô nhạt hơn, viền nét đứt
+      ctx.beginPath(); for (const p of NT) { const ring = p.r; for (let i = 0; i < ring.length; i += 2) { const q = P(ring[i] / 1000, ring[i + 1] / 1000, r); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.closePath(); }
+      ctx.fillStyle = dk ? 'rgba(28,43,59,.55)' : 'rgba(243,240,230,.6)'; ctx.fill(); ctx.save(); ctx.setLineDash([3, 2]); ctx.strokeStyle = dk ? '#4d647c' : '#a59f8c'; ctx.lineWidth = 0.9; ctx.stroke(); ctx.restore();
+    }
     for (const cl of H.cells) { if (wt < cl.t0 || wt > cl.t1) continue; const q = P(cl.lon, cl.lat, r), rad = cl.r * kmPx; if (q[0] + rad < x || q[0] - rad > x + w || q[1] + rad < y || q[1] - rad > y + h) continue;
       const col = cl.kind === 'rain' ? '59,130,246' : cl.kind === 'snow' ? '226,238,255' : '170,180,190'; ctx.fillStyle = 'rgba(' + col + ',.2)'; ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.fill();
       ctx.strokeStyle = 'rgba(' + col + ',.6)'; ctx.lineWidth = 1; ctx.setLineDash(cl.kind === 'wind' ? [5, 4] : []); ctx.stroke(); ctx.setLineDash([]); txt(cl.kind === 'rain' ? _t('mưa lớn') : cl.kind === 'snow' ? _t('tuyết') : _t('gió mạnh'), q[0], q[1] + 4, dk ? 'rgba(220,235,255,.9)' : 'rgba(20,40,80,.9)', '11px system-ui', 'center'); }
@@ -100,7 +105,7 @@
     if (!mini) {
     // chú giải và nút
     const bwU = Math.round(120 * U), bx = x + w - 390 - bwU, lx = x + 14, rowH = Math.round(17 * U); let ly = y + h - 14 - SEGS.length * rowH; ctx.fillStyle = dk ? 'rgba(8,12,18,.78)' : 'rgba(255,255,255,.82)'; ctx.fillRect(lx - 8, ly - 20 * U, Math.round(150 * U), SEGS.length * rowH + 26 * U);
-    txt(_t('Tuyến'), lx, ly - 4, dk ? '#8aa0b5' : '#445', 'bold 11px system-ui'); for (const sg of SEGS) { ctx.fillStyle = sg.col; ctx.fillRect(lx, ly + 6 * U, 22 * U, 5 * U); txt(sg.name, lx + 30 * U, ly + 12 * U, dk ? '#e8eef5' : '#1b2633', '11px system-ui'); ly += rowH; }
+    txt(_t('Tuyến'), lx, ly - 4, dk ? '#8aa0b5' : '#445', 'bold 11px system-ui'); for (const sg of SEGS) { ctx.fillStyle = sg.col; ctx.fillRect(lx, ly + 6 * U, 22 * U, 5 * U); txt(I18N.lang === 'ja' && SEGJA[sg.key] || sg.name, lx + 30 * U, ly + 12 * U, dk ? '#e8eef5' : '#1b2633', '11px system-ui'); ly += rowH; }
     // ba nút vuông ở góc trên phải: định vị tàu của tôi · nền sáng/tối · đóng (D); biểu tượng vẽ bằng nét
     const sq = 32, ss = Math.round(sq * U), ex = bx + bwU - ss, ey = y + 10, ic = (px, py, col, fn) => {
       ctx.save(); ctx.translate(px + ss / 2, py + ss / 2); ctx.scale(U, U); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.lineCap = 'round'; fn(0, 0); ctx.restore(); };

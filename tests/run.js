@@ -621,7 +621,7 @@ if (section('29. Đa ngôn ngữ (i18n.js, lang-en.js, lang-ja.js): đủ bản 
   const VNX = /[ăâđêôơưĂÂĐÊÔƠƯàáảãạằắẳẵặầấẩẫậèẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]/;      // chữ đặc trưng tiếng Việt (không gồm é: có trong tên riêng)
   const VNK = /[À-ÃÈ-ÊÌÍÒ-ÕÙÚÝà-ãè-êìíò-õùúýĂăĐđĨĩŨũƠơƯưẠ-ỹ]/;
   // 1) thu khoá _t('...') trong mã nguồn
-  const files = ['sim.js', 'tutorial.js', 'fullui.js', 'natmap.js', 'store.js', 'audio.js', 'winview.js', 'scene.js', 'topview.js', 'index.html'], keys = new Set(); let bad = 0;
+  const files = ['sim.js', 'tutorial.js', 'fullui.js', 'natmap.js', 'store.js', 'audio.js', 'winview.js', 'scene.js', 'topview.js', 'music.js', 'index.html'], keys = new Set(); let bad = 0;
   const reKey = /(?<![\w$.])_t\(\s*('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")/g;
   for (const f of files) { const src = fs.readFileSync(path.join(DRIVE, f), 'utf8'); let m; while ((m = reKey.exec(src))) { try { keys.add(new Function('return ' + m[1])()); } catch (e) { bad++; } } }
   { const src = fs.readFileSync(path.join(DRIVE, 'cabview.js'), 'latin1'); const m = src.match(/_t\('(V[^']{0,4}CH)'\)/); if (m) keys.add('VẠCH'); }

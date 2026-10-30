@@ -9,6 +9,9 @@ Mở game là vào **màn hình chủ**: Lái tàu · Học lái · Hồ sơ · 
 - **Cài đặt:** ngôn ngữ, phát thanh, cảnh vật, về ×1 khi có điện đàm. Âm lượng và ù cabin ở nút loa trên thanh biểu tượng.
 - Chế độ **Điều độ** (`dispatch.js`) hiện không có nút vào trong menu.
 
+## Trình phát nhạc (music.js)
+Thẻ nhỏ ở góc dưới trái phát 21 giai điệu ga Shinkansen từ video YouTube `bddFo2Vzi4A` qua trình nhúng chính thức (IFrame API, video nằm ngoài màn hình, không lưu tệp). Chỉ hiện ở menu (màn chủ, thiết lập, học lái, cài đặt, hồ sơ, ghi công); vào game hoặc lớp tạm dừng thì nhạc tạm dừng và thẻ ẩn, về menu thì phát tiếp. Tự phát từ lần bấm hoặc gõ phím đầu tiên của người chơi (trình duyệt chặn tự phát trước đó). Có: phát/tạm dừng, bài trước/sau, một nút đổi chế độ (lặp danh sách, lặp một bài, ngẫu nhiên), tắt tiếng + âm lượng, thanh tiến trình bấm để tua, thu gọn thành nút tròn, tên bài chạy ngang khi dài (song ngữ Anh/Nhật; tiếng Việt dùng tên Anh). Cần có mạng; hỏng thì thẻ tự ẩn. Lưu ý: ẩn hoàn toàn hình video có thể trái điều khoản của YouTube (người dùng đã chọn cách này).
+
 ## Đa ngôn ngữ (English · 日本語 · Tiếng Việt)
 Ngôn ngữ chọn ở **Cài đặt** (ô thả xuống có cờ tròn); mặc định theo ngôn ngữ trình duyệt (vi/ja/en, còn lại là en). Đổi ngôn ngữ lưu vào cài đặt rồi tải lại trang (chuyến đang chạy không được lưu, có hỏi xác nhận). Tiếng Nhật hiển thị tên ga bằng chữ Hán và tên tuyến bằng tên Nhật; tiếng Anh và tiếng Việt giữ tên ga La-tinh.
 - Khoá dịch là chính câu tiếng Việt gốc: trong mã viết `_t('câu tiếng Việt')` hoặc `_t('Chuyến {0} đi {1}', a, b)`; văn bản tĩnh trong `index.html` được dịch tự động theo nội dung. Bản dịch nằm ở `lang-en.js` và `lang-ja.js`; thiếu thì hiện lại tiếng Việt.

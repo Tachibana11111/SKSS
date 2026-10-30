@@ -131,7 +131,7 @@
   GameAudio.prototype.say = function (W, a, urgent, chime) {
     if (this.annMode === 'off') return;
     const text = this.annMode === 'en' ? a.en : a.ja;
-    W.say('pa', 'PA: ' + (this.annMode === 'en' ? a.en : a.ja) + '  —  ' + a.vi);
+    W.say('pa', 'PA: ' + text + (I18N.lang === 'ja' ? '' : '  —  ' + a.vi));      // giao diện tiếng Nhật: chỉ một dòng phụ đề theo đúng giọng đọc (không lặp bản dịch)
     if (this.annMode === 'sub' || !this.enabled || !root.speechSynthesis) return;
     if (urgent) { this.q = []; root.speechSynthesis.cancel(); }
     this.q.push({ text, lang: this.annMode === 'en' ? 'en' : 'ja', t: performance.now(), chime });
