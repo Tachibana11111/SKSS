@@ -223,7 +223,7 @@ function drawMissionPanel(x, y, w, h) {
 function drawFull() {
   const PY = DASH_Y + 14, PH = FH - PY - 14;
   btns = []; curOX = 0; ctx.clearRect(0, 0, FW, FH); ctx.fillStyle = '#0b0f14'; ctx.fillRect(0, 0, FW, FH);
-  if (!W) { txt('Chọn chuyến và nhấn "Bắt đầu / chạy lại", hoặc mở tab Hướng dẫn / Điều độ.', FW / 2, FH / 2, '#8aa0b5', '24px system-ui', 'center'); return; }
+  if (!W) { txt('Mở menu chính để chọn chuyến, hoặc vào Học lái.', FW / 2, FH / 2, '#8aa0b5', '24px system-ui', 'center'); return; }
   const blink = Math.floor(performance.now() / 400) % 2 === 0, M = T.M, j = T.phase === 'dwell' ? T.k : Sim.nextTarget(T), d = M[j].s - T.x, pend = W.pending.filter(m => !m.done).length;
   // ---- khung chính + hai khung phụ: khung thứ nhất nằm trong bảng điều khiển (bên trái đồng hồ tốc độ), khung thứ hai ở góc trên phải
   drawViewIn(ui.main, MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]);

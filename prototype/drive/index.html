@@ -8,6 +8,13 @@
 <style>
   :root{--bg:#10151c;--panel:#18212c;--fg:#e8eef5;--mut:#8aa0b5}
   *{box-sizing:border-box}
+  *{scrollbar-width:thin;scrollbar-color:#3a4f68 transparent}
+  html{scrollbar-color:#3a4f68 #0b0f14}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#33475e;border-radius:6px;border:2px solid transparent;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:hover{background:#4aa3ff;background-clip:padding-box}
+  ::-webkit-scrollbar-corner{background:transparent}
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,"Segoe UI",sans-serif}
   aside{display:flex;flex-direction:column;gap:10px;padding:8px;background:var(--panel);border-radius:8px;font-size:13px}
   aside .row{flex-direction:column;align-items:stretch;gap:6px}
@@ -24,7 +31,43 @@
   aside .tabs{display:flex;gap:4px} aside .tabs .tab{flex:1;padding:4px 2px;font-size:12px}
   #stage{display:grid;grid-template-columns:220px minmax(0,1fr) 220px;gap:8px;align-items:start;padding:6px}
   @media (max-width:1499px){#stage{display:block}aside{flex-direction:row;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px}aside .row{flex-direction:row;flex-wrap:wrap;align-items:flex-end}aside select,aside button,aside input{width:auto}aside .tabs .tab{padding:4px 10px}}
-  body.isfull aside{display:none}
+  aside{display:none!important}
+  #stage{display:block;padding:6px}
+  #menu{position:fixed;inset:0;z-index:55;display:none;overflow:auto;color:var(--fg);font-size:14px}
+  #menu.solid{background:#0e131a}
+  #menu.dim{background:rgba(8,12,18,.78)}
+  #menu .scr{display:none;min-height:100%;padding:22px 20px 90px}
+  #menu .scr.on{display:block}
+  #menu .wm{max-width:900px;margin:0 auto}
+  #menu .hd{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  #menu .hd h2{margin:0;font-size:21px}
+  #menu button{background:#223042;color:var(--fg);border:1px solid #33475e;border-radius:8px;padding:0 16px;height:40px;font:inherit;cursor:pointer}
+  #menu button:hover{background:#2c4059}
+  #menu button.go{background:#2a6fd6;border-color:#4aa3ff;font-weight:600}
+  #menu button.go:hover{background:#3a7fe6}
+  #menu .cen{max-width:300px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+  #menu .cen button{height:46px;font-size:15px}
+  #menu .logo{text-align:center;margin:7vh 0 26px} #menu .logo b{display:block;font-size:34px;letter-spacing:3px;font-weight:600} #menu .logo span{color:var(--mut);font-size:13px}
+  #menu .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 36px} @media (max-width:760px){#menu .cols{grid-template-columns:1fr}}
+  #menu .grp{font-size:12px;color:var(--mut);font-weight:600;margin:0 0 4px;letter-spacing:.5px}
+  #menu label{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #243447;font-size:14px;color:var(--fg);margin:0}
+  #menu label.inl{justify-content:flex-start}
+  #menu select,#menu input:not([type=checkbox]):not([type=range]){background:#223042;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:6px 8px;font:inherit;width:min(62%,300px);min-width:0}
+  #menu input[type=checkbox]{width:18px;height:18px}
+  #menu .btns{display:flex;gap:4px;width:min(62%,300px)} #menu .btns input{flex:1;width:auto} #menu .btns button{height:34px;padding:0 10px}
+  #menu #legBox label{border-bottom:0}
+  #menu .bar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;background:linear-gradient(transparent,#0e131aee 40%)}
+  @media (pointer:coarse){#menu .bar{padding-right:150px}}
+  #menu .lc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px} @media (max-width:640px){#menu .lc{grid-template-columns:1fr}}
+  #menu .lcard{background:#18212c;border:1px solid #33475e;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px;text-align:left;height:auto;line-height:1.4}
+  #menu .lcard:hover{border-color:#4aa3ff;background:#1d2a3a}
+  #menu .lcard .k{font-size:12px;color:var(--mut)} #menu .lcard b{font-size:16px} #menu .lcard .d{font-size:13px;color:var(--mut);min-height:36px} #menu .lcard .ok{font-size:12px}
+  #menu .box{max-width:290px;margin:12vh auto 0;background:#171c25;border:1px solid #33475e;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:9px}
+  #menu .box h2{margin:0 0 4px;text-align:center;font-size:19px}
+  #menu .box p{margin:0 0 6px;color:var(--mut);font-size:13px;text-align:center;line-height:1.5}
+  #menu .row2{display:flex;gap:8px} #menu .row2 button{flex:1}
+  #menu .lk{background:none;border:0;color:var(--mut);text-decoration:underline;height:auto;padding:0;font-size:12px}
+  #menu .lk:hover{background:none;color:var(--fg)}
   #wiz{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}
   #wiz .box{background:#18212c;border:1px solid #33475e;border-radius:12px;width:100%;max-width:640px;max-height:92vh;overflow:auto;padding:20px 24px;color:var(--fg)}
   #wiz h2{margin:0 0 6px;font-size:21px} #wiz p{line-height:1.6} #wiz .dim{color:var(--mut)}
@@ -38,7 +81,7 @@
   #wiz table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid #33475e} #wiz td{padding:7px 10px;border-bottom:1px solid #2a3b4f} #wiz td+td{text-align:right;color:var(--mut)}
   #wiz .nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px} #wiz .nav button{background:#243447;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:7px 16px;font:inherit;cursor:pointer} #wiz .nav button.go{background:#2a6fd6;border-color:#4aa3ff;font-weight:600}
   #wiz .link{background:none;border:none;color:var(--mut);text-decoration:underline;padding:0;font:inherit;font-size:12px;cursor:pointer}
-  #picker{position:fixed;z-index:50;background:#18212c;border:1px solid #33475e;border-radius:8px;display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+  #picker{position:fixed;z-index:58;background:#18212c;border:1px solid #33475e;border-radius:8px;display:flex;flex-direction:column;box-shadow:0 8px 28px rgba(0,0,0,.55)}
   #picker input{margin:6px;background:#223042;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:5px 8px;font:inherit}
   #picker .list{overflow:auto;padding:0 4px 6px}
   #picker .it{padding:4px 10px;border-radius:5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -62,6 +105,14 @@
   .row{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;width:100%}
   #modal{display:none;position:absolute;left:8px;right:8px;top:8px;bottom:8px;background:rgba(10,14,20,.97);border-radius:8px;padding:18px;overflow:auto;z-index:5}
   #modal h3{margin:10px 0 6px}
+  #modal .pbar{position:sticky;top:-18px;z-index:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:-18px -18px 10px;padding:14px 18px;background:rgba(10,14,20,.97);border-bottom:1px solid #243447}
+  #modal .pbar h2{margin:0;font-size:20px}
+  #modal .pbtn{display:flex;gap:8px;flex-wrap:wrap}
+  #modal .pbtn button{height:36px;padding:0 14px;border-radius:8px;border:1px solid #33475e;background:#223042;color:var(--fg);font:inherit;font-size:13px;cursor:pointer}
+  #modal .pbtn button:hover{background:#2c4059}
+  #modal .pbtn button.go{background:#2a6fd6;border-color:#4aa3ff;font-weight:600}
+  #modal .pbtn button.dn{color:#ff9a9a;border-color:#6b3a3a;background:transparent}
+  #modal .pbtn button.dn:hover{background:#3a2226}
   #modal table{border-collapse:collapse;width:100%;font-size:13px}
   #modal td,#modal th{border-bottom:1px solid #243447;padding:3px 8px;text-align:left}
   .ok{color:#4cd68a}.dim{color:#7a8ea5}
@@ -114,12 +165,12 @@
   <div class="top"><div class="dots" id="wDots"></div><span id="wStep"></span></div>
   <div id="w1"><h2>Chào mừng đến Lái Shinkansen</h2><p class="dim">Game lái tàu Shinkansen chạy ngay trong trình duyệt: 7 tuyến, lịch tàu thật tháng 10/2026, ATC, cần vẹt, thời tiết và sự cố. Dự án sở thích, không chính thức và không liên quan tới JR. Bạn muốn bắt đầu thế nào?</p>
     <div class="cards"><button class="card" data-m="tut"><b>Học lái (Hướng dẫn)</b><span>4 bài ngắn: lái và dừng đúng vạch, thiết bị, sự cố, cần vẹt và ATC. Khoảng 15 phút.</span><i class="tag">Nên chọn nếu mới chơi</i></button>
-    <button class="card" data-m="drive"><b>Lái luôn (Lái tàu)</b><span>Chọn tuyến, chuyến, độ khó, thời tiết rồi chạy theo lịch thật. Bảng phím có sẵn ở cột phải.</span><i class="tag" style="background:#243447;color:#9fb4c9">Đã quen game lái tàu</i></button></div>
-    <p class="dim" style="font-size:12px;margin:14px 0 0">Chọn xong sẽ sang trang phím bấm. Đổi chế độ lúc nào cũng được ở thanh trên cùng. <button class="link" id="wSkip">Bỏ qua, tự khám phá</button></p></div>
+    <button class="card" data-m="drive"><b>Lái luôn (Lái tàu)</b><span>Chọn tuyến, chuyến, độ khó, thời tiết rồi chạy theo lịch thật. Bảng phím có ở trang sau và trong game.</span><i class="tag" style="background:#243447;color:#9fb4c9">Đã quen game lái tàu</i></button></div>
+    <p class="dim" style="font-size:12px;margin:14px 0 0">Chọn xong sẽ sang trang phím bấm. Đổi chế độ lúc nào cũng được ở menu chính (bấm P rồi chọn Về menu chính). <button class="link" id="wSkip">Bỏ qua, tự khám phá</button></p></div>
   <div id="w2" style="display:none"><h2>Phím bấm</h2><p class="dim" id="w2sub"></p><div class="keys">
     <div><b>W / S</b> tăng / giảm cần kéo</div><div><b>↓ / ↑</b> tăng / giảm phanh</div><div><b>Space</b> về N</div><div><b>Q</b> phanh khẩn</div><div><b>Enter</b> đóng cửa</div><div><b>C</b> tốc độ không đổi</div>
     <div><b>H</b> còi</div><div><b>P</b> tạm dừng (Esc cũng được)</div><div><b>A / G</b> ATC / cần vẹt</div><div><b>V / L</b> gạt mưa / đèn pha</div><div><b>Y / N</b> nhắc lệnh / từ chối</div><div><b>M</b> phát thanh</div><div><b>Tab</b> đổi khung nhìn</div><div><b>F9</b> chụp cảnh</div><div><b>J</b> ù cabin máy bay</div><div><b>D</b> bản đồ toàn quốc</div></div>
-    <p class="dim" style="font-size:12px;margin:12px 0 0">Bảng đầy đủ nằm ở cột phải (chế độ lái) và README.</p></div>
+    <p class="dim" style="font-size:12px;margin:12px 0 0">Bảng đầy đủ nằm trong README.</p></div>
   <div id="w3" style="display:none"><h2>Ghi công tài nguyên</h2><p class="dim" style="font-size:13px">Game dùng tài nguyên của nhiều người. Mã nguồn theo MIT; các tài nguyên dưới đây giữ giấy phép riêng.</p>
     <table><tr><td>Hình tàu 2D, hình mặt trước</td><td>K.Y. Chung (rail.kychung.com), CC BY-NC-ND 4.0</td></tr><tr><td>Bản đồ, nhà, đường, cây</td><td>© OpenStreetMap contributors, ODbL</td></tr><tr><td>Tiếng nền ga Odawara</td><td>Flavien Gillié, Internet Archive, Public Domain</td></tr><tr><td>Biểu tượng tab</td><td>JR West, Wikimedia Commons</td></tr><tr><td>Bố trí ga</td><td>Wikipedia tiếng Nhật, CC BY-SA 4.0</td></tr><tr><td>Lịch tàu thật 10/2026</td><td>JR East, JR West (dữ liệu thuộc chủ sở hữu)</td></tr></table>
     <p class="dim" style="font-size:12px;margin:10px 0 0">Bản rút gọn. Danh sách đầy đủ và cách báo gỡ tài nguyên nằm ở README và assets/NGUON.md.</p></div>
@@ -138,6 +189,46 @@
     <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option></select></label>
   </div>
 </aside>
+</div>
+<div id="menu">
+  <div class="scr" id="m-home"><div class="wm">
+    <div class="logo"><b>SHINKANSEN</b><span>Lái Shinkansen · bản thử 0.4</span></div>
+    <div class="cen">
+      <button class="go" data-m="setup">Lái tàu</button>
+      <button data-m="learn">Học lái</button>
+      <button data-m="profile">Hồ sơ</button>
+      <button data-m="settings">Cài đặt</button>
+    </div>
+    <p style="text-align:center;margin-top:26px"><button class="lk" id="mIntro">Xem lại giới thiệu, phím bấm và ghi công</button></p>
+  </div></div>
+  <div class="scr" id="m-setup"><div class="wm">
+    <div class="hd"><button data-m="home">‹ Quay lại</button><h2>Thiết lập chuyến đi</h2></div>
+    <div class="cols"><div><div class="grp">CHUYẾN</div><div id="mSetA"></div></div><div><div class="grp">ĐỘ KHÓ VÀ ĐIỀU KIỆN</div><div id="mSetB"></div></div></div>
+    <div class="bar"><button data-m="settings">Cài đặt</button><span id="mStartHold"></span></div>
+  </div></div>
+  <div class="scr" id="m-learn"><div class="wm">
+    <div class="hd"><button data-m="home">‹ Quay lại</button><h2>Học lái</h2><span class="dim" id="mLearnSum" style="margin-left:auto"></span></div>
+    <div class="lc" id="mCards"></div>
+    <p class="dim" style="font-size:12px;margin-top:14px">Khi đang học: phím K bỏ qua bước, R làm lại bài.</p>
+  </div></div>
+  <div class="scr" id="m-settings"><div class="wm" style="max-width:560px">
+    <div class="hd"><button data-m="back">‹ Quay lại</button><h2>Cài đặt</h2></div>
+    <div id="mSetC"></div>
+    <p class="dim" style="font-size:12px;margin-top:14px">Âm lượng và ù cabin chỉnh bằng nút loa trên thanh biểu tượng khi đang lái.</p>
+  </div></div>
+  <div class="scr" id="m-pause"><div class="box">
+    <h2>Tạm dừng</h2>
+    <button class="go" id="mResume">Tiếp tục (P)</button>
+    <button data-m="settings">Cài đặt</button>
+    <button data-m="profile">Hồ sơ</button>
+    <button id="mSnap">Chụp cảnh (F9)</button>
+    <button data-m="restart">Chơi lại</button>
+    <button data-m="tomenu">Về menu chính</button>
+  </div></div>
+  <div class="scr" id="m-confirm"><div class="box">
+    <h2 id="mcT"></h2><p id="mcB"></p>
+    <div class="row2"><button data-m="pause">Ở lại</button><button class="go" id="mcOk"></button></div>
+  </div></div>
 </div>
 <script src="data-lines.js"></script>
 <script src="assets/n700_strip.js"></script>
@@ -343,13 +434,13 @@ function startDrive(r, opts) {
 }
 let tutLessonActive = false;
 function startLesson(i) {
-  const c = Tutorial.cfg(i); if (!c) { alert('Không tìm thấy chuyến phù hợp cho bài này.'); return; }
+  M.hide(); const c = Tutorial.cfg(i); if (!c) { alert('Không tìm thấy chuyến phù hợp cho bài này.'); return; }
   tutorialRun = true; tutLessonActive = true; setMode('tutorial');
   startDrive({ lineId: c.lineId, rec: c.rec, from: c.from, to: c.to, diff: c.diff, weather: c.weather, seed: c.seed, lead: c.lead, events: false });
   tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; $('driveOpts').style.display = 'none'; ui.radio = c.radio; ui.focus = false; ui.rear = false;
 }
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));
-$('start').onclick = () => { tutorialRun = false; startDrive(); }; 
+$('start').onclick = () => { tutorialRun = false; if (startDrive()) { M.hide(); paused = false; } };
 $('dStart').onclick = () => startDispatch();
 function startDispatch() { Dispatch.start({ lineId: $('line').value, dir: $('dir').value, diff: $('diff').value, seed: +$('seed').value || 1, weather: $('dWeather').value, t0: +$('dHour').value * 3600, span: +$('dSpan').value }); }
 
@@ -365,9 +456,10 @@ addEventListener('keydown', e => {
   if (['INPUT', 'SELECT'].includes(document.activeElement.tagName) && e.key !== 'Enter') return;
   const k = e.key;
   if (mode === 'dispatch') { if (Dispatch.key(e)) e.preventDefault(); return; }
+  if (M.screen && M.screen !== 'pause') return;
   if (!W || mode === 'profile') return;
   if (k === 'j' || k === 'J') { AUD.unlock(); cabinSet(!AUD.cabin); e.preventDefault(); return; }
-  if (k === 'Escape' && ui.nat) { ui.nat = false; e.preventDefault(); return; }
+  if (k === 'Escape' && ui.nat && !M.screen) { ui.nat = false; e.preventDefault(); return; }
   if (k === 'Escape' || k === 'p' || k === 'P') { paused = !paused; e.preventDefault(); return; }
   if ((k === 'h' || k === 'H') && W) { doAct('horn'); e.preventDefault(); return; }
   if ((k === 'd' || k === 'D') && W && mode !== 'dispatch') { ui.nat = !ui.nat; e.preventDefault(); return; }
@@ -510,7 +602,7 @@ function drawKeys(m) {
   }
 }
 
-function draw() { drawBase(); pauseOverlay(); }
+function draw() { if (!M.solid) drawBase(); M.sync(); }      // menu nền đặc che kín canvas: khỏi vẽ khung game phía sau
 function drawBase() {
   if (ui.cur === 'full' && (mode === 'drive' || mode === 'tutorial')) { drawFull(); return; }
   btns = []; ctx.clearRect(0, 0, W_, H_);      // hồ sơ: không vẽ gì lên canvas (hộp hồ sơ là phần tử HTML); điều độ có bộ vẽ riêng ở frame()
@@ -573,7 +665,7 @@ function wizRender() {
 function openWizard() { wiz.cur = 1; wiz.mode = null; wiz.open = true; wiz.wasPaused = paused; paused = true; wiz.el.style.display = 'flex'; wizRender(); }
 function closeWizard(launch) {
   wiz.open = false; wiz.el.style.display = 'none'; paused = wiz.wasPaused; try { Store.setting('wizard', 1); } catch (e) { }
-  if (launch === 'tut') startLesson(0); else if (launch === 'drive') { tutorialRun = false; setMode('drive'); if (!W) startDrive(); }
+  if (launch === 'tut') { paused = false; startLesson(0); } else if (launch === 'drive') { tutorialRun = false; setMode('drive'); if (!W) startDrive(); M.show('setup'); }
 }
 wiz.el.querySelectorAll('.card').forEach(b => b.onclick = () => { wiz.mode = b.dataset.m; wiz.cur = 2; wizRender(); });
 $('wSkip').onclick = () => closeWizard(null);
@@ -585,10 +677,9 @@ function showProfile() {
   const ach = Store.ACH.map(a => `<tr><td>${st.ach[a.id] ? '<span class="ok">★</span>' : '<span class="dim">☆</span>'}</td><td>${a.name}</td><td class="dim">${a.desc}</td><td class="dim">${st.ach[a.id] ? new Date(st.ach[a.id]).toLocaleDateString('vi-VN') : ''}</td></tr>`).join('');
   const hist = st.history.slice(0, 15).map(h => `<tr><td>${new Date(h.t).toLocaleString('vi-VN')}</td><td>${h.kind === 'dispatch' ? 'Điều độ' : 'Lái'}</td><td>${h.line || ''}</td><td>${h.train || ''}</td><td>${h.diff || ''}</td><td>${h.weather || ''}</td><td><b>${h.score}</b></td></tr>`).join('') || '<tr><td colspan="7" class="dim">Chưa có lần chơi nào.</td></tr>';
   const best = Object.entries(st.best).sort((a, b) => b[1].score - a[1].score).slice(0, 10).map(([k, v]) => `<tr><td>${v.label}</td><td class="dim">${k.split('|').slice(1, 3).join(' ')}</td><td><b>${v.score}</b></td></tr>`).join('') || '<tr><td colspan="3" class="dim">Chưa có.</td></tr>';
-  m.innerHTML = `<h2>Hồ sơ người chơi</h2><p class="dim">Dữ liệu lưu trong trình duyệt này (localStorage). Đã mở khoá ${Object.keys(st.ach).length}/${Store.ACH.length} thành tích · ${st.history.length} lần chơi.</p>
-    <h3>Thành tích</h3><table>${ach}</table><h3>Kết quả tốt nhất (theo cấu hình)</h3><table>${best}</table><h3>15 lần chơi gần nhất</h3><table><tr><th>Lúc</th><th>Loại</th><th>Tuyến</th><th>Chuyến</th><th>Độ khó</th><th>Thời tiết</th><th>Điểm</th></tr>${hist}</table>
-    <p><button id="mClose">Đóng</button> <button id="mReset">Xoá toàn bộ dữ liệu hồ sơ</button> <button id="mWiz">Xem lại hướng dẫn ban đầu</button></p>`;
-  $('mWiz').onclick = () => openWizard(); $('mClose').onclick = () => setMode('drive'); $('mReset').onclick = () => { if (confirm('Xoá toàn bộ hồ sơ, thành tích và bản ghi?')) { Store.reset(); showProfile(); } };
+  m.innerHTML = `<div class="pbar"><h2>Hồ sơ người chơi</h2><div class="pbtn"><button id="mWiz">Xem lại giới thiệu</button><button id="mReset" class="dn">Xoá dữ liệu hồ sơ</button><button id="mClose" class="go">‹ Quay lại</button></div></div><p class="dim">Dữ liệu lưu trong trình duyệt này (localStorage). Đã mở khoá ${Object.keys(st.ach).length}/${Store.ACH.length} thành tích · ${st.history.length} lần chơi.</p>
+    <h3>Thành tích</h3><table>${ach}</table><h3>Kết quả tốt nhất (theo cấu hình)</h3><table>${best}</table><h3>15 lần chơi gần nhất</h3><table><tr><th>Lúc</th><th>Loại</th><th>Tuyến</th><th>Chuyến</th><th>Độ khó</th><th>Thời tiết</th><th>Điểm</th></tr>${hist}</table>`;
+  $('mWiz').onclick = () => openWizard(); $('mClose').onclick = () => M.closeProfile(); $('mReset').onclick = () => { if (confirm('Xoá toàn bộ hồ sơ, thành tích và bản ghi?')) { Store.reset(); showProfile(); } };
 }
 window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({ kind: 'dispatch', line: o.lineId, trainLabel: Sim.lineOf(o.lineId).name + ' ' + (o.dir === 'down' ? 'xuống' : 'lên') + ' ' + hhmm(o.t0), diff: o.diff, weather: o.weather, seed: o.seed, score: r.score, finished: true, scenario: { kind: 'dispatch', line: o.lineId, dir: o.dir, train: o.t0, from: '', to: o.span, diff: o.diff, weather: o.weather, seed: o.seed } }); };
 // ---- bảng đo hiệu năng (phím F3): fps thật và thời gian từng thành phần (ms/khung) để tìm chỗ giật
@@ -604,7 +695,77 @@ window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({
   requestAnimationFrame(tick);
   addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); on = !on; box.style.display = on ? 'block' : 'none'; wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', 'bản đồ nhỏ'); wrap(window.Strips, 'draw', 'dải tranh'); wrap(window.Scene, 'draw', 'cảnh 2D'); } }, true);
 })();
-trainList(); vehUpd(); $('from').onchange(); setMode('drive'); startDrive(); requestAnimationFrame(frame);
+// ---- menu chính / tạm dừng: các ô chọn cũ (cùng ID) được chuyển vào đây; trạng thái game không đổi
+const M = (function () {
+  const el = $('menu'), scr = {};
+  el.querySelectorAll('.scr').forEach(e => { scr[e.id.slice(2)] = e; });
+  const A = $('mSetA'), B = $('mSetB'), C = $('mSetC');
+  for (const id of ['line', 'dir', 'train']) A.appendChild($(id).parentElement);
+  A.appendChild($('vehBox')); A.appendChild($('from').parentElement); A.appendChild($('to').parentElement); A.appendChild($('legBox'));
+  B.appendChild($('driveOpts')); $('mStartHold').appendChild($('start'));
+  C.appendChild($('ann').parentElement); C.appendChild($('scenery').parentElement); C.appendChild($('stopmsg').parentElement);
+  $('start').textContent = 'Bắt đầu'; $('start').style.cssText = 'width:auto;padding:0 30px;height:44px;font-size:15px';
+  const m = { solid: false, screen: null, from: 'home', prevMode: 'drive', prevRun: false, conf: null };
+  m.show = function (name, from) {
+    if (from) m.from = from;
+    if (name === 'setup') $('driveOpts').style.display = 'contents';
+    if (name === 'learn') m.learnRender();
+    for (const k in scr) scr[k].classList.toggle('on', k === name);
+    m.screen = name; el.style.display = 'block'; el.scrollTop = 0;
+    m.solid = !(name === 'pause' || name === 'confirm' || (name === 'settings' && m.from === 'pause')); el.className = (name === 'pause' || name === 'confirm' || (name === 'settings' && m.from === 'pause')) ? 'dim' : 'solid';
+  };
+  m.hide = function () { m.screen = null; m.solid = false; el.style.display = 'none'; };
+  m.sync = function () {      // hiện menu Tạm dừng khi game tạm dừng (P, Esc, mất focus, nút ⏸), ẩn khi chạy lại
+    const ok = W && paused && !snapMode && !ckOpen && !wiz.open && (mode === 'drive' || mode === 'tutorial');
+    if (!m.screen && ok) m.show('pause'); else if (m.screen === 'pause' && !paused) m.hide();
+  };
+  m.openProfile = function (from) {
+    m.solid = false; m.from = from || 'home'; m.prevMode = mode; m.prevRun = tutorialRun; el.style.display = 'none'; m.screen = 'profile'; setMode('profile');
+  };
+  m.closeProfile = function () { setMode(m.prevMode === 'tutorial' && tutLessonActive ? 'tutorial' : 'drive'); tutorialRun = m.prevRun; m.show(m.from); };
+  m.back = function () {
+    const s = m.screen;
+    if (s === 'setup' || s === 'learn') m.show('home');
+    else if (s === 'settings') m.show(m.from);
+    else if (s === 'profile') m.closeProfile();
+    else if (s === 'confirm') m.show('pause');
+    else if (s === 'pause') paused = false;
+  };
+  m.toHome = function () { replaying = null; tutorialRun = false; tutLessonActive = false; closePicker(); setMode('drive'); paused = true; m.show('home', 'home'); };
+  m.restart = function () { m.hide(); paused = false; if (replaying) replaying = null; if (tutLessonActive) startLesson(Tutorial.S.lesson); else startDrive(recipe); };
+  m.confirm = function (kind) {
+    const r = kind === 'restart'; m.conf = kind;
+    $('mcT').textContent = r ? 'Chơi lại chuyến này?' : 'Về menu chính?'; $('mcB').textContent = r ? (tutLessonActive ? 'Bài học sẽ bắt đầu lại từ đầu.' : 'Chuyến sẽ quay về ga xuất phát, cùng cấu hình và seed.') : 'Chuyến đang chạy sẽ không được lưu.';
+    $('mcOk').textContent = r ? 'Chơi lại' : 'Về menu'; m.show('confirm');
+  };
+  m.learnRender = function () {
+    const done = Object.assign({}, (Store.get().tutorial || {}), Tutorial.S.done), D = { basic: 'Khởi hành, kéo cần, phanh và dừng đúng vạch ga.', gear: 'Gạt mưa, nhắc lại lệnh điều độ, cảnh báo đường.', crisis: 'Động đất, ra quyết định, xử lý cháy.', power: 'Cần vẹt, bật/tắt ATC, tàu đứng phía trước.' };
+    let n = 0; $('mCards').innerHTML = '';
+    Tutorial.LESSONS.forEach((l, i) => {
+      const p = l.title.split(' · '), ok = !!done[l.id]; if (ok) n++;
+      const b = document.createElement('button'); b.className = 'lcard';
+      b.innerHTML = `<span class="k">${p[0].toUpperCase()} · ${l.steps.length} bước</span><b>${p.slice(1).join(' · ')}</b><span class="d">${D[l.id] || ''}</span>` + (ok ? '<span class="ok">✓ Đã hoàn thành</span>' : '<span class="ok dim">Chưa học</span>');
+      b.onclick = () => { paused = false; startLesson(i); }; $('mCards').appendChild(b);
+    });
+    $('mLearnSum').textContent = 'Đã xong ' + n + ' trên ' + Tutorial.LESSONS.length + ' bài';
+  };
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return; b.blur(); const t = b.dataset.m; if (!t) return;
+    if (t === 'back') m.back();
+    else if (t === 'profile') m.openProfile(m.screen);
+    else if (t === 'settings') m.show('settings', m.screen === 'settings' ? m.from : m.screen);
+    else if (t === 'restart' || t === 'tomenu') m.confirm(t);
+    else if (t === 'setup') { m.show('setup'); }
+    else m.show(t);
+  });
+  $('mResume').onclick = () => { paused = false; };
+  $('mSnap').onclick = () => { takeSnapshot(); };
+  $('mIntro').onclick = () => openWizard();
+  $('mcOk').onclick = () => { if (m.conf === 'restart') m.restart(); else m.toHome(); };
+  addEventListener('keydown', e => { if (!m.screen || picker || wiz.open) return; if (e.key === 'Escape' && m.screen !== 'pause') { m.back(); e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  return m;
+})();
+trainList(); vehUpd(); $('from').onchange(); setMode('drive'); startDrive(); paused = true; M.show('home'); requestAnimationFrame(frame);
 { let seen = false; try { seen = !!Store.setting('wizard'); } catch (e) { } if (!seen) openWizard(); }
 </script>
 </body>

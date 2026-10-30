@@ -2,10 +2,12 @@
 
 Mở `prototype/drive/index.html` trực tiếp bằng Chrome/Edge (không cần cài gì). Kiểm thử mô phỏng: `node tests/run.js` (không cần trình duyệt). Thiết kế đầy đủ, số liệu thật/tự đặt, giới hạn: **`docs/10-thiet-ke-game.md`**.
 
-## Ba chế độ (thanh trên cùng)
-- **Lái tàu:** chọn tuyến (7 tuyến: Tokaido–Sanyo–Kyushu, Tohoku–Hokkaido, Joetsu, Hokuriku, Nishi-Kyushu, Yamagata, Akita; xem `docs/11-mo-rong-tuyen.md`), chiều, chuyến thật, ga đi/đến, độ khó, thời tiết, seed. Sự kiện ngẫu nhiên theo seed.
-- **Điều độ:** nhiều tàu thật tự chạy, biểu đồ chạy tàu; lệnh giữ / thông qua / cho vượt.
-- **Hướng dẫn:** 3 bài từng bước. **Hồ sơ:** thành tích, kết quả tốt nhất, lịch sử, xoá dữ liệu.
+## Menu
+Mở game là vào **màn hình chủ**: Lái tàu · Học lái · Hồ sơ · Cài đặt. Bấm **P** (hoặc Esc) khi đang chơi để mở menu **Tạm dừng**: Tiếp tục · Cài đặt · Hồ sơ · Chụp cảnh (F9) · Chơi lại · Về menu chính (hai nút cuối có hộp xác nhận). Esc quay lại màn trước.
+- **Lái tàu:** màn Thiết lập chuyến đi: tuyến (7 tuyến: Tokaido–Sanyo–Kyushu, Tohoku–Hokkaido, Joetsu, Hokuriku, Nishi-Kyushu, Yamagata, Akita; xem `docs/11-mo-rong-tuyen.md`), chiều, tàu, ga đi/đến, độ khó, thời tiết, seed, ghép tàu nhánh. Sự kiện ngẫu nhiên theo seed.
+- **Học lái:** 4 bài từng bước, mỗi bài một thẻ (đánh dấu bài đã xong). **Hồ sơ:** thành tích, kết quả tốt nhất, lịch sử, xoá dữ liệu.
+- **Cài đặt:** phát thanh, cảnh vật, về ×1 khi có điện đàm. Âm lượng và ù cabin ở nút loa trên thanh biểu tượng.
+- Chế độ **Điều độ** (`dispatch.js`) hiện không có nút vào trong menu.
 
 ## Tệp
 - `sim.js` lõi mô phỏng · `scene.js` khung cảnh nhìn ngang · `cabview.js` khung nhìn buồng lái phía trước (giả 3D) · `layout.js` bố trí ga, đường cong, cao độ · `audio.js` âm thanh và phát thanh · `dispatch.js` điều độ · `tutorial.js` · `store.js` hồ sơ · `index.html` giao diện.
