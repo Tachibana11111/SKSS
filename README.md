@@ -22,9 +22,9 @@ Game lái tàu Shinkansen của 5 công ty JR, chạy hoàn toàn trong trình d
 | , · . | cửa sổ hành khách bên trái · bên phải (toa giữa đoàn, bấm lại để về buồng lái) |
 | J | bật/tắt tiếng ù cabin máy bay (cũng có ô ở menu phải); khi bật, tiếng mưa đổi thành hạt mưa tí tách trên mái |
 | D | hoán đổi nhanh giữa bản đồ toàn quốc và góc nhìn lái đang dùng (47 tỉnh, 10 tuyến theo màu Wikipedia, mọi tàu chạy theo lịch thật, thời tiết và động đất; con lăn zoom rất sâu, kéo di chuyển, bấm ga/tàu xem chi tiết ngay cạnh điểm bấm). Ô nhỏ dưới khung 2D: bản đồ bám theo tàu ta, hoặc góc nhìn lái khi bản đồ đang là khung chính; bấm vào ô đó cũng hoán đổi |
-| P | còi (game cũng tự bấm còi ở khu làm việc, hươu, ga không dừng, đường ngang, tàu đứng phía trước) |
-| Esc · nút ⏸ · F9 | tạm dừng · chụp cảnh (ảnh + tệp JSON dựng lại cảnh) |
-| 1 2 3 · T · R | tua ×1/×4/×16 · tự lái · chạy lại |
+| H | còi (game cũng tự bấm còi ở khu làm việc, hươu, ga không dừng, đường ngang, tàu đứng phía trước) |
+| P (hoặc Esc) · nút ⏸ · F9 | tạm dừng · chụp cảnh (khi đang tạm dừng có nút Chụp cảnh; ảnh + tệp JSON dựng lại cảnh) |
+| 1 2 3 · T · R | tua ×1/×4/×16 (cũng có nút vuông ×N ở góc trên phải: bấm để đổi ×1 → ×4 → ×16) · tự lái · chạy lại |
 
 Lần đầu vào trang có wizard ba trang (chọn chế độ, phím bấm, ghi công); xem lại ở tab Hồ sơ. Mở tab **Hướng dẫn** để học 4 bài: lái và dừng ga, thiết bị, sự cố, cần vẹt và ATC.
 Chạy ở máy: `python -m http.server` trong thư mục `prototype/drive` rồi mở `http://localhost:8000` (mở thẳng tệp thì âm thanh nền ga không tua được).

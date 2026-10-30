@@ -121,12 +121,13 @@ function drawTopBar(blink) {
 
   // nút nhỏ: điện đàm, HUD, toàn màn hình
   // các ô vuông biểu tượng cạnh nhau, dồn sát mép phải: camera sau (B), điện đàm (O), toàn màn hình (F11), tạm dừng (Esc)
-  const SZ = 44, GAP = 6, nIcons = tutLessonActive ? 3 : 4, bx0 = FW - 16 - nIcons * SZ - (nIcons - 1) * GAP, by0 = 7;      // hướng dẫn: chỉ điện đàm, toàn màn hình, tạm dừng
+  const SZ = 44, GAP = 6, nIcons = tutLessonActive ? 3 : 5, bx0 = FW - 16 - nIcons * SZ - (nIcons - 1) * GAP, by0 = 7;      // hướng dẫn: chỉ điện đàm, toàn màn hình, tạm dừng
   let ix = bx0; const nextX = () => { const x = ix; ix += SZ + GAP; return x; };
   if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'rear', ui.rear, 'B', () => { ui.rear = !ui.rear; });
+  if (!tutLessonActive) iconBtn(nextX(), by0, SZ, 'speed', scale > 1, 'Tua', () => { scale = scale === 1 ? 4 : scale === 4 ? 16 : 1; });      // nút tua: bấm để đổi ×1 → ×4 → ×16 → ×1
   iconBtn(nextX(), by0, SZ, 'radio', ui.radio, 'O', () => { ui.radio = !ui.radio; });
   iconBtn(nextX(), by0, SZ, 'full', !!document.fullscreenElement, 'F11', toggleFullscreen);
-  iconBtn(nextX(), by0, SZ, 'pause', paused, 'Esc', () => { paused = !paused; });
+  iconBtn(nextX(), by0, SZ, 'pause', paused, 'P', () => { paused = !paused; });
 }
 
 // công tắc ATC lớn, nổi bật: xanh khi bật, vàng khi chờ xác nhận, đỏ nhấp nháy khi đang cắt
@@ -151,6 +152,7 @@ function iconBtn(x, y, sz, kind, on, key, fn) {
   if (kind === 'rear') { ctx.beginPath(); ctx.roundRect(cx - 13, cy - 10, 26, 18, 3); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy - 1, 5, Math.PI * 0.2, Math.PI * 1.55); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 6, cy - 7); ctx.lineTo(cx - 3, cy - 1); ctx.lineTo(cx - 9, cy - 2); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(cx - 9, cy + 8); ctx.lineTo(cx - 9, cy + 13); ctx.moveTo(cx + 9, cy + 8); ctx.lineTo(cx + 9, cy + 13); ctx.stroke(); }
   else if (kind === 'radio') { ctx.beginPath(); ctx.roundRect(cx - 12, cy - 10, 24, 17, 4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx - 5, cy + 7); ctx.lineTo(cx - 8, cy + 13); ctx.lineTo(cx + 1, cy + 7); ctx.stroke(); for (const dy of [-4, 1]) { ctx.beginPath(); ctx.moveTo(cx - 7, cy + dy); ctx.lineTo(cx + 7, cy + dy); ctx.stroke(); } }
   else if (kind === 'hud') { ctx.beginPath(); ctx.roundRect(cx - 13, cy - 10, 26, 20, 3); ctx.stroke(); ctx.fillRect(cx - 9, cy - 6, 10, 4); ctx.fillRect(cx - 9, cy + 1, 18, 3); }
+  else if (kind === 'speed') { txt('×' + scale, cx, cy + 8, on ? '#fff' : '#cfe0f0', 'bold ' + (scale >= 10 ? 19 : 24) + 'px system-ui', 'center'); }
   else if (kind === 'pause') { if (on) { ctx.beginPath(); ctx.moveTo(cx - 7, cy - 11); ctx.lineTo(cx + 10, cy); ctx.lineTo(cx - 7, cy + 11); ctx.closePath(); ctx.fill(); } else { ctx.fillRect(cx - 9, cy - 11, 6, 22); ctx.fillRect(cx + 3, cy - 11, 6, 22); } }
   else { for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.moveTo(cx + sx * 4, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 12); ctx.lineTo(cx + sx * 12, cy + sy * 4); ctx.stroke(); } }
   ctx.lineCap = 'butt'; txt(key, cx, y + sz - 3, on ? '#dbe9ff' : '#7a8ea5', 'bold 9px system-ui', 'center'); btns.push({ x, y, w: sz, h: sz, fn });
@@ -257,7 +259,7 @@ function drawFull() {
       ['door', 'Đóng cửa', 'Enter', () => doAct('door'), T.door !== 'open', '#e08a2f'], ['cruise', 'Tốc độ đều', 'C', () => doAct('cs'), T.cs, '#2a8fa0'], ['wiper', 'Gạt mưa', 'V', () => doAct('wiper'), T.wiper, '#2a6fd6'],
       ['lamp', 'Đèn: ' + lampLab, 'L', () => doAct('lamp'), T.lamp !== 'auto', '#c9a227'], ['ack', 'Nhắc lệnh', 'Y', () => doAct('ack'), pend > 0 && blink, '#c9a227'],
       ['pa', 'Phát thanh', 'M', () => doAct('pa'), T.anx > 40 && blink, '#2a8fa0'], ['auto', 'Tự lái', 'T', () => doAct('auto'), auto, '#2a6fd6'], ['eb', 'Phanh khẩn', 'Q', () => doAct('eb'), T.bk === 8, '#d64a4a'],
-      ['coast', 'Về N', 'Space', () => doAct('coast'), false, '#2a6fd6'], ['horn', 'Còi', 'P', () => doAct('horn'), T.horn > 0, '#c9a227']], TS = 82, TG = 6;
+      ['coast', 'Về N', 'Space', () => doAct('coast'), false, '#2a6fd6'], ['horn', 'Còi', 'H', () => doAct('horn'), T.horn > 0, '#c9a227']], TS = 82, TG = 6;
     (tutLessonActive ? tl.filter(t => t[0] !== 'auto') : tl).forEach((t, i) => tileBtn(PX + 12 + (i % 5) * (TS + TG), PY + 36 + Math.floor(i / 5) * (TS + TG), TS, t[0], t[1], t[2], t[4], t[5], t[3]));
     const ty = PY + 36 + 2 * (TS + TG) + 10; ctx.fillStyle = '#243447'; ctx.fillRect(PX + 12, ty - 6, PW - 24, 1); txt('TIMS (trạng thái xe)', PX + 12, ty + 12, '#8aa0b5', 'bold 11px system-ui');
     const faultCars = new Set(W.faults.map(f => f.car)), nc = T.veh.cars, cw = Math.min(26, (PW - 24) / nc);

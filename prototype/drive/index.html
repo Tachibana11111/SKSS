@@ -82,8 +82,14 @@
     <label id="vehBox" style="display:none" title="Đoàn tàu đang rút dần; dùng lịch của chuyến đang chọn nên chỉ là giả định">Đoàn <select id="vehSel"><option value="">mặc định</option><option value="E2">E2-1000 (đang rút dần, lịch giả định)</option></select></label>
     <label>Từ <select id="from"></select></label>
     <label>Đến <select id="to"></select></label>
-    <button id="start" class="go" style="width:100%">Bắt đầu / chạy lại (R)</button>
+    <div id="driveOpts" style="display:contents">
+    <label>Độ khó <select id="diff"></select></label>
+    <label>Thời tiết <select id="weather"></select></label>
+    <label>Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
+    <label title="Chỉ khi lái chuyến Tohoku (E5): ghép với tàu Akita/Yamagata ở Tokyo (đầu đoàn) rồi tách ở Morioka/Fukushima; chiều lên thì tàu nhánh nối vào đuôi. Nasuno không ghép.">Ghép tàu nhánh <select id="couple"><option value="auto">tự động (theo tỉ lệ)</option><option value="always">luôn (nếu có thể)</option><option value="never">không</option></select></label>
+    </div>
     <span id="legBox" style="display:none"><label>Thêm chặng <select id="via"></select></label><div class="btns" style="margin-top:4px"><button id="viaAdd">Thêm</button><button id="viaClr">Xoá chặng</button></div><span id="viaList" style="color:#8aa0b5;font-size:12px"></span></span>
+    <button id="start" class="go" style="width:100%">Bắt đầu / chạy lại (R)</button>
   </div>
   <div class="row" id="rowDisp" style="display:none">
     <label>Giờ bắt đầu <select id="dHour"></select></label>
@@ -112,7 +118,7 @@
     <p class="dim" style="font-size:12px;margin:14px 0 0">Chọn xong sẽ sang trang phím bấm. Đổi chế độ lúc nào cũng được ở thanh trên cùng. <button class="link" id="wSkip">Bỏ qua, tự khám phá</button></p></div>
   <div id="w2" style="display:none"><h2>Phím bấm</h2><p class="dim" id="w2sub"></p><div class="keys">
     <div><b>W / S</b> tăng / giảm cần kéo</div><div><b>↓ / ↑</b> tăng / giảm phanh</div><div><b>Space</b> về N</div><div><b>Q</b> phanh khẩn</div><div><b>Enter</b> đóng cửa</div><div><b>C</b> tốc độ không đổi</div>
-    <div><b>P</b> còi</div><div><b>Esc</b> tạm dừng</div><div><b>A / G</b> ATC / cần vẹt</div><div><b>V / L</b> gạt mưa / đèn pha</div><div><b>Y / N</b> nhắc lệnh / từ chối</div><div><b>M</b> phát thanh</div><div><b>Tab</b> đổi khung nhìn</div><div><b>F9</b> chụp cảnh</div><div><b>J</b> ù cabin máy bay</div><div><b>D</b> bản đồ toàn quốc</div></div>
+    <div><b>H</b> còi</div><div><b>P</b> tạm dừng (Esc cũng được)</div><div><b>A / G</b> ATC / cần vẹt</div><div><b>V / L</b> gạt mưa / đèn pha</div><div><b>Y / N</b> nhắc lệnh / từ chối</div><div><b>M</b> phát thanh</div><div><b>Tab</b> đổi khung nhìn</div><div><b>F9</b> chụp cảnh</div><div><b>J</b> ù cabin máy bay</div><div><b>D</b> bản đồ toàn quốc</div></div>
     <p class="dim" style="font-size:12px;margin:12px 0 0">Bảng đầy đủ nằm ở cột phải (chế độ lái) và README.</p></div>
   <div id="w3" style="display:none"><h2>Ghi công tài nguyên</h2><p class="dim" style="font-size:13px">Game dùng tài nguyên của nhiều người. Mã nguồn theo MIT; các tài nguyên dưới đây giữ giấy phép riêng.</p>
     <table><tr><td>Hình tàu 2D, hình mặt trước</td><td>K.Y. Chung (rail.kychung.com), CC BY-NC-ND 4.0</td></tr><tr><td>Bản đồ, nhà, đường, cây</td><td>© OpenStreetMap contributors, ODbL</td></tr><tr><td>Tiếng nền ga Odawara</td><td>Flavien Gillié, Internet Archive, Public Domain</td></tr><tr><td>Biểu tượng tab</td><td>JR West, Wikimedia Commons</td></tr><tr><td>Bố trí ga</td><td>Wikipedia tiếng Nhật, CC BY-SA 4.0</td></tr><tr><td>Lịch tàu thật 10/2026</td><td>JR East, JR West (dữ liệu thuộc chủ sở hữu)</td></tr></table>
@@ -122,20 +128,12 @@
 </div>
 <aside id="sideR">
   <div class="row" id="rowDrive2">
-    <div class="grp">Chạy</div>
-    <button id="snap" title="F9: tạm dừng và chụp cảnh (ảnh + tệp mô tả để dựng lại)">📷 Chụp cảnh (F9)</button>
-    <label>Tua <span class="btns"><button data-s="1">×1</button><button data-s="4">×4</button><button data-s="16">×16</button></span></label>
-    <div class="grp">Cấu hình</div>
-    <label>Độ khó <select id="diff"></select></label>
-    <label>Thời tiết <select id="weather"></select></label>
-    <label>Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
+    <div class="grp">Tuỳ chọn</div>
     <label class="inl"><input type="checkbox" id="stopmsg" checked> về ×1 khi có điện đàm</label>
-    <label class="inl"><input type="checkbox" id="lead" checked> tàu chạy trước</label>
-    <label title="Chỉ khi lái chuyến Tohoku (E5): ghép với tàu Akita/Yamagata ở Tokyo (đầu đoàn) rồi tách ở Morioka/Fukushima; chiều lên thì tàu nhánh nối vào đuôi. Nasuno không ghép.">Ghép tàu nhánh <select id="couple"><option value="auto">tự động (theo tỉ lệ)</option><option value="always">luôn (nếu có thể)</option><option value="never">không</option></select></label>
   </div>
   <div class="row">
     <div class="grp">Âm thanh và cảnh</div>
-    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label class="inl" title="Bản đồ nhỏ: ray hướng tàu ta đi tô theo màu chính thức của tuyến đang lái (mặc định xanh biển)"><input type="checkbox" id="topcol"> minimap: ray theo màu tuyến</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60">
+    <label class="inl"><input type="checkbox" id="snd" checked> âm thanh</label> <label class="inl" title="Phím J: tiếng ù trầm như trong cabin máy bay thương mại, thay cho tiếng chạy và gió thô"><input type="checkbox" id="cabin"> ù cabin (J)</label><input id="vol" type="range" min="0" max="100" value="60">
     <label>Phát thanh <select id="ann"><option value="ja" selected>Tiếng Nhật + phụ đề</option><option value="en">Tiếng Anh + phụ đề</option><option value="sub">Chỉ phụ đề</option><option value="off">Tắt</option></select></label>
     <label>Cảnh vật <select id="scenery"><option value="full" selected>Đầy đủ (2 lớp)</option><option value="lite">Nhẹ (1 lớp)</option></select></label>
   </div>
@@ -275,7 +273,7 @@ async function takeSnapshot() {
 }
 function pauseOverlay() {
   if (!W || !paused || snapMode || mode === 'profile' || mode === 'dispatch') return; const full = ui.cur === 'full', bw = 250, bx = (W_ - bw) / 2, by = full ? DASH_Y - 50 : H_ - 60;
-  ctx.fillStyle = 'rgba(8,12,18,.78)'; ctx.beginPath(); ctx.roundRect(bx - 12, by - 28, bw + 24, 74, 10); ctx.fill(); txt('TẠM DỪNG · bấm Esc để chạy tiếp', W_ / 2, by - 8, '#ffc247', 'bold 14px system-ui', 'center');
+  ctx.fillStyle = 'rgba(8,12,18,.78)'; ctx.beginPath(); ctx.roundRect(bx - 12, by - 28, bw + 24, 74, 10); ctx.fill(); txt('TẠM DỪNG · bấm P để chạy tiếp', W_ / 2, by - 8, '#ffc247', 'bold 14px system-ui', 'center');
   button(bx, by, bw, 28, '📷 Chụp cảnh (F9)', () => takeSnapshot(), true, '#2a8f5a');
 }
 // ---- hộp chọn có tìm kiếm cho các danh sách dài (Tàu, Từ, Đến, Thêm chặng): mở bên cạnh ô chọn (không tràn đáy màn hình), gõ để lọc, ↑↓ Enter, Esc
@@ -304,7 +302,7 @@ for (const id of ['train', 'from', 'to', 'via']) { const sel = $(id); sel.addEve
 function setMode(m) {
   mode = m; closeModal();
   for (const [id, mm] of [['tabDrive', 'drive'], ['tabTut', 'tutorial'], ['tabProf', 'profile']]) $(id).classList.toggle('on', mm === m);
-  $('rowDrive1').style.display = (m === 'drive' || m === 'dispatch') ? 'flex' : 'none'; $('start').style.display = m === 'drive' ? '' : 'none'; $('rowDrive2').style.display = m === 'drive' ? 'flex' : 'none';
+  $('rowDrive1').style.display = (m === 'drive' || m === 'dispatch') ? 'flex' : 'none'; $('start').style.display = m === 'drive' ? '' : 'none'; $('rowDrive2').style.display = m === 'drive' ? 'flex' : 'none'; $('driveOpts').style.display = m === 'drive' ? 'contents' : 'none';
   $('rowDisp').style.display = m === 'dispatch' ? 'flex' : 'none'; $('rowTut').style.display = m === 'tutorial' ? 'flex' : 'none';
   if (m === 'dispatch') { $('train').parentElement.style.display = 'none'; $('from').parentElement.style.display = 'none'; $('to').parentElement.style.display = 'none'; } else { $('train').parentElement.style.display = ''; $('from').parentElement.style.display = ''; $('to').parentElement.style.display = ''; }
   if (m === 'profile') showProfile();
@@ -316,7 +314,7 @@ $('tabTut').onclick = () => { if (mode === 'tutorial') return; if (tutLessonActi
 // ---- lưu cài đặt
 const S = Store.get().settings; $('vol').value = S.vol; $('snd').checked = S.snd; $('ann').value = S.ann; $('scenery').value = S.scenery === 'lite' ? 'lite' : 'full'; window.SCENERY = $('scenery').value; $('scenery').onchange = () => { window.SCENERY = $('scenery').value; Store.setting('scenery', window.SCENERY); if (window.Strips) Strips.clear(); }; $('diff').value = S.diff || 'normal';
 function sndUpd() { AUD.setVolume(+$('vol').value / 100, $('snd').checked); Store.setting('vol', +$('vol').value); Store.setting('snd', $('snd').checked); }
-$('snd').onchange = () => { AUD.unlock(); sndUpd(); }; window.TOPCOL = !!S.topcol; $('topcol').checked = !!S.topcol; $('topcol').onchange = () => { window.TOPCOL = $('topcol').checked; Store.setting('topcol', window.TOPCOL); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
+$('snd').onchange = () => { AUD.unlock(); sndUpd(); }; $('cabin').checked = !!S.cabin; AUD.cabin = !!S.cabin; const cabinSet = on => { AUD.cabin = on; $('cabin').checked = on; Store.setting('cabin', on); }; $('cabin').onchange = () => { AUD.unlock(); cabinSet($('cabin').checked); }; $('vol').oninput = () => { AUD.unlock(); sndUpd(); };
 $('ann').onchange = () => { AUD.unlock(); AUD.setAnn($('ann').value); Store.setting('ann', $('ann').value); }; $('diff').onchange = () => Store.setting('diff', $('diff').value);
 AUD.setAnn($('ann').value); AUD.vol = +$('vol').value / 100; AUD.enabled = $('snd').checked;
 $('fsBtn').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); } catch (e) { } };
@@ -326,7 +324,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) focus
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
-function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: $('lead').checked, events: true, veh: $('vehSel').value || undefined, couple: $('couple').value }; }
+function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, couple: $('couple').value }; }
 function startDrive(r, opts) {
   opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec0 = r.rec || L.trains[r.recIdx], rec = r.veh && /^(E5|E7)$/.test(rec0.v) && Sim.VEH[r.veh] ? Object.assign({}, rec0, { v: r.veh, retro: 1 }) : rec0, trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert('Chọn ga đi/đến hợp lệ cho chuyến này.'); return false; }
@@ -345,13 +343,12 @@ function startLesson(i) {
   const c = Tutorial.cfg(i); if (!c) { alert('Không tìm thấy chuyến phù hợp cho bài này.'); return; }
   tutorialRun = true; tutLessonActive = true; setMode('tutorial');
   startDrive({ lineId: c.lineId, rec: c.rec, from: c.from, to: c.to, diff: c.diff, weather: c.weather, seed: c.seed, lead: c.lead, events: false });
-  tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; ui.radio = c.radio; ui.focus = false; ui.rear = false;
+  tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; $('driveOpts').style.display = 'none'; ui.radio = c.radio; ui.focus = false; ui.rear = false;
 }
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));
-$('start').onclick = () => { tutorialRun = false; startDrive(); }; $('snap').onclick = () => takeSnapshot();
+$('start').onclick = () => { tutorialRun = false; startDrive(); }; 
 $('dStart').onclick = () => startDispatch();
 function startDispatch() { Dispatch.start({ lineId: $('line').value, dir: $('dir').value, diff: $('diff').value, seed: +$('seed').value || 1, weather: $('dWeather').value, t0: +$('dHour').value * 3600, span: +$('dSpan').value }); }
-document.querySelectorAll('button[data-s]').forEach(b => b.onclick = () => scale = +b.dataset.s);
 
 // ---- hành động của người lái (có ghi lại để xem lại)
 const act = {
@@ -368,8 +365,8 @@ addEventListener('keydown', e => {
   if (!W || mode === 'profile') return;
   if (k === 'j' || k === 'J') { AUD.unlock(); cabinSet(!AUD.cabin); e.preventDefault(); return; }
   if (k === 'Escape' && ui.nat) { ui.nat = false; e.preventDefault(); return; }
-  if (k === 'Escape' || ((k === 'p' || k === 'P') && mode === 'dispatch')) { paused = !paused; e.preventDefault(); return; }
-  if ((k === 'p' || k === 'P') && W) { doAct('horn'); e.preventDefault(); return; }
+  if (k === 'Escape' || k === 'p' || k === 'P') { paused = !paused; e.preventDefault(); return; }
+  if ((k === 'h' || k === 'H') && W) { doAct('horn'); e.preventDefault(); return; }
   if ((k === 'd' || k === 'D') && W && mode !== 'dispatch') { ui.nat = !ui.nat; e.preventDefault(); return; }
   if (k === 'Tab' && T.finished) { endPage = (endPage + 1) % 2; e.preventDefault(); return; }
   if (k === 'Tab' && ui.cur === 'full') { cycleMain(); e.preventDefault(); return; }
