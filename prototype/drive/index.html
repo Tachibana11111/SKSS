@@ -328,7 +328,7 @@ function tpUpd() {      // hình đầu đoàn + các toa kế sau của tàu đ
   const box = $('mTrainPrev'), im = $('mTpImg'), L = Lc(), rec = L && L.trains[+$('train').value]; if (!rec) { im.style.display = 'none'; return; }
   const key = $('vehSel').value || rec.v, nm = Scene.SMAP[key] || 'n700', m = window.PREVIEW && PREVIEW[nm], down = $('dir').value === 'down', fd = !!Sim.lineOf($('line').value).meta.flipDown, hr = down ? !fd : fd;
   box.className = hr ? 'hr' : 'hl'; if (!m) { im.style.display = 'none'; return; }
-  const k = 1.7 * 13.9 / m.ppm; im.style.height = Math.round(m.h * k) + 'px'; im.style.width = Math.round(m.w * k) + 'px'; im.onerror = () => { im.style.display = 'none'; }; im.src = 'assets/pv_' + nm + '.png'; im.style.display = 'block';
+  const k = 1.7 * 13.9 / m.ppm; im.style.height = Math.round(m.h * k) + 'px'; im.style.width = Math.round(m.w * k) + 'px'; im.onerror = () => { im.style.display = 'none'; }; im.src = 'assets/pv_' + nm + '.png' + (m.v ? '?v=' + m.v : ''); im.style.display = 'block';
 }
 function vehUpd() { const rec = Lc().trains[+$('train').value], ok = rec && /^(E5|E7)$/.test(rec.v); $('vehBox').style.display = ok ? '' : 'none'; if (!ok) $('vehSel').value = ''; }
 $('to').addEventListener('change', () => { legsExtra = []; legUpd(); });
