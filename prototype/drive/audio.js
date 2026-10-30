@@ -234,50 +234,50 @@
   GameAudio.prototype.doorSide = function (W, T, j) {
     const m = T.M[j], Ly = root.Layout, ls = W.line.stations[m.i]; if (!Ly || !ls || !ls.lay || m.mainStop) return null;
     const st = Ly.station(ls.lay, W.dir, Ly.pickOf(ls, m.i)); if (!st.plat) return null;
-    return st.platSign > 0 ? { ja: '左側', en: 'left', vi: 'trái' } : { ja: '右側', en: 'right', vi: 'phải' };
+    return st.platSign > 0 ? { ja: '左側', en: 'left', vi: _t('trái') } : { ja: '右側', en: 'right', vi: _t('phải') };
   };
   GameAudio.prototype.announce = function (W, T, p) {
     if (this.annMode === 'off') return;
     const M = T.M, A = this.ann;
     const nameJ = k => M[k].jp || M[k].name, typeJ = TYPEJ[W.trip.rec.t] || '', no = W.trip.rec.n;
-    const last = M.length - 1, destJ = nameJ(last), dest = M[last].name;
+    const last = M.length - 1, destJ = nameJ(last), dest = M[last].rom || M[last].name;
     const j = root.Sim.nextTarget(T), nxt = M[j];
     // lúc bắt đầu chuyến
     if (T.started && !A.start) { A.start = true;
-      this.say(W, { ja: `本日も、${W.line.meta.pa}新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, en: `Thank you for riding the Shinkansen. This is the ${W.trip.rec.t} number ${no} bound for ${dest}.`, vi: `Cảm ơn quý khách đã đi Shinkansen. Đây là ${W.trip.rec.t} số ${no} đi ${dest}.` }, false, true); }
+      this.say(W, { ja: `本日も、${W.line.meta.pa}新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, en: `Thank you for riding the Shinkansen. This is the ${W.trip.rec.t} number ${no} bound for ${dest}.`, vi: _t('Cảm ơn quý khách đã đi Shinkansen. Đây là {0} số {1} đi {2}.', W.trip.rec.t, no, dest) }, false, true); }
     // đóng cửa
-    if (T.door === 'closing' && p.door !== 'closing' && T.started) this.say(W, { ja: 'ドアが閉まります。ご注意ください。', en: 'The doors are closing. Please stand clear.', vi: 'Cửa sắp đóng, xin quý khách chú ý.' }, false, false);
+    if (T.door === 'closing' && p.door !== 'closing' && T.started) this.say(W, { ja: 'ドアが閉まります。ご注意ください。', en: 'The doors are closing. Please stand clear.', vi: _t('Cửa sắp đóng, xin quý khách chú ý.') }, false, false);
     // sau khi rời ga: ga dừng kế tiếp, và xin lỗi nếu trễ
     if (T.phase === 'run' && p.phase === 'dwell') {
       const delay = W.t - root.Sim.plannedTime(T);
       if (T.k > 0 || delay > 120) { }
-      this.say(W, { ja: `次は、${nameJ(j)}に止まります。`, en: `The next stop is ${nxt.name}.`, vi: `Ga dừng tiếp theo là ${nxt.name}.` }, false, true);
-      if (delay > 120) this.say(W, { ja: `お急ぎのところ、列車が約${Math.round(delay / 60)}分遅れております。お詫び申し上げます。`, en: `We apologize for the delay of about ${Math.round(delay / 60)} minutes.`, vi: `Tàu đang trễ khoảng ${Math.round(delay / 60)} phút, xin lỗi quý khách.` }, false, false);
+      this.say(W, { ja: `次は、${nameJ(j)}に止まります。`, en: `The next stop is ${nxt.rom || nxt.name}.`, vi: _t('Ga dừng tiếp theo là {0}.', nxt.name) }, false, true);
+      if (delay > 120) this.say(W, { ja: `お急ぎのところ、列車が約${Math.round(delay / 60)}分遅れております。お詫び申し上げます。`, en: `We apologize for the delay of about ${Math.round(delay / 60)} minutes.`, vi: _t('Tàu đang trễ khoảng {0} phút, xin lỗi quý khách.', Math.round(delay / 60)) }, false, false);
       A.apr = -1;
     }
     // sắp tới ga: tên ga, các tuyến đổi tàu và bên cửa sẽ mở
     if (T.phase === 'run') { const d = M[j].s - T.x; if (d < 3500 && A.apr !== j && T.v > 15) { A.apr = j;
-      this.say(W, { ja: `まもなく、${nameJ(j)}、${nameJ(j)}です。`, en: `We will soon be arriving at ${nxt.name}.`, vi: `Sắp tới ga ${nxt.name}.` }, false, true);
+      this.say(W, { ja: `まもなく、${nameJ(j)}、${nameJ(j)}です。`, en: `We will soon be arriving at ${nxt.rom || nxt.name}.`, vi: _t('Sắp tới ga {0}.', nxt.name) }, false, true);
       const tr = (root.TRANSFERS || {})[M[j].jp] || [], rail = tr.filter(x => x !== '路線バス');
-      if (rail.length) this.say(W, { ja: `${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, en: `You can change here to other railway lines: ${rail.length} connections.`, vi: `Quý khách có thể đổi tàu tại ${nxt.name}: ${rail.join(', ')}.` }, false, false);
-      else if (tr.length) this.say(W, { ja: `${nameJ(j)}では、路線バスはお乗り換えです。`, en: 'Bus connections are available here.', vi: `Tại ga ${nxt.name} có xe buýt kết nối.` }, false, false);
+      if (rail.length) this.say(W, { ja: `${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, en: `You can change here to other railway lines: ${rail.length} connections.`, vi: _t('Quý khách có thể đổi tàu tại {0}: {1}.', nxt.name, rail.join(', ')) }, false, false);
+      else if (tr.length) this.say(W, { ja: `${nameJ(j)}では、路線バスはお乗り換えです。`, en: 'Bus connections are available here.', vi: _t('Tại ga {0} có xe buýt kết nối.', nxt.name) }, false, false);
       const sd = this.doorSide(W, T, j);
-      if (sd) this.say(W, { ja: `${nameJ(j)}では、${sd.ja}のドアが開きます。`, en: `The doors on the ${sd.en} side will open at ${nxt.name}.`, vi: `Tại ga ${nxt.name}, cửa mở ở bên ${sd.vi}.` }, false, true); } }
+      if (sd) this.say(W, { ja: `${nameJ(j)}では、${sd.ja}のドアが開きます。`, en: `The doors on the ${sd.en} side will open at ${nxt.rom || nxt.name}.`, vi: _t('Tại ga {0}, cửa mở ở bên {1}.', nxt.name, sd.vi) }, false, true); } }
     // tới ga
     if (T.results.length > (A.res || 0)) { A.res = T.results.length; const r = T.results[T.results.length - 1];
-      if (!r.overrun) { if (T.phase === 'end') this.say(W, { ja: `終点、${nameJ(last)}、${nameJ(last)}です。ご乗車ありがとうございました。`, en: `This is ${dest}, the last stop. Thank you for riding.`, vi: `Ga cuối ${dest}. Cảm ơn quý khách.` }, false, true);
-        else if (T.holds[T.k] > W.t) this.say(W, { ja: 'ダイヤ調整のため、しばらく停車いたします。ご迷惑をおかけします。', en: 'We will stop here for a while due to schedule adjustment.', vi: 'Tàu dừng lại một lúc để điều chỉnh lịch chạy.' }, false, false); } }
+      if (!r.overrun) { if (T.phase === 'end') this.say(W, { ja: `終点、${nameJ(last)}、${nameJ(last)}です。ご乗車ありがとうございました。`, en: `This is ${dest}, the last stop. Thank you for riding.`, vi: _t('Ga cuối {0}. Cảm ơn quý khách.', dest) }, false, true);
+        else if (T.holds[T.k] > W.t) this.say(W, { ja: 'ダイヤ調整のため、しばらく停車いたします。ご迷惑をおかけします。', en: 'We will stop here for a while due to schedule adjustment.', vi: _t('Tàu dừng lại một lúc để điều chỉnh lịch chạy.') }, false, false); } }
     // mưa, tuyết, gió, động đất, va chạm, tàu trước dừng
-    if (W.rainHere && !p.rain) this.say(W, { ja: 'ただいま、大雨のため、速度を落として運転しております。', en: 'We are running at reduced speed due to heavy rain.', vi: 'Tàu đang chạy chậm do mưa lớn.' }, false, false);
+    if (W.rainHere && !p.rain) this.say(W, { ja: 'ただいま、大雨のため、速度を落として運転しております。', en: 'We are running at reduced speed due to heavy rain.', vi: _t('Tàu đang chạy chậm do mưa lớn.') }, false, false);
     p.rain = W.rainHere;
     const snow = W.zones.some(z => z.kind === 'snow' && T.x >= z.s0 && T.x < z.s1);
-    if (snow && !p.snow) this.say(W, { ja: '雪のため、徐行運転をしております。', en: 'We are running slowly because of snow.', vi: 'Tàu chạy chậm do tuyết.' }, false, false); p.snow = snow;
+    if (snow && !p.snow) this.say(W, { ja: '雪のため、徐行運転をしております。', en: 'We are running slowly because of snow.', vi: _t('Tàu chạy chậm do tuyết.') }, false, false); p.snow = snow;
     if (W.lastHold && W.lastHold.seq !== A.holdSeq) { A.holdSeq = W.lastHold.seq; const rain = W.lastHold.why === 'rain';
-      this.say(W, { ja: rain ? 'ただいま、大雨のため、運転を見合わせております。' : 'ただいま、強風のため、運転を見合わせております。', en: rain ? 'Service is suspended due to heavy rain.' : 'Service is suspended due to strong winds.', vi: rain ? 'Tạm ngừng chạy do mưa lớn.' : 'Tạm ngừng chạy do gió mạnh.' }, true, true); }
-    if (W.eqkActive && !p.eqk) this.say(W, { ja: 'ただいま、地震のため、緊急停止いたしました。そのまま、しばらくお待ちください。', en: 'The train has made an emergency stop due to an earthquake. Please remain seated.', vi: 'Tàu dừng khẩn cấp do động đất. Xin quý khách ngồi yên chờ.' }, true, true);
-    if (!W.eqkActive && p.eqk) this.say(W, { ja: '安全が確認できましたので、運転を再開いたします。', en: 'Safety has been confirmed. We will resume service.', vi: 'Đã xác nhận an toàn, tàu chạy lại.' }, false, true);
-    if (T.animalHit > (p.animalHit || 0)) this.say(W, { ja: 'ただいま、動物と衝突したため、停車しております。', en: 'The train has stopped after hitting an animal.', vi: 'Tàu dừng do va chạm động vật.' }, true, true);
-    if (W.leadStopAt !== undefined && W.leadStopAt !== A.leadStop) { A.leadStop = W.leadStopAt; this.say(W, { ja: '前を走る列車で、急病のお客様が出たため、間隔をあけて運転しております。', en: 'A passenger on the train ahead is ill, so we are keeping a distance.', vi: 'Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.' }, false, true); }
+      this.say(W, { ja: rain ? 'ただいま、大雨のため、運転を見合わせております。' : 'ただいま、強風のため、運転を見合わせております。', en: rain ? 'Service is suspended due to heavy rain.' : 'Service is suspended due to strong winds.', vi: rain ? _t('Tạm ngừng chạy do mưa lớn.') : _t('Tạm ngừng chạy do gió mạnh.') }, true, true); }
+    if (W.eqkActive && !p.eqk) this.say(W, { ja: 'ただいま、地震のため、緊急停止いたしました。そのまま、しばらくお待ちください。', en: 'The train has made an emergency stop due to an earthquake. Please remain seated.', vi: _t('Tàu dừng khẩn cấp do động đất. Xin quý khách ngồi yên chờ.') }, true, true);
+    if (!W.eqkActive && p.eqk) this.say(W, { ja: '安全が確認できましたので、運転を再開いたします。', en: 'Safety has been confirmed. We will resume service.', vi: _t('Đã xác nhận an toàn, tàu chạy lại.') }, false, true);
+    if (T.animalHit > (p.animalHit || 0)) this.say(W, { ja: 'ただいま、動物と衝突したため、停車しております。', en: 'The train has stopped after hitting an animal.', vi: _t('Tàu dừng do va chạm động vật.') }, true, true);
+    if (W.leadStopAt !== undefined && W.leadStopAt !== A.leadStop) { A.leadStop = W.leadStopAt; this.say(W, { ja: '前を走る列車で、急病のお客様が出たため、間隔をあけて運転しております。', en: 'A passenger on the train ahead is ill, so we are keeping a distance.', vi: _t('Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.') }, false, true); }
   };
   GameAudio.prototype.reset = function (W) { this.silence(); this.prev = {}; this.ann = {}; this.q = []; if (root.speechSynthesis) root.speechSynthesis.cancel(); this.speaking = false; this.msgCount = W ? W.msgs.length : 0; this.lastResults = 0; this.lastMast = undefined; };
   root.GameAudio = GameAudio;

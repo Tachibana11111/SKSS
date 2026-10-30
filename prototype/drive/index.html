@@ -78,6 +78,13 @@
   #menu .box h2{margin:0 0 4px;text-align:center;font-size:19px}
   #menu .box p{margin:0 0 6px;color:var(--mut);font-size:13px;text-align:center;line-height:1.5}
   #menu .row2{display:flex;gap:8px} #menu .row2 button{flex:1}
+  #menu .lrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #243447;font-size:14px}
+  #menu .lang{position:relative;width:min(62%,300px)}
+  #menu .lang button{display:flex;align-items:center;gap:10px;width:100%;height:38px;padding:0 10px;text-align:left}
+  #menu .lang button .nm{flex:1} #menu .lang button .cv{color:var(--mut);font-size:11px}
+  #menu .llist{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;background:#171c25;border:1px solid #33475e;border-radius:8px;padding:4px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  #menu .llist button{border:0;background:transparent;height:38px} #menu .llist button.cur{background:#1d2a3a} #menu .llist button:hover{background:#2c4059}
+  .flag{display:inline-block;flex:none;width:24px;height:24px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.28);line-height:0} .flag svg{width:100%;height:100%;display:block}
   #menu .lk{background:none;border:0;color:var(--mut);text-decoration:underline;height:auto;padding:0;font-size:12px}
   #menu .lk:hover{background:none;color:var(--fg)}
   #wiz{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}
@@ -243,6 +250,9 @@
     <div class="row2"><button data-m="pause">Ở lại</button><button class="go" id="mcOk"></button></div>
   </div></div>
 </div>
+<script src="i18n.js"></script>
+<script src="lang-en.js"></script>
+<script src="lang-ja.js"></script>
 <script src="data-lines.js"></script>
 <script src="assets/n700_strip.js"></script>
 <script src="assets/sprites.js"></script>
@@ -267,6 +277,7 @@
 <script src="world.js"></script>
 <script src="strips.js"></script>
 <script>
+I18N.applyDom(document.body); document.title = _t('Lái Shinkansen - bản thử 0.4'); document.documentElement.lang = I18N.lang;      // dịch văn bản tĩnh trong HTML theo ngôn ngữ đã chọn
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 let clk = [0, 0], volDrag = false, volRect = null;      // vị trí lần bấm gần nhất (cho thanh âm lượng) / đang kéo / vùng thanh
 let W_ = cv.width, H_ = cv.height, QS = 1;      // QS: hệ số độ phân giải vẽ (cố định 1) const LINES = window.LINES;
@@ -286,21 +297,22 @@ const fmt = Sim.fmtT;
 Object.entries(Sim.DIFF).forEach(([k, d]) => $('diff').add(new Option(d.name, k, false, k === 'normal')));
 Object.entries(Sim.WEATHER).forEach(([k, v]) => { $('weather').add(new Option(v, k)); $('dWeather').add(new Option(v, k)); });
 for (let h = 6; h <= 20; h++) $('dHour').add(new Option(String(h).padStart(2, '0') + ':00', h, false, h === 8));
-Object.values(LINES).forEach(L => $('line').add(new Option(L.name, L.id)));
+Object.values(LINES).forEach(L => $('line').add(new Option(_ln(Sim.lineOf(L.id)), L.id)));
 const Lc = () => LINES[$('line').value];
+const stOpt = (s, i) => { const o = new Option(_s(s), i); o.dataset.rom = s.en; return o; };      // ô chọn ga: chữ hiển thị theo ngôn ngữ, dataset.rom giữ chữ La-tinh để lọc/chọn mặc định
 function trainList() {
   const L = Lc(), dir = $('dir').value; $('train').innerHTML = '';
   L.trains.map((t, i) => [t, i]).filter(([t]) => t.d === dir).sort((a, b) => (a[0].s[0][2] || a[0].s[0][1]) - (b[0].s[0][2] || b[0].s[0][1])).forEach(([t, i]) => {
     const a = t.s[0], b = t.s[t.s.length - 1];
-    $('train').add(new Option(`${t.t} ${t.n} · ${hhmm(a[2] != null ? a[2] : a[1])} ${L.stations[a[0]].en} → ${L.stations[b[0]].en} · ${Sim.VEH[t.v].name}${t.mir ? ' (ước)' : ''}`, i));
+    const opt = new Option(`${t.t} ${t.n} · ${hhmm(a[2] != null ? a[2] : a[1])} ${_s(L.stations[a[0]])} → ${_s(L.stations[b[0]])} · ${Sim.VEH[t.v].name}${t.mir ? _t(' (ước)') : ''}`, i); opt.dataset.rom = `${t.t} ${t.n} · ${hhmm(a[2] != null ? a[2] : a[1])} ${L.stations[a[0]].en} → ${L.stations[b[0]].en}`; $('train').add(opt);
   });
-  const pref = [...$('train').options].find(o => /Nozomi|Hayabusa/.test(o.text) && /→ (Shin-Osaka|Hakata|Shin-Aomori|Tokyo)/.test(o.text)) || $('train').options[0]; if (pref) pref.selected = true;
+  const pref = [...$('train').options].find(o => /Nozomi|Hayabusa/.test(o.dataset.rom || o.text) && /→ (Shin-Osaka|Hakata|Shin-Aomori|Tokyo)/.test(o.dataset.rom || o.text)) || $('train').options[0]; if (pref) pref.selected = true;
   stopList();
 }
 let legsExtra = [], campaign = [];
 function legUpd() {
   const rec = Lc().trains[+$('train').value], insp = rec && Sim.INSPECT[rec.v]; $('legBox').style.display = insp ? '' : 'none'; if (!insp) return;
-  const L = Lc(); $('viaList').textContent = legsExtra.length ? 'Lộ trình: ' + [L.stations[+$('from').value].en, L.stations[+$('to').value].en].concat(legsExtra.map(i => L.stations[i].en)).join(' → ') : '';
+  const L = Lc(); $('viaList').textContent = legsExtra.length ? _t('Lộ trình: ') + [_s(L.stations[+$('from').value]), _s(L.stations[+$('to').value])].concat(legsExtra.map(i => _s(L.stations[i]))).join(' → ') : '';
 }
 $('viaAdd').onclick = () => { const to = +$('to').value, last = legsExtra.length ? legsExtra[legsExtra.length - 1] : to, v = +$('via').value; if (v === last) return; legsExtra.push(v); legUpd(); };
 $('viaClr').onclick = () => { legsExtra = []; legUpd(); };
@@ -308,13 +320,13 @@ function stopList() {
   const L = Lc(), rec = L.trains[+$('train').value]; if (!rec) return; const seq = rec.s.filter(e => !e[3]);
   $('from').innerHTML = ''; $('to').innerHTML = '';
   if (Sim.INSPECT[rec.v]) {      // tàu kiểm tra: nhiệm vụ tự do, chọn ga đầu/cuối bất kỳ trên tuyến (chiều chạy suy ra từ thứ tự hai ga)
-    L.stations.forEach((s, i) => { $('from').add(new Option(s.en, i)); $('to').add(new Option(s.en, i)); });
+    L.stations.forEach((s, i) => { $('from').add(stOpt(s, i)); $('to').add(stOpt(s, i)); });
     $('from').selectedIndex = 0; $('to').selectedIndex = Math.min(L.stations.length - 1, Math.max(1, Math.floor(L.stations.length / 2)));
-    $('via').innerHTML = ''; L.stations.forEach((s, i) => $('via').add(new Option(s.en, i))); legsExtra = []; legUpd(); return;
+    $('via').innerHTML = ''; L.stations.forEach((s, i) => $('via').add(stOpt(s, i))); legsExtra = []; legUpd(); return;
   }
   legsExtra = []; legUpd();
-  seq.forEach((e, k) => { if (k < seq.length - 1) $('from').add(new Option(L.stations[e[0]].en, e[0])); if (k > 0) $('to').add(new Option(L.stations[e[0]].en, e[0])); });
-  $('from').selectedIndex = 0; const pt = [...$('to').options].find(o => /^(Nagoya|Sendai)$/.test(o.text)); if (pt) pt.selected = true; else $('to').selectedIndex = $('to').options.length - 1;
+  seq.forEach((e, k) => { if (k < seq.length - 1) $('from').add(stOpt(L.stations[e[0]], e[0])); if (k > 0) $('to').add(stOpt(L.stations[e[0]], e[0])); });
+  $('from').selectedIndex = 0; const pt = [...$('to').options].find(o => /^(Nagoya|Sendai)$/.test(o.dataset.rom || o.text)); if (pt) pt.selected = true; else $('to').selectedIndex = $('to').options.length - 1;
 }
 $('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = () => { stopList(); vehUpd(); }; $('line').addEventListener('change', () => setTimeout(vehUpd, 0)); $('dir').addEventListener('change', () => setTimeout(vehUpd, 0));
 function vehUpd() { const rec = Lc().trains[+$('train').value], ok = rec && /^(E5|E7)$/.test(rec.v); $('vehBox').style.display = ok ? '' : 'none'; if (!ok) $('vehSel').value = ''; }
@@ -348,7 +360,7 @@ window.Snap = { state: sceneState, restore: restoreScene };
 let ckOpen = false, ckWasPaused = false;
 function closeCheckin() { ckOpen = false; $('ck').style.display = 'none'; const c = $('ckCv'); c.width = 1; c.height = 1; paused = ckWasPaused; }
 async function checkinTrain(t) {
-  if (ckOpen || !W) return; ckOpen = true; ckWasPaused = paused; paused = true; $('ck').style.display = 'flex'; $('ckTitle').textContent = t.label + ' · đang dựng cảnh...'; $('ckCap').textContent = '';
+  if (ckOpen || !W) return; ckOpen = true; ckWasPaused = paused; paused = true; $('ck').style.display = 'flex'; $('ckTitle').textContent = t.label + _t(' · đang dựng cảnh...'); $('ckCap').textContent = '';
   const cvk = $('ckCv'); cvk.width = 1920; cvk.height = 618; const g = cvk.getContext('2d'); g.fillStyle = '#0b0f14'; g.fillRect(0, 0, 1920, 618);
   const now = W.trip.t0 + W.t; let Wc = W, Tc = T, line = W.lineId, kmShow = 0, kmh = T.v * 3.6, status = '';
   try {
@@ -358,10 +370,10 @@ async function checkinTrain(t) {
       const H = W.haz, cell = H && H.cells.find(cl => W.t >= cl.t0 && W.t <= cl.t1 && NatCat.hav(t.s.lat, t.s.lon, cl.lat, cl.lon) < cl.r); if (cell) Wc.weatherKind = cell.kind === 'wind' ? 'typhoon' : cell.kind; }
     else kmShow = Sim.kmOfS(T.x, W.dir, W.line.kmEnd);
     const Ln = LINES[line], nearI = Ln.stations.reduce((b, s, i) => Math.abs(s.km - kmShow) < Math.abs(Ln.stations[b].km - kmShow) ? i : b, 0), nd = Math.abs(Ln.stations[nearI].km - kmShow);
-    status = (t.held ? 'đang dừng vì sự cố · ' : kmh < 1 ? 'đang đứng · ' : Math.round(kmh) + ' km/h · ') + (nd < 0.1 ? 'tại ga ' + Ln.stations[nearI].en : 'gần ga ' + Ln.stations[nearI].en + ' (cách ' + nd.toFixed(1) + ' km)') + ' · ' + hhmm(now % 86400);
+    status = (t.held ? _t('đang dừng vì sự cố · ') : kmh < 1 ? _t('đang đứng · ') : Math.round(kmh) + ' km/h · ') + (nd < 0.1 ? _t('tại ga ') + _s(Ln.stations[nearI]) : _t('gần ga ') + _s(Ln.stations[nearI]) + _t(' (cách ') + nd.toFixed(1) + ' km)') + ' · ' + hhmm(now % 86400);
     for (let k = 0; k < 7 && ckOpen; k++) { Wc.rear = false; g.clearRect(0, 0, 1920, 618); CabView.draw(g, 0, 0, 1920, 618, Wc, Tc, { sprites: SPR, fronts: FR, aud: AUD }); await new Promise(r => setTimeout(r, k < 2 ? 80 : 160)); }      // vài lần để các tấm cảnh vật tải xong
     if (ckOpen) { $('ckTitle').textContent = '📍 Check-in · ' + t.label + ' · ' + Ln.name; $('ckCap').textContent = status; }
-  } catch (e) { $('ckTitle').textContent = 'Không dựng được cảnh cho đoàn này'; $('ckCap').textContent = String(e.message || e); }
+  } catch (e) { $('ckTitle').textContent = _t('Không dựng được cảnh cho đoàn này'); $('ckCap').textContent = String(e.message || e); }
 }
 $('ckClose').onclick = closeCheckin;
 addEventListener('keydown', e => { if (ckOpen) { e.stopImmediatePropagation(); if (e.key === 'Escape' || e.key === 'Enter') closeCheckin(); e.preventDefault(); } }, true);
@@ -374,12 +386,12 @@ async function takeSnapshot() {
   const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); };
   const png = await new Promise(res => off.toBlob(res, 'image/png')); save(png, base + '.png'); save(new Blob([code], { type: 'application/json' }), base + '.json');
   try { await navigator.clipboard.writeText(code); } catch (e) { }
-  W.say('info', `Đã chụp cảnh: ${base}.png và .json (mã cảnh đã chép vào bộ nhớ tạm). Vẫn tạm dừng, bấm Esc hoặc nút ⏸ để chạy tiếp.`); return { st, png };
+  W.say('info', _t('Đã chụp cảnh: {0}.png và .json (mã cảnh đã chép vào bộ nhớ tạm). Vẫn tạm dừng, bấm Esc hoặc nút ⏸ để chạy tiếp.', base)); return { st, png };
 }
 function pauseOverlay() {
   if (!W || !paused || snapMode || mode === 'profile' || mode === 'dispatch') return; const full = ui.cur === 'full', bw = 250, bx = (W_ - bw) / 2, by = full ? DASH_Y - 50 : H_ - 60;
-  ctx.fillStyle = 'rgba(8,12,18,.78)'; ctx.beginPath(); ctx.roundRect(bx - 12, by - 28, bw + 24, 74, 10); ctx.fill(); txt('TẠM DỪNG · bấm P để chạy tiếp', W_ / 2, by - 8, '#ffc247', 'bold 14px system-ui', 'center');
-  button(bx, by, bw, 28, '📷 Chụp cảnh (F9)', () => takeSnapshot(), true, '#2a8f5a');
+  ctx.fillStyle = 'rgba(8,12,18,.78)'; ctx.beginPath(); ctx.roundRect(bx - 12, by - 28, bw + 24, 74, 10); ctx.fill(); txt(_t('TẠM DỪNG · bấm P để chạy tiếp'), W_ / 2, by - 8, '#ffc247', 'bold 14px system-ui', 'center');
+  button(bx, by, bw, 28, _t('📷 Chụp cảnh (F9)'), () => takeSnapshot(), true, '#2a8f5a');
 }
 // ---- hộp chọn có tìm kiếm cho các danh sách dài (Tàu, Từ, Đến, Thêm chặng): mở bên cạnh ô chọn (không tràn đáy màn hình), gõ để lọc, ↑↓ Enter, Esc
 const norm = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
@@ -389,10 +401,10 @@ function openPicker(sel) {
   closePicker(); const r = sel.getBoundingClientRect(), vw = innerWidth, vh = innerHeight, w = Math.min(460, vw - 16), maxH = Math.floor(vh * 0.82);
   const el = document.createElement('div'); el.id = 'picker'; el.style.width = w + 'px'; el.style.maxHeight = maxH + 'px';
   const left = r.left < vw / 2 ? Math.min(r.right + 8, vw - w - 8) : Math.max(8, r.left - w - 8); el.style.left = left + 'px';
-  const inp = document.createElement('input'); inp.placeholder = 'Gõ để tìm…'; const list = document.createElement('div'); list.className = 'list'; el.append(inp, list); document.body.appendChild(el);
+  const inp = document.createElement('input'); inp.placeholder = _t('Gõ để tìm…'); const list = document.createElement('div'); list.className = 'list'; el.append(inp, list); document.body.appendChild(el);
   const opts = [...sel.options]; let shown = [], hl = 0;
-  const render = () => { const q = norm(inp.value.trim()); shown = opts.filter(o => !q || norm(o.text).includes(q)); list.innerHTML = '';
-    if (!shown.length) { const n = document.createElement('div'); n.className = 'none'; n.textContent = 'Không có mục nào khớp.'; list.appendChild(n); }
+  const render = () => { const q = norm(inp.value.trim()); shown = opts.filter(o => !q || norm(o.text + ' ' + (o.dataset.rom || '')).includes(q)); list.innerHTML = '';
+    if (!shown.length) { const n = document.createElement('div'); n.className = 'none'; n.textContent = _t('Không có mục nào khớp.'); list.appendChild(n); }
     shown.forEach((o, k) => { const d = document.createElement('div'); d.className = 'it' + (o.value === sel.value ? ' cur' : '') + (o.disabled ? ' dis' : '') + (k === hl ? ' hl' : ''); d.textContent = o.text; d.title = o.text;
       d.onmousedown = e => { e.preventDefault(); e.stopPropagation(); }; d.onclick = () => choose(o); list.appendChild(d); });
     const cur = list.querySelector('.hl'); if (cur) cur.scrollIntoView({ block: 'nearest' }); el.style.top = Math.max(8, Math.min(r.top - 8, vh - el.offsetHeight - 8)) + 'px'; };
@@ -434,20 +446,20 @@ addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown',
 function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, couple: $('couple').value }; }
 function startDrive(r, opts) {
   opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec0 = r.rec || L.trains[r.recIdx], rec = r.veh && /^(E5|E7)$/.test(rec0.v) && Sim.VEH[r.veh] ? Object.assign({}, rec0, { v: r.veh, retro: 1 }) : rec0, trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
-  if (!trip) { alert('Chọn ga đi/đến hợp lệ cho chuyến này.'); return false; }
+  if (!trip) { alert(_t('Chọn ga đi/đến hợp lệ cho chuyến này.')); return false; }
   if (!(r.leg > 0)) campaign = [];
   ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
   W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events, couple: r.couple });
   T = W.player; auto = false; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endT = null; endInfo = null; endPage = 0;
   replaying = opts.replay || null; if (replaying) scale = 4; else if (scale > 16) scale = 1;
   if (!tutorialRun) tutLessonActive = false;
-  W.say('info', `Chuyến ${trip.label} (${T.veh.name}) · ${L.stations[trip.M[0].i].en} → ${L.stations[trip.M[trip.M.length - 1].i].en} · ${Sim.DIFF[r.diff].name} · tải khách ${Math.round(W.load * 100)}%` + (W.lead ? ` · tàu trước: ${W.leadLabel}` : ' · không có tàu trước') + (rec.mir ? ' · lịch ước tính (đối xứng)' : ''));
-  W.say('info', replaying ? 'ĐANG XEM LẠI chuyến đã ghi (không điều khiển được). Nhấn Esc để tạm dừng, 1/2/3 để đổi tốc độ, R để thoát.' : 'Nhấn Enter để đóng cửa. Khi đèn ĐÓNG CỬA sáng, kéo cần gia tốc (W) để khởi hành.');
+  W.say('info', _t('Chuyến {0} ({1}) · {2} → {3} · {4} · tải khách {5}%', trip.label, T.veh.name, _s(L.stations[trip.M[0].i]), _s(L.stations[trip.M[trip.M.length - 1].i]), Sim.DIFF[r.diff].name, Math.round(W.load * 100)) + (W.lead ? _t(' · tàu trước: {0}', W.leadLabel) : _t(' · không có tàu trước')) + (rec.mir ? _t(' · lịch ước tính (đối xứng)') : ''));
+  W.say('info', replaying ? _t('ĐANG XEM LẠI chuyến đã ghi (không điều khiển được). Nhấn Esc để tạm dừng, 1/2/3 để đổi tốc độ, R để thoát.') : _t('Nhấn Enter để đóng cửa. Khi đèn ĐÓNG CỬA sáng, kéo cần gia tốc (W) để khởi hành.'));
   AUD.reset(W); return true;
 }
 let tutLessonActive = false;
 function startLesson(i) {
-  M.hide(); const c = Tutorial.cfg(i); if (!c) { alert('Không tìm thấy chuyến phù hợp cho bài này.'); return; }
+  M.hide(); const c = Tutorial.cfg(i); if (!c) { alert(_t('Không tìm thấy chuyến phù hợp cho bài này.')); return; }
   tutorialRun = true; tutLessonActive = true; setMode('tutorial');
   startDrive({ lineId: c.lineId, rec: c.rec, from: c.from, to: c.to, diff: c.diff, weather: c.weather, seed: c.seed, lead: c.lead, events: false });
   tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; $('driveOpts').style.display = 'none'; ui.radio = c.radio; ui.focus = false; ui.rear = false;
@@ -461,8 +473,8 @@ function startDispatch() { Dispatch.start({ lineId: $('line').value, dir: $('dir
 const act = {
   power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, setpw(n) { Sim.setPower(T, n); }, setbk(n) { Sim.setBrake(T, n); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
   door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, csAdj(d) { Sim.adjustCS(T, d); },
-  ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', 'Không có lệnh nào cần nhắc lại.'); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
-  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', 'Đèn pha: ' + ({ auto: 'tự động', on: 'BẬT', off: 'TẮT' }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; }
+  ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', _t('Không có lệnh nào cần nhắc lại.')); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', _t('Đèn pha: ') + ({ auto: _t('tự động'), on: _t('BẬT'), off: _t('TẮT') }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; }
 };
 function doAct(name, arg) { if (!W || replaying) return; recActs.push([tickCount, name, arg]); act[name](arg); }
 addEventListener('keydown', e => {
@@ -553,28 +565,28 @@ function finalize() {
     hadFire: W.faults.some(f => f.kind === 'fire'), fireTunnel: T.fireTunnel, deadViol: T.deadViol || 0, xingHit: T.xingHit || 0, scenario: { kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed } };
   let res = { fresh: [], best: null };
   if (!replaying && !tutLessonActive) { const r2 = Object.assign({}, recipe); delete r2.rec; res = Store.record(ctxo, { recipe: r2, actions: recActs.slice(0, 5000) }); }
-  if (tutLessonActive && Tutorial.S.done && Tutorial.LESSONS.every(l => Tutorial.S.done[l.id])) { const r3 = Store.record({ kind: 'tutorial', allDone: true, score: 0, trainLabel: 'Hướng dẫn', scenario: { kind: 'tutorial' } }); res.fresh = res.fresh.concat(r3.fresh); }
+  if (tutLessonActive && Tutorial.S.done && Tutorial.LESSONS.every(l => Tutorial.S.done[l.id])) { const r3 = Store.record({ kind: 'tutorial', allDone: true, score: 0, trainLabel: _t('Hướng dẫn'), scenario: { kind: 'tutorial' } }); res.fresh = res.fresh.concat(r3.fresh); }
   endInfo = { sc, fresh: res.fresh, best: res.best, advice: advise(sc) };
 }
 function advise(sc) {
   const out = [], D = W.diff;
-  T.results.forEach(r => { if (r.overrun) out.push(`Chạy quá ga ${r.station}: bắt đầu phanh sớm hơn (xem dòng "Gợi ý").`); else if (Math.abs(r.err) > 1 * D.tolK) out.push(`Dừng lệch ${r.err >= 0 ? '+' : ''}${r.err.toFixed(1)} m ở ${r.station}: ` + (r.err > 0 ? 'quá vạch, phanh yếu/muộn; giữ B2–B3 ở 100 m cuối.' : 'chưa tới vạch, nhả phanh sớm; dùng thước ±3 m.')); });
-  const atcs = T.log.filter(l => l[0] === 'ATC'); if (T.atcCount) out.push(`ATC phanh thay bạn ${T.atcCount} lần` + (atcs.length ? ` (lần đầu lúc ${fmt(atcs[0][1])}: ${atcs[0][2].replace('ATC phanh tự động ', '')})` : '') + ': giảm tốc sớm hơn khi vòng ATC co lại.');
-  if (T.earlyDep > 10) out.push(`Khởi hành sớm tổng ${Math.round(T.earlyDep)} s: bấm Enter khoảng 12 s trước giờ khởi hành.`);
-  const last = T.results[T.results.length - 1]; if (last && !last.overrun && last.delay - last.excused > 45) out.push(`Đến trễ ~${Math.round(last.delay - last.excused)} s không do sự kiện: giữ tốc độ sát vòng ATC hơn ở đoạn dài.`);
-  if (sc.comfort < 70) out.push('Độ êm thấp: tránh đổi nấc liên tục, tăng/giảm một nấc rồi chờ.');
-  if (sc.ackPen > 0) out.push('Nhắc lại lệnh điều độ chậm: nhấn Y ngay khi thấy "[CHỜ NHẮC LẠI]".');
-  if (sc.hornPen > 0) out.push('Quên bấm còi (nhân viên làm việc/động vật): xem thanh cam và biểu tượng trên bản đồ.');
-  if (sc.wiperPen > 0) out.push('Quên bật gạt mưa khi vào vùng mưa (V).');
-  if (sc.atcOffPen > 0) out.push('Cắt ATC (hoặc chạy quá 30 km/h khi ATC cắt): ATC là bảo vệ chính, chỉ cắt khi có lệnh.');
-  if (sc.lampPen > 0) out.push('Tắt đèn pha khi đang trong hầm hoặc ban đêm (L): dùng chế độ tự động hoặc bật.');
-  if (sc.xingPen > 0) out.push('Va chạm xe kẹt ở đường ngang: khi thấy đèn đỏ nhấp nháy (特殊信号発光機) phải phanh khẩn ngay và dừng trước đường ngang.');
-  if (sc.deadPen > 0) out.push('Vào đoạn cách điện đổi tần số khi đang kéo lực (hồ quang, máy cắt chính nhảy): về N trước vạch và chạy trôi qua.');
-  if (sc.anxPen > 0) out.push('Hành khách bất an khi tàu đứng giữa đường: nhấn M để phát thanh trấn an mỗi ~45 s.');
-  if (sc.firePen > 0) out.push('Đã dừng trong hầm khi có cháy: ra khỏi hầm rồi mới dừng.');
-  if ((T.btMax || 0) > 0.8) out.push(`Má phanh nóng tới ${Math.round(T.btMax * 100)}%: phanh sớm, nhẹ, tránh phanh khẩn.`);
-  if (!out.length) out.push('Không có điểm trừ đáng kể. Thử độ khó cao hơn hoặc thời tiết xấu.');
-  out.push(`Điện: tiêu hao ${sc.kwh} kWh, hoàn lại ${sc.regen} kWh nhờ phanh tái sinh.`);
+  T.results.forEach(r => { if (r.overrun) out.push(_t('Chạy quá ga {0}: bắt đầu phanh sớm hơn (xem dòng "Gợi ý").', r.station)); else if (Math.abs(r.err) > 1 * D.tolK) out.push(_t('Dừng lệch {0}{1} m ở {2}: ', r.err >= 0 ? '+' : '', r.err.toFixed(1), r.station) + (r.err > 0 ? _t('quá vạch, phanh yếu/muộn; giữ B2–B3 ở 100 m cuối.') : _t('chưa tới vạch, nhả phanh sớm; dùng thước ±3 m.'))); });
+  const atcs = T.log.filter(l => l[0] === 'ATC'); if (T.atcCount) out.push(_t('ATC phanh thay bạn {0} lần', T.atcCount) + (atcs.length ? _t(' (lần đầu lúc {0}: {1})', fmt(atcs[0][1]), atcs[0][2].replace(_t('ATC phanh tự động '), '')) : '') + _t(': giảm tốc sớm hơn khi vòng ATC co lại.'));
+  if (T.earlyDep > 10) out.push(_t('Khởi hành sớm tổng {0} s: bấm Enter khoảng 12 s trước giờ khởi hành.', Math.round(T.earlyDep)));
+  const last = T.results[T.results.length - 1]; if (last && !last.overrun && last.delay - last.excused > 45) out.push(_t('Đến trễ ~{0} s không do sự kiện: giữ tốc độ sát vòng ATC hơn ở đoạn dài.', Math.round(last.delay - last.excused)));
+  if (sc.comfort < 70) out.push(_t('Độ êm thấp: tránh đổi nấc liên tục, tăng/giảm một nấc rồi chờ.'));
+  if (sc.ackPen > 0) out.push(_t('Nhắc lại lệnh điều độ chậm: nhấn Y ngay khi thấy "[CHỜ NHẮC LẠI]".'));
+  if (sc.hornPen > 0) out.push(_t('Quên bấm còi (nhân viên làm việc/động vật): xem thanh cam và biểu tượng trên bản đồ.'));
+  if (sc.wiperPen > 0) out.push(_t('Quên bật gạt mưa khi vào vùng mưa (V).'));
+  if (sc.atcOffPen > 0) out.push(_t('Cắt ATC (hoặc chạy quá 30 km/h khi ATC cắt): ATC là bảo vệ chính, chỉ cắt khi có lệnh.'));
+  if (sc.lampPen > 0) out.push(_t('Tắt đèn pha khi đang trong hầm hoặc ban đêm (L): dùng chế độ tự động hoặc bật.'));
+  if (sc.xingPen > 0) out.push(_t('Va chạm xe kẹt ở đường ngang: khi thấy đèn đỏ nhấp nháy (特殊信号発光機) phải phanh khẩn ngay và dừng trước đường ngang.'));
+  if (sc.deadPen > 0) out.push(_t('Vào đoạn cách điện đổi tần số khi đang kéo lực (hồ quang, máy cắt chính nhảy): về N trước vạch và chạy trôi qua.'));
+  if (sc.anxPen > 0) out.push(_t('Hành khách bất an khi tàu đứng giữa đường: nhấn M để phát thanh trấn an mỗi ~45 s.'));
+  if (sc.firePen > 0) out.push(_t('Đã dừng trong hầm khi có cháy: ra khỏi hầm rồi mới dừng.'));
+  if ((T.btMax || 0) > 0.8) out.push(_t('Má phanh nóng tới {0}%: phanh sớm, nhẹ, tránh phanh khẩn.', Math.round(T.btMax * 100)));
+  if (!out.length) out.push(_t('Không có điểm trừ đáng kể. Thử độ khó cao hơn hoặc thời tiết xấu.'));
+  out.push(_t('Điện: tiêu hao {0} kWh, hoàn lại {1} kWh nhờ phanh tái sinh.', sc.kwh, sc.regen));
   return out.slice(0, 7);
 }
 
@@ -583,7 +595,7 @@ function txt(s, x, y, c, f, al) { ctx.fillStyle = c || '#e8eef5'; ctx.font = f |
 function panel(x, y, w, h, c) { ctx.fillStyle = c || '#18212c'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill(); }
 function button(x, y, w, h, label, fn, on, color, fs) { ctx.fillStyle = on ? (color || '#2a6fd6') : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); txt(label, x + w / 2, y + h / 2 + (fs ? 5 : 4), on ? '#fff' : '#c8d4e2', (fs || 12) + 'px system-ui', 'center'); btns.push({ x: x + curOX, y: y + curOY, w, h, fn }); }
 function lamp(x, y, label, on, color) { ctx.fillStyle = on ? color : '#243447'; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill(); if (on) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2; ctx.stroke(); } txt(label, x + 12, y + 4, on ? '#fff' : '#7a8ea5', '12px system-ui'); }
-const WHY = { turnout: 'ghi vào/ra đường ga (80 km/h)', line: 'giới hạn tuyến', stop: 'mẫu dừng ga', rain: 'mưa lớn', wind: 'gió', snow: 'tuyết', order: 'lệnh điều độ', fault: 'sự cố bệ trục', lead: 'tàu phía trước', eqk: 'sự cố/động đất', ga: 'đang đỗ ga', wire: 'dây điện' };
+const WHY = { turnout: _t('ghi vào/ra đường ga (80 km/h)'), line: _t('giới hạn tuyến'), stop: _t('mẫu dừng ga'), rain: _t('mưa lớn'), wind: _t('gió'), snow: _t('tuyết'), order: _t('lệnh điều độ'), fault: _t('sự cố bệ trục'), lead: _t('tàu phía trước'), eqk: _t('sự cố/động đất'), ga: _t('đang đỗ ga'), wire: _t('dây điện') };
 const ZC = { rain: '#2f6fd6', wind: '#8a96a6', snow: '#dfe9f5', order: '#e08a2f', fault: '#d64a4a', eqk: '#9a5ad6', wire: '#d6c24a' };
 
 
@@ -600,10 +612,10 @@ function wrapText(str, maxW) {
   lines.push(line); return lines;
 }
 const KEYS = {
-  dispatch: [['Điều độ', null], ['Bấm vào tàu', 'chọn tàu, rồi dùng nút lệnh'], ['Tab', 'chọn tàu kế'], ['Space', 'dừng / chạy'], ['1 – 4', 'tốc độ mô phỏng'], ['Chung', null], ['P', 'tạm dừng'], ['R', 'chạy lại']]
+  dispatch: [[_t('Điều độ'), null], [_t('Bấm vào tàu'), _t('chọn tàu, rồi dùng nút lệnh')], ['Tab', _t('chọn tàu kế')], ['Space', _t('dừng / chạy')], ['1 – 4', _t('tốc độ mô phỏng')], [_t('Chung'), null], ['P', _t('tạm dừng')], ['R', _t('chạy lại')]]
 };
 function drawKeys(m) {
-  const RX = 1440, RW = 330, y0 = m === 'drive' ? 460 : 10; panel(RX, y0, RW, m === 'drive' ? 890 - y0 : 210); txt('Phím tắt', RX + 14, y0 + 22, '#fff', 'bold 13px system-ui');
+  const RX = 1440, RW = 330, y0 = m === 'drive' ? 460 : 10; panel(RX, y0, RW, m === 'drive' ? 890 - y0 : 210); txt(_t('Phím tắt'), RX + 14, y0 + 22, '#fff', 'bold 13px system-ui');
   let y = y0 + 44;
   for (const [k, d] of KEYS[m]) {
     if (d === null) { y += 8; txt(k, RX + 14, y, '#4aa3ff', 'bold 11px system-ui'); y += 14; continue; }
@@ -623,38 +635,38 @@ function drawBase() {
 function drawEnd() {
   ctx.fillStyle = 'rgba(8,12,18,1)'; ctx.fillRect(10, 106, 1100, 788);
   const sc = endInfo ? endInfo.sc : Sim.score(T, W), last = T.M[T.M.length - 1];
-  txt((replaying ? 'XEM LẠI · ' : '') + 'Kết thúc chuyến · ' + W.trip.label + ' · ' + Sim.DIFF[W.diffKey].name + ' · seed ' + (recipe ? recipe.seed : ''), 560, 138, '#fff', 'bold 21px system-ui', 'center');
-  txt('Thời gian chạy ' + fmt(endT != null ? endT : W.t) + (last.arr != null ? ' (kế hoạch ' + fmt(last.arr) + ')' : '') + ' · miễn trừ do sự kiện ' + Math.round(T.excused) + ' s' + (W.trip.truncated ? ' · chuyến bị cắt ngắn (kế hoạch ngừng chạy)' : ''), 560, 162, '#8aa0b5', '14px system-ui', 'center');
+  txt((replaying ? _t('XEM LẠI · ') : '') + _t('Kết thúc chuyến · ') + W.trip.label + ' · ' + Sim.DIFF[W.diffKey].name + ' · seed ' + (recipe ? recipe.seed : ''), 560, 138, '#fff', 'bold 21px system-ui', 'center');
+  txt(_t('Thời gian chạy ') + fmt(endT != null ? endT : W.t) + (last.arr != null ? _t(' (kế hoạch ') + fmt(last.arr) + ')' : '') + _t(' · miễn trừ do sự kiện ') + Math.round(T.excused) + ' s' + (W.trip.truncated ? _t(' · chuyến bị cắt ngắn (kế hoạch ngừng chạy)') : ''), 560, 162, '#8aa0b5', '14px system-ui', 'center');
   const bar = [];      // hàng nút ở giữa đáy hộp tổng kết
-  bar.push([endPage === 0 ? 'Trang: Điểm (Tab)' : 'Trang: Tổng kết (Tab)', 200, () => { endPage = (endPage + 1) % 2; }, true]);
-  bar.push(['Chạy lại (R)', 150, () => { tutLessonActive ? startLesson(Tutorial.S.lesson) : startDrive(recipe); }, false]);
-  if (!replaying) bar.push(['Xem lại chuyến này', 190, () => { if (!recActs.length && !auto) { W.say('info', 'Không có thao tác nào được ghi.'); return; } startDrive(recipe, { replay: { actions: recActs.slice() } }); }, false]);
+  bar.push([endPage === 0 ? _t('Trang: Điểm (Tab)') : _t('Trang: Tổng kết (Tab)'), 200, () => { endPage = (endPage + 1) % 2; }, true]);
+  bar.push([_t('Chạy lại (R)'), 150, () => { tutLessonActive ? startLesson(Tutorial.S.lesson) : startDrive(recipe); }, false]);
+  if (!replaying) bar.push([_t('Xem lại chuyến này'), 190, () => { if (!recActs.length && !auto) { W.say('info', _t('Không có thao tác nào được ghi.')); return; } startDrive(recipe, { replay: { actions: recActs.slice() } }); }, false]);
   const bestRep = Store.get().replays[Store.scenarioKey({ kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed })];
-  if (bestRep && !replaying) bar.push(['Xem lại bản tốt nhất', 210, () => startDrive(Object.assign({}, bestRep.recipe, { rec: undefined }), { replay: { actions: bestRep.actions } }), false]);
-  if (endInfo && endInfo.more) bar.push(['Chặng tiếp theo (Enter) →', 250, nextLeg, true, '#2a8f5a']);
+  if (bestRep && !replaying) bar.push([_t('Xem lại bản tốt nhất'), 210, () => startDrive(Object.assign({}, bestRep.recipe, { rec: undefined }), { replay: { actions: bestRep.actions } }), false]);
+  if (endInfo && endInfo.more) bar.push([_t('Chặng tiếp theo (Enter) →'), 250, nextLeg, true, '#2a8f5a']);
   { const gap = 12, tot = bar.reduce((a, b) => a + b[1], 0) + gap * (bar.length - 1); let bx = 560 - tot / 2; for (const b of bar) { button(bx, 838, b[1], 40, b[0], b[2], b[3], b[4], 15); bx += b[1] + gap; } }
   if (endPage === 0 && sc.mission) {
-    let y = 226; txt('Cảm biến', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Phủ', 850, y, '#8aa0b5'); txt('Lỗi tìm thấy', 940, y, '#8aa0b5'); y += 26;
+    let y = 226; txt(_t('Cảm biến'), 60, y, '#8aa0b5'); txt(_t('Kết quả'), 230, y, '#8aa0b5'); txt(_t('Phủ'), 850, y, '#8aa0b5'); txt(_t('Lỗi tìm thấy'), 940, y, '#8aa0b5'); y += 26;
     sc.out.forEach(o => { txt(o[0], 60, y, '#fff', '14px system-ui'); txt(o[1], 230, y, '#fff', '14px system-ui'); txt(o[2] + '%', 850, y, '#fff', '14px system-ui'); txt(o[3] + '%', 940, y, '#fff', '14px system-ui'); y += 28; });
-    y += 10; txt(`Độ phủ trung bình ${sc.covScore}% · lỗi đã đánh dấu ${sc.found}/${sc.tot} (${sc.findScore}%) · đánh dấu ${sc.marks} lần, sai ${sc.falseMarks}`, 60, y, '#c8d4e2', '14px system-ui'); y += 26;
-    txt(`Độ êm ${sc.comfort}/100 · ATC phanh −${sc.atcPen} · đo ngoài dải −${sc.bandPen} · đánh dấu sai −${sc.falsePen} · xung đột tàu khách −${sc.confPen}`, 60, y, sc.confPen ? '#ff8a8a' : '#8aa0b5', '13px system-ui'); y += 22;
-    txt(sc.minMargin < 1e8 ? `Khoảng cách tới chuyến khách đầu ngày: ${sc.minMargin >= 0 ? 'còn dư ' + Math.round(sc.minMargin / 60) + ' phút (sau khi chừa 10 phút)' : 'quá giờ ' + Math.round(-sc.minMargin / 60) + ' phút'}` : '', 60, y, '#8aa0b5', '13px system-ui');
-    if (campaign.filter(Boolean).length > 1 || (endInfo && endInfo.more)) { y += 30; txt('Các chặng:', 60, y, '#8aa0b5', '13px system-ui'); campaign.forEach((c, i) => { if (!c) return; y += 22; txt(`Chặng ${i + 1}: ${Math.round(c.legKm)} km · phủ ${c.covScore}% · lỗi ${c.found}/${c.tot} · ${c.final} điểm${c.confPen ? ' · XUNG ĐỘT LỊCH' : ''}`, 80, y, c.confPen ? '#ff8a8a' : '#c8d4e2', '13px system-ui'); }); }
-    txt((endInfo && endInfo.more ? 'ĐIỂM CHẶNG: ' : 'ĐIỂM: ') + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
-    if (endInfo && endInfo.best) txt('Tốt nhất cho cấu hình này: ' + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');
+    y += 10; txt(_t('Độ phủ trung bình {0}% · lỗi đã đánh dấu {1}/{2} ({3}%) · đánh dấu {4} lần, sai {5}', sc.covScore, sc.found, sc.tot, sc.findScore, sc.marks, sc.falseMarks), 60, y, '#c8d4e2', '14px system-ui'); y += 26;
+    txt(_t('Độ êm {0}/100 · ATC phanh −{1} · đo ngoài dải −{2} · đánh dấu sai −{3} · xung đột tàu khách −{4}', sc.comfort, sc.atcPen, sc.bandPen, sc.falsePen, sc.confPen), 60, y, sc.confPen ? '#ff8a8a' : '#8aa0b5', '13px system-ui'); y += 22;
+    txt(sc.minMargin < 1e8 ? _t('Khoảng cách tới chuyến khách đầu ngày: {0}', sc.minMargin >= 0 ? _t('còn dư {0} phút (sau khi chừa 10 phút)', Math.round(sc.minMargin / 60)) : _t('quá giờ {0} phút', Math.round(-sc.minMargin / 60))) : '', 60, y, '#8aa0b5', '13px system-ui');
+    if (campaign.filter(Boolean).length > 1 || (endInfo && endInfo.more)) { y += 30; txt(_t('Các chặng:'), 60, y, '#8aa0b5', '13px system-ui'); campaign.forEach((c, i) => { if (!c) return; y += 22; txt(_t('Chặng {0}: {1} km · phủ {2}% · lỗi {3}/{4} · {5} điểm{6}', i + 1, Math.round(c.legKm), c.covScore, c.found, c.tot, c.final, c.confPen ? _t(' · XUNG ĐỘT LỊCH') : ''), 80, y, c.confPen ? '#ff8a8a' : '#c8d4e2', '13px system-ui'); }); }
+    txt((endInfo && endInfo.more ? _t('ĐIỂM CHẶNG: ') : _t('ĐIỂM: ')) + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
+    if (endInfo && endInfo.best) txt(_t('Tốt nhất cho cấu hình này: ') + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');
   } else if (endPage === 0) {
-    let y = 226; txt('Ga', 60, y, '#8aa0b5'); txt('Kết quả', 230, y, '#8aa0b5'); txt('Dừng', 850, y, '#8aa0b5'); txt('Đúng giờ', 940, y, '#8aa0b5'); y += 22;
+    let y = 226; txt('Ga', 60, y, '#8aa0b5'); txt(_t('Kết quả'), 230, y, '#8aa0b5'); txt(_t('Dừng'), 850, y, '#8aa0b5'); txt(_t('Đúng giờ'), 940, y, '#8aa0b5'); y += 22;
     const rows = sc.out, lh = rows.length > 12 ? 18 : 24;
     rows.forEach(o => { txt(o[0], 60, y, '#fff', '13px system-ui'); txt(o[1], 230, y, '#fff', '13px system-ui'); txt(o[2], 850, y, '#fff', '13px system-ui'); txt(o[3], 940, y, '#fff', '13px system-ui'); y += lh; });
-    y += 8; const pen = [['Độ êm', sc.comfort + '/100'], ['ATC', '−' + sc.atcPen], ['Khởi hành sớm', '−' + sc.earlyPen], ['Nhắc lệnh', '−' + sc.ackPen], ['Còi/động vật', '−' + sc.hornPen], ['Gạt mưa', '−' + sc.wiperPen], ['Đèn pha', '−' + (sc.lampPen || 0)], ['Cắt ATC', '−' + (sc.atcOffPen || 0)], ['Bất an', '−' + sc.anxPen], ['Cháy', '−' + sc.firePen], ['Đoạn cách điện', '−' + (sc.deadPen || 0)], ['Đường ngang', '−' + (sc.xingPen || 0)], ['Phối hợp', (sc.netBonus >= 0 ? '+' : '') + sc.netBonus]];
-    txt(pen.map(p => p[0] + ' ' + p[1]).join(' · '), 60, y, '#8aa0b5', '13px system-ui'); y += 20; txt(`Điện ${sc.kwh} kWh (hoàn ${sc.regen}) · Má phanh nóng nhất ${Math.round((T.btMax || 0) * 100)}% · bất an cao nhất ${Math.round(T.anxMax)}%`, 60, y, '#8aa0b5', '13px system-ui');
-    txt('ĐIỂM: ' + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
-    if (endInfo && endInfo.best) txt('Tốt nhất cho cấu hình này: ' + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');
-    if (endInfo && endInfo.fresh.length) txt('Thành tích mới: ' + endInfo.fresh.map(a => '★ ' + a.name).join('  '), 560, 748, '#ffd24a', 'bold 14px system-ui', 'center');
+    y += 8; const pen = [[_t('Độ êm'), sc.comfort + '/100'], ['ATC', '−' + sc.atcPen], [_t('Khởi hành sớm'), '−' + sc.earlyPen], [_t('Nhắc lệnh'), '−' + sc.ackPen], [_t('Còi/động vật'), '−' + sc.hornPen], [_t('Gạt mưa'), '−' + sc.wiperPen], [_t('Đèn pha'), '−' + (sc.lampPen || 0)], [_t('Cắt ATC'), '−' + (sc.atcOffPen || 0)], [_t('Bất an'), '−' + sc.anxPen], [_t('Cháy'), '−' + sc.firePen], [_t('Đoạn cách điện'), '−' + (sc.deadPen || 0)], [_t('Đường ngang'), '−' + (sc.xingPen || 0)], [_t('Phối hợp'), (sc.netBonus >= 0 ? '+' : '') + sc.netBonus]];
+    txt(pen.map(p => p[0] + ' ' + p[1]).join(' · '), 60, y, '#8aa0b5', '13px system-ui'); y += 20; txt(_t('Điện {0} kWh (hoàn {1}) · Má phanh nóng nhất {2}% · bất an cao nhất {3}%', sc.kwh, sc.regen, Math.round((T.btMax || 0) * 100), Math.round(T.anxMax)), 60, y, '#8aa0b5', '13px system-ui');
+    txt(_t('ĐIỂM: ') + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
+    if (endInfo && endInfo.best) txt(_t('Tốt nhất cho cấu hình này: ') + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');
+    if (endInfo && endInfo.fresh.length) txt(_t('Thành tích mới: ') + endInfo.fresh.map(a => '★ ' + a.name).join('  '), 560, 748, '#ffd24a', 'bold 14px system-ui', 'center');
   } else drawSummary();
 }
 function drawSummary() {
-  const tr = T.trace || []; const x0 = 70, x1 = 1070, y0 = 240, y1 = 440; txt('Tốc độ so với ATC theo thời gian', 70, 224, '#8aa0b5', '13px system-ui');
+  const tr = T.trace || []; const x0 = 70, x1 = 1070, y0 = 240, y1 = 440; txt(_t('Tốc độ so với ATC theo thời gian'), 70, 224, '#8aa0b5', '13px system-ui');
   ctx.fillStyle = '#10161e'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); const tMax = Math.max(60, tr.length ? tr[tr.length - 1][0] : 60), xo = t => x0 + (t / tMax) * (x1 - x0), yo = v => y1 - (v / 340) * (y1 - y0);
   ctx.strokeStyle = '#243447'; ctx.lineWidth = 1; for (let v = 0; v <= 300; v += 100) { ctx.beginPath(); ctx.moveTo(x0, yo(v)); ctx.lineTo(x1, yo(v)); ctx.stroke(); txt(v, x0 - 6, yo(v) + 4, '#7a8ea5', '10px system-ui', 'right'); }
   ctx.fillStyle = 'rgba(122,45,45,.35)'; ctx.beginPath(); ctx.moveTo(xo(0), yo(340)); tr.forEach(p => ctx.lineTo(xo(p[0]), yo(Math.min(340, p[3])))); ctx.lineTo(xo(tr.length ? tr[tr.length - 1][0] : 0), yo(340)); ctx.closePath(); ctx.fill();
@@ -663,17 +675,17 @@ function drawSummary() {
   T.results.forEach(r => { const x = xo(r.t); ctx.strokeStyle = '#4cd68a'; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke(); txt(r.station, x, y0 - 4, '#4cd68a', '10px system-ui', 'center'); });
   T.log.filter(l => l[0] === 'ATC').forEach(l => { const x = xo(l[1]); ctx.fillStyle = '#ffc247'; ctx.fillRect(x - 1.5, y1 - 12, 3, 12); });
   W.msgs.filter(m => m.kind === 'bad').forEach(m => { const x = xo(m.t); ctx.fillStyle = '#ff7a7a'; ctx.fillRect(x - 1, y0, 2, 8); });
-  txt('trắng: tốc độ thật · xanh: tốc độ ATC cho phép · vàng: ATC phanh · đỏ trên: tin khẩn · xanh dọc: ga', 70, y1 + 16, '#7a8ea5', '11px system-ui');
-  txt('Điều cần cải thiện / ghi nhớ', 70, 488, '#ffc247', 'bold 14px system-ui'); (endInfo ? endInfo.advice : []).forEach((s, i) => txt('• ' + s, 70, 512 + i * 24, '#e8eef5', '13px system-ui'));
+  txt(_t('trắng: tốc độ thật · xanh: tốc độ ATC cho phép · vàng: ATC phanh · đỏ trên: tin khẩn · xanh dọc: ga'), 70, y1 + 16, '#7a8ea5', '11px system-ui');
+  txt(_t('Điều cần cải thiện / ghi nhớ'), 70, 488, '#ffc247', 'bold 14px system-ui'); (endInfo ? endInfo.advice : []).forEach((s, i) => txt('• ' + s, 70, 512 + i * 24, '#e8eef5', '13px system-ui'));
 }
 function closeModal() { $('modal').style.display = 'none'; }
 // ---- wizard lần đầu: chọn chế độ → phím bấm → ghi công tài nguyên. Cờ lưu ở Store.settings.wizard (xoá dữ liệu trang thì hiện lại); nút xem lại ở Hồ sơ
 const wiz = { el: $('wiz'), cur: 1, mode: null, wasPaused: false, open: false };
 function wizRender() {
   for (let i = 1; i <= 3; i++) $('w' + i).style.display = i === wiz.cur ? '' : 'none';
-  $('wDots').innerHTML = [1, 2, 3].map(i => '<span class="' + (i <= wiz.cur ? 'on' : '') + (i === wiz.cur ? ' cur' : '') + '"></span>').join(''); $('wStep').textContent = 'Trang ' + wiz.cur + ' / 3';
-  $('wBack').style.visibility = wiz.cur === 1 ? 'hidden' : 'visible'; $('wNext').style.display = wiz.cur === 1 ? 'none' : ''; $('wNext').textContent = wiz.cur === 3 ? 'Xong' : 'Tiếp tục';
-  $('w2sub').textContent = wiz.mode === 'tut' ? 'Bạn sẽ dùng các phím này trong 4 bài hướng dẫn; hộp hướng dẫn luôn nhắc phím cần bấm.' : 'Bạn sẽ dùng các phím này khi lái. Nhấn Enter để đóng cửa, rồi kéo cần W để khởi hành.';
+  $('wDots').innerHTML = [1, 2, 3].map(i => '<span class="' + (i <= wiz.cur ? 'on' : '') + (i === wiz.cur ? ' cur' : '') + '"></span>').join(''); $('wStep').textContent = _t('Trang {0} / 3', wiz.cur);
+  $('wBack').style.visibility = wiz.cur === 1 ? 'hidden' : 'visible'; $('wNext').style.display = wiz.cur === 1 ? 'none' : ''; $('wNext').textContent = wiz.cur === 3 ? _t('Xong') : _t('Tiếp tục');
+  $('w2sub').textContent = wiz.mode === 'tut' ? _t('Bạn sẽ dùng các phím này trong 4 bài hướng dẫn; hộp hướng dẫn luôn nhắc phím cần bấm.') : _t('Bạn sẽ dùng các phím này khi lái. Nhấn Enter để đóng cửa, rồi kéo cần W để khởi hành.');
 }
 function openWizard() { wiz.cur = 1; wiz.mode = null; wiz.open = true; wiz.wasPaused = paused; paused = true; wiz.el.style.display = 'flex'; wizRender(); }
 function closeWizard(launch) {
@@ -687,26 +699,24 @@ $('wNext').onclick = () => { if (wiz.cur < 3) { wiz.cur++; wizRender(); } else c
 addEventListener('keydown', e => { if (wiz.open) { e.stopImmediatePropagation(); if (e.key === 'Escape') closeWizard(null); else if (e.key !== 'Tab') e.preventDefault(); } }, true);
 function showProfile() {
   const st = Store.get(), m = $('modal'); m.style.display = 'block';
-  const ach = Store.ACH.map(a => `<tr><td>${st.ach[a.id] ? '<span class="ok">★</span>' : '<span class="dim">☆</span>'}</td><td>${a.name}</td><td class="dim">${a.desc}</td><td class="dim">${st.ach[a.id] ? new Date(st.ach[a.id]).toLocaleDateString('vi-VN') : ''}</td></tr>`).join('');
-  const hist = st.history.slice(0, 15).map(h => `<tr><td>${new Date(h.t).toLocaleString('vi-VN')}</td><td>${h.kind === 'dispatch' ? 'Điều độ' : 'Lái'}</td><td>${h.line || ''}</td><td>${h.train || ''}</td><td>${h.diff || ''}</td><td>${h.weather || ''}</td><td><b>${h.score}</b></td></tr>`).join('') || '<tr><td colspan="7" class="dim">Chưa có lần chơi nào.</td></tr>';
-  const best = Object.entries(st.best).sort((a, b) => b[1].score - a[1].score).slice(0, 10).map(([k, v]) => `<tr><td>${v.label}</td><td class="dim">${k.split('|').slice(1, 3).join(' ')}</td><td><b>${v.score}</b></td></tr>`).join('') || '<tr><td colspan="3" class="dim">Chưa có.</td></tr>';
-  m.innerHTML = `<div class="pbar"><h2>Hồ sơ người chơi</h2><div class="pbtn"><button id="mWiz">Xem lại giới thiệu</button><button id="mReset" class="dn">Xoá dữ liệu hồ sơ</button><button id="mClose" class="go">‹ Quay lại</button></div></div><p class="dim">Dữ liệu lưu trong trình duyệt này (localStorage). Đã mở khoá ${Object.keys(st.ach).length}/${Store.ACH.length} thành tích · ${st.history.length} lần chơi.</p>
-    <h3>Thành tích</h3><table>${ach}</table><h3>Kết quả tốt nhất (theo cấu hình)</h3><table>${best}</table><h3>15 lần chơi gần nhất</h3><table><tr><th>Lúc</th><th>Loại</th><th>Tuyến</th><th>Chuyến</th><th>Độ khó</th><th>Thời tiết</th><th>Điểm</th></tr>${hist}</table>`;
-  $('mWiz').onclick = () => openWizard(); $('mClose').onclick = () => M.closeProfile(); $('mReset').onclick = () => { if (confirm('Xoá toàn bộ hồ sơ, thành tích và bản ghi?')) { Store.reset(); showProfile(); } };
+  const ach = Store.ACH.map(a => `<tr><td>${st.ach[a.id] ? '<span class="ok">★</span>' : '<span class="dim">☆</span>'}</td><td>${a.name}</td><td class="dim">${a.desc}</td><td class="dim">${st.ach[a.id] ? new Date(st.ach[a.id]).toLocaleDateString(I18N.locale) : ''}</td></tr>`).join('');
+  const hist = st.history.slice(0, 15).map(h => `<tr><td>${new Date(h.t).toLocaleString(I18N.locale)}</td><td>${h.kind === 'dispatch' ? _t('Điều độ') : _t('Lái')}</td><td>${h.line || ''}</td><td>${h.train || ''}</td><td>${(Sim.DIFF[h.diff] && Sim.DIFF[h.diff].name) || h.diff || ''}</td><td>${Sim.WEATHER[h.weather] || h.weather || ''}</td><td><b>${h.score}</b></td></tr>`).join('') || _t('<tr><td colspan="7" class="dim">Chưa có lần chơi nào.</td></tr>');
+  const best = Object.entries(st.best).sort((a, b) => b[1].score - a[1].score).slice(0, 10).map(([k, v]) => `<tr><td>${v.label}</td><td class="dim">${k.split('|').slice(1, 3).join(' ')}</td><td><b>${v.score}</b></td></tr>`).join('') || _t('<tr><td colspan="3" class="dim">Chưa có.</td></tr>');
+  m.innerHTML = _t('<div class="pbar"><h2>Hồ sơ người chơi</h2><div class="pbtn"><button id="mWiz">Xem lại giới thiệu</button><button id="mReset" class="dn">Xoá dữ liệu hồ sơ</button><button id="mClose" class="go">‹ Quay lại</button></div></div><p class="dim">Dữ liệu lưu trong trình duyệt này (localStorage). Đã mở khoá {0}/{1} thành tích · {2} lần chơi.</p>\n    <h3>Thành tích</h3><table>{3}</table><h3>Kết quả tốt nhất (theo cấu hình)</h3><table>{4}</table><h3>15 lần chơi gần nhất</h3><table><tr><th>Lúc</th><th>Loại</th><th>Tuyến</th><th>Chuyến</th><th>Độ khó</th><th>Thời tiết</th><th>Điểm</th></tr>{5}</table>', Object.keys(st.ach).length, Store.ACH.length, st.history.length, ach, best, hist);
+  $('mWiz').onclick = () => openWizard(); $('mClose').onclick = () => M.closeProfile(); $('mReset').onclick = () => { if (confirm(_t('Xoá toàn bộ hồ sơ, thành tích và bản ghi?'))) { Store.reset(); showProfile(); } };
 }
-window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({ kind: 'dispatch', line: o.lineId, trainLabel: Sim.lineOf(o.lineId).name + ' ' + (o.dir === 'down' ? 'xuống' : 'lên') + ' ' + hhmm(o.t0), diff: o.diff, weather: o.weather, seed: o.seed, score: r.score, finished: true, scenario: { kind: 'dispatch', line: o.lineId, dir: o.dir, train: o.t0, from: '', to: o.span, diff: o.diff, weather: o.weather, seed: o.seed } }); };
+window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({ kind: 'dispatch', line: o.lineId, trainLabel: Sim.lineOf(o.lineId).name + ' ' + (o.dir === 'down' ? _t('xuống') : _t('lên')) + ' ' + hhmm(o.t0), diff: o.diff, weather: o.weather, seed: o.seed, score: r.score, finished: true, scenario: { kind: 'dispatch', line: o.lineId, dir: o.dir, train: o.t0, from: '', to: o.span, diff: o.diff, weather: o.weather, seed: o.seed } }); };
 // ---- bảng đo hiệu năng (phím F3): fps thật và thời gian từng thành phần (ms/khung) để tìm chỗ giật
 (function () {
   const box = document.createElement('div'); box.id = 'perf'; box.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99999;background:rgba(0,0,0,.75);color:#9fe3a8;font:12px/1.35 monospace;padding:6px 8px;border-radius:6px;display:none;white-space:pre;pointer-events:none';
   document.body.appendChild(box); const acc = {}; let on = false, last = performance.now(), frames = 0, worst = 0, tAcc = 0, tShow = performance.now();
   const wrap = (obj, fn, key) => { if (!obj || !obj[fn] || obj[fn].__w) return; const o = obj[fn]; const w = function (...a) { if (!on) return o.apply(this, a); const t0 = performance.now(); try { return o.apply(this, a); } finally { acc[key] = (acc[key] || 0) + performance.now() - t0; } }; w.__w = 1; obj[fn] = w; };
-  wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', 'bản đồ nhỏ'); wrap(window.Strips, 'draw', 'dải tranh'); wrap(window.Scene, 'draw', 'cảnh 2D');
+  wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh')); wrap(window.Scene, 'draw', _t('cảnh 2D'));
   const f0 = window.frame; let rafPrev = performance.now();
-  const tick = t => { if (on) { const dt = t - rafPrev; frames++; tAcc += dt; worst = Math.max(worst, dt); if (t - tShow > 700) { const fps = 1000 * frames / tAcc; let txt = `FPS ${fps.toFixed(0)}  (khung chậm nhất ${worst.toFixed(0)} ms)
-`; for (const k in acc) txt += `${k.padEnd(12)} ${(acc[k] / frames).toFixed(1)} ms
+  const tick = t => { if (on) { const dt = t - rafPrev; frames++; tAcc += dt; worst = Math.max(worst, dt); if (t - tShow > 700) { const fps = 1000 * frames / tAcc; let txt = _t('FPS {0}  (khung chậm nhất {1} ms)\n', fps.toFixed(0), worst.toFixed(0)); for (const k in acc) txt += `${k.padEnd(12)} ${(acc[k] / frames).toFixed(1)} ms
 `; box.textContent = txt; frames = 0; tAcc = 0; worst = 0; for (const k in acc) acc[k] = 0; tShow = t; } } rafPrev = t; requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
-  addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); on = !on; box.style.display = on ? 'block' : 'none'; wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', 'bản đồ nhỏ'); wrap(window.Strips, 'draw', 'dải tranh'); wrap(window.Scene, 'draw', 'cảnh 2D'); } }, true);
+  addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); on = !on; box.style.display = on ? 'block' : 'none'; wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh')); wrap(window.Scene, 'draw', _t('cảnh 2D')); } }, true);
 })();
 // ---- menu chính / tạm dừng: các ô chọn cũ (cùng ID) được chuyển vào đây; trạng thái game không đổi
 const M = (function () {
@@ -717,7 +727,28 @@ const M = (function () {
   A.appendChild($('vehBox')); A.appendChild($('from').parentElement); A.appendChild($('to').parentElement); A.appendChild($('legBox'));
   B.appendChild($('driveOpts')); $('mStartHold').appendChild($('start'));
   C.appendChild($('ann').parentElement); C.appendChild($('scenery').parentElement); C.appendChild($('stopmsg').parentElement);
-  $('start').textContent = 'Bắt đầu'; $('start').style.cssText = 'width:auto;padding:0 30px;height:44px;font-size:15px';
+  // chọn ngôn ngữ: ô thả xuống, cờ tròn ở bên trái tên ngôn ngữ; đổi ngôn ngữ = lưu cài đặt rồi tải lại trang (mọi chuỗi được dịch lúc nạp trang)
+  const FLAG = {
+    en: '<svg viewBox="0 0 60 60"><rect width="60" height="60" fill="#012169"/><path d="M0 0L60 60M60 0L0 60" stroke="#fff" stroke-width="12"/><path d="M0 0L60 60M60 0L0 60" stroke="#C8102E" stroke-width="4"/><path d="M30 0V60M0 30H60" stroke="#fff" stroke-width="20"/><path d="M30 0V60M0 30H60" stroke="#C8102E" stroke-width="12"/></svg>',
+    ja: '<svg viewBox="0 0 60 60"><rect width="60" height="60" fill="#fff"/><circle cx="30" cy="30" r="13" fill="#BC002D"/></svg>',
+    vi: '<svg viewBox="0 0 60 60"><rect width="60" height="60" fill="#DA251D"/><polygon points="30,12 35.3,25.2 49.5,26.2 38.6,35.4 42,49.2 30,41.6 18,49.2 21.4,35.4 10.5,26.2 24.7,25.2" fill="#FFFF00"/></svg>' };
+  const LNAME = { en: 'English', ja: '日本語', vi: 'Tiếng Việt' };
+  const lrow = document.createElement('div'); lrow.className = 'lrow';
+  lrow.innerHTML = '<span>' + _t('Ngôn ngữ') + '</span><div class="lang"><button type="button" id="langBtn" aria-haspopup="listbox"></button><div class="llist" id="langList" role="listbox" style="display:none"></div></div>';
+  C.insertBefore(lrow, C.firstChild);
+  const langBtn = $('langBtn'), langList = $('langList'), langRow = l => '<span class="flag">' + FLAG[l] + '</span><span class="nm">' + LNAME[l] + '</span>';
+  langBtn.innerHTML = langRow(I18N.lang) + '<span class="cv">▾</span>';
+  I18N.LANGS.forEach(l => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'option'); b.className = l === I18N.lang ? 'cur' : ''; b.dataset.l = l; b.innerHTML = langRow(l); langList.appendChild(b); });
+  const langClose = () => { langList.style.display = 'none'; langBtn.setAttribute('aria-expanded', 'false'); };
+  langBtn.onclick = e => { e.stopPropagation(); const open = langList.style.display === 'none'; langList.style.display = open ? 'flex' : 'none'; langBtn.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+  langList.onclick = e => {
+    const b = e.target.closest('button'); if (!b) return; e.stopPropagation(); const l = b.dataset.l; langClose(); if (l === I18N.lang) return;
+    if (W && T && T.started && !T.finished && !confirm(_t('Đổi ngôn ngữ sẽ tải lại trang và chuyến đang chạy sẽ không được lưu. Tiếp tục?'))) return;
+    Store.setting('lang', l); location.reload();
+  };
+  document.addEventListener('click', () => { if (langList.style.display !== 'none') langClose(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && langList.style.display !== 'none') { langClose(); e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  $('start').textContent = _t('Bắt đầu'); $('start').style.cssText = 'width:auto;padding:0 30px;height:44px;font-size:15px';
   const m = { solid: false, screen: null, from: 'home', prevMode: 'drive', prevRun: false, conf: null };
   m.show = function (name, from) {
     if (from) m.from = from;
@@ -771,19 +802,19 @@ const M = (function () {
   m.restart = function () { m.hide(); paused = false; if (replaying) replaying = null; if (tutLessonActive) startLesson(Tutorial.S.lesson); else startDrive(recipe); };
   m.confirm = function (kind) {
     const r = kind === 'restart'; m.conf = kind;
-    $('mcT').textContent = r ? 'Chơi lại chuyến này?' : 'Về menu chính?'; $('mcB').textContent = r ? (tutLessonActive ? 'Bài học sẽ bắt đầu lại từ đầu.' : 'Chuyến sẽ quay về ga xuất phát, cùng cấu hình và seed.') : 'Chuyến đang chạy sẽ không được lưu.';
-    $('mcOk').textContent = r ? 'Chơi lại' : 'Về menu'; m.show('confirm');
+    $('mcT').textContent = r ? _t('Chơi lại chuyến này?') : _t('Về menu chính?'); $('mcB').textContent = r ? (tutLessonActive ? _t('Bài học sẽ bắt đầu lại từ đầu.') : _t('Chuyến sẽ quay về ga xuất phát, cùng cấu hình và seed.')) : _t('Chuyến đang chạy sẽ không được lưu.');
+    $('mcOk').textContent = r ? _t('Chơi lại') : _t('Về menu'); m.show('confirm');
   };
   m.learnRender = function () {
-    const done = Object.assign({}, (Store.get().tutorial || {}), Tutorial.S.done), D = { basic: 'Khởi hành, kéo cần, phanh và dừng đúng vạch ga.', gear: 'Gạt mưa, nhắc lại lệnh điều độ, cảnh báo đường.', crisis: 'Động đất, ra quyết định, xử lý cháy.', power: 'Cần vẹt, bật/tắt ATC, tàu đứng phía trước.' };
+    const done = Object.assign({}, (Store.get().tutorial || {}), Tutorial.S.done), D = { basic: _t('Khởi hành, kéo cần, phanh và dừng đúng vạch ga.'), gear: _t('Gạt mưa, nhắc lại lệnh điều độ, cảnh báo đường.'), crisis: _t('Động đất, ra quyết định, xử lý cháy.'), power: _t('Cần vẹt, bật/tắt ATC, tàu đứng phía trước.') };
     let n = 0; $('mCards').innerHTML = '';
     Tutorial.LESSONS.forEach((l, i) => {
       const p = l.title.split(' · '), ok = !!done[l.id]; if (ok) n++;
       const b = document.createElement('button'); b.className = 'lcard';
-      b.innerHTML = `<span class="k">${p[0].toUpperCase()} · ${l.steps.length} bước</span><b>${p.slice(1).join(' · ')}</b><span class="d">${D[l.id] || ''}</span>` + (ok ? '<span class="ok">✓ Đã hoàn thành</span>' : '<span class="ok dim">Chưa học</span>');
+      b.innerHTML = _t('<span class="k">{0} · {1} bước</span><b>{2}</b><span class="d">{3}</span>', p[0].toUpperCase(), l.steps.length, p.slice(1).join(' · '), D[l.id] || '') + (ok ? _t('<span class="ok">✓ Đã hoàn thành</span>') : _t('<span class="ok dim">Chưa học</span>'));
       b.onclick = () => { paused = false; startLesson(i); }; $('mCards').appendChild(b);
     });
-    $('mLearnSum').textContent = 'Đã xong ' + n + ' trên ' + Tutorial.LESSONS.length + ' bài';
+    $('mLearnSum').textContent = _t('Đã xong {0} trên {1} bài', n, Tutorial.LESSONS.length);
   };
   el.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return; b.blur(); const t = b.dataset.m; if (!t) return;

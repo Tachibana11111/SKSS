@@ -261,7 +261,7 @@
     for (let i = 0; i + 1 < nWin; i++) { const xa = winRects[i][0] + winW + fr, xb = winRects[i + 1][0] - fr; if (xb > xa) { ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(xa, oy0 - fr, xb - xa, oh + 2 * fr); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(xa, oy0 - fr, 2, oh + 2 * fr); ctx.fillRect(xb - 2, oy0 - fr, 2, oh + 2 * fr); } }
     { const sy0 = oy1 + fr, sh0 = py + ph - sy0; if (sh0 > 4) { const g = ctx.createLinearGradient(0, sy0, 0, py + ph); g.addColorStop(0, mixc([66, 62, 58], [226, 220, 206], 0.55 + 0.25 * day)); g.addColorStop(1, mixc([30, 28, 26], [150, 144, 132], 0.5 + 0.2 * day)); ctx.fillStyle = g; ctx.fillRect(px, sy0, pw, sh0); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(px, sy0, pw, 3); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(px, sy0 + 3, pw, 2); } }
     ctx.restore();
-    ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(px + 8, py + 8, 360, 22); ctx.fillStyle = '#cfe0f0'; ctx.font = '12px system-ui'; ctx.textAlign = 'left'; ctx.fillText('CỬA SỔ ' + (side > 0 ? 'TRÁI' : 'PHẢI') + ' · toa giữa (' + (SMAP[camKey] || '?') + ': ' + nWin + ' ô ' + spec.w.toFixed(2) + '×' + spec.h.toFixed(2) + ' m) · , / .', px + 14, py + 24);
+    ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(px + 8, py + 8, 360, 22); ctx.fillStyle = '#cfe0f0'; ctx.font = '12px system-ui'; ctx.textAlign = 'left'; ctx.fillText(side > 0 ? _t('CỬA SỔ TRÁI · toa giữa ({0}: {1} ô {2}×{3} m) · , / .', SMAP[camKey] || '?', nWin, spec.w.toFixed(2), spec.h.toFixed(2)) : _t('CỬA SỔ PHẢI · toa giữa ({0}: {1} ô {2}×{3} m) · , / .', SMAP[camKey] || '?', nWin, spec.w.toFixed(2), spec.h.toFixed(2)), px + 14, py + 24);
   }
   root.WinView = { draw, WINSPEC, nWindows };
 })(typeof window !== 'undefined' ? window : globalThis);

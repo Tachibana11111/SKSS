@@ -4,6 +4,7 @@ const DRIVE = path.join(__dirname, '..', 'prototype', 'drive');
 global.window = global;
 global.localStorage = (() => { const m = {}; return { getItem: k => m[k] || null, setItem: (k, v) => { m[k] = String(v); }, removeItem: k => { delete m[k]; } }; })();
 require(path.join(DRIVE, 'data-lines.js'));
+require(path.join(DRIVE, 'i18n.js'));
 const Sim = require(path.join(DRIVE, 'sim.js')); global.Sim = Sim; require(path.join(DRIVE, 'natcat.js'));
 require(path.join(DRIVE, 'layout.js')); require(path.join(DRIVE, 'store.js')); require(path.join(DRIVE, 'tutorial.js'));
 let pass = 0, fail = 0; const failures = [];
@@ -613,6 +614,48 @@ if (section('28. Khởi động ở nhiều giờ trong ngày: tàu cùng chiề
             if ((a0.k - b0.k) * (a.k - bb.k) < 0 && Math.abs(a.k - bb.k) > 0.05) { flips++; if (!firstBad) firstBad = a.lab + ' x ' + bb.lab + ' @' + W.trip.label + ' t=' + t; } } }
         prev = cur; } } }
   ok(worlds > 40 && flips === 0, 'khởi động ở ' + worlds + ' giờ khác nhau: ' + flips + ' lần tàu cùng chiều đổi thứ tự trong 5 phút đầu', firstBad);
+}
+
+if (section('29. Đa ngôn ngữ (i18n.js, lang-en.js, lang-ja.js): đủ bản dịch, đúng chỗ điền, không lọt tiếng Việt')) {
+  const fs = require('fs'); require(path.join(DRIVE, 'lang-en.js')); require(path.join(DRIVE, 'lang-ja.js'));
+  const VNX = /[ăâđêôơưĂÂĐÊÔƠƯàáảãạằắẳẵặầấẩẫậèẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]/;      // chữ đặc trưng tiếng Việt (không gồm é: có trong tên riêng)
+  const VNK = /[À-ÃÈ-ÊÌÍÒ-ÕÙÚÝà-ãè-êìíò-õùúýĂăĐđĨĩŨũƠơƯưẠ-ỹ]/;
+  // 1) thu khoá _t('...') trong mã nguồn
+  const files = ['sim.js', 'tutorial.js', 'fullui.js', 'natmap.js', 'store.js', 'audio.js', 'winview.js', 'scene.js', 'topview.js', 'index.html'], keys = new Set(); let bad = 0;
+  const reKey = /(?<![\w$.])_t\(\s*('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")/g;
+  for (const f of files) { const src = fs.readFileSync(path.join(DRIVE, f), 'utf8'); let m; while ((m = reKey.exec(src))) { try { keys.add(new Function('return ' + m[1])()); } catch (e) { bad++; } } }
+  { const src = fs.readFileSync(path.join(DRIVE, 'cabview.js'), 'latin1'); const m = src.match(/_t\('(V[^']{0,4}CH)'\)/); if (m) keys.add('VẠCH'); }
+  // văn bản tĩnh trong HTML (ngoài <script>/<style>), đã chuẩn hoá khoảng trắng
+  { const h = fs.readFileSync(path.join(DRIVE, 'index.html'), 'utf8').replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<!--[\s\S]*?-->/g, ''), norm = x => x.replace(/\s+/g, ' ').trim(); let m;
+    const rt = />([^<>]+)</g; while ((m = rt.exec(h))) { const k = norm(m[1]); if (k && VNK.test(k)) keys.add(k); }
+    const ra = /(?:title|alt|placeholder|aria-label)="([^"]*)"/g; while ((m = ra.exec(h))) { const k = norm(m[1]); if (k && VNK.test(k)) keys.add(k); }
+    const mt = h.match(/<title>([\s\S]*?)<\/title>/); if (mt) keys.add(norm(mt[1])); }
+  const vnKeys = [...keys].filter(k => VNK.test(k)), EN = I18N.dict.en, JA = I18N.dict.ja;
+  ok(bad === 0 && vnKeys.length > 650, 'thu được ' + vnKeys.length + ' khoá tiếng Việt cần dịch trong mã và HTML (' + bad + ' khoá không đọc được)');
+  // 2) đủ bản dịch, đủ chỗ điền, không lọt tiếng Việt
+  const ph = s => [...new Set(s.match(/\{\d+\}/g) || [])].sort().join(',');
+  const miss = { en: vnKeys.filter(k => !(k in EN)), ja: vnKeys.filter(k => !(k in JA)) };
+  ok(miss.en.length === 0 && miss.ja.length === 0, 'mọi khoá đều có bản dịch Anh và Nhật', 'thiếu en ' + miss.en.length + ' / ja ' + miss.ja.length + ': ' + miss.en.concat(miss.ja).slice(0, 3).join(' | '));
+  const badPh = vnKeys.filter(k => (k in EN && ph(k) !== ph(EN[k])) || (k in JA && ph(k) !== ph(JA[k])));
+  ok(badPh.length === 0, 'bản dịch giữ đúng các chỗ điền {0}, {1}...', badPh.slice(0, 2).join(' | '));
+  const empty = vnKeys.filter(k => (EN[k] === '' || JA[k] === '') && ![].includes(k));
+  ok(empty.length === 0, 'không có bản dịch rỗng', empty.slice(0, 3).join(' | '));
+  const leak = [['en', EN], ['ja', JA]].flatMap(([l, d]) => Object.entries(d).filter(([k, v]) => VNX.test(v) && !/^(Tiếng Việt)$/.test(v)).map(([k, v]) => l + ': ' + v.slice(0, 50)));
+  ok(leak.length === 0, 'bản dịch không lẫn chữ tiếng Việt', leak.slice(0, 3).join(' | '));
+  const stale = Object.keys(EN).concat(Object.keys(JA)).filter(k => !keys.has(k));
+  ok(stale.length === 0, 'từ điển không còn khoá thừa (' + stale.length + ')', stale.slice(0, 3).join(' | '));
+  // 3) hàm t(): điền chỗ, dự phòng tiếng Việt
+  const L0 = I18N.lang;
+  I18N.lang = 'vi'; ok(_t('Chuyến {0} ({1}) · {2} → {3} · {4} · tải khách {5}%', 'N1', 'N700', 'A', 'B', 'x', 80) === 'Chuyến N1 (N700) · A → B · x · tải khách 80%', 'vi: _t điền đúng chỗ {n}');
+  I18N.lang = 'en'; ok(_t('Khoảng cách tới chuyến khách đầu ngày: {0}', '5') === "Margin to the day's first passenger trip: 5" && _t('không có khoá này {0}', 1) === 'không có khoá này 1', 'en: dịch và điền chỗ, khoá lạ giữ nguyên tiếng Việt');
+  I18N.lang = 'ja'; ok(_t('Chờ {0} vượt qua ga', 'N1') === 'N1が駅を通過するのを待機中', 'ja: dịch và điền chỗ');
+  // 4) chạy thật ở en và ja trong tiến trình riêng (ngôn ngữ đặt trước khi nạp mô-đun, như khi mở trang): chuỗi hằng của mô-đun, tin nhắn trong chuyến, nhật ký ATC không lọt tiếng Việt
+  for (const lang of ['en', 'ja']) {
+    const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'i18n_child.js'), lang], { encoding: 'utf8', timeout: 240000 });
+    let o = null; try { o = JSON.parse(r.stdout.trim().split('\n').pop()); } catch (e) { }
+    ok(o && o.msgs > 40 && o.leaks.length === 0, lang + ': ' + (o ? o.msgs + ' tin nhắn trong 8 chuyến, ' + o.leaks.length + ' chuỗi còn tiếng Việt' : 'không chạy được: ' + String(r.stderr).slice(0, 200)), o && o.leaks.slice(0, 3).join(' | '));
+  }
+  I18N.lang = L0;
 }
 
 console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }

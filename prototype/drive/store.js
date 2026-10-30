@@ -2,20 +2,20 @@
 (function (root) {
   const KEY = 'shinkansen-drive-v1';
   const ACH = [
-    { id: 'first', name: 'Chuyến đầu tiên', desc: 'Hoàn thành một chuyến', test: (c) => c.kind === 'drive' && c.finished },
-    { id: 'perfect3', name: 'Dừng như bàn tay', desc: '3 lần dừng trong ±0,5 m trong một chuyến', test: (c) => c.kind === 'drive' && c.perfectStops >= 3 },
-    { id: 'noatc', name: 'Không cần ATC', desc: 'Hoàn thành chuyến ≥ 3 ga mà ATC không phanh thay lần nào', test: (c) => c.kind === 'drive' && c.finished && c.stops >= 3 && c.atc === 0 },
-    { id: 'storm', name: 'Qua bão', desc: 'Đạt ≥ 70 điểm khi thời tiết là mưa hoặc bão', test: (c) => c.kind === 'drive' && ['rain', 'typhoon'].includes(c.weather) && c.score >= 70 },
-    { id: 'quickack', name: 'Nghe điều độ', desc: 'Nhắc lại ≥ 3 lệnh điều độ mà không bị trừ điểm', test: (c) => c.kind === 'drive' && c.ackCount >= 3 && c.ackPen === 0 },
-    { id: 'pa', name: 'Trấn an hành khách', desc: 'Phát thanh trấn an ít nhất một lần khi gặp sự cố', test: (c) => c.kind === 'drive' && c.paCount >= 1 },
-    { id: 'fire', name: 'Bình tĩnh khi cháy', desc: 'Hoàn thành chuyến có báo cháy mà không dừng trong hầm', test: (c) => c.kind === 'drive' && c.hadFire && !c.fireTunnel && c.finished },
-    { id: 'hard', name: 'Chuyên nghiệp', desc: 'Đạt ≥ 75 điểm ở độ khó Khó hoặc Chuyên gia', test: (c) => c.kind === 'drive' && ['hard', 'expert'].includes(c.diff) && c.score >= 75 },
-    { id: 'tohoku', name: 'Lên phương bắc', desc: 'Hoàn thành một chuyến Tohoku', test: (c) => c.kind === 'drive' && c.line === 'toh' && c.finished },
-    { id: 'joetsu', name: 'Xuyên núi tuyết', desc: 'Hoàn thành một chuyến Joetsu', test: (c) => c.kind === 'drive' && c.line === 'jts' && c.finished },
-    { id: 'hokuriku', name: 'Trôi qua đoạn cách điện', desc: 'Hoàn thành một chuyến Hokuriku mà không bị hồ quang ở đoạn đổi tần số', test: (c) => c.kind === 'drive' && c.line === 'hok' && c.finished && !c.deadViol },
-    { id: 'kamome', name: 'Kamome', desc: 'Hoàn thành một chuyến Nishi-Kyushu', test: (c) => c.kind === 'drive' && c.line === 'nks' && c.finished },
-    { id: 'mini', name: 'Mini-Shinkansen', desc: 'Hoàn thành một chuyến Yamagata hoặc Akita mà không va chạm ở đường ngang', test: (c) => c.kind === 'drive' && ['yam', 'aki'].includes(c.line) && c.finished && !c.xingHit },
-    { id: 'tutorial', name: 'Học xong', desc: 'Hoàn thành mọi bài hướng dẫn', test: (c) => c.kind === 'tutorial' && c.allDone }
+    { id: 'first', name: _t('Chuyến đầu tiên'), desc: _t('Hoàn thành một chuyến'), test: (c) => c.kind === 'drive' && c.finished },
+    { id: 'perfect3', name: _t('Dừng như bàn tay'), desc: _t('3 lần dừng trong ±0,5 m trong một chuyến'), test: (c) => c.kind === 'drive' && c.perfectStops >= 3 },
+    { id: 'noatc', name: _t('Không cần ATC'), desc: _t('Hoàn thành chuyến ≥ 3 ga mà ATC không phanh thay lần nào'), test: (c) => c.kind === 'drive' && c.finished && c.stops >= 3 && c.atc === 0 },
+    { id: 'storm', name: _t('Qua bão'), desc: _t('Đạt ≥ 70 điểm khi thời tiết là mưa hoặc bão'), test: (c) => c.kind === 'drive' && ['rain', 'typhoon'].includes(c.weather) && c.score >= 70 },
+    { id: 'quickack', name: _t('Nghe điều độ'), desc: _t('Nhắc lại ≥ 3 lệnh điều độ mà không bị trừ điểm'), test: (c) => c.kind === 'drive' && c.ackCount >= 3 && c.ackPen === 0 },
+    { id: 'pa', name: _t('Trấn an hành khách'), desc: _t('Phát thanh trấn an ít nhất một lần khi gặp sự cố'), test: (c) => c.kind === 'drive' && c.paCount >= 1 },
+    { id: 'fire', name: _t('Bình tĩnh khi cháy'), desc: _t('Hoàn thành chuyến có báo cháy mà không dừng trong hầm'), test: (c) => c.kind === 'drive' && c.hadFire && !c.fireTunnel && c.finished },
+    { id: 'hard', name: _t('Chuyên nghiệp'), desc: _t('Đạt ≥ 75 điểm ở độ khó Khó hoặc Chuyên gia'), test: (c) => c.kind === 'drive' && ['hard', 'expert'].includes(c.diff) && c.score >= 75 },
+    { id: 'tohoku', name: _t('Lên phương bắc'), desc: _t('Hoàn thành một chuyến Tohoku'), test: (c) => c.kind === 'drive' && c.line === 'toh' && c.finished },
+    { id: 'joetsu', name: _t('Xuyên núi tuyết'), desc: _t('Hoàn thành một chuyến Joetsu'), test: (c) => c.kind === 'drive' && c.line === 'jts' && c.finished },
+    { id: 'hokuriku', name: _t('Trôi qua đoạn cách điện'), desc: _t('Hoàn thành một chuyến Hokuriku mà không bị hồ quang ở đoạn đổi tần số'), test: (c) => c.kind === 'drive' && c.line === 'hok' && c.finished && !c.deadViol },
+    { id: 'kamome', name: 'Kamome', desc: _t('Hoàn thành một chuyến Nishi-Kyushu'), test: (c) => c.kind === 'drive' && c.line === 'nks' && c.finished },
+    { id: 'mini', name: 'Mini-Shinkansen', desc: _t('Hoàn thành một chuyến Yamagata hoặc Akita mà không va chạm ở đường ngang'), test: (c) => c.kind === 'drive' && ['yam', 'aki'].includes(c.line) && c.finished && !c.xingHit },
+    { id: 'tutorial', name: _t('Học xong'), desc: _t('Hoàn thành mọi bài hướng dẫn'), test: (c) => c.kind === 'tutorial' && c.allDone }
   ];
   function empty() { return { v: 1, settings: { vol: 60, snd: true, ann: 'ja', pax: true, diff: 'normal' }, history: [], best: {}, ach: {}, replays: {}, tutorial: {}, lastSetup: null }; }
   function load() { try { const s = root.localStorage && root.localStorage.getItem(KEY); if (s) { const d = JSON.parse(s); if (d && d.v === 1) return Object.assign(empty(), d); } } catch (e) { } return empty(); }

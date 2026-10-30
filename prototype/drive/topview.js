@@ -102,7 +102,7 @@
     CARD.forEach((name, i) => { const th = i * 45 * Math.PI / 180, rr = Rr + 16, x = Math.sin(th) * rr, y = -Math.cos(th) * rr; ctx.font = (i % 2 === 0 ? 'bold 12px' : '10px') + ' system-ui'; ctx.fillStyle = i === 0 ? '#ff6a6a' : i % 2 === 0 ? '#e8eef5' : '#8aa0b5'; ctx.fillText(name, x, y); });
     ctx.restore(); ctx.textBaseline = 'alphabetic';
     const card8 = CARD[Math.round(heading / 45) % 8];
-    ctx.fillStyle = '#a9bacb'; ctx.font = '11px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Hướng ' + Math.round(heading) + '° (' + card8 + ')', px + 8, py + ph - 8); ctx.textAlign = 'right'; ctx.fillText('bán kính ' + VIEW_R + ' m', px + pw - 8, py + ph - 8);
+    ctx.fillStyle = '#a9bacb'; ctx.font = '11px system-ui'; ctx.textAlign = 'left'; ctx.fillText(_t('Hướng ') + Math.round(heading) + '° (' + card8 + ')', px + 8, py + ph - 8); ctx.textAlign = 'right'; ctx.fillText(_t('bán kính ') + VIEW_R + ' m', px + pw - 8, py + ph - 8);
   }
   root.TopView = { draw };
 })(typeof window !== 'undefined' ? window : globalThis);
