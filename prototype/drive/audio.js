@@ -128,13 +128,20 @@
     const ss = root.speechSynthesis; if (!ss) return null; const vs = ss.getVoices() || [];
     return vs.find(v => v.lang && v.lang.toLowerCase().startsWith(lang) && /google|microsoft|natural|haruka|ichiro|kyoko|samantha|aria|zira/i.test(v.name)) || vs.find(v => v.lang && v.lang.toLowerCase().startsWith(lang)) || null;
   };
+  // giọng đọc của máy hay đọc sai tên riêng viết bằng kanji (八戸 → "はこ"...): trước khi đọc, thay tên ga, tên tuyến đổi tàu và tên tuyến trong câu chào bằng cách đọc kana (stations-kana.js, [K]); phụ đề vẫn giữ kanji
+  let yomiRe = null, yomiMap = null, yomiFor = null;
+  GameAudio.yomi = function (text) {
+    const K = root.STATION_KANA; if (!K) return text;
+    if (yomiFor !== K) { yomiFor = K; yomiMap = Object.assign({}, root.TERM_KANA, K, root.RAIL_KANA); yomiRe = new RegExp(Object.keys(yomiMap).sort((p, q) => q.length - p.length).join('|'), 'g'); }      // dài trước ngắn (名鉄名古屋本線 trước 名古屋); tên chỉ có chữ Nhật/Latin, không có ký tự đặc biệt của biểu thức chính quy
+    return text.replace(yomiRe, n => yomiMap[n] || n);
+  };
   // a = {ja, vi}: ja = câu đọc (giọng Nhật), vi = phụ đề theo ngôn ngữ giao diện; urgent = true: ngắt câu đang nói
   GameAudio.prototype.say = function (W, a, urgent, chime) {
     const text = a.ja;      // phát thanh cố định: giọng tiếng Nhật + phụ đề
     W.say('pa', 'PA: ' + text + (I18N.lang === 'ja' ? '' : '  —  ' + a.vi));      // giao diện tiếng Nhật: chỉ một dòng phụ đề theo đúng giọng đọc (không lặp bản dịch)
     if (!this.enabled || !root.speechSynthesis) return;
     if (urgent) { this.q = []; root.speechSynthesis.cancel(); }
-    this.q.push({ text, lang: 'ja', t: performance.now(), chime });
+    this.q.push({ text: GameAudio.yomi(text), lang: 'ja', t: performance.now(), chime });
     this.drain();
   };
   GameAudio.prototype.drain = function () {

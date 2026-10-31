@@ -620,6 +620,14 @@ if (section('29b. Furigana tên ga (stations-kana.js): mọi ga đều có cách
   require(path.join(DRIVE, 'stations-kana.js')); require(path.join(DRIVE, 'data-lines.js'));
   let miss = 0; for (const id in global.LINES) for (const st of global.LINES[id].stations) if (!/^[ぁ-ゖー]+$/.test(global.STATION_KANA[st.jp] || '')) { miss++; console.log('  thiếu/sai cách đọc:', st.jp); }
   ok(miss === 0, 'mọi ga có cách đọc toàn hiragana', miss);
+  require(path.join(DRIVE, 'audio.js')); let badY = 0; for (const id in global.LINES) for (const st of global.LINES[id].stations) if (global.GameAudio.yomi(st.jp) !== global.STATION_KANA[st.jp] || global.GameAudio.yomi('まもなく、' + st.jp + '、' + st.jp + 'です。') !== 'まもなく、' + global.STATION_KANA[st.jp] + '、' + global.STATION_KANA[st.jp] + 'です。') { badY++; console.log('  đọc sai:', st.jp, global.GameAudio.yomi(st.jp)); }
+  ok(badY === 0, 'phát thanh: tên ga được đổi sang hiragana trước khi đọc (kể cả tên chứa tên ga khác như 新大阪/大阪, 東広島/広島)', badY);
+  { const KANJI = /[\u4E00-\u9FFF]/, KANA = /^[\u3041-\u3096\u30A1-\u30FAー・A-Za-z]+$/, names = new Set(); let badR = 0, badK = 0, badP = 0;
+    for (const k in window.TRANSFERS) for (const n of window.TRANSFERS[k]) names.add(n);
+    for (const n of names) { const r = window.RAIL_KANA[n]; if (!r || !KANA.test(r)) { badK++; console.log('  thiếu/sai cách đọc tuyến:', n); } else if (global.GameAudio.yomi(n) !== r || global.GameAudio.yomi('ここでは、' + n + 'はお乗り換えです。') !== 'ここでは、' + r + 'はお乗り換えです。') { badR++; console.log('  đọc sai tuyến:', n, global.GameAudio.yomi(n)); } }
+    for (const id in Sim.LINE_META) { const pa = Sim.LINE_META[id].pa; if (!pa) continue; const y = global.GameAudio.yomi('本日も、' + pa + '新幹線をご利用くださいまして'); if (KANJI.test(y.replace('新幹線', '').replace('本日', '').replace('利用', '').replace('御', ''))) { badP++; console.log('  còn kanji trong câu chào:', id, y); } }
+    ok(names.size > 100 && badK === 0 && badR === 0, 'phát thanh: mọi tên tuyến đổi tàu (' + names.size + ' tên) có cách đọc kana và được thay đúng', badK + '/' + badR);
+    ok(badP === 0, 'phát thanh: tên tuyến trong câu chào đầu được đọc bằng kana', badP); }
 }
 if (section('29. Đa ngôn ngữ (i18n.js, lang-en.js, lang-ja.js): đủ bản dịch, đúng chỗ điền, không lọt tiếng Việt')) {
   const fs = require('fs'); require(path.join(DRIVE, 'lang-en.js')); require(path.join(DRIVE, 'lang-ja.js'));
