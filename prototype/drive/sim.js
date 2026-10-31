@@ -426,9 +426,16 @@
       if (!p.mv) continue; const m = p.mv; if (W.t < m.t0 + m.delay) continue; m.v = Math.min(m.vmax, m.v + m.a * dt); p.front += m.v * dt;
     }
   }
-  function departBlock(T) {
+  // vùng giữ tàu đang hiệu lực (mưa ≥ 60 mm/h, gió ≥ 30 m/s) nằm trên chặng từ ga này tới ga dừng kế tiếp: tàu chờ ở ga TRƯỚC vùng đó tới khi hết hạn (kể cả ga xuất phát)
+  function gateZone(T) {
+    const W = T.W, sNext = T.M[nextTarget(T)].s;
+    return W.zones.find(z => z.gate && W.t >= z.tA && W.t < z.tB && z.s1 > T.x && z.s0 < sNext) || null;
+  }
+  function departBlock(T, startOnly) {
     const W = T.W, hold = T.holds[T.k];
     if (hold != null && W.t < hold) return _t('Đang giữ tàu theo lệnh điều độ (còn {0} s)', Math.ceil(hold - W.t));
+    const gz = gateZone(T); if (gz) return _t('Giữ tàu: {0} phía trước (còn {1} s)', gz.label, Math.ceil(gz.tB - W.t));
+    if (startOnly) return T.cut ? _t('Mất điện / kiểm tra sau sự cố') : null;
     if (T.waitFor && T.waitFor.train.phase !== 'end' && T.waitFor.train.x < T.waitFor.s + 120) return _t('Chờ {0} vượt qua ga', T.waitFor.train.label);
     if (T.cut) return _t('Mất điện / kiểm tra sau sự cố');
     const lv = W.parked.find(p => p.mv && p.cc && p.front - VEH[p.key].len - T.x < 450); if (lv) return _t('Chờ {0} rời khỏi ga (tàu nhánh chạy trước)', VEH[lv.key].name);
@@ -438,7 +445,7 @@
   function departNow(T, silent) {
     const W = T.W;
     if (T.phase !== 'dwell' || T.v > 0.05) return false;
-    const blk = T.k > 0 ? departBlock(T) : null;
+    const blk = T.k > 0 ? departBlock(T) : (T === W.player ? departBlock(T, true) : null);      // ga xuất phát của người chơi: chỉ lệnh giữ tàu, vùng giữ tàu và mất điện (không đụng ghép/tách toa)
     if (blk) { if (!silent && !T.isLead && W.t - (T.lastBlockMsg || -99) > 6) { W.say('warn', blk); T.lastBlockMsg = W.t; } return false; }
     if (T.waitFor) T.waitFor = null;
     const mk = T.M[T.k], dep = mk.dep != null ? mk.dep : 0;
@@ -467,7 +474,7 @@
         if (!T.isLead) T.log.push(['ATC', W.t, _t('ATC phanh tự động (') + T.why + ')' + (grace ? _t(' — không tính lỗi') : '')]);
       }
       if (T.atc) {
-        if (T.v <= T.allowed - 0.8) {
+        if (T.v <= T.allowed - 0.8 || (T.phase === 'dwell' && T.v < 0.05)) {      // đã đứng yên ở ga thì nhả (giới hạn lúc này là 0 nên điều kiện đầu không bao giờ đạt: trước đây tàu bị tàu phía trước chắn sát ga có thể kẹt phanh ATC)
           T.atcOk += dt; const need = 0;          // ATC tự nhả khi tốc độ đã xuống dưới giới hạn (không còn nút xác nhận)
           if (T.confirmed || T.atcOk >= need) { T.atc = false; T.atcOk = 0; T.confirmed = false; T.needConfirm = false; } else T.needConfirm = true;
         } else { T.atcOk = 0; T.needConfirm = false; }
@@ -972,6 +979,7 @@
       if (W.decision && W.t - W.decision.t0 > W.decision.timeout) { W.say('warn', _t('Hết thời gian trả lời: coi như từ chối.')); answerDecision(W, 'b'); }
       if (W.armedFire && T.x >= W.armedFire.s) { const af = W.armedFire; W.armedFire = null; af.fn(W); }
     }
+    if (W.running && T.k === 0 && T.phase === 'dwell' && T.started && !T.isLead && departBlock(T, true)) W.depOff = (W.depOff || 0) + dt;      // đang bị giữ ở ga xuất phát: sự kiện ngẫu nhiên chưa tính giờ
     moveParked(W, dt);
     if (W.parked.length) W.parked = W.parked.filter(p => !(p.kind === 'left' && Math.abs(T.x - p.front) > 6000) && !(p.mv && p.front - T.x > 9000));
     W.rainHere = W.zones.some(z => z.kind === 'rain' && !z.hold && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 && T.x < z.s1);
@@ -989,14 +997,15 @@
     }
     if (W.fireActive && W.t > W.fireEnd) W.fireActive = false;
   }
-  function fire(W) { for (const e of W.events) if (!e.done && W.t >= e.at) { e.done = true; e.fire(W); } }
+  // sự kiện ngẫu nhiên tính theo thời gian chạy thật của tàu (không đếm lúc bị giữ ở ga xuất phát: W.depOff); sự kiện abs (thời tiết thật, thiên tai tại ga đầu, động đất thật) theo đồng hồ chuyến
+  function fire(W) { const off = W.depOff || 0; for (const e of W.events) if (!e.done && (e.abs ? W.t : W.t - off) >= e.at) { e.done = true; e.fire(W); } }
   const fmtT = s => { s = Math.round(s); const m = Math.floor(s / 60), r = ((s % 60) + 60) % 60; return m + ':' + String(r).padStart(2, '0'); };
 
   // ---- Sự kiện ----------------------------------------------------------------
-  function startHold(W, sEnd, dur, why) {
+  function startHold(W, sEnd, dur, why, sMin) {
     const rel = W.t + dur; W.lastHold = { t: W.t, why: why || _t('khác'), dur, seq: ((W.lastHold && W.lastHold.seq) || 0) + 1 };
     for (const T of allTrains(W)) {
-      if (!T || T.phase === 'end' || T.x >= sEnd) continue;
+      if (!T || T.phase === 'end' || T.x >= sEnd || (sMin != null && T.x < sMin)) continue;      // sMin: chỉ giữ tàu đã sát hoặc đang trong vùng; tàu còn xa sẽ tự chờ ở ga trước vùng (gateZone)
       T.holdAt = W.t; let jj = -1; const brk = T.v * T.v / (2 * 0.6) + 300;
       for (let j = T.k + (T.phase === 'dwell' ? 0 : 1); j < T.M.length; j++) { if (T.M[j].s - T.x > brk || (T.phase === 'dwell' && j === T.k)) { jj = j; break; } }
       if (jj < 0) jj = T.M.length - 1;
@@ -1028,8 +1037,10 @@
         if (rain >= 0.5) W.realCells.push({ kind: 'rain', lat: p.lat, lon: p.lon, r: 60, t0: tA, t1: tB });
         if (snow >= 0.2) W.realCells.push({ kind: 'snow', lat: p.lat, lon: p.lon, r: 60, t0: tA, t1: tB });
         if (gust >= 15) W.realCells.push({ kind: 'wind', lat: p.lat, lon: p.lon, r: 60, t0: tA, t1: tB });
+        { const rr = Math.max(40, (s1 - s0) / 2000 + 10); if (rain >= 60) W.realCells.push({ kind: 'rain', stop: true, lat: p.lat, lon: p.lon, r: rr, t0: tA, t1: tB }); if (gust >= 30) W.realCells.push({ kind: 'wind', stop: true, lat: p.lat, lon: p.lon, r: rr, t0: tA, t1: tB }); }      // ô giữ tàu cho các tàu theo lịch (natcat.js)
         const hold = (kind, label, msg) => { const dur = Math.max(300, Math.min(1800, tB - Math.max(0, tA))), at = Math.max(0, tA), ss0 = s0, ss1 = s1;
-          ev(at, w => { w.zones.push({ s0: ss0, s1: ss1, v: 0, tA: w.t, tB: w.t + dur, kind, hold: true, label }); startHold(w, ss1, dur, kind); w.say('bad', msg + ' ' + _t('Nhấn Y để nhắc lại lệnh.'), { ack: true }); }); };
+          W.zones.push({ s0: ss0, s1: ss1, v: 0, tA, tB, kind, hold: true, gate: true, label });
+          ev(at, w => { const P = w.player; if (P && P.x >= ss0 - 8000 && P.x < ss1) w.say('bad', msg + ' ' + _t('Nhấn Y để nhắc lại lệnh.'), { ack: true }); startHold(w, ss1, dur, kind, ss0 - 8000); }); };
         if (rain >= 60) hold('rain', _t('mưa ≥ 60 mm/h'), _t('Thời tiết thật: mưa {0} mm/h (≥ 60): DỪNG chạy, về ga gần nhất chờ lệnh.', Math.round(rain)));
         if (gust >= 30) hold('wind', _t('gió ≥ 30 m/s'), _t('Thời tiết thật: gió giật {0} m/s (≥ 30): DỪNG chạy, chờ kiểm tra ray.', Math.round(gust)));
       }
@@ -1061,7 +1072,7 @@
     if (dKm <= (q.shindo - 3.5) * 60) {
       const delay = Math.min(60, dKm / 4), dur = 480 + (q.shindo >= 5 ? 300 : 0) + Math.round(dKm * 4);
       W.say('bad', _t('Động đất thật vừa xảy ra lúc {0}: {1} (M{2}, 震度 {3}), cách tàu khoảng {4} km. Chuẩn bị chịu rung.', hmOf(q.t), name, mag.toFixed(1), q.shindo, Math.round(dKm)));
-      W.events.push({ at: W.t + delay, done: false, fire: w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Phát thanh trấn an hành khách (M).')); } });
+      W.events.push({ at: W.t + delay, done: false, abs: true, fire: w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Phát thanh trấn an hành khách (M).')); } });
       return true;
     }
     const M = T.M, lo = Math.min(M[0].s, M[M.length - 1].s) - 3000, hi = Math.max(M[0].s, M[M.length - 1].s) + 3000; let best = null;
@@ -1077,12 +1088,12 @@
     const planT = M[M.length - 1].arr || 600;
     const pts = []; M.forEach(m => { if (m.arr != null) pts.push([m.arr, m.s]); if (m.dep != null) pts.push([m.dep, m.s]); if (m.pt != null && !m.stop) pts.push([m.pt, m.s]); }); pts.sort((a, b) => a[0] - b[0]);
     const sAtTime = t => { if (t <= pts[0][0]) return pts[0][1]; for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]) { const [t0, s0_] = pts[i - 1], [t1, s1_] = pts[i]; return t1 === t0 ? s1_ : s0_ + (s1_ - s0_) * (t - t0) / (t1 - t0); } return pts[pts.length - 1][1]; };
-    const ev = (at, fn) => W.events.push({ at, fire: fn, done: false });
+    const ev = (at, fn) => W.events.push({ at, fire: fn, done: false }), evAbs = (at, fn) => W.events.push({ at, fire: fn, done: false, abs: true });
     const stopsIdx = M.map((m, k) => m.stop && k > 0 && k < M.length - 1 ? k : -1).filter(k => k >= 0), usedJ = new Set();
     const pickJ = list => { const c = list.filter(k => !usedJ.has(k)); if (!c.length) return -1; const j = c[Math.floor(rnd() * c.length)]; usedJ.add(j); return j; };
     let weather = W.weather; if (weather === 'real' && !(W.real && W.real.wx)) weather = 'auto';      // thiếu dữ liệu thật (mất mạng): thời tiết ngẫu nhiên theo seed
     if (weather === 'auto') { const r = rnd(); weather = r < 0.3 ? 'clear' : r < 0.62 ? 'rain' : r < 0.76 ? 'typhoon' : r < 0.88 ? 'snow' : (W.real ? 'clear' : 'eqk'); }      // chế độ thực tế (kể cả khi mất mạng): không có động đất giả
-    const isReal = weather === 'real'; if (isReal) weather = realWeather(W, M, ev, planT); if (W.real) realQuakes(W, M, ev);
+    const isReal = weather === 'real'; if (isReal) weather = realWeather(W, M, evAbs, planT); if (W.real) realQuakes(W, M, evAbs);
     W.weatherKind = weather;
     const n = D.events[0] + Math.floor(rnd() * (D.events[1] - D.events[0] + 1)), pool = [];
     if (weather === 'eqk' || (!W.real && rnd() < D.eqk)) pool.push('eqk');      // chế độ thực tế: chỉ động đất thật (dư chấn), không có động đất ngẫu nhiên theo seed
@@ -1099,16 +1110,23 @@
     if (D.fault && rnd() < D.fault) pool.push('fault');
     for (const k of rare) if (rnd() < D.rare) pool.push(k);
     if (W.xings && W.xings.length && rnd() < 0.15 + D.rare) pool.push('xingcar');
+    if (!W.real && D.rare > 0 && hash01(W.seed || 1, 4242) < D.rare) {      // thiên tai/thời tiết đã có hiệu lực tại ga xuất phát: giữ tàu ở ga 5–15 phút (mưa ≥ 60 mm/h, gió ≥ 30 m/s hoặc động đất)
+      const h = hash01(W.seed || 1, 4243), dur = 300 + Math.round(hash01(W.seed || 1, 4244) * 600), p0 = M[0].s, kind0 = h < 0.4 ? 'rain' : h < 0.75 ? 'wind' : 'eqk';
+      (W.hazPlan = W.hazPlan || []).push({ kind: kind0, at: 0, dur, s: p0, r: 60, stop: kind0 !== 'eqk' });
+      if (kind0 === 'eqk') evAbs(0, w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Phát thanh trấn an hành khách (M).')); });
+      else { W.zones.push({ s0: p0 - 3000, s1: p0 + 40000, v: 0, tA: 0, tB: dur, kind: kind0, hold: true, gate: true, label: kind0 === 'rain' ? _t('mưa ≥ 60 mm/h') : _t('gió ≥ 30 m/s') });
+        evAbs(0, w => w.say('bad', (kind0 === 'rain' ? _t('Cục Khí tượng: mưa ≥ 60 mm/h ở khu vực ga xuất phát. Giữ tàu tại ga, chờ lệnh (~{0}).', fmtT(dur)) : _t('Cảnh báo gió ≥ 30 m/s ở khu vực ga xuất phát. Giữ tàu tại ga, chờ kiểm tra ray (~{0}).', fmtT(dur))) + ' ' + _t('Nhấn Y để nhắc lại lệnh.'), { ack: true })); }
+    }
     for (const kind of pool) {
       const at = Math.round(planT * (0.12 + rnd() * 0.6));
       if (kind === 'rain') {
         const c = sAtTime(at + 350 + rnd() * 400), hw = 20000 + rnd() * 20000, d50 = 900 + rnd() * 900, stop = rnd() < 0.4, stopDelay = 240 + rnd() * 300, stopDur = 600 + rnd() * 600;
-        const ss0 = Math.min(c - hw, c + hw), ss1 = Math.max(c - hw, c + hw); (W.hazPlan = W.hazPlan || []).push({ kind: 'rain', at, dur: d50, s: c, r: hw / 1000 + 25 });
+        const ss0 = Math.min(c - hw, c + hw), ss1 = Math.max(c - hw, c + hw); (W.hazPlan = W.hazPlan || []).push({ kind: 'rain', at, dur: d50, s: c, r: hw / 1000 + 25, stopAt: stop ? at + Math.round(stopDelay) : undefined, stopDur: Math.round(stopDur) });
         ev(at - 240, w => w.say('info', _t('Cục Khí tượng: mưa lớn sắp tới đoạn phía trước (dự báo ~50 mm/h). Chuẩn bị chạy chậm, bật gạt mưa (V).')));
         ev(at, w => { w.zones.push({ s0: ss0, s1: ss1, v: 70 / 3.6, tA: w.t, tB: w.t + d50, kind: 'rain', label: _t('mưa ≥ 50 mm/h') }); w.say('warn', _t('Mưa 50 mm/h: chạy chậm 70 km/h trong vùng mưa (tài liệu 06 §5.3). Nhấn Y để nhắc lại lệnh.'), { ack: true }); });
         if (stop) ev(at + stopDelay, w => { w.zones.push({ s0: ss0, s1: ss1, v: 0, tA: w.t, tB: w.t + stopDur, kind: 'rain', hold: true, label: _t('mưa ≥ 60 mm/h') }); startHold(w, ss1, stopDur, 'rain'); w.say('bad', _t('Mưa ≥ 60 mm/h: DỪNG chạy. Về ga gần nhất rồi chờ lệnh (~{0}). Nhấn Y để nhắc lại lệnh.', fmtT(stopDur)), { ack: true }); });
       } else if (kind === 'wind') {
-        const c = sAtTime(at + 300 + rnd() * 400), hw = 25000 + rnd() * 20000, dur = 600 + rnd() * 900, ss0 = Math.min(c - hw, c + hw), ss1 = Math.max(c - hw, c + hw); (W.hazPlan = W.hazPlan || []).push({ kind: 'wind', at, dur, s: c, r: hw / 1000 + 25 });
+        const c = sAtTime(at + 300 + rnd() * 400), hw = 25000 + rnd() * 20000, dur = 600 + rnd() * 900, ss0 = Math.min(c - hw, c + hw), ss1 = Math.max(c - hw, c + hw); (W.hazPlan = W.hazPlan || []).push({ kind: 'wind', at, dur, s: c, r: hw / 1000 + 25, stop: true });
         ev(at - 300, w => w.say('info', _t('Cảnh báo gió mạnh 25–30 m/s ở đoạn phía trước.')));
         ev(at, w => { w.zones.push({ s0: ss0, s1: ss1, v: 0, tA: w.t, tB: w.t + dur, kind: 'wind', hold: true, label: _t('gió ≥ 30 m/s') }); startHold(w, ss1, dur, 'wind'); w.say('bad', _t('Gió ≥ 30 m/s: DỪNG chạy. Về ga gần nhất, chờ kiểm tra ray (~{0}). Nhấn Y để nhắc lại lệnh.', fmtT(dur)), { ack: true }); });
       } else if (kind === 'eqk') {

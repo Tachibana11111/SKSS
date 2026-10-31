@@ -354,7 +354,12 @@ function realUpd() {
   else { const r = [...w.options].find(o => o.value === 'real'); if (r) r.remove(); if (realPrev) { w.value = realPrev.weather; $('diff').value = realPrev.diff; realPrev = null; } $('start').disabled = false; }
   $('diff').disabled = w.disabled = realOn; realSnap = null; realClock(); trainList();
 }
-function realClock() { $('jstClock').textContent = realOn ? RealMode.hhmm(RealMode.jstNow().sec) + ' JST' : ''; }
+function realClock() {      // giờ máy người chơi (múi giờ của hệ điều hành, không cần quyền vị trí) · giờ Nhật Bản; cùng múi giờ Nhật thì chỉ hiện JST
+  const el = $('jstClock'); if (!realOn) { el.textContent = ''; return; }
+  const d = new Date(), jst = RealMode.hhmm(RealMode.jstNow(d).sec) + ' JST'; let loc = '';
+  if (d.getTimezoneOffset() !== -540) { let tz = ''; try { tz = (new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(d).find(p => p.type === 'timeZoneName') || {}).value || ''; } catch (e) { } loc = RealMode.hhmm(d.getHours() * 3600 + d.getMinutes() * 60) + (tz ? ' (' + tz + ')' : '') + '  ·  '; }
+  el.textContent = loc + jst; el.style.whiteSpace = 'nowrap';
+}
 $('real').onchange = realUpd;
 setInterval(() => {      // đồng hồ giờ Nhật; nếu chuyến đang chọn vừa rời ga thì dựng lại danh sách
   if (!realOn || !M.screen || M.screen !== 'setup') return; realClock(); const rec = Lc().trains[+$('train').value]; if (!rec || Sim.INSPECT[rec.v]) return;

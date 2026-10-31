@@ -50,4 +50,4 @@
     - **Việc còn lại:** nhờ người bản ngữ xem lại bản dịch tiếng Nhật (thuật ngữ đường sắt); chế độ Điều độ (`dispatch.js`) và tài liệu `docs/`/README chưa dịch; chữ có thể dài hơn ở vài nút HUD khi dùng tiếng Anh, cần xem tay ở độ phân giải thấp.
     - **Khi thêm phím/nút mới:** cập nhật README và bản dịch ở hai tệp `lang-*.js`.
 
-13. **[ĐÃ LÀM 2026-10-31, chờ người dùng thử]** Chế độ thực tế ở màn Thiết lập (giờ Nhật Bản, thời tiết thật Open-Meteo, động đất thật P2PQuake); xem `prototype/README.md`. Đã làm cả động đất thật xảy ra trong lúc chơi (thăm dò mỗi 60 s, ghi như thao tác để xem lại đúng). Việc có thể làm tiếp: lịch cuối tuần/lễ.
+13. **[ĐÃ LÀM 2026-10-31, chờ người dùng thử]** Chế độ thực tế ở màn Thiết lập (giờ Nhật Bản, thời tiết thật Open-Meteo, động đất thật P2PQuake); xem `prototype/README.md`. Đã làm cả động đất thật xảy ra trong lúc chơi (thăm dò mỗi 60 s, ghi như thao tác để xem lại đúng). Cũng đã làm: giữ tàu ở ga xuất phát và ở ga trước vùng xấu (cả chế độ thường lẫn thực tế). Việc có thể làm tiếp: lịch cuối tuần/lễ.
