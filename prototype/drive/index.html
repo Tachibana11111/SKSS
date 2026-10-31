@@ -690,7 +690,8 @@ function drawEnd() {
   const bestRep = Store.get().replays[Store.scenarioKey({ kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed })];
   if (bestRep && !replaying) bar.push([_t('Xem lại bản tốt nhất'), 210, () => startDrive(Object.assign({}, bestRep.recipe, { rec: undefined }), { replay: { actions: bestRep.actions } }), false]);
   if (endInfo && endInfo.more) bar.push([_t('Chặng tiếp theo (Enter) →'), 250, nextLeg, true, '#2a8f5a']);
-  { const gap = 12, tot = bar.reduce((a, b) => a + b[1], 0) + gap * (bar.length - 1); let bx = 560 - tot / 2; for (const b of bar) { button(bx, 838, b[1], 40, b[0], b[2], b[3], b[4], 15); bx += b[1] + gap; } }
+  bar.push([_t('Về menu chính'), 160, () => M.toHome(), false]);
+  { const gap = 12, sum = bar.reduce((a, b) => a + b[1], 0), k = Math.min(1, (1080 - gap * (bar.length - 1)) / sum), tot = sum * k + gap * (bar.length - 1); let bx = 560 - tot / 2; for (const b of bar) { button(bx, 838, Math.round(b[1] * k), 40, b[0], b[2], b[3], b[4], k < 1 ? 13 : 15); bx += Math.round(b[1] * k) + gap; } }      // quá hàng thì thu nhỏ các nút cho vừa hộp tổng kết
   if (endPage === 0 && sc.mission) {
     let y = 226; txt(_t('Cảm biến'), 60, y, '#8aa0b5'); txt(_t('Kết quả'), 230, y, '#8aa0b5'); txt(_t('Phủ'), 850, y, '#8aa0b5'); txt(_t('Lỗi tìm thấy'), 940, y, '#8aa0b5'); y += 26;
     sc.out.forEach(o => { txt(o[0], 60, y, '#fff', '14px system-ui'); txt(o[1], 230, y, '#fff', '14px system-ui'); txt(o[2] + '%', 850, y, '#fff', '14px system-ui'); txt(o[3] + '%', 940, y, '#fff', '14px system-ui'); y += 28; });
