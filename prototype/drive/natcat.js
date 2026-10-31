@@ -41,11 +41,12 @@
     const H = W.haz = { cells: [], quakes: [], delay: new Map(), lastT: W.trip.t0 - WARM }, seed = W.seed || 1, WL = W.line;
     const at = s => { const km = root.Sim.kmOfS(s, W.dir, WL.kmEnd); return atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))); };
     const mid = at((W.trip.M[0].s + W.trip.M[W.trip.M.length - 1].s) / 2);
-    if (W.weatherKind === 'rain' || W.weatherKind === 'typhoon' || W.weatherKind === 'snow') H.cells.push({ kind: W.weatherKind === 'typhoon' ? 'wind' : W.weatherKind, lat: mid.lat, lon: mid.lon, r: 170, t0: -1e9, t1: 1e9 });
+    if (!(W.real && W.real.wx) && (W.weatherKind === 'rain' || W.weatherKind === 'typhoon' || W.weatherKind === 'snow')) H.cells.push({ kind: W.weatherKind === 'typhoon' ? 'wind' : W.weatherKind, lat: mid.lat, lon: mid.lon, r: 170, t0: -1e9, t1: 1e9 });
     for (const p of W.hazPlan || []) { const a = at(p.s);
       if (p.kind === 'rain' || p.kind === 'wind') H.cells.push({ kind: p.kind, lat: a.lat, lon: a.lon, r: p.r || 60, t0: p.at - 300, t1: p.at + p.dur + 600 });
       else if (p.kind === 'eqk') { const ang = hs(seed, p.at) * 6.283, d = 60 + hs(seed, p.at + 1) * 90, mag = 6.1 + hs(seed, p.at + 2) * 1.0, depth = 10 + hs(seed, p.at + 3) * 40;
         H.quakes.push({ t: p.at - d / VS, lat: a.lat + Math.cos(ang) * d / 111, lon: a.lon + Math.sin(ang) * d / 111 / KX, mag, depth, forPlayer: true }); } }
+    if (W.real && W.real.wx) { for (const k of W.realCells || []) H.cells.push(k); return; }      // chế độ thực tế: ô thời tiết lấy từ dữ liệu thật, không thêm hiện tượng giả ngoài tuyến
     // ngoài tuyến của ta: 1–2 ô thời tiết và (đôi khi) một trận động đất, theo hạt giống
     const rl = (u, lo, hi) => lo + hs(seed, u) * (hi - lo);
     for (let k = 0; k < 2; k++) H.cells.push({ kind: hs(seed, 40 + k) < 0.55 ? 'rain' : 'snow', lat: rl(50 + k, 33.5, 43), lon: rl(60 + k, 131, 142), r: rl(70 + k, 50, 110), t0: rl(80 + k, 0, 3600), t1: rl(90 + k, 5400, 12000) });

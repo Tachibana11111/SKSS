@@ -49,3 +49,5 @@
 12. **[ĐÃ LÀM 2026-10-30, chờ người dùng thử]** Đa ngôn ngữ (English, 日本語, Tiếng Việt): ô thả xuống có cờ tròn ở Cài đặt, mặc định theo ngôn ngữ trình duyệt, đổi ngôn ngữ = lưu cài đặt rồi tải lại trang. Khoá dịch là câu tiếng Việt gốc, `_t('...')`; bản dịch ở `lang-en.js`, `lang-ja.js`; xem README mục "Đa ngôn ngữ". Tiếng Nhật hiển thị tên ga bằng chữ Hán và tên tuyến bằng tên Nhật.
     - **Việc còn lại:** nhờ người bản ngữ xem lại bản dịch tiếng Nhật (thuật ngữ đường sắt); chế độ Điều độ (`dispatch.js`) và tài liệu `docs/`/README chưa dịch; chữ có thể dài hơn ở vài nút HUD khi dùng tiếng Anh, cần xem tay ở độ phân giải thấp.
     - **Khi thêm phím/nút mới:** cập nhật README và bản dịch ở hai tệp `lang-*.js`.
+
+13. **[ĐÃ LÀM 2026-10-31, chờ người dùng thử]** Chế độ thực tế ở màn Thiết lập (giờ Nhật Bản, thời tiết thật Open-Meteo, động đất thật P2PQuake); xem `prototype/README.md`. Đã làm cả động đất thật xảy ra trong lúc chơi (thăm dò mỗi 60 s, ghi như thao tác để xem lại đúng). Việc có thể làm tiếp: lịch cuối tuần/lễ.

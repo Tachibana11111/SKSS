@@ -666,4 +666,71 @@ if (section('29. Đa ngôn ngữ (i18n.js, lang-en.js, lang-ja.js): đủ bản 
   I18N.lang = L0;
 }
 
-console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
+if (section('30. Chế độ thực tế (realmode.js + sim.js): giờ Nhật, lọc chuyến, dữ liệu thời tiết/động đất thật, snapshot xác định, lỗi mạng')) {
+  const RM = require(path.join(DRIVE, 'realmode.js'));
+  // giờ Nhật Bản (UTC+9), kể cả qua nửa đêm
+  let j = RM.jstNow(new Date('2026-10-31T00:30:00Z')); ok(j.date === '2026-10-31' && j.sec === 9 * 3600 + 1800, 'jstNow: 00:30 UTC = 09:30 JST', JSON.stringify(j));
+  j = RM.jstNow(new Date('2026-10-31T15:05:09Z')); ok(j.date === '2026-11-01' && j.sec === 5 * 60 + 9, 'jstNow: 15:05 UTC = 00:05 ngày kế (JST)', JSON.stringify(j));
+  ok(RM.hhmm(9 * 3600 + 1800) === '09:30' && RM.hhmm(25 * 3600) === '01:00', 'hhmm: định dạng giờ, giờ sau nửa đêm quay vòng');
+  // lọc chuyến theo giờ
+  const rec = { s: [[0, null, 8 * 3600, 0], [1, null, null, 1], [2, 9 * 3600, 9 * 3600 + 120, 0], [3, 10 * 3600, null, 0]] };
+  ok(RM.canDepart(rec, 8 * 3600) && RM.canDepart(rec, 9 * 3600 + 100) && !RM.canDepart(rec, 9 * 3600 + 121), 'canDepart: ga cuối chỉ có giờ đến nên không tính; có ga rời sau giờ hiện tại thì còn chạy được');
+  ok(JSON.stringify(RM.departable(rec, 8 * 3600 + 1)) === '[2]' && JSON.stringify(RM.departable(rec, 0)) === '[0,2]', 'departable: chỉ các ga còn rời ga từ giờ hiện tại');
+  // các điểm lấy mẫu dọc tuyến: tối đa 9, trải hết đoạn, không trùng
+  for (const ln of ALL) { const L = window.LINES[ln], pts = RM.samplePoints(L, 0, L.stations.length - 1); ok(pts.length >= 2 && pts.length <= 9 && pts[0].i === 0 && pts[pts.length - 1].i === L.stations.length - 1 && new Set(pts.map(p => p.i)).size === pts.length && pts.every(p => p.lat > 20 && p.lon > 120), ln + ': điểm lấy mẫu thời tiết hợp lệ', pts.length); }
+  // phân tích phản hồi Open-Meteo / P2PQuake (dữ liệu giả cùng định dạng)
+  const mkH = (r, sn, g) => ({ hourly: { precipitation: Array(48).fill(r), snowfall: Array(48).fill(sn), wind_gusts_10m: Array(48).fill(g) } });
+  const P2 = RM.samplePoints(window.LINES.tsk, 0, 5), parsed = RM.parseWx(P2.map(() => mkH(1.04, 0, 7.77)), P2, 6);
+  ok(parsed && parsed.h0 === 6 && parsed.pts.length === P2.length && parsed.pts[0].rain.length === RM.HOURS && parsed.pts[0].rain[0] === 1 && parsed.pts[0].gust[0] === 7.8, 'parseWx: cắt đúng số giờ, làm tròn 0,1');
+  ok(RM.parseWx([mkH(0, 0, 0)], P2, 0) === null && RM.parseWx({}, P2, 0) === null && RM.parseWx(null, P2, 0) === null, 'parseWx: sai số điểm hoặc dữ liệu hỏng thì trả về null');
+  const now = { date: '2026-10-31', sec: 12 * 3600 }, q = (time, sc, lat, lon) => ({ code: 551, earthquake: { time, maxScale: sc, hypocenter: { latitude: lat, longitude: lon, magnitude: 5.2, depth: 20, name: 'テスト' } } });
+  const qs = RM.parseQuakes([q('2026/10/31 11:30:00', 40, 35, 139), q('2026/10/31 06:00:00', 40, 35, 139), q('2026/10/31 12:30:00', 40, 35, 139), q('2026/10/30 23:50:00', 40, 35, 139), { code: 551 }, q('bad', 40, 35, 139), q('2026/10/31 11:59:59', 55, 36, 140)], now);
+  ok(qs.length === 2 && qs[0].t === 11 * 3600 + 1800 && qs[0].shindo === 4 && qs[1].shindo === 6 && qs[1].lat === 36, 'parseQuakes: chỉ giữ động đất trong 3 giờ gần đây, bỏ tương lai và bản ghi hỏng', JSON.stringify(qs.map(x => [x.t, x.shindo])));
+  ok(RM.parseQuakes(null, now).length === 0 && RM.parseQuakes('x', now).length === 0, 'parseQuakes: dữ liệu không phải mảng thì rỗng');
+  // snapshot qua fetch giả: thành công, một nguồn lỗi, cả hai lỗi
+  const L0 = window.LINES.tsk, fetchOk = url => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('open-meteo') ? P2.length ? RM.samplePoints(L0, 0, 5).map(() => mkH(2, 0, 5)) : [] : []) });
+  const snapJobs = [RM.snapshot(L0, 0, 5, 9 * 3600, { fetch: fetchOk, now: new Date('2026-10-31T00:30:00Z') }),
+    RM.snapshot(L0, 0, 5, 9 * 3600, { fetch: url => url.includes('open-meteo') ? Promise.reject(new Error('x')) : fetchOk(url), now: new Date('2026-10-31T00:30:00Z') }),
+    RM.snapshot(L0, 0, 5, 9 * 3600, { fetch: () => Promise.reject(new Error('offline')), now: new Date('2026-10-31T00:30:00Z') }),
+    RM.snapshot(L0, 0, 5, 9 * 3600, { fetch: () => Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve({}) }), now: new Date('2026-10-31T00:30:00Z') })];
+  (global.__pending = global.__pending || []).push(Promise.all(snapJobs).then(([a, b, c, d]) => {
+    ok(a.v === 1 && a.date === '2026-10-31' && a.at === 9 * 3600 + 1800 && a.wx && a.wx.h0 === 8 && a.eq && a.eq.length === 0, 'snapshot: có thời tiết (từ 08:00) và danh sách động đất');
+    ok(b.wx === null && b.eq !== null, 'snapshot: lỗi thời tiết không làm mất phần động đất');
+    ok(c.wx === null && c.eq === null && d.wx === null && d.eq === null, 'snapshot: mất mạng hoặc HTTP 500 thì cả hai là null (không ném lỗi)');
+  }));
+  // dựng thế giới từ snapshot
+  const lnR = 'tsk', LR = window.LINES[lnR], recR = Sim.lineOf(lnR).trains.find(t => t.d === 'down' && t.t === 'Nozomi' && t.s.some(e => e[0] === 0 && !e[3]) && t.s.some(e => e[0] === 12 && !e[3]));
+  const tripR = () => Sim.makeTrip(lnR, recR, 0, 12), t0R = tripR().t0, mkSnap = (rain, snow, gust, eq) => { const pts = RM.samplePoints(LR, 0, 12), h0 = Math.floor(t0R / 3600) - 1; return { v: 1, date: '2026-10-31', at: t0R - 600, wx: rain === null ? null : { h0, pts: pts.map(p => Object.assign({}, p, { rain: Array(9).fill(rain), snow: Array(9).fill(snow), gust: Array(9).fill(gust) })) }, eq: eq || [] }; };
+  const mk = (snap, weather) => Sim.createWorld(lnR, tripR(), { diff: 'normal', seed: 7, lead: false, events: true, weather: weather || 'real', real: snap });
+  let W = mk(mkSnap(65, 0, 5)); for (let i = 0; i < 400; i++) Sim.tick(W, 0.05, {}, true);      // tự lái: sự kiện chỉ chạy khi chuyến đã chạy
+  ok(W.weatherKind === 'rain' && W.zones.some(z => z.kind === 'rain' && !z.hold && Math.abs(z.v - 70 / 3.6) < 1e-6 && z.tA < z.tB), 'mưa thật 65 mm/h: vùng mưa chạy chậm 70 km/h theo giờ dự báo', W.weatherKind);
+  ok(W.zones.some(z => z.kind === 'rain' && z.hold), 'mưa thật ≥ 60 mm/h: có lệnh dừng chạy');
+  W = mk(mkSnap(0, 0, 33)); for (let i = 0; i < 400; i++) Sim.tick(W, 0.05, {}, true);      // tự lái: sự kiện chỉ chạy khi chuyến đã chạy ok(W.zones.some(z => z.kind === 'wind' && z.hold), 'gió giật thật ≥ 30 m/s: có lệnh dừng chạy');
+  W = mk(mkSnap(0, 2, 5)); ok(W.weatherKind === 'snow' && W.zones.some(z => z.kind === 'snow' && Math.abs(z.v - 160 / 3.6) < 1e-6 && z.tA > -1e8 && z.tB < 1e8), 'tuyết thật 2 cm/h: vùng tuyết 160 km/h có giới hạn thời gian (không phủ cả ngày)');
+  W = mk(mkSnap(0, 0, 3)); ok(W.weatherKind === 'clear' && !W.zones.some(z => /^(rain|snow|wind)$/.test(z.kind)), 'trời quang thật: không có vùng mưa/tuyết/gió');
+  W = mk(mkSnap(0.8, 0, 3)); ok(W.weatherKind === 'rain' && W.zones.some(z => z.kind === 'rain' && z.v > 100), 'mưa nhẹ: có mưa (gạt mưa) nhưng không giới hạn tốc độ');
+  const wA = mk(mkSnap(35, 0.5, 22)), wB = mk(mkSnap(35, 0.5, 22)); ok(JSON.stringify(wA.zones) === JSON.stringify(wB.zones) && JSON.stringify(wA.events.map(e => e.at)) === JSON.stringify(wB.events.map(e => e.at)), 'cùng snapshot và seed: cùng vùng thời tiết và sự kiện (xác định)');
+  ok(wA.haz && wA.realCells.length > 0 && wA.haz.cells.length === wA.realCells.length, 'bản đồ toàn quốc: ô thời tiết lấy từ dữ liệu thật, không thêm ô giả');
+  // mất dữ liệu thời tiết: thời tiết ngẫu nhiên theo seed, vẫn chạy được
+  W = mk(mkSnap(null, 0, 0)); ok(['clear', 'rain', 'typhoon', 'snow', 'eqk'].includes(W.weatherKind), 'thiếu thời tiết thật: quay về thời tiết ngẫu nhiên', W.weatherKind);
+  W = mk(undefined); ok(['clear', 'rain', 'typhoon', 'snow', 'eqk'].includes(W.weatherKind), 'chọn "thực tế" mà không có snapshot: không lỗi, dùng thời tiết ngẫu nhiên');
+  // dư chấn động đất thật gần tuyến
+  const stM = LR.stations[6], eq1 = [{ t: t0R - 1800, lat: stM.lat + 0.2, lon: stM.lon, mag: 6, depth: 10, shindo: 5, name: 'テスト' }], eq2 = [{ t: t0R - 1800, lat: stM.lat, lon: stM.lon, mag: 4, depth: 10, shindo: 3, name: 'テスト' }], eq3 = [{ t: t0R - 1800, lat: 43, lon: 141, mag: 6, depth: 10, shindo: 5, name: '遠い' }], eq4 = [{ t: t0R - 7 * 3600, lat: stM.lat, lon: stM.lon, mag: 6, depth: 10, shindo: 5, name: '古い' }];
+  W = mk(mkSnap(0, 0, 3, eq1)); ok(W.zones.some(z => z.kind === 'eqk' && z.tA < 0 && z.tB > 0 && Math.abs(z.v - 70 / 3.6) < 1e-6), 'động đất thật 震度5 gần tuyến: chạy kiểm tra chậm 70 km/h quanh tâm chấn');
+  ok(![mk(mkSnap(0, 0, 3, eq2)), mk(mkSnap(0, 0, 3, eq3)), mk(mkSnap(0, 0, 3, eq4))].some(w => w.zones.some(z => z.kind === 'eqk')), 'động đất nhẹ (震度3), ở xa tuyến hoặc quá cũ: không ảnh hưởng chuyến');
+  // chế độ thực tế không có động đất giả (ngẫu nhiên theo seed), kể cả khi mất dữ liệu thời tiết; chế độ thường vẫn có
+  let fakeEq = 0, normalEq = 0; for (let sd = 1; sd <= 60; sd++) { const wr = Sim.createWorld(lnR, tripR(), { diff: 'expert', seed: sd, lead: false, events: true, weather: 'real', real: mkSnap(sd % 2 ? 0 : null, 0, 3) }); if ((wr.hazPlan || []).some(p => p.kind === 'eqk') || wr.weatherKind === 'eqk') fakeEq++;
+    const wn = Sim.createWorld(lnR, tripR(), { diff: 'expert', seed: sd, lead: false, events: true, weather: 'auto' }); if ((wn.hazPlan || []).some(p => p.kind === 'eqk')) normalEq++; }
+  ok(fakeEq === 0 && normalEq > 5, 'chế độ thực tế: 0/60 chuyến có động đất ngẫu nhiên (chế độ thường: ' + normalEq + '/60)', fakeEq);
+  // động đất thật xảy ra TRONG lúc chơi (Sim.injectQuake; index.html gọi qua thao tác 'quake' được ghi lại)
+  const st0 = LR.stations[0], stN = LR.stations[12], mkQ = (lat, lon, sc) => ({ t: t0R, lat, lon, mag: 6, depth: 10, shindo: sc, name: 'テスト' }), live = q => { const w = mk(mkSnap(0, 0, 3)), n0 = w.haz.quakes.length, r = Sim.injectQuake(w, q); for (let i = 0; i < 1200; i++) Sim.tick(w, 0.05, {}, true); return { w, r, added: w.haz.quakes.length - n0 }; };
+  let lv = live(mkQ(st0.lat, st0.lon, 5)); ok(lv.r && lv.w.eqkAt !== undefined && lv.added === 1 && lv.w.haz.quakes[lv.w.haz.quakes.length - 1].real === true, 'động đất thật ngay dưới tàu (震度5): cắt điện sau sóng S, ghi vào bản đồ');
+  lv = live(mkQ(43, 141.3, 5)); ok(lv.r && lv.w.eqkAt === undefined && !lv.w.zones.some(z => z.kind === 'eqk'), 'động đất thật rất xa tuyến: chỉ thông báo, không cắt điện, không giới hạn tốc độ');
+  lv = live(mkQ(stN.lat, stN.lon, 5)); ok(lv.r && lv.w.eqkAt === undefined && lv.w.zones.some(z => z.kind === 'eqk' && z.tA >= 0), 'động đất thật 震度5 gần đoạn phía trước nhưng xa tàu: chạy kiểm tra chậm ở đoạn đó');
+  lv = live(mkQ(st0.lat, st0.lon, 2)); ok(!lv.r && lv.added === 0 && lv.w.eqkAt === undefined, 'động đất thật 震度2: bỏ qua');
+  const l1 = live(mkQ(st0.lat, st0.lon, 5)), l2 = live(mkQ(st0.lat, st0.lon, 5)); ok(l1.w.eqkAt === l2.w.eqkAt && l1.w.player.x === l2.w.player.x, 'cùng thao tác động đất ở cùng thời điểm: cùng kết quả (xem lại xác định)');
+  // chạy trọn chuyến trong thời tiết thật xấu vẫn kết thúc được
+  const rr = runAuto(lnR, recR, 0, 12, { diff: 'normal', events: true, weather: 'real', real: mkSnap(32, 0.4, 21, eq1) }, 40000); ok(rr.T.finished, 'chạy tự động trọn chuyến với thời tiết thật xấu + dư chấn: tới ga cuối');
+}
+
+Promise.all(global.__pending || []).then(() => { console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); } });

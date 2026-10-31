@@ -269,7 +269,7 @@
     // mưa, tuyết, gió, động đất, va chạm, tàu trước dừng
     if (W.rainHere && !p.rain) this.say(W, { ja: 'ただいま、大雨のため、速度を落として運転しております。', vi: _t('Tàu đang chạy chậm do mưa lớn.') }, false, false);
     p.rain = W.rainHere;
-    const snow = W.zones.some(z => z.kind === 'snow' && T.x >= z.s0 && T.x < z.s1);
+    const snow = W.zones.some(z => z.kind === 'snow' && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 && T.x < z.s1);
     if (snow && !p.snow) this.say(W, { ja: '雪のため、徐行運転をしております。', vi: _t('Tàu chạy chậm do tuyết.') }, false, false); p.snow = snow;
     if (W.lastHold && W.lastHold.seq !== A.holdSeq) { A.holdSeq = W.lastHold.seq; const rain = W.lastHold.why === 'rain';
       this.say(W, { ja: rain ? 'ただいま、大雨のため、運転を見合わせております。' : 'ただいま、強風のため、運転を見合わせております。', vi: rain ? _t('Tạm ngừng chạy do mưa lớn.') : _t('Tạm ngừng chạy do gió mạnh.') }, true, true); }

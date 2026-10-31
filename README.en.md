@@ -35,7 +35,8 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 
 ## Menus
 - **Home screen:** Drive · Learn to drive · Profile · Settings · Asset credits (plus the logos of the five JR companies, each linking to its official site).
-- **Trip setup:** line, direction, train, from/to stations, difficulty, weather, seed, branch-train coupling; the same seed gives the same trip.
+- **Trip setup:** a 2D picture of the selected train's front cars; line, direction, train, from/to stations, difficulty, weather, seed, branch-train coupling; the same seed gives the same trip.
+- **Real-time mode** (the checkbox at the top of the right column): uses **Japan time** (only trains that have not yet left are listed; when none are left only the Doctor Yellow and East i inspection trains remain), **live weather** (rain, snow and wind gusts per hour along the line, from Open-Meteo) and **real earthquakes** (P2PQuake: those from the last few hours cause slow inspection running near the epicentre; one that strikes **while you play** cuts the power if the shaking is strong enough at your train). Difficulty is fixed to Normal. It needs a connection when you press Start (and, for earthquakes, while you play); offline it falls back to random weather. The data is snapshotted at the start and new earthquakes are recorded like your inputs, so replays stay exact.
 - **Pause (P or Esc):** Resume · Settings · Profile · Snapshot (F9) · Restart · Back to main menu.
 - **Settings:** language, scenery (full/light) and the **complete keyboard shortcut table**. Fast-forward always returns to ×1 on a radio call.
 - **Music player** (bottom left, menus only): play/pause, previous/next, one button cycling repeat all / repeat one / shuffle, track list, mute and volume, progress bar, collapsible; it plays through the embedded YouTube player (needs a connection) and starts automatically after your first click or key press.
@@ -87,6 +88,8 @@ GitHub Actions: `ci.yml` runs the tests on every push; `pages.yml` runs them and
 | Station ambience and passing trains | Flavien Gillié, "Odawara Station, Préfecture de Kanagawa, Japon – Shinkansen train leaving for Tokyo", Internet Archive `aporee_70029_81567` | Public Domain Mark 1.0 |
 | Shinkansen station melodies (music player) | YouTube video [`bddFo2Vzi4A`](https://www.youtube.com/watch?v=bddFo2Vzi4A), played through the official embedded player, no file saved | Owned by the video owner and JR; subject to the YouTube terms |
 | Track and platform layout of each station | Japanese Wikipedia (the station articles) | CC BY-SA 4.0 |
+| Live weather (real-time mode) | [Open-Meteo.com](https://open-meteo.com/), hourly forecast; requested from the browser when you press Start and kept only as the trip's snapshot | CC BY 4.0 (data), non-commercial use |
+| Real earthquakes (real-time mode) | [P2PQuake](https://www.p2pquake.net/) (Japan Meteorological Agency data); requested from the browser when you press Start | Under the terms of P2PQuake and JMA |
 | Real October 2026 timetables (`docs/data/`, `data-lines.js`) | JR East (digital timetable), JR West / JRおでかけネット (one real day) | Data belongs to JR East, JR West and Kotsu Shimbunsha; read from public pages (allowed by robots.txt). Used as simulation data, unofficial. |
 | Technical figures, procedures, incidents | Source lists at the end of each file in `docs/` (JR Central, JTSB, trafficnews, Wikipedia…) | Cited only, not copied verbatim |
 

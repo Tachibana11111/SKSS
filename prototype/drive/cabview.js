@@ -38,7 +38,7 @@
     const rr = !!W.rear, Lm2 = L.kmEnd * 1000, physLoZ = (rr ? -15 : -440) - T.x, physHiZ = (rr ? Lm2 + 440 : Lm2 + 15) - T.x, spreadF = rr ? (a, b) => { const so = Lm2 - a, sm = Lm2 - b, se = so <= sm + 30 ? Math.min(so + (W.rearShift || 0), sm + 30) : so; return LAY.spread(se, sm); } : LAY.spread, trackWF = rr ? (t, a, b) => { const so = Lm2 - a, sm = Lm2 - b, se = so <= sm + 30 ? Math.min(so + (W.rearShift || 0), sm + 30) : so; return LAY.trackW(t, se, sm); } : (t, a, b) => LAY.trackW(t, a, b), FA = rr ? 630 : 1150, FB = rr ? 1150 : 630, XA = rr ? 720 : 1300, XB = rr ? 1300 : 720;
     const hour = ((W.trip.t0 + W.t) % 86400 + 86400) % 86400 / 3600;
     const day = smooth(5.3, 7.3, hour) * (1 - smooth(16.8, 19.0, hour)), night = 1 - day, dusk = Math.max(0, 1 - Math.abs(hour - 6.3) / 1.2) + Math.max(0, 1 - Math.abs(hour - 17.8) / 1.3);
-    const inSnow = W.zones.some(z => z.kind === 'snow' && T.x >= z.s0 - 3000 && T.x < z.s1), rain = W.rainHere;
+    const inSnow = W.zones.some(z => z.kind === 'snow' && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 - 3000 && T.x < z.s1), rain = W.rainHere;
     const windy = W.zones.some(z => z.kind === 'wind' && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 - 25000 && T.x < z.s1 + 5000);
     const wx = rain ? 0.55 : inSnow ? 0.4 : 0, fogZ = rain ? 700 : inSnow ? 900 : 3500;
     const dirS = W.dir === 'up' ? -1 : 1;

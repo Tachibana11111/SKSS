@@ -103,7 +103,7 @@
     hard:   { name: _t('Khó'),        events: [4, 5], hint: 0, atcOver: 0.5 / 3.6, tolK: 0.7, comfortK: 16, rate: 0.85, timeK: 1.3, eqk: 0.25, fault: 0.2, reopen: 0.15, confirm: 'manual', rare: 0.25 },
     expert: { name: _t('Chuyên gia'), events: [6, 7], hint: 0, atcOver: 0.3 / 3.6, tolK: 0.5, comfortK: 20, rate: 0.7, timeK: 1.6, eqk: 0.45, fault: 0.5, reopen: 0.20, confirm: 'manual', rare: 0.5 }
   };
-  const WEATHER = { auto: _t('Ngẫu nhiên'), clear: _t('Trời quang'), rain: _t('Mưa lớn'), typhoon: _t('Bão (mưa + gió)'), snow: _t('Tuyết'), eqk: _t('Động đất') };
+  const WEATHER = { auto: _t('Ngẫu nhiên'), clear: _t('Trời quang'), rain: _t('Mưa lớn'), typhoon: _t('Bão (mưa + gió)'), snow: _t('Tuyết'), eqk: _t('Động đất'), real: _t('Thực tế (dữ liệu thật)') };
   function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
   // ---- Hình học tuyến -----------------------------------------------------
@@ -900,7 +900,7 @@
   function createWorld(lineId, trip, opts) {
     opts = opts || {};
     const rnd = rng(opts.seed || 1), W = baseWorld(lineId, trip.dir, opts.diff, opts.seed, opts.weather), L = W.line;
-    W.trip = trip; W.catalog = catalogOf(L, trip.dir);
+    W.real = opts.real || null; W.trip = trip; W.catalog = catalogOf(L, trip.dir);
     const M = fillPlan(trip.M.map(m => Object.assign({}, m)));
     termPicks(W, L, M, opts.seed || 1);
     W.load = opts.load != null ? opts.load : 0.45 + W.rnd() * 0.55;
@@ -1009,6 +1009,69 @@
       T.holds[jj] = Math.max(T.holds[jj] || 0, rel);
     }
   }
+  // ---- Chế độ thực tế: dựng thời tiết và dư chấn từ snapshot W.real (chụp lúc bắt đầu chuyến; xem realmode.js). Ngưỡng mưa ≥ 50/60 mm/h và gió ≥ 30 m/s lấy như thời tiết ngẫu nhiên; các mức nhẹ hơn (mưa 30 mm/h, gió 20–25 m/s, tuyết) là [I].
+  const hav = (a, b, c, d) => { const p = Math.PI / 180, x = (c - a) * p, y = (d - b) * p * Math.cos((a + c) / 2 * p); return 6371 * Math.hypot(x, y); };      // km (xấp xỉ phẳng)
+  const hmOf = s => { s = ((Math.floor(s) % 86400) + 86400) % 86400; return String(Math.floor(s / 3600)).padStart(2, '0') + ':' + String(Math.floor(s % 3600 / 60)).padStart(2, '0'); };
+  function realWeather(W, M, ev, planT) {
+    const wx = W.real.wx, t0 = W.trip.t0, lo = Math.min(M[0].s, M[M.length - 1].s) - 3000, hi = Math.max(M[0].s, M[M.length - 1].s) + 3000;
+    const P = wx.pts.map(p => ({ p, s: sOfKm(p.km, W.dir, W.line.kmEnd) })).sort((a, b) => a.s - b.s), worst = { rain: 0, snow: 0, gust: 0 }; W.realCells = [];
+    for (let j = 0; j < P.length; j++) {
+      const a = j ? (P[j - 1].s + P[j].s) / 2 : lo, b = j < P.length - 1 ? (P[j].s + P[j + 1].s) / 2 : hi, s0 = Math.max(lo, a), s1 = Math.min(hi, b); if (s1 <= s0) continue;
+      const p = P[j].p, nH = p.rain.length;
+      for (let h = 0; h < nH; h++) {
+        const tA = (wx.h0 + h) * 3600 - t0, tB = tA + 3600; if (tB < 0 || tA > planT * 1.5 + 1800) continue;
+        const rain = p.rain[h] || 0, snow = p.snow[h] || 0, gust = p.gust[h] || 0, zone = (v, kind, label) => W.zones.push({ s0, s1, v, tA, tB, kind, label });
+        worst.rain = Math.max(worst.rain, rain); worst.snow = Math.max(worst.snow, snow); worst.gust = Math.max(worst.gust, gust);
+        if (rain >= 0.5) zone(rain >= 50 ? 70 / 3.6 : rain >= 30 ? 170 / 3.6 : 1e3, 'rain', rain >= 50 ? _t('mưa ≥ 50 mm/h') : rain >= 30 ? _t('mưa ≥ 30 mm/h') : _t('mưa'));
+        if (snow >= 0.2) zone((snow >= 3 ? 110 : snow >= 1 ? 160 : 230) / 3.6, 'snow', _t('tuyết rơi'));
+        if (gust >= 20 && gust < 30) zone((gust >= 25 ? 170 : 230) / 3.6, 'wind', gust >= 25 ? _t('gió ≥ 25 m/s') : _t('gió ≥ 20 m/s'));
+        if (rain >= 0.5) W.realCells.push({ kind: 'rain', lat: p.lat, lon: p.lon, r: 60, t0: tA, t1: tB });
+        if (snow >= 0.2) W.realCells.push({ kind: 'snow', lat: p.lat, lon: p.lon, r: 60, t0: tA, t1: tB });
+        if (gust >= 15) W.realCells.push({ kind: 'wind', lat: p.lat, lon: p.lon, r: 60, t0: tA, t1: tB });
+        const hold = (kind, label, msg) => { const dur = Math.max(300, Math.min(1800, tB - Math.max(0, tA))), at = Math.max(0, tA), ss0 = s0, ss1 = s1;
+          ev(at, w => { w.zones.push({ s0: ss0, s1: ss1, v: 0, tA: w.t, tB: w.t + dur, kind, hold: true, label }); startHold(w, ss1, dur, kind); w.say('bad', msg + ' ' + _t('Nhấn Y để nhắc lại lệnh.'), { ack: true }); }); };
+        if (rain >= 60) hold('rain', _t('mưa ≥ 60 mm/h'), _t('Thời tiết thật: mưa {0} mm/h (≥ 60): DỪNG chạy, về ga gần nhất chờ lệnh.', Math.round(rain)));
+        if (gust >= 30) hold('wind', _t('gió ≥ 30 m/s'), _t('Thời tiết thật: gió giật {0} m/s (≥ 30): DỪNG chạy, chờ kiểm tra ray.', Math.round(gust)));
+      }
+    }
+    const kind = worst.gust >= 25 && worst.rain >= 10 ? 'typhoon' : worst.snow >= 0.2 ? 'snow' : worst.rain >= 0.5 ? 'rain' : 'clear', fx = v => v.toFixed(1);
+    ev(0, w => w.say('info', _t('Chế độ thực tế · {0} (giờ Nhật) · dọc tuyến: mưa tối đa {1} mm/h, gió giật tối đa {2} m/s, tuyết tối đa {3} cm/h.', hmOf(t0), fx(worst.rain), fx(worst.gust), fx(worst.snow))));
+    return kind;
+  }
+  // dư chấn của động đất thật (JMA qua P2PQuake) trong vài giờ qua: chạy kiểm tra chậm ở đoạn gần tâm chấn
+  function realQuakes(W, M, ev) {
+    const Q = W.real && W.real.eq; if (!Q || !Q.length) return; const t0 = W.trip.t0, lo = Math.min(M[0].s, M[M.length - 1].s) - 3000, hi = Math.max(M[0].s, M[M.length - 1].s) + 3000;
+    for (const q of Q) {
+      if (q.shindo < 4) continue; let best = null;
+      for (const st of W.line.stations) { const s = sOfKm(st.km, W.dir, W.line.kmEnd); if (s < lo || s > hi || !(st.lat > 0)) continue; const d = hav(st.lat, st.lon, q.lat, q.lon); if (!best || d < best.d) best = { d, s }; }
+      if (!best || best.d > 120) continue;
+      const tq = q.t - t0, dur = q.shindo >= 5.5 ? 10800 : 5400; if (tq + dur < 0) continue;
+      W.zones.push({ s0: best.s - 40000, s1: best.s + 40000, v: (q.shindo >= 5 ? 70 : 110) / 3.6, tA: tq, tB: tq + dur, kind: 'eqk', label: _t('kiểm tra sau động đất') });
+      ev(0, w => w.say('warn', _t('Động đất thật lúc {0}: {1} (M{2}, 震度 {3}). Chạy kiểm tra chậm ở đoạn gần tâm chấn.', hmOf(q.t), q.name || '?', q.mag.toFixed(1), q.shindo)));
+    }
+  }
+  // Động đất thật xảy ra TRONG lúc chơi (index.html thăm dò P2PQuake ở chế độ thực tế, rồi gọi qua thao tác 'quake' để được ghi lại và xem lại đúng).
+  // q = { lat, lon, mag, depth, shindo, name, t }. Rung đủ mạnh tại tàu (ước lượng 震度 giảm 1 mỗi 60 km, ngưỡng cắt điện 3,5) thì cắt điện sau khi sóng S tới; gần tuyến thì chạy kiểm tra chậm; còn lại chỉ thông báo [I].
+  function injectQuake(W, q) {
+    const T = W.player; if (!T || !(q.shindo >= 3)) return false;
+    const L = W.line, S = L.stations, km = kmOfS(T.x, W.dir, L.kmEnd); let j = 0; while (j < S.length - 2 && S[j + 1].km < km) j++;
+    const a = S[j], b = S[Math.min(j + 1, S.length - 1)], f = Math.max(0, Math.min(1, (km - a.km) / ((b.km - a.km) || 1)));
+    const dKm = hav(a.lat + (b.lat - a.lat) * f, a.lon + (b.lon - a.lon) * f, q.lat, q.lon), mag = q.mag > 0 ? q.mag : 3 + q.shindo * 0.5, name = q.name || '?';
+    if (W.haz) W.haz.quakes.push({ t: W.t, lat: q.lat, lon: q.lon, mag, depth: q.depth >= 0 ? q.depth : 10, real: true });
+    if (dKm <= (q.shindo - 3.5) * 60) {
+      const delay = Math.min(60, dKm / 4), dur = 480 + (q.shindo >= 5 ? 300 : 0) + Math.round(dKm * 4);
+      W.say('bad', _t('Động đất thật vừa xảy ra lúc {0}: {1} (M{2}, 震度 {3}), cách tàu khoảng {4} km. Chuẩn bị chịu rung.', hmOf(q.t), name, mag.toFixed(1), q.shindo, Math.round(dKm)));
+      W.events.push({ at: W.t + delay, done: false, fire: w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Phát thanh trấn an hành khách (M).')); } });
+      return true;
+    }
+    const M = T.M, lo = Math.min(M[0].s, M[M.length - 1].s) - 3000, hi = Math.max(M[0].s, M[M.length - 1].s) + 3000; let best = null;
+    for (const st of S) { const s = sOfKm(st.km, W.dir, L.kmEnd); if (s < lo || s > hi || !(st.lat > 0)) continue; const d = hav(st.lat, st.lon, q.lat, q.lon); if (!best || d < best.d) best = { d, s }; }
+    if (best && best.d <= 120 && q.shindo >= 4) {
+      W.zones.push({ s0: best.s - 40000, s1: best.s + 40000, v: (q.shindo >= 5 ? 70 : 110) / 3.6, tA: W.t, tB: W.t + (q.shindo >= 5.5 ? 10800 : 5400), kind: 'eqk', label: _t('kiểm tra sau động đất') });
+      W.say('warn', _t('Động đất thật lúc {0}: {1} (M{2}, 震度 {3}). Chạy kiểm tra chậm ở đoạn gần tâm chấn.', hmOf(q.t), name, mag.toFixed(1), q.shindo));
+    } else W.say('info', _t('Động đất thật lúc {0}: {1} (M{2}, 震度 {3}), ở xa tuyến nên không ảnh hưởng chuyến.', hmOf(q.t), name, mag.toFixed(1), q.shindo));
+    return true;
+  }
   function genEvents(W, M, rnd) {
     const D = W.diff, lastS = M[M.length - 1].s, firstS = M[0].s, span = Math.abs(lastS - firstS), sgn = lastS >= firstS ? 1 : -1;
     const planT = M[M.length - 1].arr || 600;
@@ -1017,17 +1080,19 @@
     const ev = (at, fn) => W.events.push({ at, fire: fn, done: false });
     const stopsIdx = M.map((m, k) => m.stop && k > 0 && k < M.length - 1 ? k : -1).filter(k => k >= 0), usedJ = new Set();
     const pickJ = list => { const c = list.filter(k => !usedJ.has(k)); if (!c.length) return -1; const j = c[Math.floor(rnd() * c.length)]; usedJ.add(j); return j; };
-    let weather = W.weather; if (weather === 'auto') { const r = rnd(); weather = r < 0.3 ? 'clear' : r < 0.62 ? 'rain' : r < 0.76 ? 'typhoon' : r < 0.88 ? 'snow' : 'eqk'; }
+    let weather = W.weather; if (weather === 'real' && !(W.real && W.real.wx)) weather = 'auto';      // thiếu dữ liệu thật (mất mạng): thời tiết ngẫu nhiên theo seed
+    if (weather === 'auto') { const r = rnd(); weather = r < 0.3 ? 'clear' : r < 0.62 ? 'rain' : r < 0.76 ? 'typhoon' : r < 0.88 ? 'snow' : (W.real ? 'clear' : 'eqk'); }      // chế độ thực tế (kể cả khi mất mạng): không có động đất giả
+    const isReal = weather === 'real'; if (isReal) weather = realWeather(W, M, ev, planT); if (W.real) realQuakes(W, M, ev);
     W.weatherKind = weather;
     const n = D.events[0] + Math.floor(rnd() * (D.events[1] - D.events[0] + 1)), pool = [];
-    if (weather === 'eqk' || rnd() < D.eqk) pool.push('eqk');
-    if (weather === 'snow') {
+    if (weather === 'eqk' || (!W.real && rnd() < D.eqk)) pool.push('eqk');      // chế độ thực tế: chỉ động đất thật (dư chấn), không có động đất ngẫu nhiên theo seed
+    if (weather === 'snow' && !isReal) {
       // vùng tuyết: Sekigahara–Maibara (Tokaido) và vùng núi Tohoku phía bắc; chỉ có [I]
       const zs = W.line.meta.snow || [];
       for (const [k0, k1, v, lab] of zs) { const a = sOfKm(k0, W.dir, W.line.kmEnd), b = sOfKm(k1, W.dir, W.line.kmEnd); W.zones.push({ s0: Math.min(a, b), s1: Math.max(a, b), v: v / 3.6, tA: -1e9, tB: 1e9, kind: 'snow', label: lab }); }
       ev(0, w => w.say('info', _t('Dự báo: tuyết dày ở vùng núi. Chạy chậm theo quy định (tài liệu 06 §5.3).')));
     }
-    if (weather === 'rain') pool.push('rain', 'rain'); if (weather === 'typhoon') pool.push('rain', 'wind', 'rain');
+    if (!isReal) { if (weather === 'rain') pool.push('rain', 'rain'); if (weather === 'typhoon') pool.push('rain', 'wind', 'rain'); }
     const orders = ['hold', 'skip', 'addstop', 'slow', 'workers', 'animal', 'doorfault', 'sick', 'overtake', 'planned']; if (W.lead) orders.push('leadstop');
     const rare = ['wire', 'fire'];
     while (pool.length < n) pool.push(orders[Math.floor(rnd() * orders.length)]);
@@ -1212,7 +1277,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { passersAt, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { injectQuake, passersAt, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

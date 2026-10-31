@@ -35,7 +35,8 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 
 ## Menu
 - **Màn hình chủ:** Lái tàu · Học lái · Hồ sơ · Cài đặt · Ghi công tài nguyên (và logo 5 công ty JR, bấm vào mở trang chính thức).
-- **Thiết lập chuyến đi:** tuyến, chiều, tàu, ga đi/đến, độ khó, thời tiết, seed, ghép tàu nhánh; cùng một seed cho cùng một chuyến.
+- **Thiết lập chuyến đi:** hình đầu đoàn 2D của tàu đang chọn; tuyến, chiều, tàu, ga đi/đến, độ khó, thời tiết, seed, ghép tàu nhánh; cùng một seed cho cùng một chuyến.
+- **Chế độ thực tế** (ô đánh dấu đầu cột bên phải): lấy **giờ Nhật Bản** (chỉ còn các chuyến chưa rời ga; hết chuyến thì chỉ còn tàu kiểm tra Doctor Yellow, East i), **thời tiết thật** (mưa, tuyết, gió giật theo giờ dọc tuyến, từ Open-Meteo) và **động đất thật** (P2PQuake: vài giờ qua thì chạy kiểm tra chậm quanh tâm chấn; trận xảy ra **trong lúc đang chơi** thì cắt điện nếu rung đủ mạnh tại tàu). Độ khó cố định Thường. Cần mạng khi bấm Bắt đầu và (cho động đất) trong lúc chơi; mất mạng thì dùng thời tiết ngẫu nhiên. Dữ liệu được chụp lại lúc bắt đầu và các trận động đất mới được ghi như thao tác, nên xem lại chuyến vẫn đúng.
 - **Tạm dừng (P hoặc Esc):** Tiếp tục · Cài đặt · Hồ sơ · Chụp cảnh (F9) · Chơi lại · Về menu chính.
 - **Cài đặt:** ngôn ngữ, cảnh vật (đầy đủ/nhẹ) và **bảng phím tắt đầy đủ**. Khi có điện đàm, tua tự về ×1.
 - **Trình phát nhạc** (góc dưới trái, chỉ ở menu): phát/tạm dừng, bài trước/sau, đổi chế độ lặp danh sách/lặp một bài/ngẫu nhiên, danh sách bài, tắt tiếng và âm lượng, thanh tiến trình, thu gọn; phát qua trình nhúng YouTube (cần mạng), tự phát từ lần bấm đầu tiên.
@@ -87,6 +88,8 @@ GitHub Actions: `ci.yml` chạy kiểm thử mỗi lần đẩy mã; `pages.yml`
 | Tiếng nền ga và tàu qua ga | Flavien Gillié, "Odawara Station, Préfecture de Kanagawa, Japon – Shinkansen train leaving for Tokyo", Internet Archive `aporee_70029_81567` | Public Domain Mark 1.0 |
 | Giai điệu ga Shinkansen (trình phát nhạc) | Video YouTube [`bddFo2Vzi4A`](https://www.youtube.com/watch?v=bddFo2Vzi4A), phát qua trình nhúng chính thức, không lưu tệp | Thuộc chủ sở hữu video và JR; theo điều khoản YouTube |
 | Bố trí đường và sân ga từng ga | Wikipedia tiếng Nhật (các bài về từng ga) | CC BY-SA 4.0 |
+| Thời tiết thật (chế độ thực tế) | [Open-Meteo.com](https://open-meteo.com/), dự báo theo giờ; gọi từ trình duyệt khi bấm Bắt đầu, không lưu lại ngoài snapshot của chuyến | CC BY 4.0 (dữ liệu), dùng phi thương mại |
+| Động đất thật (chế độ thực tế) | [P2P地震情報](https://www.p2pquake.net/) (dữ liệu Cục Khí tượng Nhật Bản, JMA); gọi từ trình duyệt khi bấm Bắt đầu | Theo điều khoản của P2P地震情報 và JMA |
 | Lịch tàu thật tháng 10/2026 (`docs/data/`, `data-lines.js`) | JR East (lịch tàu số), JR West / JRおでかけネット (một ngày thật) | Dữ liệu thuộc về JR East, JR West và Kotsu Shimbunsha; đọc từ trang công khai (robots.txt cho phép). Dùng làm dữ liệu mô phỏng, không chính thức. |
 | Số liệu kỹ thuật, quy trình, sự cố | Danh mục nguồn ở cuối từng tệp trong `docs/` (JR Central, JTSB, trafficnews, Wikipedia…) | Chỉ trích dẫn, không chép nguyên văn |
 

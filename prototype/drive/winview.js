@@ -28,7 +28,7 @@
     // ---- môi trường (cùng công thức với cabview)
     const hour = ((W.trip.t0 + W.t) % 86400 + 86400) % 86400 / 3600;
     const day = smooth(5.3, 7.3, hour) * (1 - smooth(16.8, 19.0, hour)), night = 1 - day, dusk = Math.max(0, 1 - Math.abs(hour - 6.3) / 1.2) + Math.max(0, 1 - Math.abs(hour - 17.8) / 1.3);
-    const inSnow = W.zones.some(z => z.kind === 'snow' && T.x >= z.s0 - 3000 && T.x < z.s1), rain = !!W.rainHere;
+    const inSnow = W.zones.some(z => z.kind === 'snow' && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 - 3000 && T.x < z.s1), rain = !!W.rainHere;
     const wx = rain ? 0.55 : inSnow ? 0.4 : 0;
     let sh = 0; if (W.eqkAt !== undefined && W.eqkActive) sh = 5 * Math.exp(-(W.t - W.eqkAt) / 40) + 0.8; if (W.shakeAt !== undefined && W.t - W.shakeAt < 4) sh = Math.max(sh, (W.shakeAmp || 4) * Math.exp(-(W.t - W.shakeAt) / 1.2));
     const lit = day * (1 - wx * 0.4);

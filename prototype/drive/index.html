@@ -152,6 +152,7 @@
     <label>Từ <select id="from"></select></label>
     <label>Đến <select id="to"></select></label>
     <div id="driveOpts" style="display:contents">
+    <label class="inl" id="realBox" title="Giờ Nhật Bản, thời tiết và động đất thật (Open-Meteo, P2PQuake). Cần mạng khi bấm Bắt đầu; Độ khó cố định Thường."><input type="checkbox" id="real"><span>Chế độ thực tế</span><small id="jstClock" style="color:var(--mut);margin-left:auto"></small></label>
     <label>Độ khó <select id="diff"></select></label>
     <label>Thời tiết <select id="weather"></select></label>
     <label>Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
@@ -263,6 +264,7 @@
 <script src="topview.js"></script>
 <script src="japanmap.js"></script>
 <script src="japanmap_nt.js"></script>
+<script src="realmode.js"></script>
 <script src="natmap.js"></script>
 <script src="fullui.js"></script>
 <script src="audio.js"></script>
@@ -290,18 +292,21 @@ const hhmm = s => { const h = Math.floor(s / 3600) % 24, m = Math.floor(s % 3600
 const fmt = Sim.fmtT;
 // ---- thiết lập giao diện
 Object.entries(Sim.DIFF).forEach(([k, d]) => $('diff').add(new Option(d.name, k, false, k === 'normal')));
-Object.entries(Sim.WEATHER).forEach(([k, v]) => { $('weather').add(new Option(v, k)); $('dWeather').add(new Option(v, k)); });
+Object.entries(Sim.WEATHER).forEach(([k, v]) => { if (k === 'real') return; $('weather').add(new Option(v, k)); $('dWeather').add(new Option(v, k)); });
 for (let h = 6; h <= 20; h++) $('dHour').add(new Option(String(h).padStart(2, '0') + ':00', h, false, h === 8));
 Object.values(LINES).forEach(L => $('line').add(new Option(_ln(Sim.lineOf(L.id)), L.id)));
 const Lc = () => LINES[$('line').value];
 const stOpt = (s, i) => { const o = new Option(_s(s), i); o.dataset.rom = s.en; return o; };      // ô chọn ga: chữ hiển thị theo ngôn ngữ, dataset.rom giữ chữ La-tinh để lọc/chọn mặc định
+let realOn = false, realSnap = null, realNote = '';      // chế độ thực tế: bật/tắt, snapshot dữ liệu thật của chuyến sắp chạy, ghi chú nếu thiếu dữ liệu
+const nextStop = (t, now) => { const st = t.s.filter(e => !e[3]); return st.find((e, k) => k < st.length - 1 && e[2] != null && e[2] >= now); };      // ga kế tiếp còn rời ga từ giờ `now`
 function trainList() {
-  const L = Lc(), dir = $('dir').value; $('train').innerHTML = '';
-  L.trains.map((t, i) => [t, i]).filter(([t]) => t.d === dir).sort((a, b) => (a[0].s[0][2] || a[0].s[0][1]) - (b[0].s[0][2] || b[0].s[0][1])).forEach(([t, i]) => {
-    const a = t.s[0], b = t.s[t.s.length - 1];
+  const L = Lc(), dir = $('dir').value, now = realOn ? RealMode.jstNow().sec : -1, live = t => realOn && !Sim.INSPECT[t.v]; $('train').innerHTML = '';
+  L.trains.map((t, i) => [t, i]).filter(([t]) => t.d === dir && (!realOn || Sim.INSPECT[t.v] || RealMode.canDepart(t, now))).map(([t, i]) => [t, i, live(t) ? nextStop(t, now) : t.s[0]]).sort((a, b) => (a[2][2] || a[2][1]) - (b[2][2] || b[2][1])).forEach(([t, i, a]) => {
+    const b = t.s[t.s.length - 1];
     const opt = new Option(`${_tl(t.t, t.n)} · ${hhmm(a[2] != null ? a[2] : a[1])} ${_s(L.stations[a[0]])} → ${_s(L.stations[b[0]])} · ${Sim.VEH[t.v].name}${t.mir ? _t(' (ước)') : ''}`, i); opt.dataset.rom = `${t.t} ${t.n} · ${hhmm(a[2] != null ? a[2] : a[1])} ${L.stations[a[0]].en} → ${L.stations[b[0]].en}`; $('train').add(opt);
   });
-  const pref = [...$('train').options].find(o => /Nozomi|Hayabusa/.test(o.dataset.rom || o.text) && /→ (Shin-Osaka|Hakata|Shin-Aomori|Tokyo)/.test(o.dataset.rom || o.text)) || $('train').options[0]; if (pref) pref.selected = true;
+  const pref = realOn ? ([...$('train').options].find(o => !Sim.INSPECT[L.trains[+o.value].v]) || $('train').options[0]) : ([...$('train').options].find(o => /Nozomi|Hayabusa/.test(o.dataset.rom || o.text) && /→ (Shin-Osaka|Hakata|Shin-Aomori|Tokyo)/.test(o.dataset.rom || o.text)) || $('train').options[0]); if (pref) pref.selected = true;
+  const none = realOn && !$('train').options.length; if (none) $('train').add(new Option(_t('Hết chuyến hôm nay (giờ Nhật {0})', RealMode.hhmm(now)), '')); $('start').disabled = none;
   stopList(); tpUpd();
 }
 let legsExtra = [], campaign = [];
@@ -320,8 +325,10 @@ function stopList() {
     $('via').innerHTML = ''; L.stations.forEach((s, i) => $('via').add(stOpt(s, i))); legsExtra = []; legUpd(); return;
   }
   legsExtra = []; legUpd();
-  seq.forEach((e, k) => { if (k < seq.length - 1) $('from').add(stOpt(L.stations[e[0]], e[0])); if (k > 0) $('to').add(stOpt(L.stations[e[0]], e[0])); });
+  const nowS = realOn ? RealMode.jstNow().sec : -1;
+  seq.forEach((e, k) => { if (k < seq.length - 1 && (!realOn || (e[2] != null && e[2] >= nowS))) $('from').add(stOpt(L.stations[e[0]], e[0])); if (k > 0) $('to').add(stOpt(L.stations[e[0]], e[0])); });
   $('from').selectedIndex = 0; const pt = [...$('to').options].find(o => /^(Nagoya|Sendai)$/.test(o.dataset.rom || o.text)); if (pt) pt.selected = true; else $('to').selectedIndex = $('to').options.length - 1;
+  if ($('from').onchange) $('from').onchange();      // chọn lại ga đến hợp lệ (khi ga đi mặc định không còn là ga đầu)
 }
 $('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = () => { stopList(); vehUpd(); tpUpd(); }; $('vehSel').addEventListener('change', () => tpUpd()); $('line').addEventListener('change', () => setTimeout(vehUpd, 0)); $('dir').addEventListener('change', () => setTimeout(vehUpd, 0));
 function tpUpd() {      // hình đầu đoàn + các toa kế sau của tàu đang chọn (ảnh pv_*.png dựng sẵn ở độ phân giải cao, tỉ lệ thật, mũi quay theo hướng chạy như màn 2D); không có ảnh thì ẩn
@@ -339,6 +346,38 @@ $('from').onchange = () => {
   if ($('to').selectedOptions[0] && $('to').selectedOptions[0].disabled) { const ok = [...$('to').options].reverse().find(o => !o.disabled); if (ok) ok.selected = true; }
 };
 $('dice').onclick = () => { $('seed').value = Math.floor(Math.random() * 99999); };
+// ---- chế độ thực tế: khoá Độ khó = Thường và ô Thời tiết (= dữ liệu thật); chỉ còn chuyến chưa rời ga theo giờ Nhật Bản (tàu kiểm tra luôn dùng được)
+let realPrev = null;
+function realUpd() {
+  realOn = $('real').checked; const w = $('weather');
+  if (realOn) { realPrev = { diff: $('diff').value, weather: w.value }; if (![...w.options].some(o => o.value === 'real')) w.add(new Option(Sim.WEATHER.real, 'real')); w.value = 'real'; $('diff').value = 'normal'; }
+  else { const r = [...w.options].find(o => o.value === 'real'); if (r) r.remove(); if (realPrev) { w.value = realPrev.weather; $('diff').value = realPrev.diff; realPrev = null; } $('start').disabled = false; }
+  $('diff').disabled = w.disabled = realOn; realSnap = null; realClock(); trainList();
+}
+function realClock() { $('jstClock').textContent = realOn ? RealMode.hhmm(RealMode.jstNow().sec) + ' JST' : ''; }
+$('real').onchange = realUpd;
+setInterval(() => {      // đồng hồ giờ Nhật; nếu chuyến đang chọn vừa rời ga thì dựng lại danh sách
+  if (!realOn || !M.screen || M.screen !== 'setup') return; realClock(); const rec = Lc().trains[+$('train').value]; if (!rec || Sim.INSPECT[rec.v]) return;
+  const e = rec.s.find(e => e[0] === +$('from').value && !e[3]); if (!e || (e[2] != null && e[2] < RealMode.jstNow().sec)) trainList();
+}, 10000);
+// động đất thật xảy ra trong lúc chơi (chế độ thực tế): thăm dò P2PQuake mỗi 60 s; trận mới (≥ 震度3, trong 15 phút gần nhất, chưa có trong snapshot) vào chuyến bằng thao tác 'quake' nên được ghi lại và xem lại đúng
+const quakeSeen = new Set(); let quakeBusy = false;
+setInterval(async () => {
+  if (quakeBusy || !W || !T || !recipe || !recipe.real || replaying || paused || document.hidden || finalized || T.finished || mode !== 'drive') return;
+  quakeBusy = true; const w0 = W;
+  try { const list = await RealMode.fetchQuakes(), now = RealMode.jstNow().sec; if (list && W === w0 && !replaying) for (const q of list) { const k = RealMode.quakeKey(q); if (quakeSeen.has(k)) continue; quakeSeen.add(k); if (q.shindo >= 3 && q.t >= now - 900) doAct('quake', q); } }
+  finally { quakeBusy = false; }
+}, 60000);
+// bấm Bắt đầu ở chế độ thực tế: kiểm tra chuyến chưa rời ga, chụp dữ liệu thật (thời tiết + động đất) vào realSnap; lỗi mạng thì chạy tiếp bằng thời tiết ngẫu nhiên
+async function realPrepare() {
+  const L = Lc(), rec = L.trains[+$('train').value]; if (!rec) return false; const mission = Sim.INSPECT[rec.v], from = +$('from').value, to = +$('to').value; let tFrom, lo = Math.min(from, to), hi = Math.max(from, to);
+  if (mission) { const tr = Sim.makeMission($('line').value, [from, to].concat(legsExtra), rec.v, 0); if (!tr) return false; tFrom = tr.t0; for (const i of legsExtra) { lo = Math.min(lo, i); hi = Math.max(hi, i); } }
+  else { const e = rec.s.find(e => e[0] === from && !e[3]); tFrom = e ? e[2] : null; if (tFrom == null || tFrom < RealMode.jstNow().sec) { alert(_t('Chuyến này đã rời ga {0}. Hãy chọn chuyến khác.', _s(L.stations[from]))); trainList(); return false; } }
+  const btn = $('start'), txt = btn.textContent; btn.disabled = true; btn.textContent = _t('Đang lấy dữ liệu thật…');
+  try { realSnap = await RealMode.snapshot(L, lo, hi, tFrom); } finally { btn.disabled = false; btn.textContent = txt; }
+  realNote = !realSnap.wx && !realSnap.eq ? _t('Không kết nối được dữ liệu thật: dùng thời tiết ngẫu nhiên, không có thông tin động đất thật.') : !realSnap.wx ? _t('Không lấy được thời tiết thật: dùng thời tiết ngẫu nhiên.') : !realSnap.eq ? _t('Không lấy được thông tin động đất thật.') : '';
+  return true;
+}
 
 // ---- chụp cảnh (snapshot): khi đã tạm dừng (P) hiện nút "Chụp cảnh", hoặc bấm nút ở cột phải / phím F9. Lưu ảnh PNG của khung game (kèm dòng tóm tắt) và tệp JSON mô tả cảnh để dựng lại đúng cảnh; sau khi chụp vẫn tạm dừng cho tới khi bấm P lại
 let snapMode = false;
@@ -444,13 +483,14 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) focus
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
-function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, couple: $('couple').value }; }
+function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: realOn ? 'real' : $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, couple: $('couple').value, real: realOn && realSnap ? realSnap : undefined }; }
 function startDrive(r, opts) {
   opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec0 = r.rec || L.trains[r.recIdx], rec = r.veh && /^(E5|E7)$/.test(rec0.v) && Sim.VEH[r.veh] ? Object.assign({}, rec0, { v: r.veh, retro: 1 }) : rec0, trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert(_t('Chọn ga đi/đến hợp lệ cho chuyến này.')); return false; }
   if (!(r.leg > 0)) campaign = [];
   ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
-  W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events, couple: r.couple });
+  W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events, couple: r.couple, real: r.real });
+  quakeSeen.clear(); if (r.real && r.real.eq) for (const q of r.real.eq) quakeSeen.add(RealMode.quakeKey(q));      // các trận đã có trong snapshot không đưa vào lần nữa
   T = W.player; auto = false; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endT = null; endInfo = null; endPage = 0;
   replaying = opts.replay || null; if (replaying) scale = 4; else if (scale > 16) scale = 1;
   if (!tutorialRun) tutLessonActive = false;
@@ -466,7 +506,7 @@ function startLesson(i) {
   tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; $('driveOpts').style.display = 'none'; ui.radio = c.radio; ui.focus = false; ui.rear = false;
 }
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));
-$('start').onclick = () => { tutorialRun = false; if (startDrive()) { M.hide(); paused = false; } };
+$('start').onclick = async () => { tutorialRun = false; realNote = ''; if (realOn && !(await realPrepare())) return; if (startDrive()) { M.hide(); paused = false; if (realNote) W.say('warn', realNote); } };
 $('dStart').onclick = () => startDispatch();
 function startDispatch() { Dispatch.start({ lineId: $('line').value, dir: $('dir').value, diff: $('diff').value, seed: +$('seed').value || 1, weather: $('dWeather').value, t0: +$('dHour').value * 3600, span: +$('dSpan').value }); }
 
@@ -475,7 +515,7 @@ const act = {
   power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, setpw(n) { Sim.setPower(T, n); }, setbk(n) { Sim.setBrake(T, n); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
   door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, csAdj(d) { Sim.adjustCS(T, d); },
   ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', _t('Không có lệnh nào cần nhắc lại.')); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
-  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', _t('Đèn pha: ') + ({ auto: _t('tự động'), on: _t('BẬT'), off: _t('TẮT') }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; }
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', _t('Đèn pha: ') + ({ auto: _t('tự động'), on: _t('BẬT'), off: _t('TẮT') }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; }, quake(q) { Sim.injectQuake(W, q); }
 };
 function doAct(name, arg) { if (!W || replaying) return; recActs.push([tickCount, name, arg]); act[name](arg); }
 addEventListener('keydown', e => {
