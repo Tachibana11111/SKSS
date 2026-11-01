@@ -383,14 +383,26 @@
   }
   // ---- người chơi lái chuyến Tohoku (E5): ghép / tách với tàu nhánh. Hayabusa/Hayate ghép E6 (Akita) ở Morioka, Yamabiko ghép E8 (Yamagata) ở Fukushima; Nasuno không ghép.
   // Chiều xuống: mini ở PHÍA TRƯỚC (nối ở Tokyo rồi ta lùi vạch dừng nhường chỗ; tách ở ga nhánh: mini chạy trước vào tuyến nhánh, ta ở lại rồi đi tiếp). Chiều lên: mini nối vào ĐUÔI ta ở ga nhánh. Tỉ lệ và các quy tắc là [I].
-  const CC_P = { E6: 0.6, E8: 0.55 };
-  function planCouple(W, L, trip, P, mode, seed) {
-    const rec = trip.rec; if (W.lineId !== 'toh' || !L.meta.coupleMini || mode === 'never' || trip.mission || rec.cp || P.veh.key !== 'E5' || rec.t === 'Nasuno') return;
-    const [nm, mini] = rec.t === 'Yamabiko' ? ['Fukushima', 'E8'] : ['Morioka', 'E6'], iS = L.stations.findIndex(x => x.en === nm), M = P.M; if (iS < 0) return;
+  // Ghép cặp: một chuyến Tohoku và chuyến mini (Akita/Yamagata) cùng số hiệu, cùng giờ, cùng ga dừng trên đoạn chung luôn nối đoàn (Hayabusa 1 + Komachi 1, Yamabiko 123 + Tsubasa 123...). Dò từ dữ liệu lịch của hai tuyến mini; không còn tuỳ chọn hay xác suất. Khoá: tên|số hiệu|chiều.
+  let PAIRS = null, PAIRS_FOR = null;
+  function miniPairs() {
+    const LN = root.LINES; if (!LN || !LN.toh) return {}; if (PAIRS_FOR === LN) return PAIRS; PAIRS_FOR = LN; PAIRS = {};
+    const T = LN.toh, ti = new Map(T.stations.map((st, k) => [st.jp, k])), MINI = { aki: 'E6', yam: 'E8' };
+    for (const id of ['aki', 'yam']) { const L = LN[id]; if (!L) continue;
+      for (const t of L.trains) { if (!t.cp) continue; const st = t.s.filter(e => !e[3]), sp = st.findIndex(e => e[0] === t.cp[0]); if (sp < 0) continue;
+        const sig = (t.d === 'down' ? st.slice(0, sp + 1) : st.slice(sp)).map(e => [ti.get(L.stations[e[0]].jp), e[1], e[2]]); if (sig.some(x => x[0] === undefined)) continue;
+        const hs = T.trains.filter(h => h.d === t.d && String(h.n) === String(t.n) && sig.every(([k, a, d]) => { const e = h.s.find(y => y[0] === k && !y[3]); return e && e[1] === a && e[2] === d; }));
+        if (hs.length === 1) { const sk = ti.get(L.stations[t.cp[0]].jp); PAIRS[hs[0].t + '|' + hs[0].n + '|' + hs[0].d] = { mini: MINI[id], line: id, split: sk, splitKm: T.stations[sk].km }; } } }
+    return PAIRS;
+  }
+  const miniPairOf = rec => rec && miniPairs()[rec.t + '|' + rec.n + '|' + rec.d] || null;
+  function planCouple(W, L, trip, P) {
+    const rec = trip.rec; if (W.lineId !== 'toh' || !L.meta.coupleMini || trip.mission || rec.cp || P.veh.key !== 'E5') return;
+    const pr = miniPairOf(rec); if (!pr) return;
+    const mini = pr.mini, iS = pr.split, M = P.M;
     const down = trip.dir === 'down', jM = M.findIndex(m => m.i === iS && m.stop), jn = L.meta.junctions.findIndex(j => j.branch && j.to === (mini === 'E8' ? 'Yamagata' : 'Akita'));
     if (jM < 0 || jn < 0 || (down && jM >= M.length - 1)) return;      // chiều xuống: ga tách phải không phải ga cuối
     if (down ? !(M[0].i < iS) : !(M[0].i >= iS && jM >= (M[0].i > iS ? 1 : 0))) return;
-    if (mode !== 'always' && hash01(seed * 13 + (+rec.n || 0), 29) >= CC_P[mini]) return;
     const comp = down ? mini + '+E5' : 'E5+' + mini, cc = P.cc = { kind: down ? 'down' : 'up', i: iS, mini, comp, jn, done: false };
     if (down) {
       if (M[0].i === 0) {         // xuất phát từ Tokyo: mini chờ ở phía trước, lùi vào nối vào đầu ta; vạch dừng của ta lùi về phía sau một đoạn bằng chiều dài mini + khe nối
@@ -727,9 +739,12 @@
       for (let k = 0; k < p.length && km === null; k++) { if (nowE >= p[k].ta && nowE <= p[k].td) { km = p[k].km; vo = 0; } else if (k < p.length - 1 && nowE > p[k].td && nowE < p[k + 1].ta) { const f = (nowE - p[k].td) / ((p[k + 1].ta - p[k].td) || 1); km = p[k].km + (p[k + 1].km - p[k].km) * f; vo = Math.abs(p[k + 1].km - p[k].km) * 1000 / ((p[k + 1].ta - p[k].td) || 1); } }
       if (km === null || vo < 5) { if (!st.has(c.id) || st.get(c.id).t0 > W.t) st.delete(c.id); continue; }
       const gap = (down ? km - kmP : kmP - km) * 1000;
-      if (gap > 0 && gap < 40000) st.set(c.id, { t0: W.t + gap / Math.max(40, T.v + vo), v: c.rec.v, label: _tl(c.rec.t, c.rec.n) }); }
+      if (gap > 0 && gap < 40000) st.set(c.id, { t0: W.t + gap / Math.max(40, T.v + vo), v: oppVeh(W, c.rec, km), label: _tl(c.rec.t, c.rec.n) }); }
     for (const [k, s] of st) if (W.t - s.t0 > 6) st.delete(k);
     const arr = [...st.values()].filter(s => s.t0 - W.t < 150).sort((a, b) => a.t0 - b.t0); W.opposing = arr.map(s => s.t0); W.oppInfo = arr;
+  }
+  function oppVeh(W, rec, km) {      // tàu Tohoku có cặp mini: phía Tokyo của ga tách thì là đoàn ghép (mini ở phía bắc)
+    if (W.lineId !== 'toh' || rec.v !== 'E5') return rec.v; const pr = miniPairOf(rec); if (!pr || km >= pr.splitKm) return rec.v; return rec.d === 'down' ? pr.mini + '+E5' : 'E5+' + pr.mini;
   }
   function oppKey(W, T, t0) {
     if (W.oppInfo) { let b = null; for (const s of W.oppInfo) if (!b || Math.abs(s.t0 - t0) < Math.abs(b.t0 - t0)) b = s; if (b && Math.abs(b.t0 - t0) < 1.5 && VEH[b.v]) return b.v; }
@@ -757,12 +772,10 @@
     return 0;
   }
   // tàu chạy trước trên đường Tohoku có thể là đoàn ghép (Hayabusa + Komachi, Yamabiko + Tsubasa): thêm đơn vị mini và ga tách/ghép cho nó
-  function withMini(L, rec, dir, seed) {
-    const cm = L.meta.coupleMini; if (!cm || rec.cp || rec.t === 'Nasuno' || hash01(seed * 7 + (+rec.n || 0), 11) > 0.5) return rec;
-    const stops = new Set(rec.s.filter(e => !e[3]).map(e => e[0])), cand = rec.t === 'Yamabiko' ? [['Fukushima', 'E8']] : [['Morioka', 'E6'], ['Fukushima', 'E8']];
-    for (const [nm, mini] of cand) { const i = L.stations.findIndex(x => x.en === nm); if (i < 0 || !stops.has(i)) continue;
-      return Object.assign({}, rec, dir === 'down' ? { v: mini + '+E5', cp: [i, 'E5'] } : { v: 'E5', cp: [i, 'E5+' + mini] }); }
-    return rec;
+  function withMini(L, rec, dir) {
+    const cm = L.meta.coupleMini; if (!cm || rec.cp) return rec; const pr = miniPairOf(rec); if (!pr) return rec;
+    const stops = new Set(rec.s.filter(e => !e[3]).map(e => e[0])); if (!stops.has(pr.split)) return rec;
+    return Object.assign({}, rec, dir === 'down' ? { v: pr.mini + '+E5', cp: [pr.split, 'E5'] } : { v: 'E5', cp: [pr.split, 'E5+' + pr.mini] });
   }
   function genStabled(W, M) {
     const Ly = root.Layout, L = W.line; W.stabled = []; if (!Ly) return; const r = rng((W.seed || 1) * 131 + 5);
@@ -917,7 +930,7 @@
     { const P = W.player; if (P.cp && !P.cp.done && P.cp.kind === 'join') { const j = M.findIndex(m => m.i === P.cp.i), pv = VEH['E5'];      // đoàn Tohoku chờ sẵn ở ga: ta dừng cách đuôi nó 2,5 m
         if (j >= 0) { M[j].sOrig = M[j].s; M[j].s -= pv.len + COUPLE_GAP; W.parked.push({ key: 'E5', front: M[j].sOrig, kind: 'wait', i: P.cp.i }); } } }
     { const P = W.player; if (P.cp && P.cp.done && P.cp.kind === 'split' && M[0].i === P.cp.i) W.parked.push({ key: 'E5', front: M[0].s - P.veh.len - COUPLE_GAP, kind: 'left' }); }      // xuất phát đúng ga tách: phần Tohoku còn đứng ở sân ga phía sau
-    if (!trip.mission) planCouple(W, L, trip, W.player, opts.couple || 'never', opts.seed || 1);
+    if (!trip.mission) planCouple(W, L, trip, W.player);
     if (opts.stabled !== false) genStabled(W, M);
     let leadRec = opts.lead === false ? null : pickLead(L, W.catalog, trip), fgn = opts.lead === false ? null : pickForeign(L, trip);
     if (fgn && leadRec && timeAt(L, trip.rec, trip.M[0].i) - timeAt(L, leadRec, trip.M[0].i) <= fgn.gap) fgn = null;       // chọn tàu đi trước sát hơn (cùng tuyến hay tuyến cha)
@@ -981,7 +994,7 @@
     }
     if (W.running && T.k === 0 && T.phase === 'dwell' && T.started && !T.isLead && departBlock(T, true)) W.depOff = (W.depOff || 0) + dt;      // đang bị giữ ở ga xuất phát: sự kiện ngẫu nhiên chưa tính giờ
     moveParked(W, dt);
-    if (W.parked.length) W.parked = W.parked.filter(p => !(p.kind === 'left' && Math.abs(T.x - p.front) > 6000) && !(p.mv && p.front - T.x > 9000));
+    if (W.parked.length) W.parked = W.parked.filter(p => !(p.kind === 'left' && Math.abs(T.x - p.front) > 6000) && !(p.mv && (p.front - T.x > 9000 || p.front - T.x < -1500)));      // tàu nhánh đã tách: bỏ khi cách xa phía trước, hoặc khi ta đã vượt qua nó (trước đây còn chặn khởi hành ở ga kế tiếp tới khi nó chạy vượt lại, mất ~20 phút)
     W.rainHere = W.zones.some(z => z.kind === 'rain' && !z.hold && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 && T.x < z.s1);
     if (auto) {
       const c = autopilot(T);
@@ -1140,7 +1153,7 @@
         const extra = 60 + Math.floor(rnd() * 5) * 30, tNotice = Math.max(0, (M[j].arr || 0) - 600 - rnd() * 300);
         ev(tNotice, w => { const T = w.player; if (T.k >= j || !M[j].stop) return; const rel = (M[j].dep != null ? M[j].dep : M[j].arr) + extra; T.holds[j] = rel; w.say('warn', _t('Điều độ: giữ tàu tại {0} thêm {1} s (chờ tàu nhanh vượt / nối chuyến). Không khởi hành trước {2}. Nhấn Y để nhắc lại lệnh.', M[j].name, extra, fmtT(rel)), { ack: true }); });
       } else if (kind === 'skip' && stopsIdx.length > 1) {
-        const j = pickJ(stopsIdx.slice(1)); if (j < 0) continue; const tNotice = Math.max(0, (M[j].arr || 0) - 700);
+        const j = pickJ(stopsIdx.slice(1).filter(k => !(W.player.cc && M[k].i === W.player.cc.i))); if (j < 0) continue; const tNotice = Math.max(0, (M[j].arr || 0) - 700);
         ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || !M[j].stop) return; M[j].stop = false; T.orderAt = w.t; fillPlan(M); w.say('warn', _t('Điều độ: THÔNG QUA ga {0} (không dừng). Chạy tiếp tới {1}. Nhấn Y để nhắc lại lệnh.', M[j].name, M[nextTarget(T)].name), { ack: true }); });
       } else if (kind === 'addstop' || kind === 'sick') {
         const passIdx = M.map((m, k) => !m.stop && k > 0 && k < M.length - 1 ? k : -1).filter(k => k >= 0); if (!passIdx.length) continue;
@@ -1295,7 +1308,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { injectQuake, passersAt, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { miniPairOf, injectQuake, passersAt, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

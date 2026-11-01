@@ -61,5 +61,5 @@
     - **Tai thỏ, đảo động, lỗ camera, bo góc:** cảnh vẽ tràn viền (đã có `viewport-fit=cover`), mọi nút lùi vào `env(safe-area-inset-*)` cả hai mép (không đoán hướng xoay; khoảng 46 px mỗi bên trên máy có tai thỏ, 30 px Android lỗ camera là ước lượng, chưa đo), chừa 14–16 px đáy cho thanh điều hướng, lùi thêm ~20 px khỏi mép trái/phải để tránh cử chỉ vuốt cạnh của hệ điều hành (quay lại).
     - **Cử chỉ (chưa chốt, có thể chạm nhầm):** vuốt ngang giữa cảnh đổi góc nhìn; vuốt ngang đổi trang tổng kết; chạm đôi cần = về N; chạm giữ nút cửa = đóng cửa; hai ngón chụm = phóng to bản đồ. Cài đặt: rung khi chạm cần, cỡ nút, bố cục tay trái (đổi chỗ hai cần).
     - **Hạn chế đã biết:** iPhone Safari không có Fullscreen API (theo hiểu biết, chưa kiểm lại): nút toàn màn hình vô tác dụng; cần "Thêm vào Màn hình chính" (tệp khai báo ứng dụng web). PA bằng giọng trình duyệt thường không có tiếng trên di động (todo 4); thử đóng gói giọng Kokoro Gongitsune (ghép đoạn) đã bỏ vì nghe tệ. Cần thử trên máy thật (màn nhỏ kiểu iPhone SE và màn lớn).
-    - **Chưa vẽ mockup:** chế độ Điều độ (hiện không có lối vào menu), hộp chọn Tuyến/Chiều/Ga ở màn thiết lập, các ô Seed / ghép tàu nhánh / thêm chặng.
+    - **Chưa vẽ mockup:** chế độ Điều độ (hiện không có lối vào menu), hộp chọn Tuyến/Chiều/Ga ở màn thiết lập, các ô Seed / thêm chặng.
 

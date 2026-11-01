@@ -156,7 +156,6 @@
     <label>Độ khó <select id="diff"></select></label>
     <label>Thời tiết <select id="weather"></select></label>
     <label>Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
-    <label title="Chỉ khi lái chuyến Tohoku (E5): ghép với tàu Akita/Yamagata ở Tokyo (đầu đoàn) rồi tách ở Morioka/Fukushima; chiều lên thì tàu nhánh nối vào đuôi. Nasuno không ghép.">Ghép tàu nhánh <select id="couple"><option value="auto">tự động (theo tỉ lệ)</option><option value="always">luôn (nếu có thể)</option><option value="never">không</option></select></label>
     </div>
     <span id="legBox" style="display:none"><label>Thêm chặng <select id="via"></select></label><div class="btns" style="margin-top:4px"><button id="viaAdd">Thêm</button><button id="viaClr">Xoá chặng</button></div><span id="viaList" style="color:#8aa0b5;font-size:12px"></span></span>
     <button id="start" class="go" style="width:100%">Bắt đầu / chạy lại (R)</button>
@@ -417,7 +416,7 @@ async function checkinTrain(t) {
     const Ln = LINES[line], nearI = Ln.stations.reduce((b, s, i) => Math.abs(s.km - kmShow) < Math.abs(Ln.stations[b].km - kmShow) ? i : b, 0), nd = Math.abs(Ln.stations[nearI].km - kmShow);
     status = (t.held ? _t('đang dừng vì sự cố · ') : kmh < 1 ? _t('đang đứng · ') : Math.round(kmh) + ' km/h · ') + (nd < 0.1 ? _t('tại ga ') + _s(Ln.stations[nearI]) : _t('gần ga ') + _s(Ln.stations[nearI]) + _t(' (cách ') + nd.toFixed(1) + ' km)') + ' · ' + hhmm(now % 86400);
     for (let k = 0; k < 7 && ckOpen; k++) { Wc.rear = false; g.clearRect(0, 0, 1920, 618); CabView.draw(g, 0, 0, 1920, 618, Wc, Tc, { sprites: SPR, fronts: FR, aud: AUD }); await new Promise(r => setTimeout(r, k < 2 ? 80 : 160)); }      // vài lần để các tấm cảnh vật tải xong
-    if (ckOpen) { $('ckTitle').textContent = '📍 Check-in · ' + t.label + ' · ' + Ln.name; $('ckCap').textContent = status; }
+    if (ckOpen) { $('ckTitle').textContent = _t('📍 Check-in · {0} · {1}', t.label, _ln(Sim.lineOf(line))); $('ckCap').textContent = status; }
   } catch (e) { $('ckTitle').textContent = _t('Không dựng được cảnh cho đoàn này'); $('ckCap').textContent = String(e.message || e); }
 }
 $('ckClose').onclick = closeCheckin;
@@ -488,13 +487,13 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) focus
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
-function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: realOn ? 'real' : $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, couple: $('couple').value, real: realOn && realSnap ? realSnap : undefined }; }
+function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: realOn ? 'real' : $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, real: realOn && realSnap ? realSnap : undefined }; }
 function startDrive(r, opts) {
   opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec0 = r.rec || L.trains[r.recIdx], rec = r.veh && /^(E5|E7)$/.test(rec0.v) && Sim.VEH[r.veh] ? Object.assign({}, rec0, { v: r.veh, retro: 1 }) : rec0, trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert(_t('Chọn ga đi/đến hợp lệ cho chuyến này.')); return false; }
   if (!(r.leg > 0)) campaign = [];
   ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
-  W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events, couple: r.couple, real: r.real });
+  W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events, real: r.real });
   quakeSeen.clear(); if (r.real && r.real.eq) for (const q of r.real.eq) quakeSeen.add(RealMode.quakeKey(q));      // các trận đã có trong snapshot không đưa vào lần nữa
   T = W.player; auto = false; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endT = null; endInfo = null; endPage = 0;
   replaying = opts.replay || null; if (replaying) scale = 4; else if (scale > 16) scale = 1;
