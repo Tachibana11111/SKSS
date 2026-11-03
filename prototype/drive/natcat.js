@@ -11,7 +11,9 @@
   let CAT = null, LNREF = null;
   function build(LN) {
     if (CAT && LNREF === LN) return CAT; LNREF = LN; CAT = [];
+    const insp = {};      // mỗi loại tàu kiểm tra chỉ có một đoàn (1 Doctor Yellow, 1 East i) nên trên bản đồ chỉ hiện một chuyến mỗi loại
     for (const id of Object.keys(LN)) for (const rec of LN[id].trains) {
+      if (rec.v === 'T4' || rec.v === 'E926') { if (insp[rec.v]) continue; insp[rec.v] = 1; }
       const stops = rec.s.filter(e => !e[3]).map(e => ({ i: e[0], arr: e[1], dep: e[2] })); if (stops.length < 2) continue;
       const ta = p => p.arr != null ? p.arr : p.dep, td = p => p.dep != null ? p.dep : p.arr;
       const sidx = []; rec.s.forEach((e, ix) => { if (!e[3]) sidx.push(ix); });

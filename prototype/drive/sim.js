@@ -110,7 +110,7 @@
   const sOfKm = (km, dir, kmEnd) => dir === 'up' ? (kmEnd - km) * 1000 : km * 1000;
   const kmOfS = (s, dir, kmEnd) => dir === 'up' ? kmEnd - s / 1000 : s / 1000;
   function lineOf(id) { const L = lineData(id); if (!L) throw new Error(_t('Thiếu dữ liệu tuyến ') + id); if (!L.meta) {
-      L.meta = LINE_META[id]; L.skm = L.stations.map(s => s.km);
+      L.meta = LINE_META[id]; L.skm = L.stations.map(s => s.km); retimeInspect(L);
       if (L.meta.curveA && !L.meta._cl) {          // đường sắt thường: tốc độ qua đường cong v = sqrt(a·R) (a = gia tốc ngang cho phép, chưa có nghiêng thân) [I]
         L.meta._cl = true; const extra = [];
         for (const [a, b, R] of L.curves || []) if (a >= L.meta.curveFrom) { const v = Math.floor(3.6 * Math.sqrt(L.meta.curveA * R) / 5) * 5; if (v < 125) extra.push([a, b, Math.max(40, v)]); }
@@ -314,7 +314,8 @@
   function confirmATC(T) { if (T.atc) T.confirmed = true; }
   // phát thanh trấn an hành khách (giảm bất an); hồi lại sau 45 s
   function announcePA(T) {
-    const W = T.W; if (W.t - T.paAt < 45) { W.say('info', _t('Vừa phát thanh xong, đợi thêm ') + Math.ceil(45 - (W.t - T.paAt)) + ' s.'); return false; }
+    const W = T.W; if (W.mission) return false;      // tàu kiểm tra không chở khách
+    if (W.t - T.paAt < 45) { W.say('info', _t('Vừa phát thanh xong, đợi thêm ') + Math.ceil(45 - (W.t - T.paAt)) + ' s.'); return false; }
     T.paAt = W.t; T.anx = Math.max(0, T.anx - 45); W.paCount = (W.paCount || 0) + 1; W.say('stop', _t('Đã phát thanh cho hành khách (mức bất an giảm).')); W.paEvent = W.t; return true;
   }
   function answerDecision(W, which) {
@@ -520,7 +521,7 @@
     deadStep(T); noteStep(T); xingStep(T); if (T === W.player) refreshOpposing(W, T);
     // bất an của hành khách khi đứng giữa đường
     if (!T.isLead) {
-      if (T.phase === 'run' && T.v < 0.3 && W.running) { T.anx = Math.min(100, T.anx + dt * 100 / 900); } else if (T.anx > 0) T.anx = Math.max(0, T.anx - dt * 0.4);
+      if (T.phase === 'run' && T.v < 0.3 && W.running && !W.mission) { T.anx = Math.min(100, T.anx + dt * 100 / 900); } else if (T.anx > 0) T.anx = Math.max(0, T.anx - dt * 0.4);
       T.anxMax = Math.max(T.anxMax, T.anx);
       if (T.anx >= 100 && !T.panic) { T.panic = true; W.say('bad', _t('Hành khách hoảng loạn và đòi sơ tán! Hãy phát thanh trấn an (M) và báo điều độ.')); T.anx = 60; }
       if (T.v > 0.5 && !T.atc && !T.cut) { const jerk = (a - prevA) / dt; if (Math.abs(jerk) > 0.7) T.jerkTime += dt; T.comfort += Math.max(0, Math.abs(jerk) - 0.7) * dt; }
@@ -839,16 +840,21 @@
     contact: { name: _t('Lực tiếp xúc cần vẹt'), unit: 'N', vlo: 100, bad: [_t('lực tiếp xúc thấp (cần vẹt bật nảy)'), _t('điểm cứng trên dây (hard spot)'), _t('lực tiếp xúc quá cao')], amp: 35 } };
   const MCELL = 100, MBUF = 600;     // ô phủ 100 m; chừa 10 phút trước chuyến khách đầu ngày [I]
   const ceil5 = t => Math.ceil(t / 300) * 300;
-  function inspectWindow(L, lo, hi) {
-    const first = {}, last = {}; let maxLast = 0;
-    for (const rec of L.trains) { if (INSPECT[rec.v]) continue; for (let i = lo; i <= hi; i++) { const t = timeAt(L, rec, i); if (t == null) continue; if (first[i] === undefined || t < first[i]) first[i] = t; if (last[i] === undefined || t > last[i]) last[i] = t; if (t > maxLast) maxLast = t; } }
-    return { first, last, t0: ceil5(maxLast + 600) };
+  // chuyến khách cuối cùng cùng chiều tới ga cuối của nó (giây trong ngày); tàu kiểm tra ra ga ngay lúc mốc này (chuyến khách cuối dừng ở ga cuối), thay cho giờ cố định trong dữ liệu [I]
+  function lastTermArr(L, dir) { let m = 0; for (const rec of L.trains) { if (INSPECT[rec.v] || rec.d !== dir) continue; const st = rec.s.filter(e => !e[3]), a = st.length ? st[st.length - 1][1] : null; if (a != null && a > m) m = a; } return m; }
+  function retimeInspect(L) {
+    for (const rec of L.trains) { if (!INSPECT[rec.v]) continue; const f = rec.s.find(e => e[2] != null); if (!f) continue; const sh = lastTermArr(L, rec.d) - f[2]; if (!sh) continue; for (const e of rec.s) { if (e[1] != null) e[1] += sh; if (e[2] != null) e[2] += sh; } }
+  }
+  function inspectWindow(L, lo, hi, dir) {
+    const first = {}, last = {};
+    for (const rec of L.trains) { if (INSPECT[rec.v]) continue; for (let i = lo; i <= hi; i++) { const t = timeAt(L, rec, i); if (t == null) continue; if (first[i] === undefined || t < first[i]) first[i] = t; if (last[i] === undefined || t > last[i]) last[i] = t; } }
+    return { first, last, t0: lastTermArr(L, dir) };
   }
   // makeMission(lineId, [ga0, ga1, ga2...], veh, chặng = 0, giờ bắt đầu chặng (chặng ≥ 1)) hoặc makeMission(lineId, từ, đến, veh) cho một chặng; mỗi chặng là một thế giới riêng, đổi chiều ở ga giữa
   function makeMission(lineId, a, b, c, d, e) {
     const stations = Array.isArray(a) ? a : [a, b], vehKey = Array.isArray(a) ? b : c, leg = Array.isArray(a) ? (c || 0) : 0, carry = Array.isArray(a) ? d : null;
     const L = lineOf(lineId), fromI = stations[leg], toI = stations[leg + 1], count = stations.length - 1; if (!INSPECT[vehKey] || toI === undefined || fromI === toI || !L.stations[fromI] || !L.stations[toI]) return null;
-    const dir = toI > fromI ? 'down' : 'up', step = dir === 'down' ? 1 : -1, lo = Math.min(fromI, toI), hi = Math.max(fromI, toI), win = inspectWindow(L, lo, hi), t0 = leg > 0 && carry ? ceil5(carry) : win.t0;
+    const dir = toI > fromI ? 'down' : 'up', step = dir === 'down' ? 1 : -1, lo = Math.min(fromI, toI), hi = Math.max(fromI, toI), win = inspectWindow(L, lo, hi, dir), t0 = leg > 0 && carry ? ceil5(carry) : win.t0;
     const km = i => L.stations[i].km, distM = Math.abs(km(toI) - km(fromI)) * 1000, s = [];
     for (let i = fromI; i !== toI + step; i += step) s.push(i === fromI ? [i, null, t0, 0] : i === toI ? [i, t0 + Math.round(distM / (190 / 3.6)) + 180, null, 0] : [i, null, null, 1]);
     const rec = { t: INSPECT[vehKey].name, n: _t('nhiệm vụ'), d: dir, v: vehKey, s, src: 'M', mir: 0 }, trip = makeTrip(lineId, rec, fromI, toI);
@@ -880,6 +886,7 @@
   }
   function missionStep(W, T, dt) {
     const Ms = W.mission; if (!Ms || T.phase === 'end') return; const x = T.x;
+    Ms.measure = T.phase === 'run';      // đo tự chạy từ lúc tàu rời ga xuất phát (không còn nút bật/tắt)
     if (T.phase === 'run') {
       const cell = clamp(Math.floor((x - Ms.s0) / MCELL), 0, Ms.n - 1), kmh = T.v * 3.6;
       if (Ms.measure) { Ms.measT += dt; const b = bandOf(Ms.veh); if (kmh >= b[0] && kmh <= b[1] + 1) Ms.inBandT += dt; else Ms.outBandT += dt; }
@@ -893,7 +900,7 @@
       if (margin < 600 && !wr.w10) { wr.w10 = 1; W.say('bad', _t('Chuyến khách đầu ngày sắp tới {0} (còn ~{1} phút): phải kết thúc đo và về ga!', m.name, Math.round(margin / 60))); }
       if (margin < 0 && !Ms.conflict) { Ms.conflict = true; W.say('bad', _t('XUNG ĐỘT LỊCH TÀU KHÁCH tại {0}: bạn chiếm đường quá giờ cho phép (−30 điểm).', m.name)); } } }
   }
-  function toggleMeasure(T) { const Ms = T.W.mission; if (!Ms) return false; Ms.measure = !Ms.measure; T.W.say('info', Ms.measure ? _t('Đo: BẬT. Giữ {0}–{1} km/h, gia tốc êm để phép đo hợp lệ.', bandOf(Ms.veh)[0], bandOf(Ms.veh)[1]) : _t('Đo: TẮT.')); return Ms.measure; }
+  function toggleMeasure(T) { const Ms = T.W.mission; return !!(Ms && Ms.measure); }      // đo tự chạy (missionStep); giữ hàm cho tương thích
   function markDefect(T) {
     const W = T.W, Ms = W.mission; if (!Ms || T.phase !== 'run') return false; Ms.marks++;
     const d = Ms.defects.find(q => q.seen && !q.marked && T.x - q.s >= 0 && T.x - q.s <= 600);
@@ -956,6 +963,7 @@
     if (opts.events === false) { W.weatherKind = 'clear'; W.opposing = []; } else { if (!trip.mission) W.oppCat = buildOppCat(W, trip); genEvents(W, M, rnd); if (!trip.mission && root.NatCat) root.NatCat.init(W); }
     W.t = W.lead ? W.leadStartT - 5 : 0;
     prerun(W);
+    if (W.mission) { const P = W.player; P.door = 'closed'; P.started = true; W.running = true; }      // tàu kiểm tra: không có hành khách nên không cần mở/đóng cửa, kéo cần là chạy
     return W;
   }
   // tàu chạy trước: cảnh báo trên điện đàm khi nó đứng trên đường chính, và VA CHẠM (mũi tàu ta chạm đuôi nó) là kết thúc chuyến; điều kiện loại trừ giống ATC (đã rẽ đường tránh, cùng sân ga)

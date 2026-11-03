@@ -53,7 +53,7 @@ Bảng đầy đủ nằm trong **Cài đặt → Phím tắt**.
 | C · [ ] | tốc độ không đổi · chỉnh ∓5 km/h |
 | A · G · V · L | ATC (bấm 2 lần để cắt) · cần vẹt · gạt mưa · đèn pha |
 | Y / N · M | nhắc lại lệnh, chấp nhận / từ chối · phát thanh trấn an |
-| X · K | (tàu kiểm tra) bật đo · đánh dấu lỗi |
+| K | (tàu kiểm tra) đánh dấu lỗi (đo tự chạy từ lúc rời ga) |
 | Tab · B · O | đổi khung nhìn · camera cuối đoàn · ẩn điện đàm |
 | , · . | cửa sổ hành khách bên trái · bên phải (bấm lại để về buồng lái) |
 | J | bật/tắt ù cabin máy bay (nút loa góc trên phải: bấm 1 lần xổ thanh âm lượng, bấm lần 2 tắt tiếng) |

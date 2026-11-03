@@ -132,8 +132,6 @@ I18N.add("ja", {
 "Chuyến khách đầu ngày qua {0} sau ~{1} phút: lên kế hoạch rời đoạn này.": "始発の旅客列車が約{1}分後に{0}を通過します。この区間を空ける計画を立ててください。",
 "Chuyến khách đầu ngày sắp tới {0} (còn ~{1} phút): phải kết thúc đo và về ga!": "始発の旅客列車がまもなく{0}に到着します(あと約{1}分)。測定を終えて駅に戻ってください!",
 "XUNG ĐỘT LỊCH TÀU KHÁCH tại {0}: bạn chiếm đường quá giờ cho phép (−30 điểm).": "{0}で旅客列車のダイヤと競合:許可された時間を超えて線路を占有しました(−30点)。",
-"Đo: BẬT. Giữ {0}–{1} km/h, gia tốc êm để phép đo hợp lệ.": "測定: オン。測定が有効になるよう、{0}〜{1} km/hを保ち、滑らかに加速してください。",
-"Đo: TẮT.": "測定: オフ。",
 "Đã đánh dấu: {0} · {1} ({2} {3}) tại km {4}.": "マーク済み: {0} · {1}({2} {3})、{4} km地点。",
 "Đánh dấu nhưng không có tín hiệu lỗi trong 600 m vừa qua (đánh dấu sai).": "マークしましたが、直近600 mに不具合の兆候はありませんでした(誤マーク)。",
 "phủ {0}% · tìm {1}/{2} lỗi": "カバー率 {0}% · 不具合 {1}/{2} 件発見",
@@ -317,10 +315,6 @@ I18N.add("ja", {
 "nâng": "上げる",
 "×": "×",
 "KIỂM TRA · ": "検測 · ",
-"ĐO: BẬT (X)": "測定: オン (X)",
-"ĐO: TẮT (X)": "測定: オフ (X)",
-"Đánh dấu (K)": "マーク (K)",
-"{0} km/h · dải đo {1}–{2}": "{0} km/h · 測定範囲 {1}–{2}",
 "êm": "滑らか",
 "giật: phép đo giảm": "揺れ: 測定精度低下",
 "phủ ": "カバー率 ",
@@ -751,5 +745,7 @@ I18N.add("ja", {
 "JR West (trang web chính thức)": "JR西日本(公式サイト)",
 "JR Hokkaido (trang web chính thức)": "JR北海道(公式サイト)",
 "JR Central (trang web chính thức)": "JR東海(公式サイト)",
-"JR Kyushu (trang web chính thức)": "JR九州(公式サイト)"
+"JR Kyushu (trang web chính thức)": "JR九州(公式サイト)",
+"Đánh dấu (K)": "マーク (K)",
+"{0} km/h · dải đo {1}–{2}": "{0} km/h · 測定範囲 {1}–{2}",
 });

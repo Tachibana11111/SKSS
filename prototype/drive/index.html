@@ -545,7 +545,7 @@ addEventListener('keydown', e => {
   if ((k === 'k' || k === 'K') && tutLessonActive) { Tutorial.skip(W, T); return; }
   if (replaying) return;
   if (T.finished && endInfo && endInfo.more && k === 'Enter') { nextLeg(); e.preventDefault(); return; }
-  if (W.mission && (k === 'x' || k === 'X')) { doAct('measure'); e.preventDefault(); return; } if (W.mission && (k === 'k' || k === 'K')) { doAct('mark'); e.preventDefault(); return; }
+  if (W.mission && (k === 'k' || k === 'K')) { doAct('mark'); e.preventDefault(); return; }
   if (k === 'w' || k === 'W') doAct('power', 1); else if (k === 's' || k === 'S') doAct('power', -1);
   else if (k === 'ArrowDown') doAct('brake', 1); else if (k === 'ArrowUp') doAct('brake', -1);
   else if (k === ' ') doAct('coast'); else if (k === 'q' || k === 'Q') doAct('eb');

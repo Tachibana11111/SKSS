@@ -29,7 +29,7 @@
   const atKm = (L, km) => NC().atKm(L, km);
   function gather(W, T) {
     const LN = root.LINES, now = W.trip.t0 + W.t, out = [], me = W.trip.rec;
-    for (const c of CAT) { if (c.rec === me || (c.line === W.lineId && me && c.rec.t === me.t && c.rec.n === me.n && c.rec.d === me.d)) continue;
+    for (const c of CAT) { if (c.rec === me || (W.mission && me && c.rec.v === me.v) || (c.line === W.lineId && me && c.rec.t === me.t && c.rec.n === me.n && c.rec.d === me.d)) continue;
       const d = NC().delayOf(W, c.key), s = NC().stateOf(LN, c, now - (d ? d.delay : 0)); if (!s) continue;
       const held = !!(d && d.hold > 0); if (held) { s.moving = false; s.kmh = 0; } else if (d && d.rate > 0.02 && s.kmh) s.kmh *= (1 - d.rate);      // tốc độ thực: giảm dần khi bị chậm/chặn giãn cách
       const Ld = W.lead, lr = W.leadRef; let s0km = null;
@@ -43,7 +43,7 @@
   }
   function stationRows(en, W, T) {
     const now = W.trip.t0 + W.t, rows = [], me = W.trip.rec, fmtKm = v => (v < 10 ? v.toFixed(1) : Math.round(v)) + ' km';
-    for (const c of CAT) { if (c.rec === me) continue;
+    for (const c of CAT) { if (c.rec === me || (W.mission && me && c.rec.v === me.v)) continue;      // lái tàu kiểm tra: đoàn cùng loại là chính ta, không hiện lần nữa
       const L = root.LINES[c.line], j = L.stations.findIndex(s => s.jp === en); if (j < 0) continue; const km = L.stations[j].km, S = c.stops; let ev = null;
       for (let k = 0; k < S.length && !ev; k++) {
         if (S[k].i === j) ev = { stop: true, arr: c.ta(S[k]), dep: c.td(S[k]), first: k === 0, last: k === S.length - 1 };

@@ -53,7 +53,7 @@ The full table is in **Settings → Shortcuts**.
 | C · [ ] | cruise control · adjust ∓5 km/h |
 | A · G · V · L | ATC (press twice to cut out) · pantograph · wipers · headlights |
 | Y / N · M | repeat back an order, accept / decline · reassuring announcement |
-| X · K | (inspection train) measure on · mark a defect |
+| K | (inspection train) mark a defect (measuring starts automatically when the train leaves) |
 | Tab · B · O | change view · rear-of-train camera · hide the radio |
 | , · . | left · right passenger window (press again to return to the cab) |
 | J | airliner cabin hum on/off (speaker button, top right: one click opens the volume slider, a second click mutes) |

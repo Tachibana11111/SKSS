@@ -132,8 +132,6 @@ I18N.add("en", {
 "Chuyến khách đầu ngày qua {0} sau ~{1} phút: lên kế hoạch rời đoạn này.": "The day's first passenger trip passes {0} in ~{1} min: plan to clear this section.",
 "Chuyến khách đầu ngày sắp tới {0} (còn ~{1} phút): phải kết thúc đo và về ga!": "The day's first passenger trip is about to reach {0} (~{1} min left): finish measuring and return to the station!",
 "XUNG ĐỘT LỊCH TÀU KHÁCH tại {0}: bạn chiếm đường quá giờ cho phép (−30 điểm).": "PASSENGER TIMETABLE CONFLICT at {0}: you occupied the line past the allowed time (−30 points).",
-"Đo: BẬT. Giữ {0}–{1} km/h, gia tốc êm để phép đo hợp lệ.": "Measuring: ON. Hold {0}–{1} km/h with smooth acceleration so the measurement is valid.",
-"Đo: TẮT.": "Measuring: OFF.",
 "Đã đánh dấu: {0} · {1} ({2} {3}) tại km {4}.": "Marked: {0} · {1} ({2} {3}) at km {4}.",
 "Đánh dấu nhưng không có tín hiệu lỗi trong 600 m vừa qua (đánh dấu sai).": "Marked, but there was no fault signal in the last 600 m (wrong mark).",
 "phủ {0}% · tìm {1}/{2} lỗi": "coverage {0}% · found {1}/{2} faults",
@@ -317,10 +315,6 @@ I18N.add("en", {
 "nâng": "raise",
 "×": "×",
 "KIỂM TRA · ": "INSPECTION · ",
-"ĐO: BẬT (X)": "MEASURE: ON (X)",
-"ĐO: TẮT (X)": "MEASURE: OFF (X)",
-"Đánh dấu (K)": "Mark (K)",
-"{0} km/h · dải đo {1}–{2}": "{0} km/h · measuring range {1}–{2}",
 "êm": "smooth",
 "giật: phép đo giảm": "jerky: measurement degraded",
 "phủ ": "coverage ",
@@ -751,5 +745,7 @@ I18N.add("en", {
 "JR West (trang web chính thức)": "JR West (official website)",
 "JR Hokkaido (trang web chính thức)": "JR Hokkaido (official website)",
 "JR Central (trang web chính thức)": "JR Central (official website)",
-"JR Kyushu (trang web chính thức)": "JR Kyushu (official website)"
+"JR Kyushu (trang web chính thức)": "JR Kyushu (official website)",
+"Đánh dấu (K)": "Mark (K)",
+"{0} km/h · dải đo {1}–{2}": "{0} km/h · measuring range {1}–{2}",
 });

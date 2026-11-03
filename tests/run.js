@@ -412,24 +412,28 @@ if (section('19. Nhiệm vụ kiểm tra tự do (923 Doctor Yellow, E926 East i
   ok(Sim.makeMission('tsk', 12, 0, 'T4').dir === 'up', 'chiều chạy suy ra từ thứ tự hai ga');
   ok(Sim.makeMission('tsk', 3, 3, 'T4') === null && Sim.makeMission('tsk', 0, 5, 'N700') === null, 'từ chối cùng ga / tàu không phải tàu kiểm tra');
   { let last = 0; for (const t of L.trains) { if (Sim.INSPECT[t.v]) continue; for (let i = 0; i <= 12; i++) { const x = Sim.timeAt(L, t, i); if (x != null && x > last) last = x; } }
-    ok(trip.t0 >= last + 600 - 1, 'xuất phát sau chuyến khách cuối ngày (trên đoạn chạy) ít nhất 10 phút', [trip.t0, last]); }
+    ok(trip.t0 > 0 && trip.t0 >= last - 3600, 'xuất phát ngay khi chuyến khách cuối cùng cùng chiều dừng ở ga cuối (không cộng thêm)', [trip.t0, last]); }
   const mk = (seed, o) => Sim.createWorld('tsk', trip, Object.assign({ diff: 'easy', seed, lead: true, events: true }, o || {}));
   const W = mk(1), T = W.player;
   ok(!!W.mission && !W.lead && Object.keys(W.passers).length === 0 && (W.opposing || []).length === 0, 'nhiệm vụ: không tàu chạy trước, không tàu thông qua/ngược chiều');
   ok(W.mission.defects.length >= 4 && W.mission.defects.every(d => d.s > W.mission.s0 + 800 && d.s < W.mission.s1 - 800), 'lỗi sinh ra cách xa hai ga đầu/cuối');
   ok(JSON.stringify(mk(1).mission.defects) === JSON.stringify(mk(1).mission.defects) && JSON.stringify(mk(1).mission.defects) !== JSON.stringify(mk(2).mission.defects), 'lỗi theo seed');
-  // đo tắt: không phủ; đo bật: phủ khi đúng dải tốc độ
-  { const Wa = mk(3), Ta = Wa.player; let n = 0; while (!Ta.finished && n++ < 4e6) Sim.tick(Wa, 0.05, {}, true);
-    const sa = Sim.score(Ta, Wa); ok(sa.covScore === 0 && sa.found === 0 && sa.final <= 40, 'không bật đo: phủ 0%, không tìm lỗi nào, điểm thấp', [sa.covScore, sa.final]); }
-  { const Wb = mk(3), Tb = Wb.player; Sim.toggleMeasure(Tb); let n = 0; while (!Tb.finished && n++ < 4e6) { Sim.tick(Wb, 0.05, {}, true); for (const d of Wb.mission.defects) if (d.seen && !d.marked && Tb.x - d.s >= 0 && Tb.x - d.s <= 300) Sim.markDefect(Tb); }
+  // đo tự chạy từ lúc rời ga (không còn nút bật/tắt); không đánh dấu lỗi thì không tìm được lỗi nào
+  { const Wa = mk(3), Ta = Wa.player; ok(Ta.started && Ta.door === 'closed' && Wa.running && Ta.anx === 0, 'tàu kiểm tra: không cần đóng cửa, chạy ngay khi kéo cần'); ok(Sim.announcePA(Ta) === false && Wa.paCount === undefined, 'tàu kiểm tra: không có phát thanh'); let n = 0, off = false; while (!Ta.finished && n++ < 4e6) { Sim.tick(Wa, 0.05, {}, true); if (Ta.phase === 'dwell' && Wa.mission.measure) off = true; }
+    const sa = Sim.score(Ta, Wa); ok(sa.covScore >= 70 && sa.found === 0 && !off && Ta.anxMax === 0, 'đo tự chạy: phủ ≥ 70% nhưng chưa đánh dấu thì không tìm lỗi nào; không có hành khách bất an', [sa.covScore, sa.found, Ta.anxMax]); }
+  { for (const [id, dir] of [['tsk', 'down'], ['tsk', 'up'], ['toh', 'down'], ['toh', 'up'], ['jts', 'down'], ['hok', 'down']]) { const L = Sim.lineOf(id); let last = 0; for (const t of L.trains) { if (Sim.INSPECT[t.v] || t.d !== dir) continue; const st = t.s.filter(e => !e[3]); last = Math.max(last, st[st.length - 1][1]); }
+      const ins = L.trains.filter(t => Sim.INSPECT[t.v] && t.d === dir); ok(ins.length > 0 && ins.every(t => { const f = t.s.find(e => e[2] != null)[2]; return f === last; }), id + ' ' + dir + ': tàu kiểm tra ra ga ngay khi chuyến khách cuối dừng ở ga đích', ins.map(t => t.s[0][2]));
+      if (ins.length) { const m = Sim.makeMission(id, dir === 'down' ? 0 : L.stations.length - 1, dir === 'down' ? 3 : L.stations.length - 4, ins[0].v); ok(m && m.t0 === ins[0].s.find(e => e[2] != null)[2], id + ' ' + dir + ': nhiệm vụ tự do cùng giờ xuất phát', m && m.t0); } } }
+  { const Wb = mk(3), Tb = Wb.player; let n = 0; while (!Tb.finished && n++ < 4e6) { Sim.tick(Wb, 0.05, {}, true); for (const d of Wb.mission.defects) if (d.seen && !d.marked && Tb.x - d.s >= 0 && Tb.x - d.s <= 300) Sim.markDefect(Tb); }
     const sb = Sim.score(Tb, Wb); ok(Tb.finished && sb.covScore >= 70, 'bật đo suốt chuyến: phủ ≥ 70%', sb.covScore); ok(sb.found >= Math.ceil(sb.tot * 0.6) && sb.falseMarks === 0, 'đánh dấu lỗi vừa phát hiện: tìm ≥ 60%, không đánh dấu sai', [sb.found, sb.tot, sb.falseMarks]);
     ok(sb.final >= 55 && !Wb.mission.conflict, 'chạy đo trong khung đêm: không xung đột lịch tàu khách', [sb.final, Wb.mission.conflict]); }
   { const Wc = mk(4), Tc = Wc.player; Tc.phase = 'run'; Tc.started = true; Tc.x += 1500; Sim.markDefect(Tc); ok(Wc.mission.falseMarks === 1, 'đánh dấu khi không có lỗi: tính là đánh dấu sai'); }
   { const Wd = mk(5), Td = Wd.player; Wd.trip.t0 += 6 * 3600; Sim.tick(Wd, 0.05, {}, true); Wd.running = true; Sim.tick(Wd, 0.05, {}, true); ok(Wd.mission.conflict || Wd.mission.minMargin < 0, 'trễ sang giờ chuyến khách đầu ngày: báo xung đột lịch', Wd.mission.minMargin); }
+  { const cat = NatCat.build(global.LINES).filter(c => Sim.INSPECT[c.rec.v]); ok(cat.length === 2 && cat.filter(c => c.rec.v === 'T4').length === 1 && cat.filter(c => c.rec.v === 'E926').length === 1, 'bản đồ: đúng 1 Doctor Yellow và 1 East i chạy (mỗi loại một đoàn)', cat.length); }
   { const E = Sim.makeMission('toh', 0, 8, 'E926'), We = Sim.createWorld('toh', E, { diff: 'easy', seed: 1, lead: true, events: true }); ok(E && E.t0 > 0 && We.mission && We.player.veh.key === 'E926', 'E926 trên Tohoku cũng có nhiệm vụ tự do');
     ok(We.mission.keys.includes('contact') && !We.mission.keys.includes('ride'), 'East i: bộ cảm biến riêng (lực tiếp xúc cần vẹt, không có dao động toa)'); ok(W.mission.keys.includes('ride') && !W.mission.keys.includes('contact'), 'Doctor Yellow: bộ cảm biến riêng (dao động toa)');
     ok(We.mission.defects.every(d => We.mission.keys.includes(d.sensor)) && W.mission.defects.every(d => W.mission.keys.includes(d.sensor)), 'lỗi chỉ thuộc cảm biến mà tàu có');
-    const Wp = Sim.createWorld('toh', E, { diff: 'easy', seed: 2, lead: true, events: true }), Tp = Wp.player; Sim.toggleMeasure(Tp); Tp.phase = 'run'; Tp.started = true; Tp.v = 230 / 3.6; Tp.a = 0; ok(Sim.measureQ(Tp, 'contact') > 0.9 && Sim.measureQ(Tp, 'wire') > 0.9, 'đúng dải: đo được dây điện và lực tiếp xúc'); Tp.pan = false; ok(Sim.measureQ(Tp, 'contact') === 0 && Sim.measureQ(Tp, 'wire') === 0, 'hạ cần vẹt: không đo được dây điện / lực tiếp xúc'); Tp.pan = true; Tp.v = 100 / 3.6; ok(Sim.measureQ(Tp, 'track') === 0, 'dưới tốc độ đo: không đo ray'); }
+    const Wp = Sim.createWorld('toh', E, { diff: 'easy', seed: 2, lead: true, events: true }), Tp = Wp.player; Wp.mission.measure = true; Tp.phase = 'run'; Tp.started = true; Tp.v = 230 / 3.6; Tp.a = 0; ok(Sim.measureQ(Tp, 'contact') > 0.9 && Sim.measureQ(Tp, 'wire') > 0.9, 'đúng dải: đo được dây điện và lực tiếp xúc'); Tp.pan = false; ok(Sim.measureQ(Tp, 'contact') === 0 && Sim.measureQ(Tp, 'wire') === 0, 'hạ cần vẹt: không đo được dây điện / lực tiếp xúc'); Tp.pan = true; Tp.v = 100 / 3.6; ok(Sim.measureQ(Tp, 'track') === 0, 'dưới tốc độ đo: không đo ray'); }
   // nhiều chặng: Tokyo → Nagoya → Tokyo → Shizuoka; mỗi chặng một thế giới, đổi chiều ở ga giữa, giờ chặng sau nối tiếp chặng trước
   { const st = [0, 12, 0, 6], t1 = Sim.makeMission('tsk', st, 'T4', 0), t2 = Sim.makeMission('tsk', st, 'T4', 1, t1.t0 + 6700), t3 = Sim.makeMission('tsk', st, 'T4', 2, t2.t0 + 7000), tx = Sim.makeMission('tsk', st, 'T4', 3, 1);
     ok(t1.dir === 'down' && t2.dir === 'up' && t3.dir === 'down' && tx === null, 'nhiều chặng: chiều đổi theo thứ tự ga, chặng không tồn tại → null');
@@ -534,6 +538,19 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
     for (const t of [0, 600, 3000, 9000]) { W.t = t; T.x = Sim.sOfKm(st.length * 7 % L.kmEnd, 'down', L.kmEnd); try { NatMap.draw(ctx, 0, 58, 1920, 618, W, T, o); n++; } catch (e) { err = ln + ' ' + e.message; } }
     NatMap.V.sel = { en: 'Tokyo' }; try { NatMap.draw(ctx, 0, 58, 1920, 618, W, T, o); n++; } catch (e) { err = ln + ' thẻ ga ' + e.message; } NatMap.V.sel = null; }
   ok(!err && n >= 20, 'vẽ bản đồ không lỗi (' + n + ' khung)', err);
+  // lái tàu kiểm tra: đoàn cùng loại trên bản đồ chính là ta nên không hiện lần nữa; lái tàu khách thì cả hai loại đều hiện
+  { const cnt = (W, T, v) => { NatMap.draw(ctx, 0, 58, 1920, 618, W, T, o); return (NatMap.V.trains || []).filter(h => h.t && h.t.c && h.t.c.rec.v === v).length; };
+    const Lt = Sim.lineOf('tsk'), ins = Lt.trains.find(t => t.v === 'T4' && t.d === 'down'), t0i = ins.s.find(e => e[2] != null)[2];
+    const Wm = Sim.createWorld('tsk', Sim.makeMission('tsk', 0, 5, 'T4'), { diff: 'easy', seed: 1 }); Wm.t = t0i + 900 - Wm.trip.t0; Wm.player.x = Sim.sOfKm(60, 'down', Lt.kmEnd);
+    const r = Lt.trains.find(t => t.d === 'down' && t.t === 'Nozomi'), st = r.s.filter(e => !e[3]).map(e => e[0]);
+    const Wp = Sim.createWorld('tsk', Sim.makeTrip('tsk', r, st[0], st[st.length - 1]), { diff: 'easy', seed: 1, lead: false, events: false }); Wp.t = t0i + 900 - Wp.trip.t0; Wp.player.x = Sim.sOfKm(60, 'down', Lt.kmEnd);
+    const cm = cnt(Wm, Wm.player, 'T4'), cp = cnt(Wp, Wp.player, 'T4'); ok(cm === 0 && cp === 1, 'bản đồ: lái Doctor Yellow thì không hiện Doctor Yellow (có sẵn ' + cp + ' khi lái tàu khách)', [cm, cp]); }
+  { const cnt = (W, T, v) => { NatMap.draw(ctx, 0, 58, 1920, 618, W, T, o); return (NatMap.V.trains || []).filter(h => h.t && h.t.c && h.t.c.rec.v === v).length; };
+    const Lh = Sim.lineOf('toh'), ins = Lh.trains.find(t => t.v === 'E926' && t.d === 'down'), t0i = ins.s.find(e => e[2] != null)[2];
+    const Wm = Sim.createWorld('toh', Sim.makeMission('toh', 0, 8, 'E926'), { diff: 'easy', seed: 1 }); Wm.t = t0i + 900 - Wm.trip.t0; Wm.player.x = Sim.sOfKm(60, 'down', Lh.kmEnd);
+    const r = Lh.trains.find(t => t.d === 'down' && t.t === 'Hayabusa'), st = r.s.filter(e => !e[3]).map(e => e[0]);
+    const Wp = Sim.createWorld('toh', Sim.makeTrip('toh', r, st[0], st[st.length - 1]), { diff: 'easy', seed: 1, lead: false, events: false }); Wp.t = t0i + 900 - Wp.trip.t0; Wp.player.x = Sim.sOfKm(60, 'down', Lh.kmEnd);
+    const cm = cnt(Wm, Wm.player, 'E926'), cp = cnt(Wp, Wp.player, 'E926'); ok(cm === 0 && cp === 1, 'bản đồ: lái East i thì không hiện East i (có sẵn ' + cp + ' khi lái tàu khách)', [cm, cp]); }
   // tàu ngược chiều lấy từ lịch thật; thiên tai và độ trễ từ NatCat
   { const L = Sim.lineOf('tsk'), r = L.trains.find(t => t.d === 'down' && !t.cp && t.s.filter(e => !e[3]).length >= 3 && t.t === 'Nozomi'), st = r.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', r, st[0], st[st.length - 1]), { diff: 'hard', seed: 3, lead: false, events: true }), T = W.player;
     ok(Array.isArray(W.oppCat) && W.oppCat.length > 20, 'danh mục tàu ngược chiều có ' + (W.oppCat || []).length + ' đoàn');

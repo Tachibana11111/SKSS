@@ -244,7 +244,7 @@
     return st.platSign > 0 ? { ja: '左側', vi: _t('trái') } : { ja: '右側', vi: _t('phải') };
   };
   GameAudio.prototype.announce = function (W, T, p) {
-    const M = T.M, A = this.ann;
+    const M = T.M, A = this.ann; if (W.mission) return;      // tàu kiểm tra: không phát thanh
     const nameJ = k => M[k].jp || M[k].name, typeJ = TYPEJ[W.trip.rec.t] || '', no = W.trip.rec.n;
     const last = M.length - 1, destJ = nameJ(last), dest = M[last].rom || M[last].name;
     const j = root.Sim.nextTarget(T), nxt = M[j];
