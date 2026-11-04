@@ -68,3 +68,6 @@ Ranh giới 47 tỉnh Nhật Bản từ **geoBoundaries** (gbOpen, JPN ADM1, d�
 
 ## Ảnh xem trước ở màn Thiết lập chuyến đi (pv_*.png)
 Dựng bằng `python -X utf8 tools/build_setup_preview.py` từ chính các bản vẽ ở trên (toa mũi + 2 toa kế sau, tỉ lệ 0.7, đủ phần mũi tàu); đăng ký trong `pv.js`. Cùng giấy phép CC BY-NC-ND 4.0, chỉ dùng cá nhân.
+
+## Đoàn tàu ở màn hình chính (mt_*_head.png, mt_*_mid.png, mt.js)
+Dựng bằng `python -X utf8 tools/build_menu_trains.py` từ chính các bản vẽ ở trên (rail.kychung.com, CC BY-NC-ND 4.0, chỉ dùng cá nhân) cho N700S, N700, N700S-8000 (Kamome), E5, E7, E6, E8: toa mũi và một toa giữa ở độ phân giải gốc; `mt.js` (window.MENU_TRAINS) ghi số toa, kích thước ảnh, độ rộng, cao, bước và vị trí các cửa sổ đã đo. `index.html` ghép đoàn đủ số toa (lặp toa giữa), dán 5 logo JR lên 5 cửa sổ liền nhau ở toa giữa. W7 dùng hình E7.

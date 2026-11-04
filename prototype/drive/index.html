@@ -33,7 +33,7 @@
   @media (max-width:1499px){#stage{display:block}aside{flex-direction:row;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px}aside .row{flex-direction:row;flex-wrap:wrap;align-items:flex-end}aside select,aside button,aside input{width:auto}aside .tabs .tab{padding:4px 10px}}
   aside{display:none!important}
   #stage{display:block;padding:6px}
-  #menu{position:fixed;inset:0;z-index:55;display:none;overflow:auto;color:var(--fg);font-size:14px}
+  #menu{--mw:min(780px,94vw);position:fixed;inset:0;z-index:55;display:none;overflow:auto;color:var(--fg);font-size:14px}
   #menu.solid{background:transparent}
   #menu.dim{background:rgba(8,12,18,.78)}
   #mWall{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
@@ -56,9 +56,33 @@
   #menu button.go:hover{background:#3a7fe6}
   #menu .cen{max-width:300px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
   #menu .cen button{height:46px;font-size:15px}
-  #menu .logo{text-align:center;margin:7vh 0 26px} #menu .logo b{display:block;font-size:44px;letter-spacing:3px;font-weight:600;font-family:'Yu Mincho','Hiragino Mincho ProN','Noto Serif JP','MS Mincho',serif;padding-left:10px} #menu .logo span{color:var(--mut);font-size:13px}
-  html[lang=ja] #menu .logo b{font-size:56px;letter-spacing:10px}
-  #menu .logo .jr{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:18px} #menu .logo .jrr{display:flex;justify-content:center;align-items:center;gap:34px} #menu .logo .jr img{height:54px;width:auto}
+  /* màn hình chính: hai cột (trái: chữ + 4 nút dọc + ghi công; phải: làn tàu lớn); dưới 900 px bề ngang xếp một cột: chữ, làn tàu, nút 2×2 */
+  #menu #m-home .wm{max-width:1500px;width:94vw;min-height:calc(100vh - 112px);display:grid;grid-template-columns:minmax(380px,36%) minmax(0,1fr);column-gap:3vw;align-items:center;align-content:center;padding:2vh 0;box-sizing:border-box}
+  #menu #m-home .logo{display:contents}
+  #menu #m-home .logo b{width:100%;height:auto;aspect-ratio:4.13/1;margin:0;grid-column:1;grid-row:1}
+  #menu #m-home .cen{max-width:none;width:100%;display:flex;flex-direction:column;gap:10px;margin-top:16px;grid-column:1;grid-row:2} #menu #m-home .cen button{min-width:0;padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #menu #m-home .wm > p{grid-column:1;grid-row:3;margin-top:18px!important}
+  #menu #m-home .logo .jr{width:auto;margin:0;grid-column:2;grid-row:1 / span 3;align-self:center}
+  @media (max-width:900px){#menu #m-home .wm{grid-template-columns:minmax(0,1fr);min-height:0;align-content:start;padding-top:5vh} #menu #m-home .logo b{grid-row:1;max-width:560px;margin:0 auto} #menu #m-home .logo .jr{grid-column:1;grid-row:2;margin-top:10px} #menu #m-home .cen{display:grid;grid-template-columns:1fr 1fr;grid-row:3;max-width:560px;margin:14px auto 0} #menu #m-home .wm > p{grid-row:4}}
+  #menu .logo{text-align:center;margin:7vh 0 26px} #menu .logo span{color:var(--mut);font-size:13px}
+  #menu .logo b{display:block;position:relative;width:var(--mw);height:calc(var(--mw) * .242);margin:0 auto;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);background:radial-gradient(ellipse at 50% 50%,rgba(8,12,18,.6),rgba(8,12,18,0) 72%)}
+  #menu .logo b svg{position:relative;z-index:2;display:block;width:100%;height:100%;overflow:visible} #menu .logo b text{font-weight:900;font-family:'Segoe UI Black','Arial Black','Yu Gothic','Meiryo',sans-serif;stroke-linejoin:round;fill:none}
+  #menu .logo b .lgi{transform:skewX(-12deg);transform-origin:50% 60%} #menu .logo b .lgd{stroke:#2b3f55;stroke-width:1.4}
+  #menu .logo b .lgw{stroke:#8fd0ff;stroke-width:1.8;stroke-dasharray:900;stroke-dashoffset:900;animation:lgdraw 2.8s ease-out forwards}
+  #menu .logo b .lgf{stroke:none;opacity:0;animation:lgfill 1.6s ease-out 1.4s forwards}
+  @keyframes lgdraw{0%{stroke-dashoffset:900;opacity:1}60%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}} @keyframes lgfill{to{opacity:1}}
+  #menu .logo b .lgbar{position:absolute;left:14%;right:14%;bottom:8px;height:4px;transform:skewX(-30deg);background:linear-gradient(90deg,transparent,#1e6fd0 25%,#1e6fd0 75%,#fff);overflow:hidden;z-index:2}
+  #menu .logo b .lgbar:after{content:"";position:absolute;top:0;bottom:0;width:22%;background:linear-gradient(90deg,transparent,#fff,transparent);animation:lgbl 1.8s linear infinite}
+  @keyframes lgbl{from{left:-25%}to{left:105%}}
+  #menu .logo b .lgw2{position:absolute;z-index:1;border-radius:2px;opacity:0;animation:lgwind linear infinite} @keyframes lgwind{0%{transform:translateX(120%);opacity:0}12%{opacity:var(--o)}88%{opacity:var(--o)}100%{transform:translateX(-520%);opacity:0}}
+  @media (prefers-reduced-motion:reduce){#menu .logo b .lgw,#menu .logo b .lgw2,#menu .logo b .lgbar:after{display:none} #menu .logo b .lgf{opacity:1;animation:none}}
+  #menu .logo .jr{display:block;position:relative;width:calc(var(--mw) * .72);height:366px;margin:10px auto 0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}      /* làn tàu: rộng bằng sọc xanh phía trên (tàu chỉ chạy trong phạm vi này), N700S chạy từ phải sang trái, dừng đúng chỗ 5 logo (mỗi logo một cửa sổ, toa giữa đoàn) 5 giây rồi đi tiếp; chỉ hiện phần thân trên (mái tới gầm) */
+  #menu .logo .jr:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:#2b3f55;border-radius:2px}
+  #menu .logo .jr .tr{position:absolute;left:0;top:0;height:100%;will-change:transform;animation:jrtrain 33s linear infinite;transform:translateX(var(--x0))}
+  #menu .logo .jr .tz{position:absolute;left:0;display:flex;align-items:flex-end;transform-origin:0 0} #menu .logo .jr .tz i{display:block;flex:none} #menu .logo .jr .th{transform:scaleX(-1)}
+  #menu .logo .jr .tz .jra{position:absolute;width:31px;height:29px;margin-left:-15.5px;background:#0e1318;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;padding:0;line-height:0} #menu .logo .jr .tz .jra img{max-height:21px;max-width:27px;width:auto;height:auto}
+  @keyframes jrtrain{0%{transform:translateX(var(--x0));animation-timing-function:cubic-bezier(.333,.667,.667,1)}36.4%{transform:translateX(var(--xs))}51.5%{transform:translateX(var(--xs));animation-timing-function:cubic-bezier(.333,0,.667,.333)}93.9%,100%{transform:translateX(var(--x1))}}      /* hãm đều (12 s) -> dừng 5 s -> tăng tốc đều (14 s) -> 2 s trống; gia tốc không đổi nên vận tốc giảm/tăng tuyến tính như tàu thật */
+  @media (prefers-reduced-motion:reduce){#menu .logo .jr .tr{animation:none;transform:translateX(var(--xs))}}
   #menu .logo .jra{display:inline-block;border-radius:10px;line-height:0;padding:4px 6px;transition:filter .15s,transform .15s}
   #menu .logo .jra:hover,#menu .logo .jra:focus-visible{outline:0;transform:translateY(-2px);filter:drop-shadow(0 0 1.5px var(--c)) drop-shadow(0 0 7px var(--c)) drop-shadow(0 0 14px var(--c))}
   #menu .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 36px} @media (max-width:760px){#menu .cols{grid-template-columns:1fr}}
@@ -247,6 +271,7 @@
 <script src="assets/n700_strip.js"></script>
 <script src="assets/sprites.js"></script>
 <script src="assets/pv.js"></script>
+<script src="assets/mt.js"></script>
 <script src="sim.js"></script>
 <script src="natcat.js"></script>
 <script src="store.js"></script>
@@ -755,6 +780,44 @@ const M = (function () {
   A.appendChild($('vehBox')); A.appendChild($('from').parentElement); A.appendChild($('to').parentElement); A.appendChild($('legBox'));
   B.appendChild($('driveOpts')); $('mStartHold').appendChild($('start'));
   C.appendChild($('scenery').parentElement);
+  // logo ở màn hình chính: chữ theo ngôn ngữ (Tân Cán Tuyến / SHINKANSEN / 新幹線); vẽ nét rồi đổ màu, viền sáng, 16 vệt gió chạy ngược (từ phải sang trái); mỗi lần về màn hình chính vẽ lại
+  // làn tàu ở màn hình chính: đoàn N700S 16 toa (đầu mũi trái, đuôi mũi phải) chạy từ phải sang trái; 5 logo JR dán trên cửa sổ toa 8 (giữa đoàn); tàu vào ga, dừng đúng chỗ 5 logo (giữa màn hình) 5 giây rồi đi khỏi; lặp 33 giây một vòng
+  const jrLane = el.querySelector('.logo .jr'), jrLinks = jrLane ? [...jrLane.querySelectorAll('a.jra')] : [];
+  // 8 mục: mỗi mẫu một lượt rồi xáo lại (không lặp trong một túi). dir = hướng chạy trên màn hình lúc rời ga đầu (cùng quy tắc hình xem trước ở màn Thiết lập: chiều xuống = phải trừ tuyến có flipDown):
+  // N700S, N700 (Tokaido/Sanyo), Kamome (Nishi-Kyushu) chạy sang trái; E5 (Tohoku), E6 (Akita), E8 (Yamagata), E7 (Joetsu) sang phải; W7 (Hokuriku, JR West) dùng hình E7 và chạy sang trái
+  const MT_LIST = [['n700s', 'n700s', -1], ['n700', 'n700', -1], ['kamome', 'kamome', -1], ['e5', 'e5', 1], ['e7', 'e7', 1], ['w7', 'e7', -1], ['e6', 'e6', 1], ['e8', 'e8', 1]];
+  let mtBag = [], mtLast = null;
+  function mtNext() {
+    if (!mtBag.length) { mtBag = MT_LIST.slice(); for (let i = mtBag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [mtBag[i], mtBag[j]] = [mtBag[j], mtBag[i]]; } if (mtBag[mtBag.length - 1] === mtLast) mtBag.unshift(mtBag.pop()); }      // tránh lặp ngay mẫu vừa chạy khi sang túi mới
+    return mtLast = mtBag.pop();
+  }
+  const MT_D = 2.2, MT_MAXH = 182, MT_PW = 31, MT_PH = 29;      // hệ số phóng chung tối đa (cửa sổ mọi mẫu rộng ~27 px gốc nên ~51 px trên màn hình), chiều cao ảnh gốc lớn nhất (N700), kích thước ô logo (đơn vị ảnh gốc); đáy tàu đặt sát đường ray để hiện đủ thân
+  function trainLoad() {      // dựng đoàn của mẫu kế tiếp trong .tr (gọi lúc tàu đang ở ngoài làn)
+    const tr = jrLane.querySelector('.tr'), it = mtNext(), c = window.MENU_TRAINS && MENU_TRAINS[it[1]]; if (!tr || !c) return;
+    const lw = jrLane.clientWidth || Math.round(Math.min(780, innerWidth * .94) * .72), D = Math.min(MT_D, lw * .92 / (4 * c.wp + MT_PW + 1), innerHeight * .62 / MT_MAXH), nm = c.cars - 2, idx = Math.floor((nm - 1) / 2), carX = c.hw + idx * c.mw, TH = Math.max(c.hh, c.mh), TW = c.hw * 2 + nm * c.mw;
+    const k = Math.max(0, Math.floor((c.wcx.length - 5) / 2)), cx = c.wcx.slice(k, k + 5).map(x => carX + x), yTop = TH - c.mh, yc = yTop + c.wyc, xc = cx[2];      // 5 cửa sổ liền nhau ở giữa phần đều của toa giữa
+    const laneH = Math.round(MT_MAXH * D) + 3; jrLane.style.height = laneH + 'px'; const dir = it[2], x0 = dir < 0 ? lw : -TW * D, x1 = dir < 0 ? -TW * D : lw;
+    tr.style.cssText = '--x0:' + Math.round(x0) + 'px;--xs:' + Math.round(lw / 2 - xc * D) + 'px;--x1:' + Math.round(x1) + 'px;width:' + Math.round(TW * D) + 'px';
+    const tz = document.createElement('div'); tz.className = 'tz'; tz.style.cssText = 'width:' + TW + 'px;height:' + TH + 'px;top:' + (laneH - 3 - Math.round(TH * D)) + 'px;transform:scale(' + D + ')';
+    const img = (p, w, h, rep) => 'background:url(assets/mt_' + it[1] + '_' + p + '.png) ' + (rep ? 'repeat-x' : 'no-repeat') + ' 0 0/' + w + 'px ' + h + 'px;width:' + (rep ? nm * w : w) + 'px;height:' + h + 'px';
+    tz.innerHTML = '<i class="th" style="' + img('head', c.hw, c.hh) + '"></i><i style="' + img('mid', c.mw, c.mh, true) + '"></i><i style="' + img('head', c.hw, c.hh) + '"></i>';
+    jrLinks.forEach((a, n) => { a.style.left = cx[n].toFixed(1) + 'px'; a.style.top = Math.round(yc - MT_PH / 2) + 'px'; tz.appendChild(a); });
+    tr.textContent = ''; tr.appendChild(tz); tr.dataset.m = it[0];
+  }
+  function trainBuild() {
+    if (!jrLane || !jrLinks.length) return;
+    const tr = document.createElement('div'); tr.className = 'tr'; jrLane.textContent = ''; jrLane.appendChild(tr); trainLoad();
+    tr.addEventListener('animationiteration', () => trainLoad());      // mỗi vòng 33 s đổi sang mẫu khác (lúc này tàu đang nằm ngoài làn)
+  }
+  addEventListener('resize', () => { if (m.screen === 'home') trainBuild(); });
+  const logoEl = el.querySelector('.logo b');
+  function logoBuild() {
+    if (!logoEl) return; const txt = (logoEl.dataset.t || (logoEl.dataset.t = logoEl.textContent.trim())).toUpperCase(), lat = /[A-Z]/.test(txt), sz = lat ? (txt.length > 11 ? 29 : 34) : 52, ls = lat ? 1.5 : 7;
+    const still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, T = (c, x) => '<text x="150" y="64" text-anchor="middle" font-size="' + sz + '" letter-spacing="' + ls + '" class="' + c + '"' + (x || '') + '>' + txt.replace(/&/g, '&amp;') + '</text>';
+    let r = 12345; const rnd = () => (r = (r * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff, cols = ['#fff', '#bfe0ff', '#5fb0ff'], w = [];
+    for (let k = 0; k < 16; k++) { const wd = 14 + Math.round(rnd() * 24), col = cols[Math.floor(rnd() * 3)]; w.push('<i class="lgw2" style="top:' + (6 + Math.round(rnd() * 86)) + '%;left:100%;width:' + wd + '%;height:' + [1, 1, 2, 2, 3][Math.floor(rnd() * 5)] + 'px;background:linear-gradient(90deg,' + col + ',transparent);--o:' + (0.35 + rnd() * 0.55).toFixed(2) + ';animation-duration:' + (0.7 + rnd() * 1.2).toFixed(2) + 's;animation-delay:-' + (rnd() * 2).toFixed(2) + 's"></i>'); }
+    logoEl.setAttribute('aria-label', txt); logoEl.innerHTML = w.join('') + '<svg viewBox="0 0 300 100" role="img" aria-hidden="true"><defs><linearGradient id="lgg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="300" y2="0"><stop offset="0" stop-color="#9ec3e6"/><stop offset=".3" stop-color="#fff"/><stop offset=".5" stop-color="#8fc4f5"/><stop offset=".7" stop-color="#fff"/><stop offset="1" stop-color="#9ec3e6"/>' + (still ? '' : '<animateTransform attributeName="gradientTransform" type="translate" from="-300 0" to="300 0" dur="3.2s" repeatCount="indefinite"/>') + '</linearGradient></defs><g class="lgi">' + T('lgd') + T('lgw') + T('lgf', ' style="fill:url(#lgg)"') + '</g></svg><div class="lgbar"></div>';
+  }
   // chọn ngôn ngữ: ô thả xuống, cờ tròn ở bên trái tên ngôn ngữ; đổi ngôn ngữ = lưu cài đặt rồi tải lại trang (mọi chuỗi được dịch lúc nạp trang)
   const FLAG = {
     en: '<svg viewBox="0 0 60 60"><rect width="60" height="60" fill="#012169"/><path d="M0 0L60 60M60 0L0 60" stroke="#fff" stroke-width="12"/><path d="M0 0L60 60M60 0L0 60" stroke="#C8102E" stroke-width="4"/><path d="M30 0V60M0 30H60" stroke="#fff" stroke-width="20"/><path d="M30 0V60M0 30H60" stroke="#C8102E" stroke-width="12"/></svg>',
@@ -785,6 +848,7 @@ const M = (function () {
     if (name === 'learn') m.learnRender();
     for (const k in scr) scr[k].classList.toggle('on', k === name);
     m.screen = name; el.style.display = 'block'; el.scrollTop = 0;
+    if (name === 'home') { logoBuild(); trainBuild(); }
     m.setSolid(!(name === 'pause' || name === 'confirm' || (name === 'settings' && m.from === 'pause'))); el.dataset.s = name; document.body.dataset.m = name; el.className = (name === 'pause' || name === 'confirm' || (name === 'settings' && m.from === 'pause')) ? 'dim' : 'solid';
   };
   // hình nền: các mẫu Shinkansen xếp theo năm ra mắt (hình dải toa có sẵn trong assets/, chỉ dùng cá nhân); thiếu hình thì hàng đó bị bỏ, không còn hình nào thì chỉ còn nền phẳng
@@ -810,6 +874,7 @@ const M = (function () {
   }
   buildWall(); addEventListener('resize', layoutWall);
   m.setSolid = v => { m.solid = v; document.body.classList.toggle('mSolid', v); };
+  m.trainShow = key => { const e = MT_LIST.find(x => x[0] === key); if (e) { mtBag = [e]; trainLoad(); } };      // chọn mẫu cụ thể (dùng khi kiểm thử)
   m.hide = function () { m.screen = null; m.setSolid(false); document.body.dataset.m = 'play'; el.style.display = 'none'; };
   m.sync = function () {      // hiện menu Tạm dừng khi game tạm dừng (P, Esc, mất focus, nút ⏸), ẩn khi chạy lại
     const ok = W && paused && !snapMode && !ckOpen && (mode === 'drive' || mode === 'tutorial');
