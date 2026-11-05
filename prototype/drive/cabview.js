@@ -144,12 +144,12 @@
     }
 
     // ---- đường ray và đá dăm (theo đường cong); các đường của ga toả ra từ đường chính
-    const ballast = mixc([20, 24, 28], [88, 88, 84], day * (1 - wx * 0.3));
+    const snowTr = inSnow && zExit === null, ballast = snowTr ? mixc([78, 84, 98], [238, 243, 250], day) : mixc([20, 24, 28], [88, 88, 84], day * (1 - wx * 0.3));      // trời tuyết: đá dăm phủ tuyết mỏng, chỉ còn thanh ray đen lộ ra
     const ballastStrip = (xf, z0, z1, alpha) => { z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return; strip(z => xf(z) - 2.1, z => xf(z) + 2.1, 0, z0, z1, ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')')); };
     const railStrip = (xf, z0, z1, sleepers) => {
       z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return;
-      if (sleepers) for (let k = Math.ceil((T.x + z0) / 1.3), z = k * 1.3 - T.x; z < Math.min(z1, 110); k++, z = k * 1.3 - T.x) { const X = xf(z), p = P(X - 1.3, 0, z), q = P(X + 1.3, 0, z), d = P(X + 1.3, 0, z + 0.28), e = P(X - 1.3, 0, z + 0.28); if (d[1] - q[1] < 0.4 && z > 40) continue; quad(p, q, d, e, 'rgba(34,36,40,.85)'); }
-      for (const sx of [-GAUGE / 2, GAUGE / 2]) strip(z => xf(z) + sx - 0.075, z => xf(z) + sx + 0.075, 0.15, z0, z1, 'rgba(208,216,226,.9)');
+      if (sleepers) for (let k = Math.ceil((T.x + z0) / 1.3), z = k * 1.3 - T.x; z < Math.min(z1, 110); k++, z = k * 1.3 - T.x) { const X = xf(z), p = P(X - 1.3, 0, z), q = P(X + 1.3, 0, z), d = P(X + 1.3, 0, z + 0.28), e = P(X - 1.3, 0, z + 0.28); if (d[1] - q[1] < 0.4 && z > 40) continue; quad(p, q, d, e, snowTr ? 'rgba(' + (day > 0.5 ? '226,232,240' : '92,100,116') + ',.9)' : 'rgba(34,36,40,.85)'); }
+      for (const sx of [-GAUGE / 2, GAUGE / 2]) strip(z => xf(z) + sx - 0.075, z => xf(z) + sx + 0.075, 0.15, z0, z1, snowTr ? 'rgba(14,16,20,.97)' : 'rgba(208,216,226,.9)');
     };
     const drawTracks = (zFrom) => {
       const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]];

@@ -150,7 +150,8 @@
     const it = this.q.shift(); if (!it) return;
     if (it.chime && this.ready) this.chime();
     this.speaking = true; clearTimeout(this.spkT); this.spkT = setTimeout(() => { if (this.speaking) { this.speaking = false; try { ss.cancel(); } catch (e) { } this.drain(); } }, 6000 + it.text.length * 160);      // onend không bao giờ đến trên một số trình duyệt di động: chống kẹt hàng đợi
-    const go = () => { const u = new SpeechSynthesisUtterance(it.text); u.lang = it.lang === 'ja' ? 'ja-JP' : 'en-US'; const v = this.pick(it.lang); if (v) { u.voice = v; u.lang = v.lang; } else if (it.lang === 'ja' && root.speechSynthesis.getVoices().length) { this.speaking = false; setTimeout(() => this.drain(), 50); return; }      // không có giọng Nhật trên máy: bỏ câu (phụ đề vẫn hiện) thay vì đọc sai bằng giọng khác u.volume = Math.min(1, this.vol * 1.3); u.rate = 1.0;
+    const go = () => { const u = new SpeechSynthesisUtterance(it.text); u.lang = it.lang === 'ja' ? 'ja-JP' : 'en-US'; const v = this.pick(it.lang); if (v) { u.voice = v; u.lang = v.lang; } else if (it.lang === 'ja' && root.speechSynthesis.getVoices().length) { this.speaking = false; setTimeout(() => this.drain(), 50); return; }      // không có giọng Nhật trên máy: bỏ câu (phụ đề vẫn hiện) thay vì đọc sai bằng giọng khác
+      u.volume = Math.min(1, this.vol * 1.3); u.rate = 1.0;
       u.onend = u.onerror = () => { this.speaking = false; setTimeout(() => this.drain(), 400); }; ss.speak(u); };
     if (it.chime) setTimeout(go, 1300); else go();
   };

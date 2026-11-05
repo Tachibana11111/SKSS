@@ -67,7 +67,8 @@ def vehicle(line, typ, equip):
     if line == 'yam': return 'E8'
     if line == 'aki': return 'E6'
     if typ in ('Mizuho', 'Sakura'): return 'N700-8'
-    if typ in ('Tsubame', 'Kamome'): return 'S800'
+    if typ == 'Tsubame': return 'N700-8' if 'N700' in (equip or '') else 'S800'      # Tsubame: chủ yếu 800 (6 toa), vài chuyến N700 8 toa theo bảng giờ PDF
+    if typ == 'Kamome': return 'S800'
     if 'Ｎ７００Ｓ' in (equip or ''): return 'N700S'
     return 'N700'
 
@@ -169,6 +170,34 @@ def read_nks():
             raw[0] = (raw[0][0], None, raw[0][2], False); a = raw[-1]; raw[-1] = (a[0], a[2], None, False)          # ga cuối: chỉ có giờ đến (cột 着)
             add('nks', 'Kamome', m.group(1), raw, '', 'P')
 read_nks()
+# Kyushu Shinkansen, chuyến Tsubame (Kagoshima-Chuo/Kumamoto <-> Hakata, có chuyến đi tiếp tới Kokura): bảng giờ PDF chiều lên (docs/data/raw-pdf/parsed-kyushu-up.csv, 22 chuyến); chỉ có giờ khởi hành ở ga giữa -> giờ đến = giờ đi trừ 60 s [I]
+def read_kyushu_tsubame():
+    order = ['鹿児島中央', '川内', '出水', '新水俣', '新八代', '熊本', '新玉名', '新大牟田', '筑後船小屋', '久留米', '新鳥栖', '博多']
+    rows = list(csv.DictReader(open(os.path.join(D, 'raw-pdf', 'parsed-kyushu-up.csv'), encoding='utf-8'))); tr = {}
+    for r in rows:
+        if r['name'].startswith('つばめ'): tr.setdefault((r['name'], r['series'] + ' ' + r['cars']), {})[(r['row'], r['kind'])] = r['value']
+    good = lambda v: v not in ('‥', '', 'ㇾ')
+    for (name, equip), cells in tr.items():
+        no = re.sub(r'\D', '', name); raw = []; prev = -1
+        for j in order:
+            dep, arr = cells.get((j, '発'), '‥'), cells.get((j, '着'), '‥')
+            if not good(dep) and not good(arr):
+                if dep == 'ㇾ': raw.append((j, None, None, True))
+                continue
+            ta = sec(arr) if good(arr) else None; td = sec(dep) if good(dep) else None
+            t = td if td is not None else ta
+            while t < prev - 600: t += 86400
+            if td is not None and td < t: td = t
+            if ta is None and raw and td is not None: ta = td - 60
+            prev = t; raw.append((j, ta, td, False))
+        if len(raw) < 2: continue
+        m = re.match(r'(\S+)\s+(\d+:\d+)', cells.get(('終着駅 時刻', ''), '‥'))
+        if m and raw[-1][0] == '博多':      # đi tiếp tới ga cuối ngoài Hakata (Kokura)
+            a = raw[-1]; raw[-1] = (a[0], a[1], (a[1] or a[2]) + 60, False); raw.append((m.group(1), sec(m.group(2)), None, False))
+        else: a = raw[-1]; raw[-1] = (a[0], a[1] if a[1] is not None else a[2], None, False)
+        raw[0] = (raw[0][0], None, raw[0][2] if raw[0][2] is not None else raw[0][1], False)
+        add('tsk', 'Tsubame', no, raw, equip, 'P')
+read_kyushu_tsubame()
 # mini-Shinkansen: Tsubasa (Yamagata) và Komachi (Akita). Trang JR East chỉ có giờ ở phần Shinkansen thật (và giờ đầu/cuối của Tsubasa chạy một mình chiều lên);
 # phần đường sắt thường được ước tính [I] theo tốc độ trung bình; phần Shinkansen chiều lên của tàu ghép lấy giờ của tàu Yamabiko cùng số (nếu có) hoặc ước tính.
 MINI_SET = {'yam': {j for j, *_ in YAM_MINI}, 'aki': {j for j, *_ in AKI_MINI}}
@@ -326,6 +355,13 @@ for line in trains:
                 up.append([i, (t0 + (tEnd - d)) if d is not None else None, (t0 + (tEnd - a)) if a is not None else None, p])
             up[0][1] = None; up[-1][2] = None
             lst.append(dict(t=t['t'], n=str(int(t['n']) + 1) if t['n'].isdigit() else t['n'], d='up', v=t['v'], s=up, src='M', mir=1))
+        for t in [t for t in list(lst) if t['t'] == 'Tsubame' and t['d'] == 'up' and t['src'] == 'P']:      # Tsubame chiều xuống: đối xứng chuyến lên, khởi hành sau khi chuyến lên tới ga cuối 15 phút (quay đầu) [I]
+            s = t['s']; tEnd = s[-1][1] if s[-1][1] is not None else s[-1][2]; t0 = s[0][2] if s[0][2] is not None else s[0][1]
+            if tEnd is None or t0 is None: continue
+            base = tEnd + 900
+            down = [[i, (base + (tEnd - d)) if d is not None else None, (base + (tEnd - a)) if a is not None else None, p] for i, a, d, p in reversed(s)]
+            down[0][1] = None; down[-1][2] = None
+            lst.append(dict(t='Tsubame', n=str(int(t['n']) - 1) if t['n'].isdigit() else t['n'], d='down', v=t['v'], s=down, src='M', mir=1))
     out[line] = dict(LINES[line], trains=[dict(dict(t=x['t'], n=x['n'], d=x['d'], v=x['v'], s=x['s'], src=x['src'], mir=x['mir']), **({'cp': x['cp']} if 'cp' in x else {})) for x in lst])
 js = '// Sinh tự động bởi tools/build_lines.py (lịch JR East 2610 ngày thường + JR West 20/10/2026; km thực từ Wikipedia JP). Chỉ dùng cá nhân.\nwindow.LINES = ' + json.dumps(out, ensure_ascii=False, separators=(',', ':')) + ';\n'
 open(os.path.join(ROOT, 'prototype', 'drive', 'data-lines.js'), 'w', encoding='utf-8').write(js)

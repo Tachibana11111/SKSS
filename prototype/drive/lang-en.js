@@ -377,7 +377,6 @@ I18N.add("en", {
 "Nhiệt má phanh": "Brake temp",
 "Bất an hành khách": "Passenger anxiety",
 "Còn ": "Remaining ",
-"Nhấn Enter để đóng cửa, rồi kéo cần gia tốc (W) khi đèn ĐÓNG CỬA sáng": "Press Enter to close the doors, then pull the throttle (W) when the DOORS CLOSED lamp lights",
 "VA CHẠM: kết thúc chuyến": "COLLISION: trip ended",
 "Chuyến không đạt": "Trip failed",
 "Xong {0}": "Completed {0}",
@@ -748,4 +747,7 @@ I18N.add("en", {
 "JR Kyushu (trang web chính thức)": "JR Kyushu (official website)",
 "Đánh dấu (K)": "Mark (K)",
 "{0} km/h · dải đo {1}–{2}": "{0} km/h · measuring range {1}–{2}",
+"Chưa đóng cửa: nhấn Enter để đóng cửa rồi mới kéo cần gia tốc.": "Doors are not closed: press Enter to close them before applying power.",
+"Đường đơn: chờ {0} (ngược chiều) qua đoạn phía trước rồi mới được rời ga": "Single track: wait for {0} (opposite direction) to clear the section ahead before leaving",
+"Điều độ: đoạn đường đơn phía sau {0} đang có {1} (ngược chiều), DỪNG TRÁNH tại {0}. Dừng đúng vạch, chờ tàu ngược chiều qua rồi mới chạy tiếp.": "Dispatch: the single-track section beyond {0} is occupied by {1} (opposite direction); STOP AND WAIT at {0}. Stop on the mark and wait for the opposing train to clear before departing.",
 });

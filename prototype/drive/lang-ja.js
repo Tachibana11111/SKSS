@@ -377,7 +377,6 @@ I18N.add("ja", {
 "Nhiệt má phanh": "ブレーキ温度",
 "Bất an hành khách": "乗客の不安",
 "Còn ": "残り ",
-"Nhấn Enter để đóng cửa, rồi kéo cần gia tốc (W) khi đèn ĐÓNG CỬA sáng": "Enterでドアを閉め、「ドア閉」ランプが点灯したら加速レバー(W)を引く",
 "VA CHẠM: kết thúc chuyến": "衝突: 運行終了",
 "Chuyến không đạt": "運行失敗",
 "Xong {0}": "完了: {0}",
@@ -748,4 +747,7 @@ I18N.add("ja", {
 "JR Kyushu (trang web chính thức)": "JR九州(公式サイト)",
 "Đánh dấu (K)": "マーク (K)",
 "{0} km/h · dải đo {1}–{2}": "{0} km/h · 測定範囲 {1}–{2}",
+"Chưa đóng cửa: nhấn Enter để đóng cửa rồi mới kéo cần gia tốc.": "ドアが閉まっていません。Enterでドアを閉めてから加速してください。",
+"Đường đơn: chờ {0} (ngược chiều) qua đoạn phía trước rồi mới được rời ga": "単線区間:対向の{0}が前方の区間を通過するまで発車できません",
+"Điều độ: đoạn đường đơn phía sau {0} đang có {1} (ngược chiều), DỪNG TRÁNH tại {0}. Dừng đúng vạch, chờ tàu ngược chiều qua rồi mới chạy tiếp.": "運行指令:{0}の先の単線区間に対向の{1}がいるため、{0}で行き違い待ちの臨時停車をしてください。停止位置に止まり、対向列車の通過後に発車してください。",
 });

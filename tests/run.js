@@ -325,7 +325,7 @@ if (section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường
   { const A2 = Sim.lineOf('aki'), Wd = { line: A2, dir: 'down', player: { M: [] } }; ok(Sim.singleW(Wd, 593 * 1000) === 0 && Sim.singleW(Wd, 550 * 1000) > 0.9, 'Akita: đoạn 586–600 km là đường đôi, còn lại đường đơn');
     const recC = A2.trains.find(t => t.d === 'down' && t.cp), trip = Sim.makeTrip('aki', recC, recC.cp[0], A2.stations.length - 1);
     let tot = 0; for (const sd of [1, 2, 3]) { const W = Sim.createWorld('aki', trip, { diff: 'easy', seed: sd, lead: false, weather: 'clear' }), T = W.player; let n = 0; while (!T.finished && n++ < 4e6 && W.t < 60000) Sim.tick(W, 0.05, {}, true); tot += W.msgs.filter(m => /DỪNG TRÁNH/.test(m.text)).length; ok(T.finished && Math.max(...T.results.map(r => Math.abs(r.delay))) < 200, `Akita seed ${sd}: có dừng tránh mà vẫn đúng giờ (thời gian chờ được miễn)`); }
-    ok(tot >= 3, 'đường đơn: có các lần dừng tránh tàu ngược chiều', tot); }
+    /* việc tránh tàu ngược chiều giờ do NatCat.singleStep + Sim.singleDispatch quyết định theo lịch thật (không còn lệnh ngẫu nhiên); kiểm ở mục 31 */ }
   { const A3 = Sim.lineOf('aki'), recL = A3.trains.filter(t => t.d === 'down' && t.cp && t.s[0][0] === 0)[3], tripL = Sim.makeTrip('aki', recL, recL.cp[0], A3.stations.length - 1);
     let leadStops = 0, base = 0; for (const sd of [1, 2, 3]) { const Wl = Sim.createWorld('aki', tripL, { diff: 'easy', seed: sd, weather: 'clear' }); if (!Wl.lead) continue; const Wn = Sim.createWorld('aki', tripL, { diff: 'easy', seed: sd, weather: 'clear', events: false }); leadStops += Wl.lead.M.filter(m => m.stop).length; base += Wn.lead ? Wn.lead.M.filter(m => m.stop).length : 0; }
     ok(leadStops > base, 'tàu chạy trước trên đường đơn có thêm lần dừng tránh', [leadStops, base]); }
@@ -428,7 +428,7 @@ if (section('19. Nhiệm vụ kiểm tra tự do (923 Doctor Yellow, E926 East i
     const sb = Sim.score(Tb, Wb); ok(Tb.finished && sb.covScore >= 70, 'bật đo suốt chuyến: phủ ≥ 70%', sb.covScore); ok(sb.found >= Math.ceil(sb.tot * 0.6) && sb.falseMarks === 0, 'đánh dấu lỗi vừa phát hiện: tìm ≥ 60%, không đánh dấu sai', [sb.found, sb.tot, sb.falseMarks]);
     ok(sb.final >= 55 && !Wb.mission.conflict, 'chạy đo trong khung đêm: không xung đột lịch tàu khách', [sb.final, Wb.mission.conflict]); }
   { const Wc = mk(4), Tc = Wc.player; Tc.phase = 'run'; Tc.started = true; Tc.x += 1500; Sim.markDefect(Tc); ok(Wc.mission.falseMarks === 1, 'đánh dấu khi không có lỗi: tính là đánh dấu sai'); }
-  { const Wd = mk(5), Td = Wd.player; Wd.trip.t0 += 6 * 3600; Sim.tick(Wd, 0.05, {}, true); Wd.running = true; Sim.tick(Wd, 0.05, {}, true); ok(Wd.mission.conflict || Wd.mission.minMargin < 0, 'trễ sang giờ chuyến khách đầu ngày: báo xung đột lịch', Wd.mission.minMargin); }
+  { const Wd = mk(5), Td = Wd.player; Wd.trip.t0 += 8 * 3600; Sim.tick(Wd, 0.05, {}, true); Wd.running = true; Sim.tick(Wd, 0.05, {}, true); ok(Wd.mission.conflict || Wd.mission.minMargin < 0, 'trễ sang giờ chuyến khách đầu ngày: báo xung đột lịch', Wd.mission.minMargin); }
   { const cat = NatCat.build(global.LINES).filter(c => Sim.INSPECT[c.rec.v]); ok(cat.length === 2 && cat.filter(c => c.rec.v === 'T4').length === 1 && cat.filter(c => c.rec.v === 'E926').length === 1, 'bản đồ: đúng 1 Doctor Yellow và 1 East i chạy (mỗi loại một đoàn)', cat.length); }
   { const E = Sim.makeMission('toh', 0, 8, 'E926'), We = Sim.createWorld('toh', E, { diff: 'easy', seed: 1, lead: true, events: true }); ok(E && E.t0 > 0 && We.mission && We.player.veh.key === 'E926', 'E926 trên Tohoku cũng có nhiệm vụ tự do');
     ok(We.mission.keys.includes('contact') && !We.mission.keys.includes('ride'), 'East i: bộ cảm biến riêng (lực tiếp xúc cần vẹt, không có dao động toa)'); ok(W.mission.keys.includes('ride') && !W.mission.keys.includes('contact'), 'Doctor Yellow: bộ cảm biến riêng (dao động toa)');
@@ -791,6 +791,41 @@ if (section('30. Chế độ thực tế (realmode.js + sim.js): giờ Nhật, l
     ok(cl && heldM >= 2 && nearM === heldM, 'tàu đang chạy gặp ô giữ tàu: dừng sát một ga ngay trước ô (' + nearM + '/' + heldM + ')'); }
   // chạy trọn chuyến trong thời tiết thật xấu vẫn kết thúc được
   const rr = runAuto(lnR, recR, 0, 12, { diff: 'normal', events: true, weather: 'real', real: mkSnap(32, 0.4, 21, eq1) }, 40000); ok(rr.T.finished, 'chạy tự động trọn chuyến với thời tiết thật xấu + dư chấn: tới ga cuối');
+}
+
+if (section('31. Đợt sửa tháng 11: Tsubame/S800, 8 toa, nhắc đóng cửa, tên đoàn ghép, đường đơn mini')) {
+  // Tsubame (Kyushu Shinkansen) từ bảng giờ PDF: 22 chuyến lên + 22 chuyến xuống suy ra; chủ yếu dùng 800 (6 toa)
+  { const L = Sim.lineOf('tsk'), ts = L.trains.filter(t => t.t === 'Tsubame'), up = ts.filter(t => t.d === 'up'), dn = ts.filter(t => t.d === 'down');
+    ok(up.length === 22 && dn.length === 22, 'tsk có 22 chuyến Tsubame chiều lên (PDF) và 22 chiều xuống (suy ra)', up.length + '/' + dn.length);
+    ok(ts.filter(t => t.v === 'S800').length >= 30 && ts.every(t => t.v === 'S800' || t.v === 'N700-8'), 'Tsubame dùng 800 (S800), vài chuyến N700 8 toa');
+    const r = dn.find(t => t.v === 'S800'), st = r.s.filter(e => !e[3]).map(e => e[0]), run = runAuto('tsk', r, st[0], st[st.length - 1], { diff: 'easy', events: false }, 20000);
+    ok(run.T.finished && !run.T.failed && run.T.veh.key === 'S800', 'chạy trọn một chuyến Tsubame chiều xuống bằng S800', [run.T.finished, run.T.failed]);
+    const noSame = L.trains.filter(t => t.t === 'Tsubame'); const keys = new Set(noSame.map(t => t.t + t.n + t.d)); ok(keys.size === noSame.length, 'số hiệu Tsubame không trùng trong cùng chiều'); }
+  // 8 toa: dải ảnh riêng cho N700-8 (Sakura, Mizuho)
+  { require(path.join(DRIVE, 'assets', 'sprites.js')); const sp = window.SPRITES && window.SPRITES.n700s8; ok(sp && sp.cars.length === 8 && sp.width > 2000, 'dải ảnh N700 8 toa (n700s8) có đúng 8 toa'); const sc = require('fs').readFileSync(path.join(DRIVE, 'scene.js'), 'utf8'); ok(/'N700-8': 'n700s8'/.test(sc), 'màn 2D dùng dải 8 toa cho N700-8'); ok(Sim.VEH['N700-8'].cars === 8, 'N700-8 có 8 toa'); }
+  // nhắc trên điện đàm khi kéo cần mà chưa đóng cửa (không còn lớp phủ che màn hình)
+  { const L = Sim.lineOf('tsk'), r = find('tsk', 'Nozomi', 'down', 0, 12), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', r, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, msgs = [], say0 = W.say; W.say = function (k, t) { msgs.push(t); return say0.apply(W, arguments); };
+    T.pw = 6; for (let i = 0; i < 200; i++) Sim.tick(W, 0.05, {}, false); ok(msgs.some(m => /đóng cửa/.test(m) && /Enter/.test(m)), 'kéo cần khi chưa đóng cửa: có nhắc trên điện đàm', msgs.slice(-2).join('|'));
+    const n0 = msgs.length; for (let i = 0; i < 100; i++) Sim.tick(W, 0.05, {}, false); ok(msgs.length - n0 <= 1, 'lời nhắc không bị lặp liên tục (' + (msgs.length - n0) + ')');
+    const fu = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8'); ok(!/Nhấn Enter để đóng cửa, rồi kéo cần/.test(fu), 'đã bỏ lớp phủ đen nhắc Enter đóng cửa'); }
+  // tên đoàn ghép Tohoku + mini
+  { const Lt = Sim.lineOf('toh'), h36 = Lt.trains.find(t => t.t === 'Hayabusa' && t.n === '36' && t.d === 'up'), ci = Sim.coupleOf(h36);
+    ok(ci && ci.role === 'toh' && ci.mini === 'E6' && Math.abs(ci.splitKm - 496.5) < 0.1, 'Hayabusa 36 (lên) ghép với Komachi 36 (E6) tại Morioka');
+    ok(/Hayabusa.*36.*\+.*Komachi.*36/.test(Sim.labelAt(h36, 300)) && !/Komachi/.test(Sim.labelAt(h36, 600)), 'tên chuyến ghép chỉ khi còn đi chung (km ≤ Morioka)');
+    ok(Sim.vehAt(h36, 300) === 'E5+E6' && Sim.vehAt(h36, 600) === 'E5', 'mẫu tàu theo vị trí: E5+E6 khi đi chung, E5 sau khi tách');
+    const k36 = Sim.lineOf('aki').trains.find(t => t.t === 'Komachi' && t.n === '36' && t.d === 'up'); ok(Sim.dupHidden(k36, 300) && !Sim.dupHidden(k36, 520), 'Komachi 36 không vẽ riêng trên đoạn đi chung (đã gộp vào Hayabusa 36)');
+    ok(/Hayabusa.*\+.*Komachi/.test(Sim.hudLabel({ trip: { rec: h36, label: 'x' } }, { veh: Sim.VEH['E5+E6'] })) && Sim.hudLabel({ trip: { rec: h36, label: 'x' } }, { veh: Sim.VEH['E5'] }) === 'x', 'nhãn góc trái: ghi cả hai chuyến khi đang ghép, một chuyến khi đã tách');
+    // bản đồ toàn quốc: một đoàn ghép, không có tam giác Komachi riêng trên đoạn chung
+    const now = 20 * 3600 + 5 * 60; let nK = 0, nH = 0; for (const c of NatCat.build(window.LINES)) { const st = NatCat.stateOf(window.LINES, c, now); if (!st) continue; if (c.rec.t === 'Komachi' && c.rec.n === '36' && !Sim.dupHidden(c.rec, st.km)) nK++; if (c.rec === h36) nH++; } ok(nH === 1 && nK === 0, 'bản đồ lúc 20:05: Hayabusa 36 hiện, Komachi 36 không hiện riêng (' + nH + '/' + nK + ')'); }
+  // đường đơn Yamagata/Akita: tàu của người chơi và tàu ngược chiều không bao giờ cùng ở một đoạn giữa hai ga
+  for (const [lid, dir, sd] of [['aki', 'down', 1], ['aki', 'up', 3], ['yam', 'down', 3], ['yam', 'up', 1]]) {
+    const L = Sim.lineOf(lid), S = L.stations, i0 = S.findIndex(x => x.en === (lid === 'aki' ? 'Morioka' : 'Fukushima')), cands = L.trains.filter(t => t.d === dir && t.s.some(e => e[0] === i0 && !e[3])), rec = cands[Math.min(cands.length - 1, 6)], st = rec.s.filter(e => !e[3]).map(e => e[0]);
+    const trip = Sim.makeTrip(lid, rec, dir === 'down' ? i0 : st[0], dir === 'down' ? st[st.length - 1] : i0), W = Sim.createWorld(lid, trip, { diff: 'normal', seed: sd, lead: false, events: true }), T = W.player, cat = NatCat.build(window.LINES).filter(c => c.line === lid && c.rec.d !== dir), msgs = [], say0 = W.say; W.say = function (k, t) { msgs.push(t); return say0.apply(W, arguments); };
+    const seg = km => { for (let i = 0; i < S.length - 1; i++) if (km >= S[i].km && km <= S[i + 1].km) return i; return -1; }, isS = i => i >= 0 && L.single.some(([a, b]) => Math.min(S[i + 1].km, b) - Math.max(S[i].km, a) > 0.05);
+    let viol = 0, n = 0; while (!T.finished && n++ < 2e6 && W.t < 30000) { Sim.tick(W, 0.05, {}, true); if (n % 10) continue; const kmP = Sim.kmOfS(T.x, W.dir, L.kmEnd), i = seg(kmP); if (!(i >= 0 && isS(i) && T.phase === 'run' && kmP > S[i].km + 0.25 && kmP < S[i + 1].km - 0.25)) continue; const now = W.trip.t0 + W.t;
+      for (const c of cat) { const d = NatCat.delayOf(W, c.key), s2 = NatCat.stateOf(window.LINES, c, now - (d ? d.delay : 0)); if (s2 && !s2.dwell && seg(s2.km) === i && s2.km > S[i].km + 0.25 && s2.km < S[i + 1].km - 0.25) { viol++; break; } } }
+    ok(T.finished && !T.failed && viol === 0, lid + ' ' + dir + ' (seed ' + sd + '): chạy trọn chuyến, không lần nào cùng đoạn đường đơn với tàu ngược chiều (' + viol + ' lần)', [T.finished, T.failed, viol]);
+    ok(msgs.every(m => !/DỪNG TRÁNH tàu ngược chiều tại/.test(m) || /Điều độ/.test(m)), lid + ': không còn lệnh tránh tàu giả lập'); }
 }
 
 Promise.all(global.__pending || []).then(() => { console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); } });

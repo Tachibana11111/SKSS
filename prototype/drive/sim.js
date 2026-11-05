@@ -198,14 +198,14 @@
       for (const rec of catalog) {
         if (rec === trip.rec) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
         const t = timeAt(L, rec, m.i); if (t == null) continue;
-        if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: _tl(rec.t, rec.n), t: t - trip.t0, v: rec.v });
+        if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: labelAt(rec, L.stations[m.i].km), t: t - trip.t0, v: vehAt(rec, L.stations[m.i].km) });
       }
       for (const sh of shareInfo(L)) {            // tàu của tuyến cha chạy chung đường (trước ngã rẽ) thông qua ga ta đang đỗ ở đường tránh
         if (!sh.j.shared || m.i > sh.maxI) continue;
         for (const rec of sh.LF.trains) {
           if (rec.d !== trip.dir) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
           const t = timeAt(sh.LF, rec, m.i); if (t == null) continue;
-          if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: _tl(rec.t, rec.n), t: t - trip.t0, v: rec.v });
+          if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: labelAt(rec, sh.LF.stations[m.i].km), t: t - trip.t0, v: vehAt(rec, sh.LF.stations[m.i].km) });
         }
       }
     });
@@ -385,18 +385,38 @@
   // ---- người chơi lái chuyến Tohoku (E5): ghép / tách với tàu nhánh. Hayabusa/Hayate ghép E6 (Akita) ở Morioka, Yamabiko ghép E8 (Yamagata) ở Fukushima; Nasuno không ghép.
   // Chiều xuống: mini ở PHÍA TRƯỚC (nối ở Tokyo rồi ta lùi vạch dừng nhường chỗ; tách ở ga nhánh: mini chạy trước vào tuyến nhánh, ta ở lại rồi đi tiếp). Chiều lên: mini nối vào ĐUÔI ta ở ga nhánh. Tỉ lệ và các quy tắc là [I].
   // Ghép cặp: một chuyến Tohoku và chuyến mini (Akita/Yamagata) cùng số hiệu, cùng giờ, cùng ga dừng trên đoạn chung luôn nối đoàn (Hayabusa 1 + Komachi 1, Yamabiko 123 + Tsubasa 123...). Dò từ dữ liệu lịch của hai tuyến mini; không còn tuỳ chọn hay xác suất. Khoá: tên|số hiệu|chiều.
-  let PAIRS = null, PAIRS_FOR = null;
+  let PAIRS = null, PAIRS_FOR = null; const RPAIRS = new Map();
   function miniPairs() {
-    const LN = root.LINES; if (!LN || !LN.toh) return {}; if (PAIRS_FOR === LN) return PAIRS; PAIRS_FOR = LN; PAIRS = {};
+    const LN = root.LINES; if (!LN || !LN.toh) return {}; if (PAIRS_FOR === LN) return PAIRS; PAIRS_FOR = LN; PAIRS = {}; RPAIRS.clear();
     const T = LN.toh, ti = new Map(T.stations.map((st, k) => [st.jp, k])), MINI = { aki: 'E6', yam: 'E8' };
     for (const id of ['aki', 'yam']) { const L = LN[id]; if (!L) continue;
       for (const t of L.trains) { if (!t.cp) continue; const st = t.s.filter(e => !e[3]), sp = st.findIndex(e => e[0] === t.cp[0]); if (sp < 0) continue;
         const sig = (t.d === 'down' ? st.slice(0, sp + 1) : st.slice(sp)).map(e => [ti.get(L.stations[e[0]].jp), e[1], e[2]]); if (sig.some(x => x[0] === undefined)) continue;
         const hs = T.trains.filter(h => h.d === t.d && String(h.n) === String(t.n) && sig.every(([k, a, d]) => { const e = h.s.find(y => y[0] === k && !y[3]); return e && e[1] === a && e[2] === d; }));
-        if (hs.length === 1) { const sk = ti.get(L.stations[t.cp[0]].jp); PAIRS[hs[0].t + '|' + hs[0].n + '|' + hs[0].d] = { mini: MINI[id], line: id, split: sk, splitKm: T.stations[sk].km }; } } }
+        if (hs.length === 1) { const sk = ti.get(L.stations[t.cp[0]].jp); PAIRS[hs[0].t + '|' + hs[0].n + '|' + hs[0].d] = { mini: MINI[id], line: id, split: sk, splitKm: T.stations[sk].km, rec: t, toh: hs[0] }; RPAIRS.set(t, { rec: hs[0], mini: MINI[id], line: id, split: sk, splitKm: T.stations[sk].km }); } } }
     return PAIRS;
   }
   const miniPairOf = rec => rec && miniPairs()[rec.t + '|' + rec.n + '|' + rec.d] || null;
+  // Đoàn ghép (Tohoku + mini): thông tin cho phần hiển thị. role 'toh' (bản ghi Tohoku, có mini đi cùng) hoặc 'mini' (bản ghi Komachi/Tsubasa); sh = đoạn đi chung (km từ Tokyo ≤ splitKm).
+  function coupleOf(rec) {
+    if (!rec) return null; const p = miniPairOf(rec); if (p) return { role: 'toh', self: rec, partner: p.rec, mini: p.mini, line: p.line, splitKm: p.splitKm };
+    miniPairs(); const r = RPAIRS.get(rec); return r ? { role: 'mini', self: rec, partner: r.rec, mini: r.mini, line: r.line, splitKm: r.splitKm } : null;
+  }
+  // nhãn chuyến của người chơi: đang là đoàn ghép (veh có parts) thì "Hayabusa 36 + Komachi 36"; tách rồi thì chỉ tên chuyến của mình
+  function hudLabel(W, T) {
+    const rec = W.trip && W.trip.rec, ci = coupleOf(rec); if (!ci || !T.veh || !T.veh.parts) return W.trip.label;
+    const a = ci.role === 'toh' ? rec : ci.partner, b = ci.role === 'toh' ? ci.partner : rec; return _tl(a.t, a.n) + ' + ' + _tl(b.t, b.n);
+  }
+  const onShared = (ci, km) => !!ci && km != null && km <= ci.splitKm + 0.05;
+  // tên chuyến theo vị trí km: đang đi chung thì ghép tên cả hai ("Hayabusa 36 + Komachi 36", Tohoku trước); sau khi tách chỉ còn tên của chính nó
+  function labelAt(rec, km) {
+    const ci = coupleOf(rec); if (!ci || !onShared(ci, km)) return _tl(rec.t, rec.n);
+    const a = ci.role === 'toh' ? rec : ci.partner, b = ci.role === 'toh' ? ci.partner : rec; return _tl(a.t, a.n) + ' + ' + _tl(b.t, b.n);
+  }
+  // mẫu tàu theo vị trí km: đang ghép thì "E5+E6" (đoàn xuống: mini ở đầu nên "E6+E5"), ngoài ra mẫu của chính bản ghi
+  function vehAt(rec, km) { const ci = coupleOf(rec); if (!ci || !onShared(ci, km)) return rec.v; const toh = ci.role === 'toh' ? rec : ci.partner; return toh.d === 'down' ? ci.mini + '+E5' : 'E5+' + ci.mini; }
+  // bản ghi Komachi/Tsubasa đi chung với Tohoku thì không vẽ riêng lần nữa trên bản đồ (đã gộp vào chuyến Tohoku)
+  const dupHidden = (rec, km) => { const ci = coupleOf(rec); return !!ci && ci.role === 'mini' && onShared(ci, km); };
   function planCouple(W, L, trip, P) {
     const rec = trip.rec; if (W.lineId !== 'toh' || !L.meta.coupleMini || trip.mission || rec.cp || P.veh.key !== 'E5') return;
     const pr = miniPairOf(rec); if (!pr) return;
@@ -448,6 +468,7 @@
     const W = T.W, hold = T.holds[T.k];
     if (hold != null && W.t < hold) return _t('Đang giữ tàu theo lệnh điều độ (còn {0} s)', Math.ceil(hold - W.t));
     const gz = gateZone(T); if (gz) return _t('Giữ tàu: {0} phía trước (còn {1} s)', gz.label, Math.ceil(gz.tB - W.t));
+    if (T === W.player && !T.isLead && root.NatCat && root.NatCat.singleBusy) { const sb = root.NatCat.singleBusy(W, T); if (sb) return _t('Đường đơn: chờ {0} (ngược chiều) qua đoạn phía trước rồi mới được rời ga', sb); }
     if (startOnly) return T.cut ? _t('Mất điện / kiểm tra sau sự cố') : null;
     if (T.waitFor && T.waitFor.train.phase !== 'end' && T.waitFor.train.x < T.waitFor.s + 120) return _t('Chờ {0} vượt qua ga', T.waitFor.train.label);
     if (T.cut) return _t('Mất điện / kiểm tra sau sự cố');
@@ -459,8 +480,9 @@
     const W = T.W;
     if (T.phase !== 'dwell' || T.v > 0.05) return false;
     const blk = T.k > 0 ? departBlock(T) : (T === W.player ? departBlock(T, true) : null);      // ga xuất phát của người chơi: chỉ lệnh giữ tàu, vùng giữ tàu và mất điện (không đụng ghép/tách toa)
-    if (blk) { if (!silent && !T.isLead && W.t - (T.lastBlockMsg || -99) > 6) { W.say('warn', blk); T.lastBlockMsg = W.t; } return false; }
+    if (blk) { if (!silent && !T.isLead && W.t - (T.lastBlockMsg || -99) > (blk === T.lastBlockTxt ? 30 : 6)) { W.say('warn', blk); T.lastBlockMsg = W.t; T.lastBlockTxt = blk; } return false; }      // cùng một lý do (không đổi chữ) chỉ nhắc 30 s một lần
     if (T.waitFor) T.waitFor = null;
+    if (T === W.player && root.NatCat && root.NatCat.playerClaim) root.NatCat.playerClaim(W, T);
     const mk = T.M[T.k], dep = mk.dep != null ? mk.dep : 0;
     if (T.holds[T.k] != null && T.holds[T.k] > dep) T.excused += T.holds[T.k] - Math.max(dep, T.arrT);
     if (!T.isLead && T.k > 0 && mk.dep != null && W.t < mk.dep - 0.5) { T.earlyDep += mk.dep - W.t; T.log.push(['EARLY', W.t, _t('Khởi hành sớm')]); W.say('warn', _t('Khởi hành sớm {0} s', (mk.dep - W.t).toFixed(0))); }
@@ -498,6 +520,7 @@
       coupStep(T);
       doorStep(T, dt);
       if (T.door === 'closed' && cmd > 0.01) { if (!departNow(T)) cmd = 0; }
+      else if (T.door !== 'closed' && cmd > 0.01 && T === W.player && !T.isLead && !W.mission && W.t - (T.lastDoorWarn === undefined ? -99 : T.lastDoorWarn) > 8) { T.lastDoorWarn = W.t; W.say('warn', _t('Chưa đóng cửa: nhấn Enter để đóng cửa rồi mới kéo cần gia tốc.')); }
       if (T.phase === 'dwell') cmd = Math.min(cmd, 0);
     }
     T.notch = T.bk > 0 ? -T.bk : T.pw; T.cmd = cmd;
@@ -518,7 +541,7 @@
     T.bt = Math.max(0, T.bt - 0.003 * (1 + T.v / 30) * T.bt * dt); if (T.bt > (T.btMax || 0)) T.btMax = T.bt;
     if (Ft > 0) T.kwh += Ft * T.v / 0.9 * dt / 3.6e6;
     if (T.horn > 0) T.horn = Math.max(0, T.horn - dt);
-    deadStep(T); noteStep(T); xingStep(T); if (T === W.player) refreshOpposing(W, T);
+    deadStep(T); noteStep(T); xingStep(T); if (T === W.player) { refreshOpposing(W, T); singleDispatch(W, T); }
     // bất an của hành khách khi đứng giữa đường
     if (!T.isLead) {
       if (T.phase === 'run' && T.v < 0.3 && W.running && !W.mission) { T.anx = Math.min(100, T.anx + dt * 100 / 900); } else if (T.anx > 0) T.anx = Math.max(0, T.anx - dt * 0.4);
@@ -725,7 +748,7 @@
       W.passCand = { k, list }; W.passObj = new Map(); }
     const out = [], t0 = W.trip.t0; if (NC && W.haz) NC.step(W);
     for (const e of W.passCand.list) { const d = NC && W.haz ? NC.delayOf(W, e.c.key) : null; if (d && d.hold > 0) continue; const t = e.tb + (d ? d.delay : 0) - t0; if (t < W.t - 12 || t > W.t + 150) continue;
-      let o = W.passObj.get(e.c.key); if (!o) { o = { label: _tl(e.c.rec.t, e.c.rec.n), v: e.c.rec.v }; W.passObj.set(e.c.key, o); } o.t = t; out.push(o); }
+      let o = W.passObj.get(e.c.key); if (!o) { const kmE = W.line.stations[T.M[k].i].km; o = { label: labelAt(e.c.rec, kmE), v: vehAt(e.c.rec, kmE) }; W.passObj.set(e.c.key, o); } o.t = t; out.push(o); }
     for (const p of (W.passers && W.passers[k]) || []) if (p.syn) out.push(p);
     W.passDyn = { k, list: out };
   }
@@ -739,13 +762,19 @@
       if (dl && dl.hold > 0) { st.delete(c.id); continue; }
       for (let k = 0; k < p.length && km === null; k++) { if (nowE >= p[k].ta && nowE <= p[k].td) { km = p[k].km; vo = 0; } else if (k < p.length - 1 && nowE > p[k].td && nowE < p[k + 1].ta) { const f = (nowE - p[k].td) / ((p[k + 1].ta - p[k].td) || 1); km = p[k].km + (p[k + 1].km - p[k].km) * f; vo = Math.abs(p[k + 1].km - p[k].km) * 1000 / ((p[k + 1].ta - p[k].td) || 1); } }
       if (km === null || vo < 5) { if (!st.has(c.id) || st.get(c.id).t0 > W.t) st.delete(c.id); continue; }
+      if (dupHidden(c.rec, km)) { st.delete(c.id); continue; }      // chuyến Komachi/Tsubasa đang ghép với chuyến Tohoku cùng số hiệu: chỉ vẽ một đoàn ghép (chuyến Tohoku)
       const gap = (down ? km - kmP : kmP - km) * 1000;
-      if (gap > 0 && gap < 40000) st.set(c.id, { t0: W.t + gap / Math.max(40, T.v + vo), v: oppVeh(W, c.rec, km), label: _tl(c.rec.t, c.rec.n) }); }
+      if (gap > 0 && gap < 40000) st.set(c.id, { t0: W.t + gap / Math.max(40, T.v + vo), v: vehAt(c.rec, km), label: labelAt(c.rec, km) }); }
     for (const [k, s] of st) if (W.t - s.t0 > 6) st.delete(k);
     const arr = [...st.values()].filter(s => s.t0 - W.t < 150).sort((a, b) => a.t0 - b.t0); W.opposing = arr.map(s => s.t0); W.oppInfo = arr;
   }
-  function oppVeh(W, rec, km) {      // tàu Tohoku có cặp mini: phía Tokyo của ga tách thì là đoàn ghép (mini ở phía bắc)
-    if (W.lineId !== 'toh' || rec.v !== 'E5') return rec.v; const pr = miniPairOf(rec); if (!pr || km >= pr.splitKm) return rec.v; return rec.d === 'down' ? pr.mini + '+E5' : 'E5+' + pr.mini;
+  // Đường đơn: ga sắp tới là ga chạy thông qua mà đoạn phía sau nó đang có tàu ngược chiều (theo lịch thật) thì điều độ ra lệnh dừng tránh ở ga đó (運転停車); tàu đã ở ga thì Sim.departBlock giữ cho tới khi đoạn trống
+  function singleDispatch(W, T) {
+    const NC = root.NatCat; if (!NC || !NC.singleBusy || T.isLead || W.mission || T.phase !== 'run' || (W.lineId !== 'aki' && W.lineId !== 'yam')) return;
+    const j = nextTarget(T), m = T.M[j]; if (!m || m.stop || m.sdisp || j >= T.M.length - 1 || m.pt == null) return; const d = m.s - T.x; if (d < 1200 || d > 7000) return;
+    const sb = NC.singleBusy(W, T, j); if (!sb) return;
+    m.sdisp = true; m.stop = true; m.arr = m.pt; m.dep = m.pt + 90; fillPlan(T.M); T.orderAt = W.t;
+    W.say('warn', _t('Điều độ: đoạn đường đơn phía sau {0} đang có {1} (ngược chiều), DỪNG TRÁNH tại {0}. Dừng đúng vạch, chờ tàu ngược chiều qua rồi mới chạy tiếp.', m.name, sb));
   }
   function oppKey(W, T, t0) {
     if (W.oppInfo) { let b = null; for (const s of W.oppInfo) if (!b || Math.abs(s.t0 - t0) < Math.abs(b.t0 - t0)) b = s; if (b && Math.abs(b.t0 - t0) < 1.5 && VEH[b.v]) return b.v; }
@@ -945,7 +974,7 @@
     if (leadRec) {
       const seq = trainSeq(leadRec);
       const LM = fgn ? foreignLeadM(L, trip, fgn) : fillPlan(seq.map(e => ({ name: _s(L.stations[e.i]), rom: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, trip.dir, L.kmEnd), stop: e.stop, arr: e.arr != null ? e.arr - trip.t0 : null, dep: e.dep != null ? e.dep - trip.t0 : null })));
-      LM[0].arr = null; LM[LM.length - 1].dep = null; W.leadLabel = _tl(leadRec.t, leadRec.n); W.leadRef = { t: leadRec.t, n: leadRec.n, d: leadRec.d };
+      LM[0].arr = null; LM[LM.length - 1].dep = null; W.leadLabel = fgn ? _tl(leadRec.t, leadRec.n) : labelAt(trip.rec.d === leadRec.d ? leadRec : leadRec, L.stations[trip.M[0].i].km); W.leadRef = { t: leadRec.t, n: leadRec.n, d: leadRec.d };
       if (opts.events !== false && L.single && L.single.length) {      // tàu chạy trước cũng dừng tránh tàu ngược chiều trên đường đơn
         const rr = rng((opts.seed || 1) * 977 + 3), inS = km => L.single.some(([a, b]) => km > a && km < b), cpI = leadRec.cp ? leadRec.cp[0] : -1;
         const cand = LM.map((m, k) => k).filter(k => k > 0 && k < LM.length - 1 && !LM[k].stop && LM[k].pt != null && LM[k].i !== cpI && inS(L.stations[LM[k].i].km));
@@ -1212,7 +1241,7 @@
       }
     }
     // đường đơn (mini-Shinkansen): thêm các lần dừng tránh tàu ngược chiều ở ga (kể cả ga không có lịch dừng: 運転停車 [N: Wikipedia JP Akita Shinkansen])
-    if (W.line.single && W.line.single.length) {
+    if (W.line.single && W.line.single.length && !W.oppCat) {      // có danh mục tàu thật (W.oppCat) thì việc tránh tàu ngược chiều do NatCat.singleStep quyết định theo lịch thật, không sinh ngẫu nhiên nữa
       const L = W.line, inSingle = km => L.single.some(([a, b]) => km > a && km < b);
       const cand = M.map((m, k) => k).filter(k => k > 0 && k < M.length - 1 && !usedJ.has(k) && inSingle(L.stations[M[k].i].km) && !(W.player.cp && M[k].i === W.player.cp[0]));
       const singleKm = L.single.reduce((a, [x, y]) => a + Math.max(0, Math.min(y, L.kmEnd) - x), 0), n = cand.length ? clamp(Math.round(span / 1000 / 45 * (0.7 + rnd() * 0.6)), 1, 4) : 0;
@@ -1316,7 +1345,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { miniPairOf, injectQuake, passersAt, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

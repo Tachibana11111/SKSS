@@ -64,7 +64,7 @@
   }
   // tên ảnh dùng cho từng loại tàu (N700-8 tạm dùng toa N700S; ảnh chỉ có ở rail.kychung.com)
   let winLvl = 0;      // mức sáng của các ô cửa sổ tàu (0 ban ngày)
-  const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', E2: 'e2', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'kamome' };
+  const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s8', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', E2: 'e2', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'kamome' };
   function sprOf(R, key) { const s = R.sprites && R.sprites[SMAP[key] || 'n700']; return s && s.ready ? s : null; }
   const hOf = (R, key, k) => { const s = sprOf(R, key); return s ? s.meta.height * (k / s.meta.pxPerMeter) : 24; };
   // vẽ cả đoàn có số toa đúng: ảnh thật ghép từ toa đuôi, toa giữa (lặp), toa mũi; nếu thiếu ảnh thì vẽ tạm bằng code
@@ -159,8 +159,8 @@
     if (drop > 0.5) { // cầu cạn / cầu: bản mặt cầu bê tông và trụ cầu cách nhau 30 m
       ctx.fillStyle = mixc([30, 34, 40], [150, 156, 160], day * (1 - wx * 0.35)); ctx.fillRect(px, base - 3, pw, 13); ctx.fillStyle = mixc([20, 24, 30], [112, 118, 124], day * (1 - wx * 0.35)); const ps = 30 * K, po = (T.x * K) % ps; for (let sx = px - ps; sx < px + pw + ps; sx += ps) ctx.fillRect(sx - po + ps - 5, base + 10, 10, Math.max(0, gy - base - 6 + 12));
       ctx.fillStyle = mixc([30, 34, 40], [150, 156, 160], day * (1 - wx * 0.35)); ctx.fillRect(px, base - 3, pw, 2);
-    } else { ctx.fillStyle = inSnow ? '#e9eff6' : '#0e141b'; ctx.fillRect(px, base, pw, ph); }
-    if (drop <= 0.5) { ctx.fillStyle = inSnow ? '#b8c4d2' : '#19212b'; ctx.fillRect(px, base + 3, pw, ph); }
+    } else { ctx.fillStyle = '#0e141b'; ctx.fillRect(px, base, pw, ph); }
+    if (drop <= 0.5) { ctx.fillStyle = inSnow && !tun ? '#b8c4d2' : '#19212b'; ctx.fillRect(px, base + 3, pw, ph); }
     // ---- trụ điện và dây điện (cuộn theo vận tốc thật)
     const sp = 50 * K, off = (T.x * K) % sp; ctx.strokeStyle = '#3a4c60'; ctx.lineWidth = 4;
     for (let sx = px - sp; sx < px + pw + sp; sx += sp) { const x = sx - off + sp; ctx.beginPath(); ctx.moveTo(x, base - 70); ctx.lineTo(x, base); ctx.stroke(); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 10, base - 66); ctx.lineTo(x + 10, base - 66); ctx.stroke(); ctx.lineWidth = 4; if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(x - 10, base - 70, 20, 4); } }
@@ -253,7 +253,7 @@
       } else ctx.drawImage(img, spr.width - srcW, 0, srcW, spr.height, fx - srcW * f, base - (spr.railY * f * SV) + 2, srcW * f, dh);
       if (winLvl > 0.06 && root.WinLit) { const WL = root.WinLit, sx0 = spr.width - srcW, dx0 = fx - srcW * f, top0 = base - (spr.railY * f * SV) + 2; WL.overlap(WL.get(psp), sx0, spr.width, (wa, wb, ya, yb, id) => { const ax = Math.max(wa, sx0); ctx.fillStyle = WL.fill(id, winLvl); ctx.fillRect(dx0 + (ax - sx0) * f, top0 + ya * f * SV, (wb - ax) * f + 0.5, (yb - ya) * f * SV); }); }
       { // cần vẹt (パンタグラフ): đặt đúng chỗ nắp cần vẹt trên nóc từng mẫu tàu (đọc từ ảnh: [số toa, vị trí px trong toa]); nâng thì chạm dây điện, hạ thì gập sát nóc
-        const PAN = { n700: [[5, 264], [12, 85]], n700s: [[5, 260], [12, 87]], e5: [[3, 293], [7, 293]], h5: [[3, 293], [7, 293]], e6: [[2, 242], [6, 42]], e8: [[2, 242], [6, 42]], e7: [[5, 277], [7, 285]], t4: [[0, 612], [0, 1671]], s800: [[2, 170], [5, 170]], kamome: [[0, 683], [0, 1537]], e2: [[4, 42], [6, 42]], e926: [[0, 243], [0, 852], [0, 1439]] };
+        const PAN = { n700: [[5, 264], [12, 85]], n700s: [[5, 260], [12, 87]], n700s8: [[3, 260], [6, 87]], e5: [[3, 293], [7, 293]], h5: [[3, 293], [7, 293]], e6: [[2, 242], [6, 42]], e8: [[2, 242], [6, 42]], e7: [[5, 277], [7, 285]], t4: [[0, 612], [0, 1671]], s800: [[2, 170], [5, 170]], kamome: [[0, 683], [0, 1537]], e2: [[4, 42], [6, 42]], e926: [[0, 243], [0, 852], [0, 1439]] };
         const nm = SMAP[key] || 'n700', roofY = base - spr.railY * f * SV + 2, wy = base - 60; scene._pa = (scene._pa === undefined ? 1 : scene._pa) + ((T.pan === false ? 0 : 1) - (scene._pa === undefined ? 1 : scene._pa)) * 0.12;
         for (const [ci, ox] of PAN[nm] || []) { const car = ci ? spr.cars && spr.cars[ci - 1] : { x: 0 }; if (!car) continue; const x0 = fx - (spr.width - car.x - ox) * f; if (x0 < fx - srcW * f + 10) continue;
           const topY = roofY - 3 - (roofY - wy - 3) * scene._pa, kx = 8 + 5 * (1 - scene._pa), mid = (roofY + topY) / 2; ctx.strokeStyle = night > 0.3 ? '#8d98a6' : '#cfd6de'; ctx.lineWidth = 1.8;
