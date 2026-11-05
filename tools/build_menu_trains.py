@@ -48,10 +48,10 @@ def regular_run(cx, pitch):
 def sources(name):
     """trả về (head_img, mid_img, ncars) ở độ phân giải gốc (SCALE 1.0)"""
     src, ncars, carlen, flip, _ = B.SPECS[name]
-    if name in ('n700s', 'kamome'):
+    if name in ('n700s', 'kamome', 'e2'):
         im, cars = B.build_ref(name)
-        kw = dict(down=(190 if name == 'kamome' else 150), cut_top=(name == 'n700s'), white_fill=(name == 'n700s'), **({'ref_rows': (14, 4)} if name == 'kamome' else {}))
-        mk = lambda c, head: B.car_image_ref(im, c, **dict(kw, **({'xpr': int(90 + P.NOSE_EXT * 500)} if head else {})))
+        kw = dict(down=(190 if name == 'kamome' else 175 if name == 'e2' else 150), cut_top=(name in ('n700s', 'e2')), white_fill=(name == 'n700s'), **({'ref_rows': (14, 4)} if name == 'kamome' else {}))
+        mk = lambda c, head: B.car_image_ref(im, c, **dict(kw, **(({'xpr': int(90 + P.NOSE_EXT * 500)} if name != 'e2' else {'xpr': int(90 + P.NOSE_EXT * 1100)}) if head else {})), **({'xpl': 90 if False else 4} if name == 'e2' and not head else {}))
         return mk(cars[-1], True), mk(cars[len(cars) // 2], False), ncars
     im, Bg, diff, mask, cars = B.build(name)
     cl = cars[::-1] if flip else cars
@@ -95,7 +95,7 @@ def clean_top(head, mid):
     h = np.array(head); r, g = h[:, :, 0].astype(int), h[:, :, 1].astype(int); bad = (r - g > 20); bad[y0 + 2:, :] = False; h[bad, 3] = 0
     return Image.fromarray(h, 'RGBA'), mid2
 
-names = ['n700s', 'n700', 'kamome', 'e5', 'e7', 'e6', 'e8']
+names = ['n700s', 'n700', 'kamome', 'e5', 'e7', 'e6', 'e8', 's800', 'h5', 't4', 'e926', 'e2']      # 7 mẫu đầu dùng ở menu chính (có đo cửa sổ để dán logo JR); 5 mẫu sau chỉ cần ảnh cho hoạt ảnh tàu ở màn chọn chuyến (không có cửa sổ để đo thì bỏ qua)
 cfg = {}
 for n in names:
     if ONLY and n not in ONLY: continue
@@ -104,8 +104,10 @@ for n in names:
     # mid: cắt 2 px đầu để các toa nối liền khi lặp (cùng cách ghép của ảnh xem trước); nếu cạnh trái không có khe thì giữ nguyên
     a = np.array(mid)[:, :, 3]; al = a[:int(mid.height * 0.6)].sum(axis=0) / (int(mid.height * 0.6) * 255.0)
     midc = mid.crop((2, 0, mid.width, mid.height))
-    w = windows(midc); cx = w['cx']; pitch = st.median([cx[i + 1] - cx[i] for i in range(len(cx) - 1)])
-    r0, r1 = regular_run(cx, pitch)
+    try:
+        w = windows(midc); cx = w['cx']; pitch = st.median([cx[i + 1] - cx[i] for i in range(len(cx) - 1)]); r0, r1 = regular_run(cx, pitch)
+    except Exception:
+        w = dict(cx=[], w=0, h=0, yc=0); cx = []; pitch = 0; r0 = r1 = 0
     midc.save(os.path.join(OUT, f'mt_{n}_mid.png'), optimize=True); head.save(os.path.join(OUT, f'mt_{n}_head.png'), optimize=True)
     cfg[n] = dict(cars=nc, hw=head.width, hh=head.height, mw=midc.width, mh=midc.height, wcx=[round(x, 1) for x in cx[r0:r1]], wp=round(pitch, 2), ww=w['w'], wh=w['h'], wyc=w['yc'], nwin=len(cx), run=[r0, r1])
     print(n, cfg[n]['cars'], 'head', head.size, 'mid', midc.size, 'win', len(cx), 'run', (r0, r1), 'w', w['w'], 'h', w['h'], 'pitch', round(pitch, 1), 'yc', w['yc'])

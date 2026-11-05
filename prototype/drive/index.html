@@ -90,6 +90,8 @@
   #menu #mTrainPrev img{position:absolute;bottom:4px;max-width:none;display:none}
   #menu #mTrainPrev.hr{-webkit-mask-image:linear-gradient(to left,#000 70%,transparent);mask-image:linear-gradient(to left,#000 70%,transparent)} #menu #mTrainPrev.hl{-webkit-mask-image:linear-gradient(to right,#000 70%,transparent);mask-image:linear-gradient(to right,#000 70%,transparent)}
   #menu #mTrainPrev.hr img{right:12px} #menu #mTrainPrev.hl img{left:12px;transform:scaleX(-1)}
+  #menu #mTrainPrev .ptr{position:absolute;left:0;bottom:4px;will-change:transform} #menu #mTrainPrev .pin{position:absolute;left:0;bottom:0;display:flex;align-items:flex-end;transform-origin:0 100%} #menu #mTrainPrev .pin i{display:block;flex:none} #menu #mTrainPrev .pin .pf{transform:scaleX(-1)}
+  #pvEdge{position:fixed;top:0;bottom:0;width:4px;z-index:61;background:#e8f2ff;box-shadow:0 0 14px 3px rgba(120,190,255,.85);pointer-events:none}
   #menu .grp{font-size:12px;color:var(--mut);font-weight:600;margin:0 0 4px;letter-spacing:.5px}
   #menu label{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #243447;font-size:14px;color:var(--fg);margin:0}
   #menu label.inl{justify-content:flex-start}
@@ -355,10 +357,67 @@ function stopList() {
   if ($('from').onchange) $('from').onchange();      // chọn lại ga đến hợp lệ (khi ga đi mặc định không còn là ga đầu)
 }
 $('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = () => { stopList(); vehUpd(); tpUpd(); }; $('vehSel').addEventListener('change', () => tpUpd()); $('line').addEventListener('change', () => setTimeout(vehUpd, 0)); $('dir').addEventListener('change', () => setTimeout(vehUpd, 0));
-function tpUpd() {      // hình đầu đoàn + các toa kế sau của tàu đang chọn (ảnh pv_*.png dựng sẵn ở độ phân giải cao, tỉ lệ thật, mũi quay theo hướng chạy như màn 2D); không có ảnh thì ẩn
-  const box = $('mTrainPrev'), im = $('mTpImg'), L = Lc(), rec = L && L.trains[+$('train').value]; if (!rec) { im.style.display = 'none'; return; }
-  const key = $('vehSel').value || rec.v, nm0 = Scene.SMAP[key] || 'n700', nm = window.PREVIEW && !PREVIEW[nm0] ? nm0.replace(/8$/, '') : nm0, m = window.PREVIEW && PREVIEW[nm], down = $('dir').value === 'down', fd = !!Sim.lineOf($('line').value).meta.flipDown, hr = down ? !fd : fd;
-  box.className = hr ? 'hr' : 'hl'; if (!m) { im.style.display = 'none'; return; }
+// ---- Hoạt ảnh đoàn tàu ở màn thiết lập chuyến đi: tàu tiến vào đúng tư thế ảnh tĩnh (mũi tàu + toa kế sau, trong khung xem trước), đổi mẫu thì tàu cũ lùi ra rồi tàu mới tiến vào,
+// bấm Bắt đầu (Enter) thì tàu chạy hết cả đoàn; khi đuôi tàu hiện ra thì mép màn hình lái tàu bám theo đuôi và trượt vào (Enter lần nữa để bỏ qua). Ảnh đoàn: assets/mt_*.png + mt.js (tools/build_menu_trains.py).
+const PV = (function () {
+  const MAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', E2: 'e2', 'N700S-6': 'kamome' };
+  const A_IN = 700, A_OUT = 900, A_GO = 420, GAP = 8;      // gia tốc (px/s²): vào ga hãm đều, lùi ra, và tăng tốc khi bắt đầu chuyến (cùng gia tốc nên đoàn dài mất nhiều thời gian hơn)
+  let cur = null, tok = 0, gen = 0, busyGo = false, skipReq = false, raf = 0;
+  const box = () => $('mTrainPrev'), still = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function build(key, hr) {
+    const V = Sim.VEH[key]; if (!V || !window.MENU_TRAINS || !window.PREVIEW) return null;
+    const parts = V.parts || [key], units = hr ? parts.slice().reverse() : parts.slice(), spec = [];
+    let TW = 0, H = 0, s0 = null;
+    for (const u of units) { const nm = MAP[u], c = MENU_TRAINS[nm], pv = PREVIEW[nm], VU = Sim.VEH[u]; if (!c || !pv || !VU) return null; if (s0 === null) s0 = 1.7 * 13.9 / pv.ppm * 0.7;
+      const nm_ = VU.cars - 2, w = c.hw * 2 + nm_ * c.mw; spec.push({ nm, c, nm_, w, x: TW }); TW += w + GAP; H = Math.max(H, c.hh, c.mh); }
+    TW -= GAP;
+    const el = document.createElement('div'); el.className = 'ptr'; const pin = document.createElement('div'); pin.className = 'pin'; pin.style.cssText = 'width:' + TW + 'px;height:' + H + 'px;transform:scale(' + s0 + ');gap:' + GAP + 'px';
+    const img = (nm, p, w, h, rep, extra) => '<i' + (extra ? ' class="' + extra + '"' : '') + ' style="width:' + (rep ? rep * w : w) + 'px;height:' + h + 'px;background:url(assets/mt_' + nm + '_' + p + '.png) ' + (rep ? 'repeat-x' : 'no-repeat') + ' 0 0/' + w + 'px ' + h + 'px"></i>';
+    pin.innerHTML = spec.map(u => img(u.nm, 'head', u.c.hw, u.c.hh, 0, 'pf') + img(u.nm, 'mid', u.c.mw, u.c.mh, u.nm_) + img(u.nm, 'head', u.c.hw, u.c.hh)).join('');
+    el.style.width = Math.round(TW * s0) + 'px'; el.style.height = Math.round(H * s0) + 'px'; el.appendChild(pin);
+    return { el, key, hr, TW: TW * s0, tx: 0 };
+  }
+  // vị trí tx (px, trong khung): tư thế tĩnh (mũi tàu cách mép 12 px), điểm bắt đầu (tàu nằm hẳn ngoài khung, phía sau mũi)
+  const geo = tr => { const w = box().clientWidth; return tr.hr ? { still: w - 12 - tr.TW, start: -tr.TW - 20, dir: 1, w } : { still: 12, start: w + 20, dir: -1, w }; };
+  function put(tr, tx) { tr.tx = tx; tr.el.style.transform = 'translateX(' + tx.toFixed(1) + 'px)'; }
+  // chuyển động đều gia tốc: from -> to trong T giây; kind 'decel' (vào ga, hãm đều tới 0) hoặc 'accel' (từ 0 tăng tốc đều)
+  function move(tr, from, to, kind, a, onFrame, done) {
+    cancelAnimationFrame(raf); const myTok = ++tok, D = Math.abs(to - from), T = Math.max(0.05, Math.sqrt(2 * D / a)), t0 = performance.now();
+    const f = now => { if (myTok !== tok) return; let u = Math.min(1, (now - t0) / 1000 / T); if (skipReq && kind === 'accel') u = 1; const p = kind === 'decel' ? 1 - (1 - u) * (1 - u) : u * u; put(tr, from + (to - from) * p); if (onFrame) onFrame(tr.tx); if (u >= 1) { if (done) done(); } else raf = requestAnimationFrame(f); };
+    raf = requestAnimationFrame(f);
+  }
+  function enter(tr) { const g = geo(tr); box().appendChild(tr.el); put(tr, g.start); if (still()) { put(tr, g.still); return; } move(tr, g.start, g.still, 'decel', A_IN); }
+  function leave(tr, done) { if (still()) { tr.el.remove(); done(); return; } const g = geo(tr); move(tr, tr.tx, g.start, 'accel', A_OUT, null, () => { tr.el.remove(); done(); }); }
+  function show(key, hr) {
+    if (busyGo) return; if (cur && cur.key === key && cur.hr === hr) return;
+    const nt = build(key, hr), old = cur; cur = nt; const g = ++gen; $('mTpImg').style.display = 'none';
+    for (const e of box().querySelectorAll('.ptr')) if (!old || e !== old.el) e.remove();      // dọn đoàn cũ còn sót khi đổi mẫu liên tục
+    if (!nt) { if (old) old.el.remove(); return; }
+    if (old && old.el.parentNode) leave(old, () => { if (cur === nt && g === gen) enter(nt); }); else enter(nt);
+  }
+  function reset() { cancelAnimationFrame(raf); ++tok; ++gen; if (cur) { cur.el.remove(); cur = null; } for (const e of box().querySelectorAll('.ptr')) e.remove(); }
+  // bấm Bắt đầu: tàu chạy hết đoàn; đuôi tàu kéo mép màn hình lái tàu vào. Trả về Promise khi xong (hoặc bị bỏ qua).
+  function go() {
+    return new Promise(resolve => {
+      const tr = cur; if (!tr || still()) { resolve(); return; }
+      const st = $('stage'), Wv = innerWidth, r = box().getBoundingClientRect(), g = geo(tr); busyGo = true; skipReq = false; ++tok; cancelAnimationFrame(raf);
+      const end = tr.hr ? Wv - r.left + 6 : -6 - r.left - tr.TW, edge = document.createElement('div'); edge.id = 'pvEdge'; document.body.appendChild(edge);
+      try { drawBase(); } catch (e) { } document.body.classList.remove('mSolid'); st.style.zIndex = 60;      // vẽ MỘT lần khung đầu của chuyến mới (cờ M.solid vẫn bật nên draw() không vẽ lại mỗi khung: tránh giật khi trượt); không để lộ khung chuyến cũ
+      st.style.willChange = 'transform'; st.style.transform = 'translateX(' + (tr.hr ? -Wv : Wv) + 'px)';
+      const frame = tx => { const ex = tr.hr ? r.left + tx : r.left + tx + tr.TW;      // mép sau của đoàn (đuôi tàu) tính theo toạ độ màn hình
+        const px = tr.hr ? Math.min(0, ex - Wv) : Math.max(0, ex); st.style.transform = 'translateX(' + px.toFixed(1) + 'px)'; const vis = tr.hr ? ex > 0 : ex < Wv; edge.style.display = vis ? '' : 'none'; edge.style.left = (tr.hr ? ex : ex - 4) + 'px'; };
+      const fin = () => { st.style.transform = ''; st.style.zIndex = ''; st.style.willChange = ''; edge.remove(); busyGo = false; skipReq = false; resolve(); };
+      move(tr, tr.tx, end, 'accel', A_GO, frame, fin);
+    });
+  }
+  return { show, reset, go, busy: () => busyGo, skip: () => { skipReq = true; } };
+})();
+function tpUpd() {      // hoạt ảnh đoàn tàu của chuyến đang chọn (mũi quay theo hướng chạy như màn 2D); không có ảnh thì dùng ảnh tĩnh pv_*.png; không có gì thì ẩn
+  const box = $('mTrainPrev'), im = $('mTpImg'), L = Lc(), rec = L && L.trains[+$('train').value]; if (!rec) { PV.reset(); im.style.display = 'none'; return; }
+  let key = $('vehSel').value || rec.v; const down = $('dir').value === 'down', fd = !!Sim.lineOf($('line').value).meta.flipDown, hr = down ? !fd : fd, ci = !$('vehSel').value && Sim.coupleOf(rec);
+  if (ci && ci.role === 'toh') key = down ? ci.mini + '+E5' : 'E5+' + ci.mini;      // chuyến Tohoku có Komachi/Tsubasa đi cùng: hiện cả đoàn ghép (mini ở phía bắc: đầu khi xuống, đuôi khi lên)
+  box.className = hr ? 'hr' : 'hl'; PV.show(key, hr); if (box.querySelector('.ptr')) return;
+  const nm0 = Scene.SMAP[rec.v] || 'n700', nm = window.PREVIEW && !PREVIEW[nm0] ? nm0.replace(/8$/, '') : nm0, m = window.PREVIEW && PREVIEW[nm]; if (!m) { im.style.display = 'none'; return; }
   const k = 1.7 * 13.9 / m.ppm; im.style.height = Math.round(m.h * k) + 'px'; im.style.width = Math.round(m.w * k) + 'px'; im.onerror = () => { im.style.display = 'none'; }; im.src = 'assets/pv_' + nm + '.png' + (m.v ? '?v=' + m.v : ''); im.style.display = 'block';
 }
 function vehUpd() { const rec = Lc().trains[+$('train').value], ok = rec && /^(E5|E7)$/.test(rec.v); $('vehBox').style.display = ok ? '' : 'none'; if (!ok) $('vehSel').value = ''; }
@@ -445,7 +504,7 @@ async function checkinTrain(t) {
   } catch (e) { $('ckTitle').textContent = _t('Không dựng được cảnh cho đoàn này'); $('ckCap').textContent = String(e.message || e); }
 }
 $('ckClose').onclick = closeCheckin;
-addEventListener('keydown', e => { if (ckOpen) { e.stopImmediatePropagation(); if (e.key === 'Escape' || e.key === 'Enter') closeCheckin(); e.preventDefault(); } }, true);
+addEventListener('keydown', e => { if (typeof M !== 'undefined' && M.screen === 'setup' && e.key === 'Enter' && !e.repeat) { const pk = document.getElementById('picker'); if (PV.busy()) { PV.skip(); e.preventDefault(); e.stopImmediatePropagation(); return; } if (!(pk && pk.style.display !== 'none' && pk.offsetParent) && !['INPUT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement.tagName) && !$('start').disabled) { e.preventDefault(); e.stopImmediatePropagation(); $('start').click(); return; } } if (ckOpen) { e.stopImmediatePropagation(); if (e.key === 'Escape' || e.key === 'Enter') closeCheckin(); e.preventDefault(); } }, true);
 async function takeSnapshot() {
   if (!W || mode === 'profile' || mode === 'dispatch') return null; paused = true; snapMode = true; draw();
   const st = sceneState(), w = cv.width, h = cv.height, off = document.createElement('canvas'); off.width = w; off.height = h + 40; const g = off.getContext('2d');
@@ -535,7 +594,7 @@ function startLesson(i) {
   tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; $('driveOpts').style.display = 'none'; ui.radio = c.radio; ui.focus = false; ui.rear = false;
 }
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));
-$('start').onclick = async () => { tutorialRun = false; realNote = ''; if (realOn && !(await realPrepare())) return; if (startDrive()) { M.hide(); paused = false; if (realNote) W.say('warn', realNote); } };
+$('start').onclick = async () => { if (PV.busy()) { PV.skip(); return; } tutorialRun = false; realNote = ''; if (realOn && !(await realPrepare())) return; if (startDrive()) { await PV.go(); M.hide(); paused = false; if (realNote) W.say('warn', realNote); } };
 $('dStart').onclick = () => startDispatch();
 function startDispatch() { Dispatch.start({ lineId: $('line').value, dir: $('dir').value, diff: $('diff').value, seed: +$('seed').value || 1, weather: $('dWeather').value, t0: +$('dHour').value * 3600, span: +$('dSpan').value }); }
 
@@ -844,11 +903,12 @@ const M = (function () {
   const m = { solid: false, screen: null, from: 'home', prevMode: 'drive', prevRun: false, conf: null };
   m.show = function (name, from) {
     if (from) m.from = from;
-    if (name === 'setup') { $('driveOpts').style.display = 'contents'; tpUpd(); }
+    if (name === 'setup') $('driveOpts').style.display = 'contents';
     if (name === 'learn') m.learnRender();
     for (const k in scr) scr[k].classList.toggle('on', k === name);
     m.screen = name; el.style.display = 'block'; el.scrollTop = 0;
     if (name === 'home') { logoBuild(); trainBuild(); }
+    if (name === 'setup') { PV.reset(); tpUpd(); }      // sau khi màn hình đã hiện (đo được bề rộng khung): đoàn tàu tiến vào từ đầu
     m.setSolid(!(name === 'pause' || name === 'confirm' || (name === 'settings' && m.from === 'pause'))); el.dataset.s = name; document.body.dataset.m = name; el.className = (name === 'pause' || name === 'confirm' || (name === 'settings' && m.from === 'pause')) ? 'dim' : 'solid';
   };
   // hình nền: các mẫu Shinkansen xếp theo năm ra mắt (hình dải toa có sẵn trong assets/, chỉ dùng cá nhân); thiếu hình thì hàng đó bị bỏ, không còn hình nào thì chỉ còn nền phẳng
