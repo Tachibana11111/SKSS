@@ -750,4 +750,10 @@ I18N.add("ja", {
 "Chưa đóng cửa: nhấn Enter để đóng cửa rồi mới kéo cần gia tốc.": "ドアが閉まっていません。Enterでドアを閉めてから加速してください。",
 "Đường đơn: chờ {0} (ngược chiều) qua đoạn phía trước rồi mới được rời ga": "単線区間:対向の{0}が前方の区間を通過するまで発車できません",
 "Điều độ: đoạn đường đơn phía sau {0} đang có {1} (ngược chiều), DỪNG TRÁNH tại {0}. Dừng đúng vạch, chờ tàu ngược chiều qua rồi mới chạy tiếp.": "運行指令:{0}の先の単線区間に対向の{1}がいるため、{0}で行き違い待ちの臨時停車をしてください。停止位置に止まり、対向列車の通過後に発車してください。",
+"Giờ": "時刻",
+"Tên tàu": "列車名",
+"Số hiệu": "番号",
+"Ga đến": "行先",
+"Ghi chú": "記事",
+"{0} toa": "{0}両",
 });

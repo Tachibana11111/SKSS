@@ -86,7 +86,19 @@
   #menu .logo .jra{display:inline-block;border-radius:10px;line-height:0;padding:4px 6px;transition:filter .15s,transform .15s}
   #menu .logo .jra:hover,#menu .logo .jra:focus-visible{outline:0;transform:translateY(-2px);filter:drop-shadow(0 0 1.5px var(--c)) drop-shadow(0 0 7px var(--c)) drop-shadow(0 0 14px var(--c))}
   #menu .cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 36px} @media (max-width:760px){#menu .cols{grid-template-columns:1fr}}
-  #menu #mTrainPrev{position:relative;height:134px;margin:8px 0 70px;overflow:hidden;pointer-events:none}
+  #menu #mBoard{display:none;margin:10px 0 0;background:#16110f;border-radius:6px;padding:7px 10px 6px;color:#f4efe6;pointer-events:none}
+  #menu #mBoard .bh{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:1px solid #3a322c;padding-bottom:3px;margin-bottom:3px} #menu #mBoard .bh b{font-weight:500;font-size:13px;letter-spacing:.4px} #menu #mBoard .bh span{font-size:11px;color:#b9ab9a}
+  #menu #mBoard .bc,#menu #mBoard .br{display:grid;grid-template-columns:72px 1.3fr 64px 1.7fr 92px;gap:8px;align-items:center} #menu #mBoard .bc{font-size:10px;color:#b9ab9a;padding:1px 4px} #menu #mBoard .bc > :last-child,#menu #mBoard .br > :last-child{text-align:right}
+  #menu #mBoard .br{background:#0d0907;border-radius:3px;padding:4px;min-height:34px} #menu #mBoard .bt{font-size:20px;font-weight:500;letter-spacing:1px} #menu #mBoard .by,#menu #mBoard .bd{display:block} #menu #mBoard .by{font-size:15px;font-weight:500;line-height:1.1;letter-spacing:.3px} #menu #mBoard .bn{font-size:20px;font-weight:500} #menu #mBoard .bd{font-size:14px;font-weight:500;line-height:1.1;letter-spacing:.4px} #menu #mBoard .bm{font-size:14px;font-weight:500}
+  /* màn thiết lập gọn: ô chọn xếp lưới 2 cột (nhãn nhỏ phía trên ô), Tuyến|Chiều, Tàu, Từ|Đến; Độ khó|Thời tiết; Seed; để không phải cuộn dọc */
+  #menu #m-setup .hd{margin-bottom:8px} #menu #m-setup .cols{gap:4px 28px}
+  #menu #m-setup #mSetA,#menu #m-setup #mSetB{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;align-content:start}
+  #menu #m-setup label{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:2px;padding:0;border-bottom:0;font-size:11px;color:var(--mut)}
+  #menu #m-setup label select,#menu #m-setup label input:not([type=checkbox]):not([type=range]){width:100%;padding:5px 8px;font-size:14px;color:var(--fg)}
+  #menu #m-setup label.w2,#menu #m-setup #vehBox,#menu #m-setup #legBox,#menu #m-setup label.inl{grid-column:1 / -1}
+  #menu #m-setup label.inl{flex-direction:row;align-items:center;gap:10px;font-size:13px;color:var(--fg)} #menu #m-setup label.w2 .btns{display:flex;gap:6px}
+  #menu #m-setup .grp{margin:0 0 4px}
+  #menu #mTrainPrev{position:relative;height:134px;margin:6px 0 56px;overflow:hidden;pointer-events:none}
   #menu #mTrainPrev img{position:absolute;bottom:4px;max-width:none;display:none}
   #menu #mTrainPrev.hr{-webkit-mask-image:linear-gradient(to left,#000 70%,transparent);mask-image:linear-gradient(to left,#000 70%,transparent)} #menu #mTrainPrev.hl{-webkit-mask-image:linear-gradient(to right,#000 70%,transparent);mask-image:linear-gradient(to right,#000 70%,transparent)}
   #menu #mTrainPrev.hr img{right:12px} #menu #mTrainPrev.hl img{left:12px;transform:scaleX(-1)}
@@ -173,7 +185,7 @@
     <div class="grp">Chuyến</div>
     <label>Tuyến <select id="line"></select></label>
     <label>Chiều <select id="dir"><option value="down">Xuống (ra xa Tokyo)</option><option value="up">Lên (về Tokyo)</option></select></label>
-    <label>Tàu <select id="train"></select></label>
+    <label class="w2">Tàu <select id="train"></select></label>
     <label id="vehBox" style="display:none" title="Đoàn tàu đang rút dần; dùng lịch của chuyến đang chọn nên chỉ là giả định">Đoàn <select id="vehSel"><option value="">mặc định</option><option value="E2">E2-1000 (đang rút dần, lịch giả định)</option></select></label>
     <label>Từ <select id="from"></select></label>
     <label>Đến <select id="to"></select></label>
@@ -181,7 +193,7 @@
     <label class="inl" id="realBox" title="Giờ Nhật Bản, thời tiết và động đất thật (Open-Meteo, P2PQuake). Cần mạng khi bấm Bắt đầu; Độ khó cố định Thường."><input type="checkbox" id="real"><span>Chế độ thực tế</span><small id="jstClock" style="color:var(--mut);margin-left:auto"></small></label>
     <label>Độ khó <select id="diff"></select></label>
     <label>Thời tiết <select id="weather"></select></label>
-    <label>Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
+    <label class="w2">Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
     </div>
     <span id="legBox" style="display:none"><label>Thêm chặng <select id="via"></select></label><div class="btns" style="margin-top:4px"><button id="viaAdd">Thêm</button><button id="viaClr">Xoá chặng</button></div><span id="viaList" style="color:#8aa0b5;font-size:12px"></span></span>
     <button id="start" class="go" style="width:100%">Bắt đầu / chạy lại (R)</button>
@@ -231,6 +243,7 @@
   <div class="scr" id="m-setup"><div class="wm">
     <div class="hd"><button data-m="home">‹ Quay lại</button><h2>Thiết lập chuyến đi</h2></div>
     <div class="cols"><div><div class="grp">CHUYẾN</div><div id="mSetA"></div></div><div><div class="grp">ĐỘ KHÓ VÀ ĐIỀU KIỆN</div><div id="mSetB"></div></div></div>
+    <div id="mBoard"></div>
     <div id="mTrainPrev"><img id="mTpImg" alt=""></div>
     <div class="bar"><button data-m="settings">Cài đặt</button><span id="mStartHold"></span></div>
   </div></div>
@@ -274,6 +287,7 @@
 <script src="assets/sprites.js"></script>
 <script src="assets/pv.js"></script>
 <script src="assets/mt.js"></script>
+<script src="traincolors.js"></script>
 <script src="sim.js"></script>
 <script src="natcat.js"></script>
 <script src="store.js"></script>
@@ -412,22 +426,39 @@ const PV = (function () {
   }
   return { show, reset, go, busy: () => busyGo, skip: () => { skipReq = true; } };
 })();
+function boardUpd(key) {      // bảng giờ tàu kiểu ga trên đoàn tàu: chỉ một chuyến (theo các ô chọn phía trên: giờ rời ga đi, ga đến); chuyến ghép (Tohoku + mini) hiện hai dòng như bảng thật; không có cột đường ray
+  const bd = $('mBoard'), L = Lc(), rec = L && L.trains[+$('train').value]; if (!rec || Sim.INSPECT[rec.v] || !$('from').value || !$('to').value) { bd.style.display = 'none'; return; }
+  const ci = Sim.coupleOf(rec), fromKm = L.stations[+$('from').value].km, toSt = L.stations[+$('to').value], col = r => (window.TRAIN_COL && TRAIN_COL[r.t]) || '#e8eef5';
+  const coupled = !!ci && (rec.d === 'down' ? fromKm < ci.splitKm - 0.05 : fromKm <= ci.splitKm + 0.05);      // tại ga đi tàu đang là đoàn ghép (xuống: trước ga tách; lên: từ ga ghép trở về Tokyo)
+  const parts = coupled ? (ci.role === 'toh' ? [[rec, $('line').value], [ci.partner, ci.line]] : [[ci.partner, 'toh'], [rec, $('line').value]]) : [[rec, $('line').value]];
+  const final = ([r, ln]) => { const LL = Sim.lineOf(ln), q = r.s.filter(e => !e[3]); return _s(LL.stations[q[q.length - 1][0]]); };
+  const dests = coupled ? (ci.role === 'toh' ? [_s(toSt), final(parts[1])] : [final(parts[0]), _s(toSt)]) : [_s(toSt)];      // ga đến đã chọn thay cho ga cuối của chuyến đang chọn; đoàn ghép: chuyến kia vẫn ghi ga cuối của nó
+  const e0 = rec.s.filter(e => !e[3]).find(e => e[0] === +$('from').value), tm = e0 ? (e0[2] != null ? e0[2] : e0[1]) : null;
+  const unit = ci && ci.role === 'mini' ? ci.mini : rec.v, cars = coupled && Sim.VEH[key] ? Sim.VEH[key].cars : (Sim.VEH[unit] || {}).cars;
+  const nums = [...new Set(parts.map(p => p[0].n))].join('/'), sec = I18N.lang === 'ja' ? L.name : (L.meta.pa ? L.meta.pa + '新幹線' : '');
+  const esc = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  bd.innerHTML = '<div class="bh"><b>' + esc(_ln(L)) + '</b><span>' + esc(sec) + '</span></div><div class="bc"><span>' + _t('Giờ') + '</span><span>' + _t('Tên tàu') + '</span><span>' + _t('Số hiệu') + '</span><span>' + _t('Ga đến') + '</span><span>' + _t('Ghi chú') + '</span></div>'
+    + '<div class="br"><span class="bt">' + (tm == null ? '--:--' : hhmm(tm)) + '</span><span class="by">' + parts.map(p => '<div style="color:' + col(p[0]) + '">' + esc(_tn(p[0].t)) + '</div>').join('') + '</span><span class="bn" style="color:' + col(parts[0][0]) + '">' + esc(nums) + '</span><span class="bd">' + dests.map(d => '<div>' + esc(d) + '</div>').join('') + '</span><span class="bm">' + (cars ? _t('{0} toa', cars) : '') + '</span></div>';
+  bd.style.display = 'block';
+}
 function tpUpd() {      // hoạt ảnh đoàn tàu của chuyến đang chọn (mũi quay theo hướng chạy như màn 2D); không có ảnh thì dùng ảnh tĩnh pv_*.png; không có gì thì ẩn
-  const box = $('mTrainPrev'), im = $('mTpImg'), L = Lc(), rec = L && L.trains[+$('train').value]; if (!rec) { PV.reset(); im.style.display = 'none'; return; }
+  const box = $('mTrainPrev'), im = $('mTpImg'), L = Lc(), rec = L && L.trains[+$('train').value]; if (!rec) { PV.reset(); $('mBoard').style.display = 'none'; im.style.display = 'none'; return; }
   let key = $('vehSel').value || rec.v; const down = $('dir').value === 'down', fd = !!Sim.lineOf($('line').value).meta.flipDown, hr = down ? !fd : fd, ci = !$('vehSel').value && Sim.coupleOf(rec);
   if (ci && ci.role === 'toh') key = down ? ci.mini + '+E5' : 'E5+' + ci.mini;      // chuyến Tohoku có Komachi/Tsubasa đi cùng: hiện cả đoàn ghép (mini ở phía bắc: đầu khi xuống, đuôi khi lên)
-  box.className = hr ? 'hr' : 'hl'; PV.show(key, hr); if (box.querySelector('.ptr')) return;
+  box.className = hr ? 'hr' : 'hl'; boardUpd(key); PV.show(key, hr); if (box.querySelector('.ptr')) return;
   const nm0 = Scene.SMAP[rec.v] || 'n700', nm = window.PREVIEW && !PREVIEW[nm0] ? nm0.replace(/8$/, '') : nm0, m = window.PREVIEW && PREVIEW[nm]; if (!m) { im.style.display = 'none'; return; }
   const k = 1.7 * 13.9 / m.ppm; im.style.height = Math.round(m.h * k) + 'px'; im.style.width = Math.round(m.w * k) + 'px'; im.onerror = () => { im.style.display = 'none'; }; im.src = 'assets/pv_' + nm + '.png' + (m.v ? '?v=' + m.v : ''); im.style.display = 'block';
 }
-function vehUpd() { const rec = Lc().trains[+$('train').value], ok = rec && /^(E5|E7)$/.test(rec.v); $('vehBox').style.display = ok ? '' : 'none'; if (!ok) $('vehSel').value = ''; }
+function vehUpd() { $('vehBox').style.display = 'none'; $('vehSel').value = ''; }      // ô chọn 'Đoàn' (mặc định / E2-1000) không còn dùng nên luôn ẩn; giữ phần tử để mã khác không lỗi
 $('to').addEventListener('change', () => { legsExtra = []; legUpd(); });
 $('from').onchange = () => {
   const rec = Lc().trains[+$('train').value]; if (Sim.INSPECT[rec.v]) { if ($('from').value === $('to').value) $('to').selectedIndex = (+$('from').value === 0) ? 1 : 0; legsExtra = []; legUpd(); return; }
   const seq = rec.s.filter(e => !e[3]).map(e => e[0]), f = seq.indexOf(+$('from').value);
   [...$('to').options].forEach(o => o.disabled = seq.indexOf(+o.value) <= f);
   if ($('to').selectedOptions[0] && $('to').selectedOptions[0].disabled) { const ok = [...$('to').options].reverse().find(o => !o.disabled); if (ok) ok.selected = true; }
+  if (typeof tpUpd === 'function' && $('mBoard')) tpUpd();      // đổi ga đi: bảng giờ cập nhật giờ khởi hành
 };
+$('to').addEventListener('change', () => { if (typeof tpUpd === 'function') tpUpd(); });      // đổi ga đến: bảng giờ đổi theo
 $('dice').onclick = () => { $('seed').value = Math.floor(Math.random() * 99999); };
 // ---- chế độ thực tế: khoá Độ khó = Thường và ô Thời tiết (= dữ liệu thật); chỉ còn chuyến chưa rời ga theo giờ Nhật Bản (tàu kiểm tra luôn dùng được)
 let realPrev = null;

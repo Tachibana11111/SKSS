@@ -31,5 +31,6 @@
   // tên chuyến: tiếng Nhật dùng tên kana (のぞみ1号), ngôn ngữ khác giữ 'Nozomi 1'
   const JAT = { Nozomi: 'のぞみ', Hikari: 'ひかり', Kodama: 'こだま', Mizuho: 'みずほ', Sakura: 'さくら', Tsubame: 'つばめ', Kamome: 'かもめ', Hayabusa: 'はやぶさ', Hayate: 'はやて', Yamabiko: 'やまびこ', Nasuno: 'なすの', Komachi: 'こまち', Tsubasa: 'つばさ', Toki: 'とき', Tanigawa: 'たにがわ', Asama: 'あさま', Kagayaki: 'かがやき', Hakutaka: 'はくたか', Tsurugi: 'つるぎ' }, JAX = { 'Doctor Yellow': 'ドクターイエロー' };
   I18N.tl = (t, n) => { if (I18N.lang === 'ja') { if (JAT[t]) return JAT[t] + n + '号'; if (JAX[t]) return JAX[t] + ' ' + n; } return t + ' ' + n; };
-  root.I18N = I18N; root._t = I18N.t; root._tl = I18N.tl; root._s = I18N.stn; root._ln = I18N.ln;
+  I18N.tn = t => (I18N.lang === 'ja' && (JAT[t] || JAX[t])) || t;      // chỉ tên loại tàu (không số hiệu): のぞみ / Nozomi
+  root.I18N = I18N; root._t = I18N.t; root._tl = I18N.tl; root._tn = I18N.tn; root._s = I18N.stn; root._ln = I18N.ln;
 })(typeof window !== 'undefined' ? window : globalThis);

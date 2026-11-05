@@ -828,4 +828,11 @@ if (section('31. Đợt sửa tháng 11: Tsubame/S800, 8 toa, nhắc đóng cử
     ok(msgs.every(m => !/DỪNG TRÁNH tàu ngược chiều tại/.test(m) || /Điều độ/.test(m)), lid + ': không còn lệnh tránh tàu giả lập'); }
 }
 
+if (section('32. Bảng giờ tàu ở màn thiết lập: màu tên tàu phủ mọi loại tàu hành khách')) {
+  require(path.join(DRIVE, 'traincolors.js')); const types = new Set(); for (const id of ALL) for (const t of Sim.lineOf(id).trains) if (!Sim.INSPECT[t.v]) types.add(t.t);
+  const miss = [...types].filter(t => !window.TRAIN_COL[t]); ok(miss.length === 0, 'mọi loại tàu hành khách (' + [...types].join(', ') + ') đều có màu trên bảng giờ', miss.join(','));
+  ok(Object.values(window.TRAIN_COL).every(c => /^#[0-9a-f]{6}$/.test(c)), 'màu đều là mã #rrggbb'); ok(new Set(['Nozomi', 'Hikari', 'Kodama'].map(t => window.TRAIN_COL[t])).size === 3, 'Nozomi, Hikari, Kodama có ba màu riêng');
+  ok(window.TRAIN_COL.Hayabusa === window.TRAIN_COL.Yamabiko && window.TRAIN_COL.Komachi !== window.TRAIN_COL.Hayabusa && window.TRAIN_COL.Tsubasa !== window.TRAIN_COL.Hayabusa, 'chuyến ghép: Tohoku xanh lá, Komachi/Tsubasa màu riêng');
+  I18N.lang = 'ja'; ok(_tn('Nozomi') === 'のぞみ' && _tn('Hayabusa') === 'はやぶさ' && _tn('Doctor Yellow') !== undefined, '_tn: tên loại tàu tiếng Nhật'); I18N.lang = 'vi'; ok(_tn('Nozomi') === 'Nozomi', '_tn: tiếng Việt giữ nguyên'); }
+
 Promise.all(global.__pending || []).then(() => { console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); } });

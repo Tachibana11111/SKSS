@@ -750,4 +750,10 @@ I18N.add("en", {
 "Chưa đóng cửa: nhấn Enter để đóng cửa rồi mới kéo cần gia tốc.": "Doors are not closed: press Enter to close them before applying power.",
 "Đường đơn: chờ {0} (ngược chiều) qua đoạn phía trước rồi mới được rời ga": "Single track: wait for {0} (opposite direction) to clear the section ahead before leaving",
 "Điều độ: đoạn đường đơn phía sau {0} đang có {1} (ngược chiều), DỪNG TRÁNH tại {0}. Dừng đúng vạch, chờ tàu ngược chiều qua rồi mới chạy tiếp.": "Dispatch: the single-track section beyond {0} is occupied by {1} (opposite direction); STOP AND WAIT at {0}. Stop on the mark and wait for the opposing train to clear before departing.",
+"Giờ": "Time",
+"Tên tàu": "Train",
+"Số hiệu": "Train No.",
+"Ga đến": "Destination",
+"Ghi chú": "Remarks",
+"{0} toa": "{0} cars",
 });
