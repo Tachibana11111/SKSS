@@ -885,6 +885,8 @@ if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, 
   // bản đồ Nhật Bản: độ trễ hiển thị của tàu danh mục không làm vị trí lùi, dù độ trễ thật tăng theo bậc 0,4 s và nhanh hơn thời gian thực
   { require(path.join(DRIVE, 'natmap.js')); const NM = global.NatMap; let prev = -1e9, back = 0, i0 = 0; for (let i = 0; i < 2000; i++) { const now = 1000 + i * 0.05, dl = 1.2 * Math.floor(now / 0.4) * 0.4, shown = now - NM.shownDelay('t1', now, dl); if (shown < prev - 1e-9) back++; prev = shown; i0++; }
     let r1 = NM.shownDelay('t2', 5000, 100), r2 = NM.shownDelay('t2', 5000.05, 40); ok(back === 0 && i0 === 2000, 'bản đồ Nhật Bản: vị trí theo lịch của tàu danh mục không lùi khi độ trễ tăng bậc (' + back + ' lần lùi)'); ok(r2 === 40, 'độ trễ giảm thì tàu tiến ngay theo lịch'); }
+  // mất focus/ẩn tab: bình thường tạm dừng game, nhưng đang bật tự lái (chế độ drive) thì không tạm dừng
+  { const html = require('fs').readFileSync(path.join(DRIVE, 'index.html'), 'utf8'); ok(/const focusLost = \(\) => \{ if \(auto && mode === 'drive'\) return; if \(W && !paused/.test(html), 'tự lái: mất focus không tạm dừng game; ngoài tự lái thì luôn tạm dừng'); }
   // bộ phát chuỗi: thứ tự, khoảng ngắt 2,5 s, và ngắt hẳn khi thoát (lỗi PA vẫn phát sau khi ra menu)
   { const spoken = [], pend = []; global.SpeechSynthesisUtterance = function (t) { this.text = t; }; global.speechSynthesis = { speak(u) { spoken.push([Date.now(), u.text]); pend.push(u); setTimeout(() => u.onend && u.onend(), 100); }, cancel() { pend.length = 0; }, getVoices: () => [{ lang: 'ja-JP', name: 'ja' }] };
     require(path.join(DRIVE, 'audio.js'));
