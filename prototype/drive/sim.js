@@ -543,7 +543,7 @@
     T.bt = Math.max(0, T.bt - 0.003 * (1 + T.v / 30) * T.bt * dt); if (T.bt > (T.btMax || 0)) T.btMax = T.bt;
     if (Ft > 0) T.kwh += Ft * T.v / 0.9 * dt / 3.6e6;
     if (T.horn > 0) T.horn = Math.max(0, T.horn - dt);
-    deadStep(T); noteStep(T); xingStep(T); if (T === W.player) { refreshOpposing(W, T); singleDispatch(W, T); }
+    deadStep(T); noteStep(T); xingStep(T); if (T === W.player) { refreshOpposing(W, T); smoothPassers(W); singleDispatch(W, T); }
     // bất an của hành khách khi đứng giữa đường
     if (!T.isLead) {
       if (T.phase === 'run' && T.v < 0.3 && W.running && !W.mission) { T.anx = Math.min(100, T.anx + dt * 100 / 900); } else if (T.anx > 0) T.anx = Math.max(0, T.anx - dt * 0.4);
@@ -752,10 +752,13 @@
       W.passCand = { k, list }; W.passObj = new Map(); }
     const out = [], t0 = W.trip.t0; if (NC && W.haz) NC.step(W);
     for (const e of W.passCand.list) { const d = NC && W.haz ? NC.delayOf(W, e.c.key) : null; if (d && d.hold > 0) continue; const t = e.tb + (d ? d.delay : 0) - t0; if (t < W.t - 12 || t > W.t + 150) continue;
-      let o = W.passObj.get(e.c.key); if (!o) { const kmE = W.line.stations[T.M[k].i].km; o = { label: labelAt(e.c.rec, kmE), v: vehAt(e.c.rec, kmE) }; W.passObj.set(e.c.key, o); } o.t = t; out.push(o); }
+      let o = W.passObj.get(e.c.key); if (!o) { const kmE = W.line.stations[T.M[k].i].km; o = { label: labelAt(e.c.rec, kmE), v: vehAt(e.c.rec, kmE) }; W.passObj.set(e.c.key, o); }
+      o.cr = o.t === undefined ? 0 : o.t - t; o.tg = t; o.cw = W.t; if (o.t === undefined) o.t = t; out.push(o); }      // tg: giờ qua ga theo danh mục (tính lại mỗi 0,4 s); cr: phần lệch so với giờ đang hiển thị, tiêu dần trong PASS_TAU giây (smoothPassers) nên tàu vượt chạy qua mượt, không giật
     for (const p of (W.passers && W.passers[k]) || []) if (p.syn) out.push(p);
     W.passDyn = { k, list: out };
   }
+  const PASS_TAU = 1.0;
+  function smoothPassers(W) { const l = W.passDyn && W.passDyn.list; if (!l) return; for (const o of l) if (o.tg !== undefined) o.t = o.tg + o.cr * Math.max(0, 1 - (W.t - o.cw) / PASS_TAU); }
   const passersAt = (W, k) => (W.passDyn && W.passDyn.k === k ? W.passDyn.list : (W.passers && W.passers[k]) || []);
   function refreshOpposing(W, T) {
     if (!W.oppCat || (W.oppAt !== undefined && W.t - W.oppAt < 0.4 && W.t >= W.oppAt)) return; W.oppAt = W.t;

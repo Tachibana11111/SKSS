@@ -27,10 +27,13 @@
   const wx = lon => lon * KX, P = (lon, lat, r) => [r[0] + r[2] / 2 + (wx(lon) - wx(V.cx)) * V.s, r[1] + r[3] / 2 + (V.cy - lat) * V.s];
   const hhmm = t => { t = Math.round(t); const h = Math.floor(t / 3600) % 24, m = Math.floor(t % 3600 / 60); return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; };
   const atKm = (L, km) => NC().atKm(L, km);
+  // độ trễ hiển thị: độ trễ thật tăng theo bậc 0,4 s nên vị trí theo lịch giật lùi từng đoạn; ở đây độ trễ chỉ được tăng tối đa 0,9 s mỗi giây (tàu không bao giờ lùi), giảm thì theo ngay
+  const DSH = new Map();
+  function shownDelay(key, now, dl) { let e = DSH.get(key); if (!e || now < e.t || now - e.t > 30) e = { v: dl, t: now }; else e = { v: dl > e.v ? Math.min(dl, e.v + (now - e.t) * 0.9) : dl, t: now }; DSH.set(key, e); return e.v; }
   function gather(W, T) {
     const LN = root.LINES, now = W.trip.t0 + W.t, out = [], me = W.trip.rec;
     for (const c of CAT) { if (c.rec === me || (W.mission && me && c.rec.v === me.v) || (c.line === W.lineId && me && c.rec.t === me.t && c.rec.n === me.n && c.rec.d === me.d)) continue;
-      const d = NC().delayOf(W, c.key), s = NC().stateOf(LN, c, now - (d ? d.delay : 0)); if (!s) continue;
+      const d = NC().delayOf(W, c.key), s = NC().stateOf(LN, c, now - shownDelay(c.key, now, d ? d.delay : 0)); if (!s) continue;
       if (root.Sim.dupHidden(c.rec, s.km)) continue;      // Komachi/Tsubasa đang đi chung với Tohoku: chỉ vẽ một đoàn (chuyến Tohoku mang tên cả hai)
       { const cm = me && root.Sim.coupleOf(me); if (cm && cm.partner === c.rec && T && T.veh && T.veh.parts && root.Sim.onShared(cm, s.km)) continue; }      // đối tác của tàu mình đang ghép chung: đã gộp vào tam giác của ta
       const held = !!(d && d.hold > 0); if (held) { s.moving = false; s.kmh = 0; } else if (d && d.rate > 0.02 && s.kmh) s.kmh *= (1 - d.rate);      // tốc độ thực: giảm dần khi bị chậm/chặn giãn cách
@@ -160,5 +163,5 @@
     if (!best) { bd = 196; for (const h of V.trains || []) { const d = (h.x - px) ** 2 + (h.y - py) ** 2; if (d < bd) { bd = d; best = { tk: h.t.me ? 'me' : h.t.c.key }; } } }
     V.sel = best; return true;
   }
-  root.NatMap = { V, stationRows, stations: () => ST, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
+  root.NatMap = { V, shownDelay, stationRows, stations: () => ST, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
 })(typeof window !== 'undefined' ? window : globalThis);

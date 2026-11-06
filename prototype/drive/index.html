@@ -934,7 +934,7 @@ const M = (function () {
   $('start').textContent = _t('Bắt đầu'); $('start').style.cssText = 'width:auto;padding:0 30px;height:44px;font-size:15px';
   const m = { solid: false, screen: null, from: 'home', prevMode: 'drive', prevRun: false, conf: null };
   m.show = function (name, from) {
-    try { AUD.stopAll(); } catch (e) { }      // vào menu/màn khác: ngắt PA đang phát và hàng đợi
+    if (name === 'home' || name === 'setup' || name === 'learn') try { AUD.stopAll(); } catch (e) { }      // rời chuyến (về menu chính...): ngắt PA đang phát và hàng đợi; màn Tạm dừng/Cài đặt/xác nhận chỉ tạm dừng, PA phát tiếp khi chạy lại
     if (from) m.from = from;
     if (name === 'setup') $('driveOpts').style.display = 'contents';
     if (name === 'learn') m.learnRender();

@@ -129,6 +129,7 @@
         // đoàn ghép (cùng cid) chạy như một đoàn, không chặn nhau
         for (let i = 0; i < arr.length - 1; i++) { const B = arr[i]; if (B.dwell || B.still) continue; let A = null; for (let j = i + 1; j < arr.length; j++) { if (B.cid && arr[j].cid === B.cid) continue; if (!(arr[j].dwell && arr[j].loop) || arr[j].still) { A = arr[j]; break; } } if (!A) continue; const gap = sg * (A.km - B.km); if (!B.me && gap < 2.5) B.d.delay += dt * Math.min(1, (2.5 - gap) / 1.5); } }
       singleStep(LN, act, H, tNow, dt, W);
+      for (const a of act) if (!a.me && a.d._d0 !== undefined && a.d.delay - a.d._d0 > dt) a.d.delay = a.d._d0 + dt;      // độ trễ không tăng nhanh hơn thời gian thực (chặn giãn cách + mưa/gió cộng dồn từng làm vị trí theo lịch lùi về phía Tokyo: mũi tên tàu trên bản đồ chạy ngược)
       for (const a of act) if (!a.me && a.d._d0 !== undefined) { const r = Math.max(0, Math.min(1, (a.d.delay - a.d._d0) / dt)); a.d.rate = (a.d.rate || 0) * 0.6 + r * 0.4; }      // tỉ lệ thời gian bị chậm/chặn: tốc độ thực = tốc độ lịch × (1 − rate), giảm dần mượt
       H.lastT = tNow; }
   }
