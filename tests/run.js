@@ -835,4 +835,58 @@ if (section('32. Bảng giờ tàu ở màn thiết lập: màu tên tàu phủ 
   ok(window.TRAIN_COL.Hayabusa === window.TRAIN_COL.Yamabiko && window.TRAIN_COL.Komachi !== window.TRAIN_COL.Hayabusa && window.TRAIN_COL.Tsubasa !== window.TRAIN_COL.Hayabusa, 'chuyến ghép: Tohoku xanh lá, Komachi/Tsubasa màu riêng');
   I18N.lang = 'ja'; ok(_tn('Nozomi') === 'のぞみ' && _tn('Hayabusa') === 'はやぶさ' && _tn('Doctor Yellow') !== undefined, '_tn: tên loại tàu tiếng Nhật'); I18N.lang = 'vi'; ok(_tn('Nozomi') === 'Nozomi', '_tn: tiếng Việt giữ nguyên'); }
 
+if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
+  const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);
+  const T = Sim.lineOf('tsk'), H = Sim.lineOf('hok'), N = Sim.lineOf('nks');
+  // melody đặc thù theo đoạn: ga ranh giới dùng melody của đoạn đang đi tới, đổi sau khi rời ga
+  { const so = ix(T, 'Shin-Osaka'), hk = ix(T, 'Hakata'), jm = ix(H, 'Joetsu-Myoko');
+    ok(Mel.seg(T, 0, 1) === 'tokai' && Mel.seg(T, so - 1, so) === 'tokai' && Mel.seg(T, so, so + 1) === 'west', 'tsk: Tokyo-Shin-Osaka melody JR Tokai; qua Shin-Osaka đổi sang JR West');
+    ok(Mel.seg(T, hk - 1, hk) === 'west' && Mel.seg(T, hk, hk + 1) === 'kyushu' && Mel.seg(T, T.stations.length - 2, T.stations.length - 1) === 'kyushu', 'tsk: tới Hakata vẫn JR West, rời Hakata sang Kyushu');
+    ok(Mel.seg(H, jm - 1, jm) === 'east_joetsu' && Mel.seg(H, jm, jm + 1) === 'west_hokuriku' && Mel.seg(H, 0, 1) === 'east_joetsu', 'hok: trước Joetsu-Myoko melody JR East, sau đó JR West');
+    ok(Mel.seg(Sim.lineOf('jts'), 3, 4) === 'east_joetsu' && Mel.seg(Sim.lineOf('toh'), 3, 4) === 'east_tohoku' && Mel.seg(Sim.lineOf('aki'), 3, 4) === 'east_tohoku' && Mel.seg(Sim.lineOf('yam'), 3, 4) === 'east_tohoku' && Mel.seg(N, 0, 1) === 'nk', 'melody tuyến: Joetsu / Tohoku-Akita-Yamagata-Hokkaido / Nishi-Kyushu'); }
+  // melody khởi hành theo ga (và chiều ở ga ranh giới)
+  { const so = ix(T, 'Shin-Osaka'), hk = ix(T, 'Hakata'), km = ix(T, 'Kumamoto'), kg = ix(T, 'Kagoshima-Chuo');
+    ok(Mel.dep(T, 0, 'down') === 'tokai_dep' && Mel.dep(T, ix(T, 'Kyoto'), 'up') === 'tokai_dep' && Mel.dep(T, ix(T, 'Okayama'), 'down') === 'west_dep', 'khởi hành: Tokyo/Kyoto JR Tokai, Okayama JR West');
+    ok(Mel.dep(T, so, 'down') === 'west_dep' && Mel.dep(T, so, 'up') === 'tokai_dep', 'khởi hành Shin-Osaka theo chiều đi (về Hakata: JR West, về Tokyo: JR Tokai)');
+    ok(Mel.dep(T, hk, 'down') === null && Mel.dep(T, hk, 'up') === 'west_dep', 'khởi hành Hakata: hướng Kyushu không có, hướng Shin-Osaka dùng JR West');
+    ok(Mel.dep(T, km, 'down') === 'dep_kumamoto' && Mel.dep(T, kg, 'up') === 'dep_kagoshima' && Mel.dep(T, ix(T, 'Sendai'), 'up') === 'dep_kyushu' && Mel.dep(T, ix(T, 'Shin-Tosu'), 'down') === 'dep_kyushu', 'khởi hành Kyushu: Kumamoto, Kagoshima, các ga còn lại');
+    ok(Mel.dep(N, 0, 'down') === 'dep_takeo' && Mel.dep(N, 0, 'up') === null && Mel.dep(N, 4, 'up') === 'dep_nagasaki' && Mel.dep(N, 4, 'down') === null && Mel.dep(N, 1, 'up') === 'dep_ureshino' && Mel.dep(N, 2, 'down') === 'dep_shinomura' && Mel.dep(N, 3, 'up') === 'dep_isahaya', 'khởi hành Nishi-Kyushu theo ga và chiều');
+    ok(Mel.dep(Sim.lineOf('toh'), 5, 'down') === null && Mel.dep(H, 5, 'down') === null && Mel.dep(Sim.lineOf('jts'), 5, 'up') === null, 'Tohoku/Hokuriku/Joetsu: ga không có melody khởi hành'); }
+  // melody vào ga 3,5 km và khoảng cách kích hoạt
+  { ok(Mel.arr(T, ix(T, 'Hakata')) === 'arr_hakata' && Mel.arr(T, ix(T, 'Kumamoto')) === 'arr_kumamoto' && Mel.arr(T, ix(T, 'Kagoshima-Chuo')) === 'arr_kagoshima' && Mel.arr(T, 3) === null && Mel.arr(Sim.lineOf('toh'), 3) === null, 'melody vào ga riêng: Hakata, Kumamoto, Kagoshima-Chuo');
+    ok(Mel.trigger(T, ix(T, 'Hakata'), 30000) === 3500 && Mel.trigger(T, 5, 30000) === 2500 && Math.abs(Mel.trigger(Sim.lineOf('toh'), 1, 4000) - 2400) < 1e-6, 'mốc kích hoạt: 3,5 km (3 ga Kyushu), 2,5 km, nhưng không quá 60% khoảng cách tới ga trước (Ueno 2,4 km)'); }
+  { for (const id of Object.keys(Mel.SEG)) ok(Mel.len(id) > 4 && Mel.len(id) < 25, 'melody ' + id + ' có độ dài hợp lý (' + Mel.len(id).toFixed(1) + ' s)'); }
+  // đèn cửa chỉ xanh sau PA nhắc + ngắt + melody khởi hành (thời lượng cố định)
+  { const run = use => { if (use) global.Melody = Mel; else delete global.Melody; try {
+        const rec = find('tsk', 'Nozomi', 'down', 0, 12), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }), Tr = W.player;
+        const ok0 = Sim.requestClose(Tr); return { ok0, dur0: Tr.doorDur, dm: Tr.depMel }; } finally { global.Melody = Mel; } };
+    const a = run(true), b = run(false);
+    ok(a.ok0 && a.dm === 'tokai_dep' && a.dur0 >= Mel.depChain(T, 0, 'down') && a.dur0 > 17, 'Tokyo: đèn cửa chờ PA + melody khởi hành (' + a.dur0.toFixed(1) + ' s)');
+    ok(b.ok0 && !b.dm && b.dur0 === 9, 'không có Melody: giữ nguyên 9 s như cũ'); }
+  ok(Mel.depChain(T, ix(T, 'Hakata'), 'down') === 0 && Mel.depChain(T, 0, 'down') === Mel.DOOR_PA + Mel.GAP + Mel.len('tokai_dep'), 'depChain: 0 nếu ga không có melody, ngược lại PA + ngắt + melody');
+  // chạy trọn chuyến tự lái có/không melody: vẫn hoàn thành, giờ đến ga cuối lệch ≤ 8 s (tàu tự đóng cửa sớm bù thời gian melody)
+  for (const [ln, ty, dir, a, b] of [['tsk', 'Nozomi', 'down', 0, 12], ['nks', 'Kamome', 'down', 0, 4], ['tsk', 'Sakura', 'down', 12, 45]]) {
+    const rec = find(ln, ty, dir, a, b); if (!rec) { ok(true, ln + ' ' + ty + ': không có chuyến mẫu, bỏ qua'); continue; }
+    global.Melody = Mel; const r1 = runAuto(ln, rec, a, b, { diff: 'easy', events: false }, 30000); delete global.Melody; const r0 = runAuto(ln, rec, a, b, { diff: 'easy', events: false }, 30000); global.Melody = Mel;
+    const d1 = r1.T.results[r1.T.results.length - 1], d0 = r0.T.results[r0.T.results.length - 1];
+    ok(r1.T.finished && !r1.T.failed && d1 && d0 && Math.abs(d1.delay - d0.delay) <= 8, ln + ' ' + ty + ': chạy trọn chuyến có melody, giờ đến ga cuối lệch ≤ 8 s so với không melody', d1 && d0 && (d1.delay - d0.delay).toFixed(1)); }
+  // bộ phát chuỗi: thứ tự, khoảng ngắt 2,5 s, và ngắt hẳn khi thoát (lỗi PA vẫn phát sau khi ra menu)
+  { const spoken = [], pend = []; global.SpeechSynthesisUtterance = function (t) { this.text = t; }; global.speechSynthesis = { speak(u) { spoken.push([Date.now(), u.text]); pend.push(u); setTimeout(() => u.onend && u.onend(), 100); }, cancel() { pend.length = 0; }, getVoices: () => [{ lang: 'ja-JP', name: 'ja' }] };
+    require(path.join(DRIVE, 'audio.js'));
+    const A = new GameAudio(); A.enabled = true; A.vol = 0.6; A.pick = () => ({ lang: 'ja-JP' }); const W = { say() { }, msgs: [] };
+    const pa = t => ({ pa: { ja: t, vi: t } });
+    (global.__pending = global.__pending || []).push(new Promise(res => {
+      A.chain(W, [pa('いち'), pa('に')]); A.chain(W, [pa('さん')], {});
+      setTimeout(() => {
+        ok(spoken.map(x => x[1]).join('|') === 'いち|に|さん', 'chuỗi PA phát đúng thứ tự', spoken.map(x => x[1]).join('|'));
+        ok(spoken.length === 3 && spoken[1][0] - spoken[0][0] >= 950 && spoken[2][0] - spoken[1][0] >= 950, 'giữa hai PA ngắt ≥ 1 s (mặc định)', spoken.slice(1).map((x, i) => x[0] - spoken[i][0]).join(','));
+        spoken.length = 0; A.chain(W, [pa('A'), pa('B'), pa('C')]);
+        setTimeout(() => { A.stopAll(); const n = spoken.length; setTimeout(() => { ok(n === 1 && spoken.length === n, 'stopAll ngắt hết PA đang chờ (không phát tiếp sau khi thoát menu)', n + '/' + spoken.length);
+          const t1 = Date.now(); spoken.length = 0; A.chain(W, [pa('X'), { gap: 1800 }, pa('Y')]); setTimeout(() => { ok(spoken.length === 2 && spoken[1][0] - spoken[0][0] >= 1750 && spoken[1][0] - spoken[0][0] < 2600, 'bước {gap} đổi khoảng ngắt (1,8 s)', spoken.map(x => x[0] - t1).join(','));
+            spoken.length = 0; A.lastEnd = 0; A.chain(W, [pa('P'), pa('Q')]); setTimeout(() => { A.pausePlay(); setTimeout(() => { const n1 = spoken.map(x => x[1]).join('');
+              ok(n1 === 'P', 'tạm dừng (mất focus/Esc): PA đang đọc dừng, không sang câu kế', n1); A.resumePlay();
+              setTimeout(() => { const n2 = spoken.map(x => x[1]).join(''); ok(n2 === 'PPQ', 'tiếp tục sau tạm dừng: đọc lại câu đang dở rồi phát nốt phần còn lại (không bị ngắt)', n2); res(); }, 4200); }, 3000); }, 40); }, 2700); }, 3500); }, 900);
+      }, 8500); })); }
+}
+
 Promise.all(global.__pending || []).then(() => { console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); } });

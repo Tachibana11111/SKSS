@@ -466,7 +466,6 @@ I18N.add("ja", {
 "Quý khách có thể đổi tàu tại {0}: {1}.": "{0}で{1}にお乗り換えいただけます。",
 "Tại ga {0} có xe buýt kết nối.": "{0}では接続バスをご利用いただけます。",
 "Tại ga {0}, cửa mở ở bên {1}.": "{0}では{1}側のドアが開きます。",
-"Ga cuối {0}. Cảm ơn quý khách.": "終点、{0}です。ご利用ありがとうございました。",
 "Tàu dừng lại một lúc để điều chỉnh lịch chạy.": "運転調整のため、しばらく停車いたします。",
 "Tàu đang chạy chậm do mưa lớn.": "大雨のため、速度を落として運転しています。",
 "Tàu chạy chậm do tuyết.": "雪のため、速度を落として運転しています。",
@@ -756,4 +755,10 @@ I18N.add("ja", {
 "Ga đến": "行先",
 "Ghi chú": "記事",
 "{0} toa": "{0}両",
+"Các ga dừng của chuyến này:": "この列車の停車駅です。",
+"Điểm dừng cuối là ga {0}": "終点は{0}です",
+"lúc {0}": "{0}着",
+"Sắp tới ga cuối {0}.": "まもなく終点、{0}です。",
+"Cảm ơn quý khách đã đi Shinkansen.": "ご乗車ありがとうございました。",
+"Ga {0} có melody khởi hành (PA nhắc đóng cửa + melody khoảng {1} s): hãy bấm đóng cửa sớm hơn để kịp giờ.": "{0}には発車メロディがあります(ドア案内とメロディで約{1}秒)。時刻どおりに出るには早めにドアを閉めてください。",
 });

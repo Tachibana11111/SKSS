@@ -466,7 +466,6 @@ I18N.add("en", {
 "Quý khách có thể đổi tàu tại {0}: {1}.": "You can change trains at {0}: {1}.",
 "Tại ga {0} có xe buýt kết nối.": "A connecting bus is available at {0}.",
 "Tại ga {0}, cửa mở ở bên {1}.": "At {0}, the doors will open on the {1} side.",
-"Ga cuối {0}. Cảm ơn quý khách.": "This is the terminal station, {0}. Thank you.",
 "Tàu dừng lại một lúc để điều chỉnh lịch chạy.": "The train will stop for a while to adjust its schedule.",
 "Tàu đang chạy chậm do mưa lớn.": "The train is running slowly due to heavy rain.",
 "Tàu chạy chậm do tuyết.": "The train is running slowly due to snow.",
@@ -756,4 +755,10 @@ I18N.add("en", {
 "Ga đến": "Destination",
 "Ghi chú": "Remarks",
 "{0} toa": "{0} cars",
+"Các ga dừng của chuyến này:": "Stops on this train:",
+"Điểm dừng cuối là ga {0}": "Final stop: {0}",
+"lúc {0}": "at {0}",
+"Sắp tới ga cuối {0}.": "Approaching the terminal, {0}.",
+"Cảm ơn quý khách đã đi Shinkansen.": "Thank you for riding the Shinkansen.",
+"Ga {0} có melody khởi hành (PA nhắc đóng cửa + melody khoảng {1} s): hãy bấm đóng cửa sớm hơn để kịp giờ.": "{0} has a departure melody (door announcement + melody, about {1} s): close the doors earlier to stay on time.",
 });

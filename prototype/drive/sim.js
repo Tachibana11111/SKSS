@@ -327,6 +327,8 @@
     if (T.coup) { if (!T.isLead && T.dwellT - (T.lastCoupMsg === undefined ? -99 : T.lastCoupMsg) > 8) { T.lastCoupMsg = T.dwellT; W.say('warn', T.coup.to.parts ? _t('Chưa thể đóng cửa: đang ghép toa (còn {0} s)', Math.ceil(coupLeft(T))) : _t('Chưa thể đóng cửa: đang tách toa (còn {0} s)', Math.ceil(coupLeft(T)))); } return false; }
     if (T.k > 0 && T.dwellT < 20) { if (!T.isLead) W.say('warn', _t('Chưa thể đóng cửa (cần mở cửa ≥ 20 s)')); return false; }
     T.door = 'closing'; T.doorT = 0; T.doorDur = 9 + (T.k === 0 ? 0 : W.rnd() * 6);
+    T.depMel = null; { const Mel = root.Melody, mk = T.M[T.k];      // ga có melody khởi hành: đèn cửa chỉ xanh sau PA nhắc + ngắt + melody (thời lượng cố định, không phụ thuộc giọng đọc)
+      if (Mel && !T.isLead) { const id = Mel.dep(W.line, mk.i, W.dir); if (id) { T.depMel = id; T.doorDur = Math.max(T.doorDur, Mel.depChain(W.line, mk.i, W.dir)); } } }
     T.willReopen = T.doorFaultOnce || W.rnd() < W.diff.reopen; T.doorFaultOnce = false;
     if (!T.isLead) W.say('info', _t('Trưởng tàu: bắt đầu đóng cửa...'));
     return true;
@@ -565,6 +567,7 @@
         T.v = 0; T.f = 0; T.k = j; T.arrT = W.t; T.atMark = true; T.door = (T.isLead || mk.mainStop) ? 'closed' : 'open'; T.doorT = 0; T.cs = false;
         if (mk.mainStop && !T.isLead) W.say('bad', _t('Dừng ở ĐƯỜNG CHÍNH tại {0} (quá gần để rẽ ghi sang đường sân ga): không có sân ga bên cạnh, cửa KHÔNG mở. Chờ lệnh điều độ rồi chạy tiếp.', mk.name));
         const e = T.x - mk.s, planned = mk.arr != null ? mk.arr : mk.pt;
+        if (!T.isLead && depLead(T) > 0) W.say('info', _t('Ga {0} có melody khởi hành (PA nhắc đóng cửa + melody khoảng {1} s): hãy bấm đóng cửa sớm hơn để kịp giờ.', mk.name, Math.round(depLead(T))));
         if (!T.isLead) {
           const res = { station: mk.name, err: e, delay: planned != null ? W.t - planned : 0, excused: T.excused, atc: T.atcCount, extra: !mk.stop, t: W.t };
           T.results.push(res);
@@ -605,13 +608,14 @@
   }
 
   // ---- Tự lái (tàu chạy trước/tàu mạng, và chế độ xem mẫu) --------------------
+  function depLead(T) { const Mel = root.Melody, mk = T.M[T.k]; return Mel && mk ? Mel.depChain(T.W.line, mk.i, T.W.dir) : 0; }      // thời gian (s) cần đóng cửa sớm hơn giờ đi ở ga có melody khởi hành
   function autoDepart(T) {
     if (T.phase !== 'dwell') return;
     const mk = T.M[T.k], dep = mk.dep != null ? mk.dep : 0, W = T.W;
     if (T.isLead) { if (!T.started) { if (W.t >= dep) { T.started = true; departNow(T, true); } } else if (T.dwellT >= 20 && W.t >= dep) departNow(T, true); return; }
     if (T.door === 'open') {
       if (T.k === 0 && !T.started) requestClose(T);
-      else if (T.k > 0 && T.dwellT >= 20 && W.t >= Math.max(dep, T.holds[T.k] || 0) - 10) requestClose(T);
+      else if (T.k > 0 && T.dwellT >= 20 && W.t >= Math.max(dep, T.holds[T.k] || 0) - Math.max(10, depLead(T))) requestClose(T);
     }
   }
   function autoHorn(T) {       // còi tự động khi tới gần nhân viên làm việc / thú rừng trên đường (không còn nút còi)

@@ -8,7 +8,7 @@
   const TYPEJ = { Nozomi: 'のぞみ', Hikari: 'ひかり', Kodama: 'こだま', Mizuho: 'みずほ', Sakura: 'さくら', Tsubame: 'つばめ', Kamome: 'かもめ', Hayabusa: 'はやぶさ', Hayate: 'はやて', Yamabiko: 'やまびこ', Nasuno: 'なすの', Komachi: 'こまち', Tsubasa: 'つばさ', Toki: 'とき', Tanigawa: 'たにがわ', Asama: 'あさま', Hakutaka: 'はくたか', Kagayaki: 'かがやき', Tsurugi: 'つるぎ', 'Doctor Yellow': 'ドクターイエロー', 'East i': 'イーストアイ' };
   function GameAudio() {
     this.ctx = null; this.cabin = false; this.enabled = true; this.vol = 0.6; this.ready = false;
-    this.prev = {}; this.msgCount = 0; this.lastConfirmBeep = 0; this.lastResults = 0; this.q = []; this.ann = {}; this.next = {};
+    this.prev = {}; this.msgCount = 0; this.lastConfirmBeep = 0; this.lastResults = 0; this.jobs = []; this.ann = {}; this.next = {};
   }
   // trình duyệt di động chỉ cho SpeechSynthesis nói sau một cử chỉ của người dùng: "mồi" bằng một câu im lặng ở lần chạm/bấm đầu tiên; danh sách giọng nạp muộn nên lắng nghe voiceschanged
   GameAudio.prototype.primeSpeech = function () {
@@ -21,6 +21,7 @@
     const AC = root.AudioContext || root.webkitAudioContext; if (!AC) return;
     const c = this.ctx = new AC();
     this.master = c.createGain(); this.master.gain.value = this.enabled ? this.vol : 0; this.master.connect(c.destination);
+    this.loadMelody();
     const len = c.sampleRate * 2, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; this.noiseBuf = buf;
     const noise = () => { const s = c.createBufferSource(); s.buffer = buf; s.loop = true; s.start(0, Math.random() * 1.5); return s; };
@@ -135,30 +136,82 @@
     if (yomiFor !== K) { yomiFor = K; yomiMap = Object.assign({}, root.TERM_KANA, K, root.RAIL_KANA); yomiRe = new RegExp(Object.keys(yomiMap).sort((p, q) => q.length - p.length).join('|'), 'g'); }      // dài trước ngắn (名鉄名古屋本線 trước 名古屋); tên chỉ có chữ Nhật/Latin, không có ký tự đặc biệt của biểu thức chính quy
     return text.replace(yomiRe, n => yomiMap[n] || n);
   };
-  // a = {ja, vi}: ja = câu đọc (giọng Nhật), vi = phụ đề theo ngôn ngữ giao diện; urgent = true: ngắt câu đang nói
-  GameAudio.prototype.say = function (W, a, urgent, chime) {
-    const text = a.ja;      // phát thanh cố định: giọng tiếng Nhật + phụ đề
-    W.say('pa', 'PA: ' + text + (I18N.lang === 'ja' ? '' : '  —  ' + a.vi));      // giao diện tiếng Nhật: chỉ một dòng phụ đề theo đúng giọng đọc (không lặp bản dịch)
-    if (!this.enabled || !root.speechSynthesis) return;
-    if (urgent) { this.q = []; root.speechSynthesis.cancel(); }
-    this.q.push({ text: GameAudio.yomi(text), lang: 'ja', t: performance.now(), chime });
-    this.drain();
+  // ---- bộ phát chuỗi thông báo: melody (file âm thanh), PA (giọng đọc), tiếng bíp 4 nốt (chỉ động đất lúc bắt đầu) nối tiếp nhau, giữa hai đoạn ngắt 2,5 giây (hoặc theo bước {gap}) ----
+  // steps: {pa:{ja,vi}} | {mel:id, dep:true?} | {beep:true} | {gap:ms} (đổi khoảng ngắt trước bước kế tiếp); o.urgent: ngắt mọi thứ đang phát; o.ok(): hết hiệu lực (vd. đã qua ga) thì bỏ phần còn lại
+  const GAPMS = 1000;
+  GameAudio.prototype.chain = function (W, steps, o) {
+    o = o || {}; if (!steps.length) return;
+    if (!this.enabled || !root.speechSynthesis) { for (const s of steps) if (s.pa) this.log(W, s.pa); return; }      // tắt tiếng / không có giọng đọc: chỉ hiện phụ đề
+    if (o.urgent) this.cancelPlay();
+    (this.jobs = this.jobs || []).push({ W, steps: steps.slice(), ok: o.ok, born: performance.now() }); this.pump();
   };
-  GameAudio.prototype.drain = function () {
-    const ss = root.speechSynthesis; if (!ss || ss.speaking || this.speaking) return;
-    while (this.q.length && performance.now() - this.q[0].t > 25000) this.q.shift();
-    const it = this.q.shift(); if (!it) return;
-    if (it.chime && this.ready) this.chime();
-    this.speaking = true; clearTimeout(this.spkT); this.spkT = setTimeout(() => { if (this.speaking) { this.speaking = false; try { ss.cancel(); } catch (e) { } this.drain(); } }, 6000 + it.text.length * 160);      // onend không bao giờ đến trên một số trình duyệt di động: chống kẹt hàng đợi
-    const go = () => { const u = new SpeechSynthesisUtterance(it.text); u.lang = it.lang === 'ja' ? 'ja-JP' : 'en-US'; const v = this.pick(it.lang); if (v) { u.voice = v; u.lang = v.lang; } else if (it.lang === 'ja' && root.speechSynthesis.getVoices().length) { this.speaking = false; setTimeout(() => this.drain(), 50); return; }      // không có giọng Nhật trên máy: bỏ câu (phụ đề vẫn hiện) thay vì đọc sai bằng giọng khác
-      u.volume = Math.min(1, this.vol * 1.3); u.rate = 1.0;
-      u.onend = u.onerror = () => { this.speaking = false; setTimeout(() => this.drain(), 400); }; ss.speak(u); };
-    if (it.chime) setTimeout(go, 1300); else go();
+  GameAudio.prototype.say = function (W, a, urgent, chime) { this.chain(W, (chime ? [{ beep: true }] : []).concat([{ pa: a }]), { urgent }); };      // tương thích kiểu cũ
+  GameAudio.prototype.log = function (W, a) { W.say('pa', 'PA: ' + a.ja + (I18N.lang === 'ja' ? '' : '  —  ' + a.vi)); };      // giao diện tiếng Nhật: chỉ một dòng phụ đề theo đúng giọng đọc (không lặp bản dịch)
+  GameAudio.prototype.pump = function () {
+    if (this.busy || this.pz) return; const now = performance.now(), jobs = this.jobs || [];
+    let job = jobs[0]; while (job && (!job.steps.length || (job.ok && !job.ok()) || now - job.born > 120000)) { jobs.shift(); job = jobs[0]; }
+    if (!job) return;
+    let st = job.steps.shift(); while (st && st.gap !== undefined) { this.nextGap = st.gap; st = job.steps.shift(); }
+    if (!st) { this.pump(); return; }
+    const gap = this.nextGap !== undefined ? this.nextGap : GAPMS; this.nextGap = undefined;
+    const wait = Math.max(0, gap - (now - (this.lastEnd || -1e9))), g0 = this.gen || 0; this.busy = true; clearTimeout(this.goT);
+    const done = skip => { if ((this.gen || 0) !== g0 || !this.busy) return; this.busy = false; this.cur = null; if (!skip) this.lastEnd = performance.now(); this.pump(); };
+    const begin = () => { if ((this.gen || 0) !== g0) return; if (job.ok && !job.ok()) { done(true); return; } this.play(job.W, st, done, this.cur); };
+    this.cur = { kind: 'wait', st, job, done, begin, due: now + wait }; this.goT = setTimeout(begin, wait);
+  };
+  // c: trạng thái bước đang chạy (để tạm dừng/phát tiếp); redo: phát lại từ đầu sau khi tạm dừng (không ghi phụ đề lần nữa)
+  GameAudio.prototype.play = function (W, st, done, c, redo) {
+    if (st.beep) { c.kind = 'beep'; if (this.ready) this.chime(); setTimeout(() => done(), 1300); return; }
+    if (st.mel) {
+      const Mel = root.Melody, seg = Mel && Mel.SEG[st.mel], cx = this.ctx;
+      if (!seg || !this.melBuf || !cx) { done(true); return; }      // chưa tải xong / không có file: bỏ qua melody (vẫn phát PA)
+      c.kind = 'mel'; c.seg = seg; c.dep = !!st.dep; c.off = c.off || 0; this.startMel(c, done); return;
+    }
+    if (st.pa) {
+      if (!redo) this.log(W, st.pa); const ss = root.speechSynthesis; if (!ss) { done(true); return; }
+      c.kind = 'pa'; const tok = {}; c.tok = tok;
+      const text = GameAudio.yomi(st.pa.ja); let fin = false; const end = skip => { if (fin || c.tok !== tok) return; fin = true; clearTimeout(this.spkT); done(skip); };      // c.tok: bỏ qua sự kiện kết thúc của câu đã bị ngắt khi tạm dừng
+      this.spkT = setTimeout(() => { try { ss.cancel(); } catch (e) { } end(); }, 6000 + text.length * 160);      // onend không bao giờ đến trên một số trình duyệt di động: chống kẹt hàng đợi
+      const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; const v = this.pick('ja'); if (v) { u.voice = v; u.lang = v.lang; } else if (ss.getVoices().length) { end(true); return; }
+      u.volume = Math.min(1, this.vol * 1.3); u.rate = 1.0; u.onend = u.onerror = () => end(); ss.speak(u); return;
+    }
+    done(true);
+  };
+  GameAudio.prototype.startMel = function (c, done) {      // phát melody từ vị trí c.off (giây đã phát) tới hết đoạn
+    const cx = this.ctx, seg = c.seg, dur = seg[1] - seg[0] - c.off, t0 = cx.currentTime + 0.03; if (dur <= 0.05) { done(); return; }
+    const src = cx.createBufferSource(), g = cx.createGain(); src.buffer = this.melBuf; let out = g;
+    const kv = this.vol > 0.01 ? Math.min(1, this.vol * 1.3) / this.vol : 1;      // cùng mức nghe với giọng đọc (giọng đọc không qua master)
+    if (c.dep) { const lp = cx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3200; g.connect(lp); out = lp; g.gain.value = 0.55 * kv; } else g.gain.value = 0.9 * kv;      // melody khởi hành nghe như phát từ sân ga: nhỏ hơn và bớt âm cao
+    const base = g.gain.value; g.gain.setValueAtTime(base, t0 + Math.max(0, dur - 0.2)); g.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(g); out.connect(this.master); src.onended = () => done(); this.curSrc = src; c.startedAt = t0; src.start(t0, seg[0] + c.off, dur + 0.02);
+  };
+  // tạm dừng (mất focus, Esc): câu PA đang đọc sẽ đọc lại từ đầu khi tiếp tục, melody tiếp tục từ chỗ đã dừng, thời gian chờ giữa hai đoạn giữ phần còn lại
+  GameAudio.prototype.pausePlay = function () {
+    const c = this.cur; if (this.pz || !c || !this.busy) return; this.pz = true;
+    if (c.kind === 'wait') { c.left = Math.max(0, c.due - performance.now()); clearTimeout(this.goT); }
+    else if (c.kind === 'pa') { c.tok = null; clearTimeout(this.spkT); try { root.speechSynthesis.cancel(); } catch (e) { } }
+    else if (c.kind === 'mel' && this.curSrc) { c.off += Math.max(0, this.ctx.currentTime - c.startedAt); try { this.curSrc.onended = null; this.curSrc.stop(); } catch (e) { } this.curSrc = null; }
+  };
+  GameAudio.prototype.resumePlay = function () {
+    if (!this.pz) return; this.pz = false; const c = this.cur; if (!c || !this.busy) { this.pump(); return; }
+    if (c.kind === 'wait') { c.due = performance.now() + c.left; clearTimeout(this.goT); this.goT = setTimeout(c.begin, c.left); }
+    else if (c.kind === 'pa') this.play(c.job.W, c.st, c.done, c, true);
+    else if (c.kind === 'mel') this.startMel(c, c.done);
+  };
+  GameAudio.prototype.cancelPlay = function () {      // ngắt mọi thứ đang phát và các chuỗi đang chờ
+    this.gen = (this.gen || 0) + 1; this.jobs = []; this.busy = false; this.cur = null; this.pz = false; this.pzState = false; this.nextGap = undefined; clearTimeout(this.goT); clearTimeout(this.spkT);
+    try { if (this.curSrc) { this.curSrc.onended = null; this.curSrc.stop(); } } catch (e) { } this.curSrc = null;
+    try { if (root.speechSynthesis) root.speechSynthesis.cancel(); } catch (e) { }
+  };
+  GameAudio.prototype.loadMelody = function () {
+    if (this.melBuf !== undefined || !this.ctx || !root.Melody || !root.fetch) return; this.melBuf = null;
+    root.fetch(root.Melody.FILE).then(r => r.arrayBuffer()).then(b => this.ctx.decodeAudioData(b)).then(buf => { this.melBuf = buf; }).catch(() => { this.melBuf = false; });
   };
 
   // ---- cập nhật mỗi khung hình ----
   GameAudio.prototype.update = function (W, T, st) {
     if (!this.ready || !W || !T) return;
+    if (st.paused && !this.pzState) { this.pzState = true; this.pausePlay(); } else if (!st.paused && this.pzState) { this.pzState = false; this.resumePlay(); }      // game tạm dừng thì PA/melody cũng dừng, tiếp tục thì phát nốt
     const c = this.ctx, t = c.currentTime, v = T.v, kmh = v * 3.6, active = this.enabled && !st.paused && st.scale <= 4;
     const now = performance.now(), dt = Math.min(0.25, (now - this.rt.last) / 1000); this.rt.last = now;
     const set = (node, val, tc) => node.g.gain.setTargetAtTime(active ? val : 0, t, tc || 0.12);
@@ -216,7 +269,7 @@
     if ((T.hornN || 0) !== (p.hornN || 0)) this.horn();      // đếm số lần bấm còi, không dựa vào T.horn (bấm một lần rồi giảm về 0 trong 0,1 s: khung hình chậm sẽ bỏ lỡ)
     if (T.atc && !p.atc) this.atcAlarm();
     if (T.needConfirm && t - this.lastConfirmBeep > 1.4) { this.tone(1000, 0.1, 'square', 0.08); this.lastConfirmBeep = t; }
-    if (T.door === 'closing' && p.door !== 'closing') { this.doorChime(); if (T.k > 0 || T.started) this.platformBell(); }
+    if (T.door === 'closing' && p.door !== 'closing') { this.doorChime(); if ((T.k > 0 || T.started) && !T.depMel) this.platformBell(); }
     if (T.door === 'closed' && p.door === 'closing') this.doorClosed();
     if (T.door === 'open' && p.door === 'closing') this.buzzer();
     if (T.door === 'open' && p.door !== 'open' && p.door !== 'closing' && dw) this.doorOpen();
@@ -246,46 +299,60 @@
   };
   GameAudio.prototype.announce = function (W, T, p) {
     const M = T.M, A = this.ann; if (W.mission) return;      // tàu kiểm tra: không phát thanh
+    const Mel = root.Melody, L = W.line, sg = W.dir === 'down' ? 1 : -1, Sm = root.Sim;
     const nameJ = k => M[k].jp || M[k].name, typeJ = TYPEJ[W.trip.rec.t] || '', no = W.trip.rec.n;
     const last = M.length - 1, destJ = nameJ(last), dest = M[last].rom || M[last].name;
-    const j = root.Sim.nextTarget(T), nxt = M[j];
-    // lúc bắt đầu chuyến
-    if (T.started && !A.start) { A.start = true;
-      this.say(W, { ja: `本日も、${W.line.meta.pa}新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, vi: _t('Cảm ơn quý khách đã đi Shinkansen. Đây là {0} số {1} đi {2}.', W.trip.rec.t, no, dest) }, false, true); }
-    // đóng cửa
-    if (T.door === 'closing' && p.door !== 'closing' && T.started) this.say(W, { ja: 'ドアが閉まります。ご注意ください。', vi: _t('Cửa sắp đóng, xin quý khách chú ý.') }, false, false);
-    // sau khi rời ga: ga dừng kế tiếp, và xin lỗi nếu trễ
-    if (T.phase === 'run' && p.phase === 'dwell') {
-      const delay = W.t - root.Sim.plannedTime(T);
-      if (T.k > 0 || delay > 120) { }
-      this.say(W, { ja: `次は、${nameJ(j)}に止まります。`, vi: _t('Ga dừng tiếp theo là {0}.', nxt.name) }, false, true);
-      if (delay > 120) this.say(W, { ja: `お急ぎのところ、列車が約${Math.round(delay / 60)}分遅れております。お詫び申し上げます。`, vi: _t('Tàu đang trễ khoảng {0} phút, xin lỗi quý khách.', Math.round(delay / 60)) }, false, false);
-      A.apr = -1;
-    }
-    // sắp tới ga: tên ga, các tuyến đổi tàu và bên cửa sẽ mở
-    if (T.phase === 'run') { const d = M[j].s - T.x; if (d < 3500 && A.apr !== j && T.v > 15) { A.apr = j;
-      this.say(W, { ja: `まもなく、${nameJ(j)}、${nameJ(j)}です。`, vi: _t('Sắp tới ga {0}.', nxt.name) }, false, true);
-      const tr = (root.TRANSFERS || {})[M[j].jp] || [], rail = tr.filter(x => x !== '路線バス');
-      if (rail.length) this.say(W, { ja: `${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, vi: _t('Quý khách có thể đổi tàu tại {0}: {1}.', nxt.name, rail.map(railName).join(', ')) }, false, false);
-      else if (tr.length) this.say(W, { ja: `${nameJ(j)}では、路線バスはお乗り換えです。`, vi: _t('Tại ga {0} có xe buýt kết nối.', nxt.name) }, false, false);
-      const sd = this.doorSide(W, T, j);
-      if (sd) this.say(W, { ja: `${nameJ(j)}では、${sd.ja}のドアが開きます。`, vi: _t('Tại ga {0}, cửa mở ở bên {1}.', nxt.name, sd.vi) }, false, true); } }
-    // tới ga
+    const j = Sm.nextTarget(T), nxt = M[j], pa = (ja, vi) => ({ pa: { ja, vi } });
+    const mel = id => id && Mel ? [{ mel: id }] : [];
+    // melody đặc thù của tuyến theo đoạn đang chạy (giữa hai ga kề nhau trên tuyến)
+    const melHere = () => { if (!Mel) return null; const km = Sm.kmOfS(T.x, W.dir, L.kmEnd); let a = 0; while (a < L.stations.length - 2 && L.stations[a + 1].km <= km) a++; return Mel.seg(L, a, a + 1); };
+    const melTo = i => Mel ? Mel.seg(L, Math.max(0, Math.min(L.stations.length - 1, i - sg)), i) : null;      // đoạn dẫn tới ga i (ga ranh giới vẫn dùng melody của đoạn đang đi tới)
+    const hm = sec => { const t = Math.round(W.trip.t0 + sec) % 86400; return [Math.floor(t / 3600), Math.floor(t % 3600 / 60)]; };
+    // thông báo ga dừng kế tiếp (+ xin lỗi nếu trễ): không melody, chỉ ngắt 2,5 giây sau đèn cửa xanh
+    const nextStop = () => { if (A.nxt === T.k) return; A.nxt = T.k; const delay = W.t - Sm.plannedTime(T), st = [pa(`次は、${nameJ(j)}に止まります。`, _t('Ga dừng tiếp theo là {0}.', nxt.name))];
+      if (delay > 120) st.push(pa(`お急ぎのところ、列車が約${Math.round(delay / 60)}分遅れております。お詫び申し上げます。`, _t('Tàu đang trễ khoảng {0} phút, xin lỗi quý khách.', Math.round(delay / 60))));
+      this.chain(W, st); A.apr = -1; };
+    // lúc bắt đầu chuyến (đèn cửa đã xanh): melody tuyến -> cảm ơn -> các ga dừng kèm giờ đến -> ga dừng kế tiếp
+    if (T.started && !A.start) { A.start = true; const i0 = M[0].i, st = mel(melHere() || (Mel && Mel.seg(L, i0, Math.min(L.stations.length - 1, Math.max(0, i0 + sg)))));
+      st.push(pa(`本日も、${L.meta.pa}新幹線をご利用くださいまして、ありがとうございます。この列車は、${typeJ}${no}号、${destJ}行きです。`, _t('Cảm ơn quý khách đã đi Shinkansen. Đây là {0} số {1} đi {2}.', W.trip.rec.t, no, dest)));
+      st.push({ gap: GAPMS }); st.push(pa('停車駅をご案内いたします。', _t('Các ga dừng của chuyến này:')));
+      for (let k = 1; k <= last; k++) { if (!M[k].stop) continue; const [h, m] = hm(M[k].arr != null ? M[k].arr : M[k].pt), tm = `${h}:${String(m).padStart(2, '0')}`;
+        st.push({ gap: 0 }); st.push(pa(k === last ? `終点、${nameJ(k)}、` : `${nameJ(k)}、`, k === last ? _t('Điểm dừng cuối là ga {0}', M[k].rom || M[k].name) : (M[k].rom || M[k].name)));
+        st.push({ gap: 0 }); st.push(pa(`${h}時${m}分${k === last ? '着です。' : '着、'}`, _t('lúc {0}', tm)));
+        if (k < last) st.push({ gap: 500 }); }
+      this.chain(W, st); A.nxt = 0; this.chain(W, [pa(`次は、${nameJ(j)}に止まります。`, _t('Ga dừng tiếp theo là {0}.', nxt.name))]); A.apr = -1; A.nxt = 0; }
+    // ấn đóng cửa: PA nhắc, rồi melody khởi hành của ga (nếu ga có); đèn cửa xanh sau đó
+    if (T.door === 'closing' && p.door !== 'closing') { const st = [pa('ドアが閉まります。ご注意ください。', _t('Cửa sắp đóng, xin quý khách chú ý.'))]; if (T.depMel) st.push({ mel: T.depMel, dep: true }); this.chain(W, st); }
+    // đèn cửa xanh ở ga giữa tuyến (hoặc rời ga): ga dừng kế tiếp
+    if (T.door === 'closed' && p.door === 'closing' && T.k > 0) nextStop();
+    if (T.phase === 'run' && p.phase === 'dwell' && T.k > 0) nextStop();
+    // sắp tới ga (2,5 km; 3,5 km với Hakata/Kumamoto/Kagoshima-Chuo; không quá 60% khoảng cách tới ga dừng trước): melody -> tên ga -> đổi tàu -> bên cửa mở (ga cuối: thêm lời cảm ơn)
+    if (T.phase === 'run') { const d = M[j].s - T.x, trig = Mel ? Mel.trigger(L, M[j].i, M[j].s - M[T.k].s) : 3500;
+      if (d < trig && A.apr !== j && T.v > 15) { A.apr = j; const fin = j === last, st = mel((Mel && Mel.arr(L, M[j].i)) || melTo(M[j].i));
+        st.push(pa(fin ? `まもなく、終点、${nameJ(j)}、${nameJ(j)}です。` : `まもなく、${nameJ(j)}、${nameJ(j)}です。`, fin ? _t('Sắp tới ga cuối {0}.', nxt.name) : _t('Sắp tới ga {0}.', nxt.name)));
+        const tr = (root.TRANSFERS || {})[M[j].jp] || [], rail = tr.filter(x => x !== '路線バス');
+        if (rail.length) st.push(pa(`${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, _t('Quý khách có thể đổi tàu tại {0}: {1}.', nxt.name, rail.map(railName).join(', '))));
+        else if (tr.length) st.push(pa(`${nameJ(j)}では、路線バスはお乗り換えです。`, _t('Tại ga {0} có xe buýt kết nối.', nxt.name)));
+        const sd = this.doorSide(W, T, j);
+        if (sd) st.push(pa(`${nameJ(j)}では、${sd.ja}のドアが開きます。`, _t('Tại ga {0}, cửa mở ở bên {1}.', nxt.name, sd.vi)));
+        if (fin) st.push(pa(`本日も、${L.meta.pa}新幹線をご利用くださいまして、ありがとうございました。`, _t('Cảm ơn quý khách đã đi Shinkansen.')));
+        this.chain(W, st, { ok: () => T.x < M[j].s + 30 && !T.finished }); } }
+    // tới ga: chỉ còn thông báo dừng chờ điều chỉnh lịch (không melody)
     if (T.results.length > (A.res || 0)) { A.res = T.results.length; const r = T.results[T.results.length - 1];
-      if (!r.overrun) { if (T.phase === 'end') this.say(W, { ja: `終点、${nameJ(last)}、${nameJ(last)}です。ご乗車ありがとうございました。`, vi: _t('Ga cuối {0}. Cảm ơn quý khách.', dest) }, false, true);
-        else if (T.holds[T.k] > W.t) this.say(W, { ja: 'ダイヤ調整のため、しばらく停車いたします。ご迷惑をおかけします。', vi: _t('Tàu dừng lại một lúc để điều chỉnh lịch chạy.') }, false, false); } }
-    // mưa, tuyết, gió, động đất, va chạm, tàu trước dừng
-    if (W.rainHere && !p.rain) this.say(W, { ja: 'ただいま、大雨のため、速度を落として運転しております。', vi: _t('Tàu đang chạy chậm do mưa lớn.') }, false, false);
+      if (!r.overrun && T.phase !== 'end' && T.holds[T.k] > W.t) this.chain(W, [pa('ダイヤ調整のため、しばらく停車いたします。ご迷惑をおかけします。', _t('Tàu dừng lại một lúc để điều chỉnh lịch chạy.'))]); }
+    // mưa, tuyết, gió, động đất, va chạm, tàu trước dừng: melody tuyến rồi PA; động đất lúc bắt đầu: tiếng bíp 4 nốt
+    if (W.rainHere && !p.rain) this.chain(W, mel(melHere()).concat([pa('ただいま、大雨のため、速度を落として運転しております。', _t('Tàu đang chạy chậm do mưa lớn.'))]));
     p.rain = W.rainHere;
     const snow = W.zones.some(z => z.kind === 'snow' && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 && T.x < z.s1);
-    if (snow && !p.snow) this.say(W, { ja: '雪のため、徐行運転をしております。', vi: _t('Tàu chạy chậm do tuyết.') }, false, false); p.snow = snow;
+    if (snow && !p.snow) this.chain(W, mel(melHere()).concat([pa('雪のため、徐行運転をしております。', _t('Tàu chạy chậm do tuyết.'))])); p.snow = snow;
     if (W.lastHold && W.lastHold.seq !== A.holdSeq) { A.holdSeq = W.lastHold.seq; const rain = W.lastHold.why === 'rain';
-      this.say(W, { ja: rain ? 'ただいま、大雨のため、運転を見合わせております。' : 'ただいま、強風のため、運転を見合わせております。', vi: rain ? _t('Tạm ngừng chạy do mưa lớn.') : _t('Tạm ngừng chạy do gió mạnh.') }, true, true); }
-    if (W.eqkActive && !p.eqk) this.say(W, { ja: 'ただいま、地震のため、緊急停止いたしました。そのまま、しばらくお待ちください。', vi: _t('Tàu dừng khẩn cấp do động đất. Xin quý khách ngồi yên chờ.') }, true, true);
-    if (!W.eqkActive && p.eqk) this.say(W, { ja: '安全が確認できましたので、運転を再開いたします。', vi: _t('Đã xác nhận an toàn, tàu chạy lại.') }, false, true);
-    if (T.animalHit > (p.animalHit || 0)) this.say(W, { ja: 'ただいま、動物と衝突したため、停車しております。', vi: _t('Tàu dừng do va chạm động vật.') }, true, true);
-    if (W.leadStopAt !== undefined && W.leadStopAt !== A.leadStop) { A.leadStop = W.leadStopAt; this.say(W, { ja: '前を走る列車で、急病のお客様が出たため、間隔をあけて運転しております。', vi: _t('Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.') }, false, true); }
+      this.chain(W, mel(melHere()).concat([pa(rain ? 'ただいま、大雨のため、運転を見合わせております。' : 'ただいま、強風のため、運転を見合わせております。', rain ? _t('Tạm ngừng chạy do mưa lớn.') : _t('Tạm ngừng chạy do gió mạnh.'))]), { urgent: true }); }
+    if (W.eqkActive && !p.eqk) this.chain(W, [{ beep: true }, { gap: 200 }, pa('ただいま、地震のため、緊急停止いたしました。そのまま、しばらくお待ちください。', _t('Tàu dừng khẩn cấp do động đất. Xin quý khách ngồi yên chờ.'))], { urgent: true });
+    if (!W.eqkActive && p.eqk) this.chain(W, mel(melHere()).concat([pa('安全が確認できましたので、運転を再開いたします。', _t('Đã xác nhận an toàn, tàu chạy lại.'))]));
+    if (T.animalHit > (p.animalHit || 0)) this.chain(W, mel(melHere()).concat([pa('ただいま、動物と衝突したため、停車しております。', _t('Tàu dừng do va chạm động vật.'))]), { urgent: true });
+    if (W.leadStopAt !== undefined && W.leadStopAt !== A.leadStop) { A.leadStop = W.leadStopAt; this.chain(W, mel(melHere()).concat([pa('前を走る列車で、急病のお客様が出たため、間隔をあけて運転しております。', _t('Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.'))])); }
   };
-  GameAudio.prototype.reset = function (W) { this.silence(); this.prev = {}; this.ann = {}; this.q = []; if (root.speechSynthesis) root.speechSynthesis.cancel(); this.speaking = false; this.msgCount = W ? W.msgs.length : 0; this.lastResults = 0; this.lastMast = undefined; };
+  GameAudio.prototype.stopAll = function () { this.cancelPlay(); this.silence(); };      // dừng hẳn mọi âm thanh đang/sắp phát: chuỗi thông báo, giọng đọc, melody, âm nền
+  GameAudio.prototype.reset = function (W) { this.cancelPlay(); this.silence(); this.prev = {}; this.ann = {}; this.msgCount = W ? W.msgs.length : 0; this.lastResults = 0; this.lastMast = undefined; };
   root.GameAudio = GameAudio;
 })(typeof window !== 'undefined' ? window : globalThis);

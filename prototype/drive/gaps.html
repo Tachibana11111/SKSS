@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thử khoảng ngắt PA và melody</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#1b2430; --mut:#5d6b7c; --line:#d8dde4; --acc:#1f6feb; --acc2:#e8f0fe; --mel:#2f9e6e; --pa:#1f6feb; --gap:#e1a100; --beep:#c0392b; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12171e; --card:#1b232d; --ink:#e7ecf2; --mut:#93a1b3; --line:#2d3947; --acc:#5aa2ff; --acc2:#1d2a3d; --mel:#4cc38a; --pa:#5aa2ff; --gap:#e6b422; --beep:#ff7a6b; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui, "Segoe UI", sans-serif; }
+  main { max-width:960px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:20px; margin:0 0 4px; } p.sub { margin:0 0 18px; color:var(--mut); }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; } @media (max-width:760px) { .grid { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  h2 { font-size:14px; margin:0 0 10px; letter-spacing:.2px; }
+  .row { display:grid; grid-template-columns:1fr 92px; gap:4px 10px; align-items:center; margin-bottom:10px; }
+  .row label { font-size:13px; } .row small { grid-column:1/-1; color:var(--mut); font-size:12px; margin-top:-2px; }
+  input[type=number] { width:100%; padding:5px 6px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); font:inherit; text-align:right; }
+  input[type=range] { grid-column:1/-1; width:100%; accent-color:var(--acc); }
+  select { width:100%; padding:6px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); font:inherit; margin-bottom:10px; }
+  button { font:inherit; padding:7px 14px; border-radius:7px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; }
+  button.main { background:var(--acc); border-color:var(--acc); color:#fff; } button:hover { filter:brightness(1.07); }
+  .btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+  .tl { margin-top:14px; } .step { display:grid; grid-template-columns:78px 1fr 70px; gap:10px; align-items:center; padding:6px 8px; border-radius:7px; border:1px solid transparent; font-size:13px; }
+  .step.on { background:var(--acc2); border-color:var(--acc); }
+  .chip { text-align:center; font-size:11px; padding:2px 0; border-radius:99px; color:#fff; } .c-mel { background:var(--mel); } .c-pa { background:var(--pa); } .c-beep { background:var(--beep); } .c-mark { background:#7b61c9; }
+  .gapbar { display:flex; align-items:center; gap:8px; margin:2px 8px; font-size:12px; color:var(--mut); } .gapbar i { flex:none; height:6px; border-radius:3px; background:var(--gap); }
+  .dur { text-align:right; color:var(--mut); font-variant-numeric:tabular-nums; }
+  .note { background:var(--acc2); border-radius:8px; padding:8px 10px; font-size:13px; margin-top:10px; }
+  textarea { width:100%; height:130px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font:12px/1.5 ui-monospace, Consolas, monospace; padding:8px; }
+  .stat { color:var(--mut); font-size:12px; margin-top:6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Thử khoảng ngắt PA và melody</h1>
+  <p class="sub">Chỉnh các khoảng ngắt rồi bấm Phát để nghe đúng chuỗi như trong game (cùng file melody, cùng giọng đọc của trình duyệt). Giá trị được lưu trong trình duyệt này.</p>
+  <div class="grid">
+    <section class="card">
+      <h2>Khoảng ngắt (giây)</h2>
+      <div class="row"><label for="gDef">Ngắt mặc định giữa hai đoạn (melody ↔ PA ↔ PA)</label><input id="gDef" type="number" step="0.1" min="0" max="10"><input id="rDef" type="range" min="0" max="6" step="0.1"><small>Hiện tại 1. Cũng là khoảng im lặng tối thiểu giữa hai chuỗi khác nhau, và nằm trong thời gian đèn cửa chờ.</small></div>
+      <div class="row"><label for="gName">Sau tên ga, trước giờ đến (danh sách ga dừng)</label><input id="gName" type="number" step="0.1" min="0" max="10"><input id="rName" type="range" min="0" max="6" step="0.1"><small>Hiện tại 0.</small></div>
+      <div class="row"><label for="gTime">Sau giờ đến, trước ga kế (danh sách ga dừng)</label><input id="gTime" type="number" step="0.1" min="0" max="10"><input id="rTime" type="range" min="0" max="6" step="0.1"><small>Hiện tại 0,5.</small></div>
+      <div class="row"><label for="gBeep">Sau tiếng bíp 4 nốt, trước PA động đất</label><input id="gBeep" type="number" step="0.1" min="0" max="10"><input id="rBeep" type="range" min="0" max="6" step="0.1"><small>Hiện tại 0,2.</small></div>
+      <div class="row"><label for="gDoor">PA nhắc đóng cửa: thời lượng cố định cho đèn cửa (s)</label><input id="gDoor" type="number" step="0.5" min="1" max="12"><input id="rDoor" type="range" min="1" max="12" step="0.5"><small>Chỉ dùng để tính giờ đèn cửa xanh trong mô phỏng (hiện tại 5), không đổi cách đọc.</small></div>
+    </section>
+    <section class="card">
+      <h2>Kịch bản</h2>
+      <select id="scn">
+        <option value="door">Ga giữa tuyến: ấn đóng cửa, PA nhắc, melody khởi hành, đèn xanh, ga kế</option>
+        <option value="start">Ga đầu chuyến: melody tuyến, cảm ơn, danh sách ga dừng, ga kế</option>
+        <option value="appr">Sắp tới ga: melody, まもなく, đổi tàu, cửa mở</option>
+        <option value="term">Sắp tới ga cuối: như trên + lời cảm ơn</option>
+        <option value="inc">Sự cố: melody tuyến, ngắt, PA</option>
+        <option value="eqk">Động đất bắt đầu: bíp 4 nốt, PA</option>
+        <option value="late">Trễ giờ: ga kế rồi xin lỗi (không melody)</option>
+      </select>
+      <select id="mel"></select>
+      <div class="row"><label for="vol">Âm lượng</label><input id="vol" type="number" step="0.05" min="0" max="1"><input id="rVol" type="range" min="0" max="1" step="0.05"></div>
+      <div class="row"><label for="lp">Melody khởi hành nghe như sân ga (nhỏ hơn, bớt âm cao)</label><input id="lp" type="number" step="1" min="0" max="1"><small>1 = bật (như trong game), 0 = tắt.</small></div>
+      <div class="btns"><button class="main" id="play">▶ Phát</button><button id="stop">■ Dừng</button><button id="reset">Về giá trị hiện tại của game</button></div>
+      <div class="stat" id="stat">Đang tải melody…</div>
+      <div class="note" id="calc"></div>
+    </section>
+  </div>
+  <section class="card tl"><h2>Dòng thời gian</h2><div id="tl"></div></section>
+  <section class="card tl"><h2>Giá trị bạn chọn (gửi lại cho tôi để áp dụng vào game)</h2><textarea id="out" readonly></textarea><div class="btns"><button id="copy">Sao chép</button></div></section>
+</main>
+<script src="melody.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id), DEF = { gDef: 1, gName: 0, gTime: 0.5, gBeep: 0.2, gDoor: 5, vol: 1, lp: 1 };
+  const MELNAME = { east_tohoku: 'Tohoku / Akita / Yamagata / Hokkaido (00:00)', east_joetsu: 'Joetsu / Hokuriku JR East (00:09)', west_hokuriku: 'Hokuriku JR West (00:17)', tokai_dep: 'Khởi hành JR Tokai (00:31)', tokai: 'Tokaido JR Tokai (00:43)', west_dep: 'Khởi hành JR West (00:48)', west: 'Sanyo JR West (00:59)', kyushu: 'Kyushu/Sanyo (01:08)', arr_hakata: 'Vào ga Hakata (01:20)', arr_kumamoto: 'Vào ga Kumamoto (01:32)', arr_kagoshima: 'Vào ga Kagoshima (01:43)', dep_kyushu: 'Khởi hành Kyushu (01:55)', dep_kumamoto: 'Khởi hành Kumamoto (02:15)', dep_kagoshima: 'Khởi hành Kagoshima (02:33)', nk: 'Nishi-Kyushu (03:06)', dep_takeo: 'Khởi hành Takeo-Onsen (03:12)', dep_ureshino: 'Khởi hành Ureshino-Onsen (03:23)', dep_shinomura: 'Khởi hành Shin-Omura (03:33)', dep_isahaya: 'Khởi hành Isahaya (03:46)', dep_nagasaki: 'Khởi hành Nagasaki (03:57)' };
+  let cfg = Object.assign({}, DEF); try { Object.assign(cfg, JSON.parse(localStorage.getItem('gapcfg') || '{}')); } catch (e) { }
+  const sel = $('mel'); for (const id of Object.keys(Melody.SEG)) { const o = document.createElement('option'); o.value = id; o.textContent = (MELNAME[id] || id) + ' · ' + Melody.len(id).toFixed(1) + ' s'; sel.appendChild(o); }
+  sel.value = (() => { try { return localStorage.getItem('gapmel') || 'tokai_dep'; } catch (e) { return 'tokai_dep'; } })(); try { $('scn').value = localStorage.getItem('gapscn') || 'door'; } catch (e) { }
+  const links = [['gDef', 'rDef'], ['gName', 'rName'], ['gTime', 'rTime'], ['gBeep', 'rBeep'], ['gDoor', 'rDoor'], ['vol', 'rVol']];
+  const num = (id, v) => { const x = parseFloat(v); return isFinite(x) ? x : DEF[id]; };
+  function refresh() {
+    for (const [a, b] of links) { $(a).value = cfg[a]; $(b).value = cfg[a]; } $('lp').value = cfg.lp;
+    const id = sel.value, len = Melody.len(id), door = cfg.gDoor + cfg.gDef + len;
+    $('calc').innerHTML = 'Với melody đang chọn (<b>' + len.toFixed(1) + ' s</b>): đèn cửa chờ <b>' + door.toFixed(1) + ' s</b> sau khi ấn đóng cửa (PA nhắc ' + cfg.gDoor + ' s + ngắt ' + cfg.gDef + ' s + melody).';
+    $('out').value = 'Ngắt mặc định giữa hai đoạn: ' + cfg.gDef + ' s\nSau tên ga, trước giờ đến: ' + cfg.gName + ' s\nSau giờ đến, trước ga kế: ' + cfg.gTime + ' s\nSau tiếng bíp 4 nốt: ' + cfg.gBeep + ' s\nPA nhắc đóng cửa (cố định cho đèn cửa): ' + cfg.gDoor + ' s\nÂm lượng: ' + cfg.vol + ' · lọc sân ga: ' + (cfg.lp ? 'bật' : 'tắt');
+    try { localStorage.setItem('gapcfg', JSON.stringify(cfg)); localStorage.setItem('gapmel', sel.value); localStorage.setItem('gapscn', $('scn').value); } catch (e) { }
+  }
+  for (const [a, b] of links) { $(a).oninput = () => { cfg[a] = num(a, $(a).value); refresh(); }; $(b).oninput = () => { cfg[a] = num(a, $(b).value); refresh(); }; }
+  $('lp').oninput = () => { cfg.lp = $('lp').value === '0' ? 0 : 1; refresh(); }; sel.onchange = $('scn').onchange = () => { refresh(); build(); };
+  $('reset').onclick = () => { cfg = Object.assign({}, DEF); refresh(); };
+  $('copy').onclick = () => { $('out').select(); try { navigator.clipboard.writeText($('out').value); } catch (e) { document.execCommand('copy'); } };
+  // ---- âm thanh ----
+  const AC = window.AudioContext || window.webkitAudioContext; let ctx = null, master = null, buf = null, tok = 0, cur = null, loadP = null;
+  function ensure() { if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; } ctx = new AC(); master = ctx.createGain(); master.connect(ctx.destination);
+    loadP = fetch(Melody.FILE).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(b => { buf = b; $('stat').textContent = 'Melody đã tải (' + b.duration.toFixed(0) + ' s).'; }).catch(() => { $('stat').textContent = 'Không tải được ' + Melody.FILE + ' (mở trang này qua http://localhost:8765).'; }); }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const jaVoice = () => { const v = speechSynthesis.getVoices().filter(x => /^ja/i.test(x.lang)); return v.find(x => /google|natural|kyoko|haruka/i.test(x.name)) || v[0] || null; };
+  function speak(text) { return new Promise(res => { const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; const v = jaVoice(); if (v) u.voice = v; u.volume = Math.min(1, cfg.vol * 1.3); let done = false; const end = () => { if (!done) { done = true; clearTimeout(t); res(); } }; const t = setTimeout(end, 6000 + text.length * 160); u.onend = u.onerror = end; speechSynthesis.speak(u); }); }
+  function playMel(id, dep) { return new Promise(res => { const seg = Melody.SEG[id]; if (!buf) { res(); return; } const s = ctx.createBufferSource(), g = ctx.createGain(), dur = seg[1] - seg[0], t0 = ctx.currentTime + 0.03; s.buffer = buf; let out = g; g.gain.value = (dep && cfg.lp) ? 0.55 : 0.9; if (dep && cfg.lp) { const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3200; g.connect(lp); out = lp; }
+      g.gain.setValueAtTime(g.gain.value, t0 + dur - 0.2); g.gain.linearRampToValueAtTime(0.0001, t0 + dur); s.connect(g); out.connect(master); s.onended = () => res(); cur = s; s.start(t0, seg[0], dur + 0.02); }); }
+  function beep() { return new Promise(res => { [784, 988, 1175, 988].forEach((f, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = f; const t = ctx.currentTime + i * 0.3; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.16, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3); o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.32); }); setTimeout(res, 1300); }); }
+  // ---- kịch bản (cùng nội dung với game) ----
+  const pa = (t, label) => ({ k: 'pa', t, label: label || t });
+  function steps() {
+    const sc = $('scn').value, id = sel.value, isDep = /_dep$/.test(id), G = cfg.gDef;
+    switch (sc) {
+      case 'door': return [pa('ドアが閉まります。ご注意ください。'), { k: 'mel', id, dep: true }, { k: 'mark', label: 'Đèn cửa xanh' }, pa('次は、大宮に止まります。')];
+      case 'start': return [{ k: 'mel', id }, pa('本日も、東北新幹線をご利用くださいまして、ありがとうございます。この列車は、はやぶさ1号、新函館北斗行きです。', 'Cảm ơn / giới thiệu chuyến'), pa('停車駅をご案内いたします。'), { k: 'gap', s: cfg.gName }, pa('大宮、'), { k: 'gap', s: cfg.gName }, pa('7時32分着、'), { k: 'gap', s: cfg.gTime }, pa('仙台、'), { k: 'gap', s: cfg.gName }, pa('8時55分着、'), { k: 'gap', s: cfg.gTime }, pa('終点、新函館北斗、'), { k: 'gap', s: cfg.gName }, pa('11時38分着です。'), pa('次は、大宮に止まります。')];
+      case 'appr': return [{ k: 'mel', id }, pa('まもなく、仙台、仙台です。'), pa('仙台では、地下鉄はお乗り換えです。'), pa('仙台では、右側のドアが開きます。')];
+      case 'term': return [{ k: 'mel', id }, pa('まもなく、終点、新函館北斗、新函館北斗です。'), pa('新函館北斗では、函館線はお乗り換えです。'), pa('新函館北斗では、右側のドアが開きます。'), pa('本日も、東北新幹線をご利用くださいまして、ありがとうございました。')];
+      case 'inc': return [{ k: 'mel', id }, pa('ただいま、大雨のため、速度を落として運転しております。')];
+      case 'eqk': return [{ k: 'beep' }, { k: 'gap', s: cfg.gBeep }, pa('ただいま、地震のため、緊急停止いたしました。そのまま、しばらくお待ちください。')];
+      default: return [pa('次は、大宮に止まります。'), pa('お急ぎのところ、列車が約3分遅れております。お詫び申し上げます。')];
+    }
+  }
+  const chip = k => k === 'mel' ? ['Melody', 'c-mel'] : k === 'pa' ? ['PA', 'c-pa'] : k === 'beep' ? ['Bíp', 'c-beep'] : ['Mốc', 'c-mark'];
+  let plan = [];
+  function build() {
+    plan = steps(); const tl = $('tl'); tl.innerHTML = ''; let planned = 0;
+    for (const s of plan) { if (s.k === 'gap') { s.row = null; continue; }
+      const [lab, cls] = chip(s.k), r = document.createElement('div'); r.className = 'step'; const nm = s.k === 'mel' ? (MELNAME[s.id] || s.id) : s.k === 'beep' ? 'Tiếng bíp 4 nốt' : s.label || s.t;
+      r.innerHTML = '<span class="chip ' + cls + '">' + lab + '</span><span></span><span class="dur">' + (s.k === 'mel' ? Melody.len(s.id).toFixed(1) + ' s' : s.k === 'beep' ? '1,3 s' : s.k === 'mark' ? '' : '?') + '</span>'; r.children[1].textContent = nm; s.row = r; tl.appendChild(r); }
+    refresh();
+  }
+  async function run() {
+    stop(true); const my = ++tok; ensure(); try { await loadP; } catch (e) { } if (my !== tok) return; build(); const rows = []; let override = null, lastEnd = null, t00 = performance.now();
+    const seq = plan.slice(), tl = $('tl'); let prevRow = null;
+    for (let i = 0; i < seq.length; i++) { const s = seq[i]; if (my !== tok) return;
+      if (s.k === 'gap') { override = s.s; continue; }
+      const gap = override !== null ? override : cfg.gDef; override = null;
+      const wait = lastEnd === null ? 0 : Math.max(0, gap * 1000 - (performance.now() - lastEnd));
+      if (lastEnd !== null && prevRow) { const gb = document.createElement('div'); gb.className = 'gapbar'; gb.innerHTML = '<i style="width:' + Math.max(2, gap * 36) + 'px"></i>ngắt ' + gap.toFixed(1) + ' s'; s.row.before(gb); }
+      if (wait) await sleep(wait); if (my !== tok) return;
+      document.querySelectorAll('.step.on').forEach(e => e.classList.remove('on')); s.row.classList.add('on'); const t1 = performance.now();
+      if (s.k === 'mel') await playMel(s.id, !!s.dep); else if (s.k === 'pa') { await speak(s.t); s.row.children[2].textContent = ((performance.now() - t1) / 1000).toFixed(1) + ' s'; } else if (s.k === 'beep') await beep(); else if (s.k === 'mark') s.row.children[2].textContent = ((performance.now() - t00) / 1000).toFixed(1) + ' s';
+      if (s.k !== 'mark') { lastEnd = performance.now(); prevRow = s.row; } }
+    document.querySelectorAll('.step.on').forEach(e => e.classList.remove('on')); $('stat').textContent = 'Xong, tổng ' + ((performance.now() - t00) / 1000).toFixed(1) + ' s.';
+  }
+  function stop(quiet) { tok++; try { speechSynthesis.cancel(); } catch (e) { } try { if (cur) { cur.onended = null; cur.stop(); } } catch (e) { } cur = null; if (!quiet) document.querySelectorAll('.step.on').forEach(e => e.classList.remove('on')); }
+  $('play').onclick = run; $('stop').onclick = () => stop(false);
+  if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = () => { };
+  build();
+})();
+</script>
+</body>
+</html>
