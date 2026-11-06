@@ -375,7 +375,7 @@ $('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchan
 // bấm Bắt đầu (Enter) thì tàu chạy hết cả đoàn; khi đuôi tàu hiện ra thì mép màn hình lái tàu bám theo đuôi và trượt vào (Enter lần nữa để bỏ qua). Ảnh đoàn: assets/mt_*.png + mt.js (tools/build_menu_trains.py).
 const PV = (function () {
   const MAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', E2: 'e2', 'N700S-6': 'kamome' };
-  const A_IN = 700, A_OUT = 900, A_GO = 420, GAP = 8;      // gia tốc (px/s²): vào ga hãm đều, lùi ra, và tăng tốc khi bắt đầu chuyến (cùng gia tốc nên đoàn dài mất nhiều thời gian hơn)
+  const A_IN = 700, A_OUT = 900, A_GO = 420, GAP = 0;      // gia tốc (px/s²): vào ga hãm đều, lùi ra, và tăng tốc khi bắt đầu chuyến (cùng gia tốc nên đoàn dài mất nhiều thời gian hơn)
   let cur = null, tok = 0, gen = 0, busyGo = false, skipReq = false, raf = 0;
   const box = () => $('mTrainPrev'), still = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function build(key, hr) {
@@ -383,11 +383,11 @@ const PV = (function () {
     const parts = V.parts || [key], units = hr ? parts.slice().reverse() : parts.slice(), spec = [];
     let TW = 0, H = 0, s0 = null;
     for (const u of units) { const nm = MAP[u], c = MENU_TRAINS[nm], pv = PREVIEW[nm], VU = Sim.VEH[u]; if (!c || !pv || !VU) return null; if (s0 === null) s0 = 1.7 * 13.9 / pv.ppm * 0.7;
-      const nm_ = VU.cars - 2, w = c.hw * 2 + nm_ * c.mw; spec.push({ nm, c, nm_, w, x: TW }); TW += w + GAP; H = Math.max(H, c.hh, c.mh); }
+      const nm_ = VU.cars - 2, pc = c.pc && c.pc.length === VU.cars ? c.pc : null, w = pc ? pc.reduce((a, p) => a + p[0], 0) : c.hw * 2 + nm_ * c.mw; spec.push({ nm, c, nm_, w, pc, x: TW }); TW += w + GAP; H = Math.max(H, c.hh, c.mh, ...(pc ? pc.map(p => p[1]) : [0])); }
     TW -= GAP;
     const el = document.createElement('div'); el.className = 'ptr'; const pin = document.createElement('div'); pin.className = 'pin'; pin.style.cssText = 'width:' + TW + 'px;height:' + H + 'px;transform:scale(' + s0 + ');gap:' + GAP + 'px';
     const img = (nm, p, w, h, rep, extra) => '<i' + (extra ? ' class="' + extra + '"' : '') + ' style="width:' + (rep ? rep * w : w) + 'px;height:' + h + 'px;background:url(assets/mt_' + nm + '_' + p + '.png) ' + (rep ? 'repeat-x' : 'no-repeat') + ' 0 0/' + w + 'px ' + h + 'px"></i>';
-    pin.innerHTML = spec.map(u => img(u.nm, 'head', u.c.hw, u.c.hh, 0, 'pf') + img(u.nm, 'mid', u.c.mw, u.c.mh, u.nm_) + img(u.nm, 'head', u.c.hw, u.c.hh)).join('');
+    pin.innerHTML = spec.map(u => u.pc ? u.pc.map((p, k) => img(u.nm, 'c' + (k + 1), p[0], p[1])).join('') : img(u.nm, 'headL', u.c.hw, u.c.hh) + img(u.nm, 'mid', u.c.mw, u.c.mh, u.nm_) + img(u.nm, 'head', u.c.hw, u.c.hh)).join('');
     el.style.width = Math.round(TW * s0) + 'px'; el.style.height = Math.round(H * s0) + 'px'; el.appendChild(pin);
     return { el, key, hr, TW: TW * s0, tx: 0 };
   }
@@ -875,7 +875,7 @@ const M = (function () {
   const jrLane = el.querySelector('.logo .jr'), jrLinks = jrLane ? [...jrLane.querySelectorAll('a.jra')] : [];
   // 8 mục: mỗi mẫu một lượt rồi xáo lại (không lặp trong một túi). dir = hướng chạy trên màn hình lúc rời ga đầu (cùng quy tắc hình xem trước ở màn Thiết lập: chiều xuống = phải trừ tuyến có flipDown):
   // N700S, N700 (Tokaido/Sanyo), Kamome (Nishi-Kyushu) chạy sang trái; E5 (Tohoku), E6 (Akita), E8 (Yamagata), E7 (Joetsu) sang phải; W7 (Hokuriku, JR West) dùng hình E7 và chạy sang trái
-  const MT_LIST = [['n700s', 'n700s', -1], ['n700', 'n700', -1], ['kamome', 'kamome', -1], ['e5', 'e5', 1], ['e7', 'e7', 1], ['w7', 'e7', -1], ['e6', 'e6', 1], ['e8', 'e8', 1]];
+  const MT_LIST = [['n700s', 'n700s', -1], ['n700', 'n700', -1], ['kamome', 'kamome', -1], ['s800', 's800', -1], ['e5', 'e5', 1], ['e7', 'e7', 1], ['w7', 'e7', -1], ['e6', 'e6', 1], ['e8', 'e8', 1]];
   let mtBag = [], mtLast = null;
   function mtNext() {
     if (!mtBag.length) { mtBag = MT_LIST.slice(); for (let i = mtBag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [mtBag[i], mtBag[j]] = [mtBag[j], mtBag[i]]; } if (mtBag[mtBag.length - 1] === mtLast) mtBag.unshift(mtBag.pop()); }      // tránh lặp ngay mẫu vừa chạy khi sang túi mới
@@ -884,13 +884,13 @@ const M = (function () {
   const MT_D = 2.2, MT_MAXH = 182, MT_PW = 31, MT_PH = 29;      // hệ số phóng chung tối đa (cửa sổ mọi mẫu rộng ~27 px gốc nên ~51 px trên màn hình), chiều cao ảnh gốc lớn nhất (N700), kích thước ô logo (đơn vị ảnh gốc); đáy tàu đặt sát đường ray để hiện đủ thân
   function trainLoad() {      // dựng đoàn của mẫu kế tiếp trong .tr (gọi lúc tàu đang ở ngoài làn)
     const tr = jrLane.querySelector('.tr'), it = mtNext(), c = window.MENU_TRAINS && MENU_TRAINS[it[1]]; if (!tr || !c) return;
-    const lw = jrLane.clientWidth || Math.round(Math.min(780, innerWidth * .94) * .72), D = Math.min(MT_D, lw * .92 / (4 * c.wp + MT_PW + 1), innerHeight * .62 / MT_MAXH), nm = c.cars - 2, idx = Math.floor((nm - 1) / 2), carX = c.hw + idx * c.mw, TH = Math.max(c.hh, c.mh), TW = c.hw * 2 + nm * c.mw;
+    const lw = jrLane.clientWidth || Math.round(Math.min(780, innerWidth * .94) * .72), D = Math.min(MT_D, lw * .92 / (4 * c.wp + MT_PW + 1), innerHeight * .62 / MT_MAXH), nm = c.cars - 2, idx = Math.floor((nm - 1) / 2), pc = c.pc && c.pc.length === c.cars ? c.pc : null, carX = pc ? pc.slice(0, 1 + idx).reduce((a, p) => a + p[0], 0) : c.hw + idx * c.mw, TH = Math.max(c.hh, c.mh, ...(pc ? pc.map(p => p[1]) : [0])), TW = pc ? pc.reduce((a, p) => a + p[0], 0) : c.hw * 2 + nm * c.mw;
     const k = Math.max(0, Math.floor((c.wcx.length - 5) / 2)), cx = c.wcx.slice(k, k + 5).map(x => carX + x), yTop = TH - c.mh, yc = yTop + c.wyc, xc = cx[2];      // 5 cửa sổ liền nhau ở giữa phần đều của toa giữa
     const laneH = Math.round(MT_MAXH * D) + 3; jrLane.style.height = laneH + 'px'; const dir = it[2], x0 = dir < 0 ? lw : -TW * D, x1 = dir < 0 ? -TW * D : lw;
     tr.style.cssText = '--x0:' + Math.round(x0) + 'px;--xs:' + Math.round(lw / 2 - xc * D) + 'px;--x1:' + Math.round(x1) + 'px;width:' + Math.round(TW * D) + 'px';
     const tz = document.createElement('div'); tz.className = 'tz'; tz.style.cssText = 'width:' + TW + 'px;height:' + TH + 'px;top:' + (laneH - 3 - Math.round(TH * D)) + 'px;transform:scale(' + D + ')';
     const img = (p, w, h, rep) => 'background:url(assets/mt_' + it[1] + '_' + p + '.png) ' + (rep ? 'repeat-x' : 'no-repeat') + ' 0 0/' + w + 'px ' + h + 'px;width:' + (rep ? nm * w : w) + 'px;height:' + h + 'px';
-    tz.innerHTML = '<i class="th" style="' + img('head', c.hw, c.hh) + '"></i><i style="' + img('mid', c.mw, c.mh, true) + '"></i><i style="' + img('head', c.hw, c.hh) + '"></i>';
+    tz.innerHTML = pc ? pc.map((p, k) => '<i style="' + img('c' + (k + 1), p[0], p[1]) + '"></i>').join('') : '<i style="' + img('headL', c.hw, c.hh) + '"></i><i style="' + img('mid', c.mw, c.mh, true) + '"></i><i style="' + img('head', c.hw, c.hh) + '"></i>';
     jrLinks.forEach((a, n) => { a.style.left = cx[n].toFixed(1) + 'px'; a.style.top = Math.round(yc - MT_PH / 2) + 'px'; tz.appendChild(a); });
     tr.textContent = ''; tr.appendChild(tz); tr.dataset.m = it[0];
   }
