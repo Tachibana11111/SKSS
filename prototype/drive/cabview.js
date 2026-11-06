@@ -259,8 +259,8 @@
       quad(P(xl + 0.6, BY + BH, zn - 0.5), P(xr - 0.6, BY + BH, zn - 0.5), P(xr - 0.6, BY + BH + 0.7, zn - 0.5), P(xl + 0.6, BY + BH + 0.7, zn - 0.5), roofC);
     };
     const bridgesFor = q => {
-      const n = zExit === null ? bridgeCount(q.m.i) : 0; if (!n) return; const fr = n === 3 ? [1 / 6, 1 / 2, 5 / 6] : n === 2 ? [0.25, 0.75] : [0.5], ext = q.st.extent, z0p = rr ? q.d - 20 : q.d - 420;
-      for (const f of fr) { const zc = z0p + 440 * f; if (zc < ZN + 3 || zc > 1600 || zc < physLoZ || zc > physHiZ) continue; sink.push({ z: zc, fn: () => drawBridge(q.st, zc, ext[1] + 1.4, ext[0] - 1.4) }); }
+      const n = zExit === null ? bridgeCount(q.m.i) : 0; if (!n) return; const fr = n === 3 ? [1 / 6, 1 / 2, 5 / 6] : n === 2 ? [0.25, 0.75] : [0.5], ext = q.st.extent, tx0 = Math.min(...q.st.tracks.map(t => t.x)), tx1 = Math.max(...q.st.tracks.map(t => t.x)), z0p = rr ? q.d - 20 : q.d - 420;      // chân cầu ở hai đầu: ngoài đường ngoài cùng ít nhất 4,7 m (ngoài tường rào), không cắm lên đường nhánh
+      for (const f of fr) { const zc = z0p + 440 * f; if (zc < ZN + 3 || zc > 1600 || zc < physLoZ || zc > physHiZ) continue; sink.push({ z: zc, fn: () => drawBridge(q.st, zc, Math.max(ext[1] + 1.4, tx1 + 4.7), Math.min(ext[0] - 1.4, tx0 - 4.7)) }); }
     };
     const drawStations = () => {
     for (const q of sts) {

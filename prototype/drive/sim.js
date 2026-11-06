@@ -543,7 +543,7 @@
     T.bt = Math.max(0, T.bt - 0.003 * (1 + T.v / 30) * T.bt * dt); if (T.bt > (T.btMax || 0)) T.btMax = T.bt;
     if (Ft > 0) T.kwh += Ft * T.v / 0.9 * dt / 3.6e6;
     if (T.horn > 0) T.horn = Math.max(0, T.horn - dt);
-    deadStep(T); noteStep(T); xingStep(T); if (T === W.player) { refreshOpposing(W, T); smoothPassers(W); singleDispatch(W, T); }
+    deadStep(T); noteStep(T); xingStep(T); if (T === W.player) { refreshOpposing(W, T); smoothPassers(W); refreshDwellers(W, T); animDwellers(W); singleDispatch(W, T); }
     // bất an của hành khách khi đứng giữa đường
     if (!T.isLead) {
       if (T.phase === 'run' && T.v < 0.3 && W.running && !W.mission) { T.anx = Math.min(100, T.anx + dt * 100 / 900); } else if (T.anx > 0) T.anx = Math.max(0, T.anx - dt * 0.4);
@@ -814,15 +814,47 @@
     const stops = new Set(rec.s.filter(e => !e[3]).map(e => e[0])); if (!stops.has(pr.split)) return rec;
     return Object.assign({}, rec, dir === 'down' ? { v: pr.mini + '+E5', cp: [pr.split, 'E5'] } : { v: 'E5', cp: [pr.split, 'E5+' + pr.mini] });
   }
-  function genStabled(W, M) {
-    const Ly = root.Layout, L = W.line; W.stabled = []; if (!Ly) return; const r = rng((W.seed || 1) * 131 + 5);
-    M.forEach((m, k) => {
-      const st = L.stations[m.i]; if (!st || !st.lay || (k === 0 && m.s === M[0].s && false)) return;
-      const sc = Ly.station(st.lay, W.dir, Ly.pickOf(st, m.i, W)), cand = sc.tracks.filter(t => !t.main && t !== sc.ours); if (!cand.length || r() > 0.3) return;
-      const t = cand[Math.floor(r() * cand.length)], face = t.own ? 1 : -1; let key = L.meta.defVeh;      // face = 1: đỗ quay đầu theo chiều chạy của ta; -1: quay ngược lại (đường chiều kia)
-      if (L.meta.coupleMini && st.km <= L.meta.coupleMini.maxKm && r() < 0.5) { const north = (W.dir === 'down') === (face === 1), mini = r() < 0.5 ? 'E6' : 'E8'; key = r() < 0.4 ? 'E5' : (north ? mini + '+E5' : 'E5+' + mini); }      // mini luôn ở phía bắc đoàn
-      W.stabled.push({ k, i: m.i, track: t, key, face, front: geoS(m) + (r() * 100 - 30) });
-    });
+  // ---- Tàu thật đang đỗ ở ga: lấy từ danh mục tàu (cùng nguồn với bản đồ toàn quốc và tooltip ga), không còn tàu nền ngẫu nhiên.
+  // Tàu ngược chiều đỗ ở đường dừng chiều kia (đường chính hoặc đường phụ có sân ga kề); tàu cùng chiều chỉ hiện ở đường phụ cùng chiều (ga không có đường phụ thì không có chỗ cho tàu cùng chiều đỗ cạnh ta).
+  // Cập nhật mỗi giây theo giờ biểu đồ (kể cả độ trễ); tàu chạy vào ga (hãm đều từ V_ARR trong T_ARR giây) rồi đỗ, tới giờ đi thì tăng tốc ra (gia tốc A_DEP, T_DEP giây); đã có chỗ thì giữ nguyên đường.
+  // Tàu xuất phát tại ga đó (không có giờ đến) và tàu kết thúc ở ga đó thì không có chuyển động vào/ra.
+  const DW_AHEAD = 2600, DW_BEHIND = 1500, T_ARR = 30, V_ARR = 40, A_DEP = 1.0, T_DEP = 45;
+  function platAdj(sc, t) { const E = root.Layout.EDGE; return sc.plats.some(p => Math.abs(Math.min(Math.abs(p.xa - t.x), Math.abs(p.xb - t.x)) - E) < 0.01); }
+  function dwellInfo(W, k) {      // đường đỗ khả dụng của ga k (tính một lần)
+    const c0 = W.dwInfo || (W.dwInfo = {}); if (c0[k]) return c0[k]; const Ly = root.Layout, m = W.player.M[k], st = W.line.stations[m.i], sc = Ly.station(st.lay || '2-2-0', W.dir, Ly.pickOf(st, m.i, W));
+    const oppAdj = sc.tracks.filter(x => !x.own && !x.thr && platAdj(sc, x)).sort((a, b) => (b.main ? 1 : 0) - (a.main ? 1 : 0)), oppMain = sc.tracks.filter(x => !x.own && x.main);
+    return c0[k] = { jp: st.jp, own: sc.tracks.filter(x => x.own && !x.main && !x.thr && x !== sc.ours), opp: oppAdj.length ? oppAdj : oppMain };
+  }
+  function refreshDwellers(W, T) {
+    if (!W.dwOn || W.mission || !root.NatCat || !root.LINES || (W.dwAt !== undefined && W.t - W.dwAt < 1 && W.t >= W.dwAt)) return; W.dwAt = W.t;
+    const NC = root.NatCat, LN = root.LINES, M = T.M, me = W.trip.rec, cm = me && coupleOf(me), now = W.trip.t0 + W.t, near = new Map();
+    for (let k = 0; k < M.length; k++) { const d = geoS(M[k]) - T.x; if (d <= DW_AHEAD && d >= -DW_BEHIND) near.set(W.line.stations[M[k].i].jp, k); }
+    const cur = W.dwMap || (W.dwMap = new Map()), seen = new Set(); let changed = false; const cat = NC.build(LN), idxC = W.dwIdx || (W.dwIdx = {});
+    if (near.size) for (const c of cat) {
+      if (c.rec === me || (me && c.line === W.lineId && c.rec.t === me.t && c.rec.n === me.n && c.rec.d === me.d)) continue;
+      const d = NC.delayOf(W, c.key), dl = d ? d.delay : 0, eff = now - dl; if (eff < c.t0 - T_ARR - 5 || eff > c.t1 + T_DEP + 5) continue; const LL = LN[c.line]; if (!LL) continue;
+      for (const [jp, k] of near) {
+        const ik = c.line + '|' + jp; if (idxC[ik] === undefined) idxC[ik] = LL.stations.findIndex(x => x.jp === jp); const jj = idxC[ik]; if (jj < 0) continue;
+        const p = c.stops.find(q => q.i === jj); if (!p) continue; const first = p === c.stops[0], last = p === c.stops[c.stops.length - 1], ac = c.ta(p) - (first ? 10 : 0), dc = c.td(p) + (last ? 10 : 0);
+        if (eff < ac - (first ? 0 : T_ARR) || eff > dc + (last ? 0 : T_DEP)) continue;
+        const km = LL.stations[jj].km; if (dupHidden(c.rec, km) || (cm && cm.partner === c.rec && T.veh && T.veh.parts && onShared(cm, km))) continue;
+        const ck = c.key; seen.add(ck); const old = cur.get(ck);
+        if (old && old.k === k) { old.dl = dl; old.ac = ac; old.dc = dc; continue; }      // đã có chỗ: giữ nguyên đường, chỉ cập nhật giờ
+        const info = dwellInfo(W, k), same = c.rec.d === W.dir, used = new Set(); for (const e of cur.values()) if (e.k === k) used.add(e.track);
+        const pool = (same ? info.own : info.opp).filter(x => !used.has(x)); if (!pool.length) continue; const key = vehAt(c.rec, km); if (!VEH[key]) continue;
+        const h = hash01(c.cid !== undefined ? c.cid : (c.rec.n | 0), (W.seed || 1) + M[k].i), f0 = geoS(M[k]) - (same ? 10 + 40 * h : 0);
+        cur.set(ck, { k, i: M[k].i, track: pool[Math.floor(h * pool.length)], key, face: same ? 1 : -1, front: f0, f0, ck, label: labelAt(c.rec, km), dl, ac, dc, arrA: !first, depA: !last, v: 0 }); changed = true; break;
+      }
+    }
+    for (const [ck, e] of cur) if (!seen.has(ck) || !near.has(W.line.stations[e.i].jp)) { cur.delete(ck); changed = true; }
+    if (changed || !W.stabled) W.stabled = [...cur.values()];
+  }
+  function animDwellers(W) {      // mỗi nhịp: vị trí tàu theo giờ biểu đồ (hãm vào ga / đỗ / tăng tốc ra)
+    const cur = W.dwMap; if (!cur || !cur.size) return; const now = W.trip.t0 + W.t;
+    for (const e of cur.values()) { const eff = now - e.dl, same = e.face === 1; let off = 0, v = 0;
+      if (e.arrA && eff < e.ac) { const tau = Math.max(0, e.ac - eff); off = (same ? -1 : 1) * V_ARR * tau * tau / (2 * T_ARR); v = V_ARR * tau / T_ARR; }
+      else if (e.depA && eff > e.dc) { const tau = eff - e.dc; off = (same ? 1 : -1) * 0.5 * A_DEP * tau * tau; v = A_DEP * tau; }
+      e.front = e.f0 + off; e.v = v; }
   }
   // ---- Tàu của tuyến cha chạy chung đường trước ngã rẽ (Tohoku trên Tokyo–Omiya; Joetsu trên Omiya–Takasaki): đi trước ta, buộc ta giữ giãn cách
   // thời điểm (s) tàu rec của tuyến LF ở km (nội suy giữa các ga dừng); null nếu km nằm ngoài hành trình
@@ -974,7 +1006,7 @@
         if (j >= 0) { M[j].sOrig = M[j].s; M[j].s -= pv.len + COUPLE_GAP; W.parked.push({ key: 'E5', front: M[j].sOrig, kind: 'wait', i: P.cp.i }); } } }
     { const P = W.player; if (P.cp && P.cp.done && P.cp.kind === 'split' && M[0].i === P.cp.i) W.parked.push({ key: 'E5', front: M[0].s - P.veh.len - COUPLE_GAP, kind: 'left' }); }      // xuất phát đúng ga tách: phần Tohoku còn đứng ở sân ga phía sau
     if (!trip.mission) planCouple(W, L, trip, W.player);
-    if (opts.stabled !== false) genStabled(W, M);
+    if (opts.stabled !== false) W.dwOn = true;      // tàu thật đang đỗ ở ga (refreshDwellers)
     let leadRec = opts.lead === false ? null : pickLead(L, W.catalog, trip), fgn = opts.lead === false ? null : pickForeign(L, trip);
     if (fgn && leadRec && timeAt(L, trip.rec, trip.M[0].i) - timeAt(L, leadRec, trip.M[0].i) <= fgn.gap) fgn = null;       // chọn tàu đi trước sát hơn (cùng tuyến hay tuyến cha)
     if (fgn) leadRec = fgn.rec; else if (leadRec) leadRec = withMini(L, leadRec, trip.dir, opts.seed || 1);
