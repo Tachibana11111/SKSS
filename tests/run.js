@@ -323,10 +323,17 @@ if (section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường
         if (n % 20) continue;
         for (const sb of W.stabled) { seen++; if (sb.v > 1) moving++; const c = CAT.find(x => x.key === sb.ck), st = L2.stations[sb.i], dw = tt => { const q = c && NatCat.stateOf(window.LINES, c, tt); return !!(q && q.dwell && window.LINES[c.line].stations[q.idx].jp === st.jp); };
           let near = false; for (let dt = -50; dt <= 35 && !near; dt += 3) near = dw(now + dt);
-          if (!c) bad.push(sb.ck + ' không có trong danh mục'); else if (!near) bad.push(sb.ck + ' ' + st.en + ' không đỗ ở ga quanh giờ này'); else if (!Sim.VEH[sb.key] || (sb.face === 1) !== sb.track.own || (sb.face === 1 && sb.track.main) || (sb.face === -1 && sb.track.own) || (sb.face === 1) !== (c.rec.d === W.dir)) bad.push(sb.ck + ' ' + st.en + ' hướng/đường sai'); } } }
+          if (!c) bad.push(sb.ck + ' không có trong danh mục'); else if (!near) bad.push(sb.ck + ' ' + st.en + ' không đỗ ở ga quanh giờ này'); else if (!Sim.VEH[sb.key] || (sb.face === 1) !== sb.track.own || (sb.face === 1 && sb.track.main) || (sb.face === -1 && (sb.track.own || sb.track.main)) || (sb.face === 1) !== (c.rec.d === W.dir)) bad.push(sb.ck + ' ' + st.en + ' hướng/đường sai'); } } }
     ok(rand === 0, 'không còn tàu nền ngẫu nhiên khi tạo chuyến (' + rand + ')'); ok(seen > 0, 'có tàu thật đang đỗ ở ga trong các chuyến Kodama mẫu (' + seen + ' lần thấy)');
     ok(moving > 0, 'tàu chạy vào/ra ga có chuyển động (' + moving + ' lần thấy đang chạy)'); ok(jump === 0, 'tàu đỗ/vào/ra ga chuyển động liên tục, không nhảy vị trí (' + jump + ' lần nhảy > 3 m mỗi nhịp)');
     ok(bad.length === 0, 'tàu đỗ: hướng khớp loại đường (cùng chiều ở đường phụ cùng chiều, ngược chiều ở đường chiều kia) và là tàu thật đang đỗ ở ga', bad.slice(0, 3).join('; ')); }
+  // tàu đỗ không bao giờ nằm trên đường của chính tàu ta hay trên đường chính (làn tàu chạy thông qua), và không lẫn tàu của nhóm đường khác (Tokyo: Tokaido 14-19 / Tohoku 20-23)
+  { const CAT3 = NatCat.build(window.LINES), LY = window.Layout; let seen = 0, onOurs = 0, onMain = 0, foreign = 0;
+    for (const [ln, dir] of [['toh', 'down'], ['toh', 'up'], ['yam', 'down'], ['jts', 'down'], ['tsk', 'down'], ['tsk', 'up']]) { const LT = Sim.lineOf(ln), recs = LT.trains.filter(x => x.d === dir).slice(0, 8);
+      for (const rec of recs) { const st = rec.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld(ln, Sim.makeTrip(ln, rec, st[0], st[st.length - 1]), { diff: 'easy', seed: 2, lead: false, events: false }); let n = 0;
+        while (n++ < 1600) { Sim.tick(W, 0.05, {}, false); for (const sb of W.stabled) { seen++; const c = CAT3.find(x => x.key === sb.ck), stn = LT.stations[sb.i], ours = LY.station(stn.lay || '2-2-0', W.dir, LY.pickOf(stn, sb.i, W)).ours;
+          if (sb.track === ours || (sb.track.x === ours.x && sb.track.c === ours.c)) onOurs++; if (sb.track.main) onMain++; if (!c || window.LINES[c.line].meta.atc !== LT.meta.atc) foreign++; } } } }
+    ok(seen > 0 && onOurs === 0 && onMain === 0 && foreign === 0, 'tàu đỗ: không nằm trên đường của tàu ta (' + onOurs + '), không trên đường chính (' + onMain + '), không lẫn tàu nhóm đường khác (' + foreign + ') trong ' + seen + ' lần thấy'); }
   // --- tàu chạy trước trên Tohoku có thể là đoàn ghép và tách ở Morioka/Fukushima
   { const T1 = Sim.lineOf('toh'), iM = T1.stations.findIndex(x => x.en === 'Morioka'), recs8 = T1.trains.filter(t => t.t === 'Hayabusa' && t.d === 'down' && t.s.some(e => e[0] === 0 && !e[3]) && t.s.some(e => e[0] === iM && !e[3])).slice(1, 9);
     let found = null; for (const rec8 of recs8) for (let sd = 1; sd <= 8 && !found; sd++) { const W = Sim.createWorld('toh', Sim.makeTrip('toh', rec8, 0, iM), { diff: 'easy', seed: sd, events: false }); if (W.lead && W.lead.cp) found = W; }
@@ -914,6 +921,23 @@ if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, 
               ok(n1 === 'P', 'tạm dừng (mất focus/Esc): PA đang đọc dừng, không sang câu kế', n1); A.resumePlay();
               setTimeout(() => { const n2 = spoken.map(x => x[1]).join(''); ok(n2 === 'PPQ', 'tiếp tục sau tạm dừng: đọc lại câu đang dở rồi phát nốt phần còn lại (không bị ngắt)', n2); res(); }, 4200); }, 3000); }, 40); }, 2700); }, 3500); }, 900);
       }, 8500); })); }
+}
+
+if (section('34. Thời gian tàu thông qua theo giới hạn tốc độ ga')) { // thời gian tàu thông qua đi hết đoạn nhìn thấy phụ thuộc giới hạn tốc độ tại ga
+  const ln = Sim.lineOf('toh'), rec = ln.trains.find(t => t.d === 'down' && t.s.filter(e => !e[3]).length >= 4), st = rec.s.filter(e => !e[3]);
+  const trip = Sim.makeTrip('toh', rec, st[0][0], st[st.length - 1][0]), W = Sim.createWorld('toh', trip, { diff: 'easy', seed: 1, lead: false, events: false });
+  const ds = W.trip.M.map((m, k) => Sim.passDur(W, k, 404.7)), lim = W.trip.M.map(m => ln.meta.limits.some(([a, b, v]) => ln.stations[m.i].km >= a && ln.stations[m.i].km < b && v <= 110));
+  ok(ds.every(d => d >= 8 && d <= 40), 'passDur trong khoảng hợp lý: ' + ds.map(d => d.toFixed(1)).join(' '));
+  const slow = ds.filter((d, k) => lim[k]), fast = ds.filter((d, k) => !lim[k]);
+  ok(!slow.length || !fast.length || Math.min(...slow) > Math.max(...fast) + 5, 'ga giới hạn 110 km/h: tàu thông qua chậm hơn rõ rệt ga 285 km/h');
+}
+
+if (section('35. Tàu đỗ ở đường dừng bỏ trống khi ta chạy thông qua ga')) { // Komachi 1 chạy thông qua Utsunomiya: Yamabiko 201 đỗ ở đường phụ (đường dừng của ta để trống) phải có trong danh sách tàu đỗ
+  const ln = Sim.lineOf('aki'), rec = ln.trains.find(t => t.n == 1 && t.d === 'down' && t.t === 'Komachi'), st = rec.s.filter(e => !e[3]);
+  const trip = Sim.makeTrip('aki', rec, st[0][0], st[st.length - 1][0]), W = Sim.createWorld('aki', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+  const ku = trip.M.findIndex(m => ln.stations[m.i].en === 'Utsunomiya'), sU = Sim.sOfKm(ln.stations[trip.M[ku].i].km, 'down', ln.kmEnd); let n = 0, got = false;
+  while (!T.finished && n++ < 3e6 && T.x < sU + 100) { Sim.tick(W, 0.05, {}, true); if (n % 20 === 0 && Math.abs(sU - T.x) < 1500 && (W.stabled || []).some(b => b.i === trip.M[ku].i && b.label.includes('201'))) got = true; }
+  ok(!trip.M[ku].stop && got, 'chạy thông qua ga: tàu cùng chiều đỗ ở đường dừng bỏ trống của ta (Yamabiko 201 ở Utsunomiya)');
 }
 
 Promise.all(global.__pending || []).then(() => { console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); } });

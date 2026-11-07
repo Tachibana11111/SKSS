@@ -505,7 +505,7 @@
     for (const sb of W.stabled || []) { const veh = S.VEH[sb.key], hi = sb.front - T.x, lo = hi - veh.len; if (lo > 1700 || hi < -20) continue; const X = sb.track.x, headHi = sb.face === 1;       // tàu đỗ ở đường phụ của ga: đầu tàu (đoàn thứ nhất) ở đầu cao nếu quay theo chiều chạy, ở đầu thấp nếu quay ngược
       items.push({ z: Math.max(lo, ZN + 1), fn: () => headHi ? slicesVeh(veh, hi, X, -1, false) : slicesVeh(veh, lo, X, 1, false) }); }
     const pl = T.phase === 'dwell' ? S.passersAt(W, T.k) : null;
-    if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9, lo = W.rear ? -1.7 : 0; if (u > lo && u < 1) { const key = p.v || (W.line.meta.defVeh), veh = S.VEH[key] || S.VEH.N700, sp = R.sprites && R.sprites[SMAP[key] || 'n700'], fxp = 0 + (c.lane > 0 ? 1.85 : -1.85);
+    if (pl) for (const p of pl) { const pd = S.passDur(W, T.k, (S.VEH[p.v || W.line.meta.defVeh] || S.VEH.N700).len), u = (W.t - (p.t - pd / 2)) / pd, lo = W.rear ? -1.7 : 0; if (u > lo && u < 1) { const key = p.v || (W.line.meta.defVeh), veh = S.VEH[key] || S.VEH.N700, sp = R.sprites && R.sprites[SMAP[key] || 'n700'], fxp = 0 + (c.lane > 0 ? 1.85 : -1.85);
       // camera sau nhìn ngược từ đuôi tàu ta: tàu cùng chiều tới từ xa phía sau, mũi (đầu tàu) ở gần camera nhất rồi lướt qua; vị trí tính từ cùng mô hình với camera trước (mũi tàu cách mũi ta -len..520 m) cộng quãng từ mũi ta tới camera
       const zF0 = -veh.len + u * (veh.len + 520), zFront = W.rear ? -(W.rearLen || 0) - zF0 : zF0;
       if (W.rear && (zFront + veh.len < ZN || zFront > 1500)) continue;

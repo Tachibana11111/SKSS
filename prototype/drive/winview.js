@@ -227,7 +227,7 @@
     if ((v > 20 || W.oppCat) && !S.oppHidden(W, T) && side < 0) for (const t0 of W.opposing || []) { const key = S.oppKey(W, T, t0), veh = S.VEH[key] || S.VEH.N700, sn = T.x + (t0 - W.t) * 200, dd = dep(ADJ - 1.45);
       if (sn > sCam + 220 || sn + veh.len < sCam - 220) continue; items.push({ d: dd, fn: () => { const vr = v + 200; if (veh.parts) { let off = 0; for (const pk of veh.parts) { const pv = S.VEH[pk]; trainSide(pk, sn + off, pv.len, true, dd, vr); off += pv.len + (veh.gap || 2.5); } } else trainSide(key, sn, veh.len, true, dd, vr); const u = 1 - Math.abs(sn + veh.len / 2 - sCam) / 140; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.08 * u + ')'; ctx.fillRect(ox0, oy0, ow, oh); } } }); }
     const pl = T.phase === 'dwell' ? S.passersAt(W, T.k) : null;
-    if (pl) for (const p of pl) { const u = (W.t - (p.t - 4.5)) / 9; if (u <= 0 || u >= 1) continue; const key = p.v || L.meta.defVeh, veh = S.VEH[key] || S.VEH.N700, q = sts.find(z => z.i === T.k), thr = q && q.st.tracks.find(t => t.thr && t.own), eo = thr ? out(thr.x) : (side < 0 ? ADJ : -ADJ);
+    if (pl) for (const p of pl) { const key = p.v || L.meta.defVeh, veh = S.VEH[key] || S.VEH.N700, pd = S.passDur(W, T.k, veh.len), u = (W.t - (p.t - pd / 2)) / pd; if (u <= 0 || u >= 1) continue; const q = sts.find(z => z.i === T.k), thr = q && q.st.tracks.find(t => t.thr && t.own), eo = thr ? out(thr.x) : (side < 0 ? ADJ : -ADJ);
       if (eo <= 0) continue; const sFront = T.x + (-veh.len + u * (veh.len + 520)), dd = dep(eo - 1.45); items.push({ d: dd, fn: () => trainSide(key, sFront - veh.len, veh.len, false, dd, 70) }); }
 
     // ---- hầm: tường bê tông sát cửa sổ che mọi thứ phía sau; mạch nối vỏ hầm mỗi 10 m; đèn trần chỉ ở hầm đô thị và quanh ga ngầm
