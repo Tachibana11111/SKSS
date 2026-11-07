@@ -762,24 +762,39 @@
     W.passDyn = { k, list: out };
   }
   const PASS_TAU = 1.0;
-  function smoothPassers(W) { const l = W.passDyn && W.passDyn.list; if (!l) return; for (const o of l) if (o.tg !== undefined) o.t = o.tg + o.cr * Math.max(0, 1 - (W.t - o.cw) / PASS_TAU); }
+  function smoothPassers(W) { for (const l of [W.passDyn && W.passDyn.list, W.oppThru]) if (l) for (const o of l) if (o.tg !== undefined) o.t = o.tg + o.cr * Math.max(0, 1 - (W.t - o.cw) / PASS_TAU); }
   // thời gian tàu thông qua đi hết đoạn nhìn thấy (thân tàu + 520 m) với tốc độ giới hạn tại ga: ga 110 km/h thì chậm hơn ga 285 km/h
   const passDur = (W, k, len) => { const st = W.line.stations[W.trip.M[k].i], v = Math.max(40, Math.min(285, limitKm(W.line, st.km))) / 3.6; return Math.min(40, (len + 520) / v); };
+  // tàu ngược chiều thông qua ga: mũi tàu đi từ 900 m phía trước ta tới (thân tàu + 300 m) phía sau ta, cùng tốc độ giới hạn tại ga
+  const OPP_Z0 = 900, OPP_Z1 = 300, oppThruDur = (W, k, len) => { const st = W.line.stations[W.trip.M[k].i], v = Math.max(40, Math.min(285, limitKm(W.line, st.km))) / 3.6; return Math.min(50, (len + OPP_Z0 + OPP_Z1) / v); };
+  const oppThruZ = (u, len) => OPP_Z0 - u * (len + OPP_Z0 + OPP_Z1);      // vị trí mũi tàu so với mũi tàu ta (m)
   const passersAt = (W, k) => (W.passDyn && W.passDyn.k === k ? W.passDyn.list : (W.passers && W.passers[k]) || []);
   function refreshOpposing(W, T) {
+    if (T.phase === 'dwell' && W.opposing && W.opposing.length) { W.opposing = []; W.oppInfo = []; }      // vừa vào ga: bỏ ngay danh sách đang vẽ (không đợi nhịp cập nhật 0,4 s)
     if (!W.oppCat || (W.oppAt !== undefined && W.t - W.oppAt < 0.4 && W.t >= W.oppAt)) return; W.oppAt = W.t;
     const NC = root.NatCat; if (NC && W.haz) NC.step(W); if (NC) NC.updateObstacle(W, T);
     if (T.phase === 'dwell') refreshPassers(W, T);
     const now = W.trip.t0 + W.t, kmP = kmOfS(T.x, W.dir, W.line.kmEnd), down = W.dir === 'down', st = W.oppState || (W.oppState = new Map());
+    const held = [];
     for (const c of W.oppCat) { const p = c.pts, dl = NC && W.haz ? NC.delayOf(W, c.id) : null, nowE = now - (dl ? dl.delay : 0); let km = null, vo = 0;
-      if (dl && dl.hold > 0) { st.delete(c.id); continue; }
+      if (dl && dl.hold > 0) { st.delete(c.id); for (let k = 0; k < p.length - 1; k++) { const a = p[k], b = p[k + 1]; if (nowE > a.td && nowE < b.ta) { const f = (nowE - a.td) / ((b.ta - a.td) || 1), kh = a.km + (b.km - a.km) * f, gc = (down ? kh - kmP : kmP - kh) * 1000;      // tàu ngược chiều đang bị giữ (động đất, mưa gió) dừng giữa hai ga: vẫn nằm trên đường, vẽ đứng yên
+            if (gc > -1500 && gc < 4500 && !dupHidden(c.rec, kh)) held.push({ id: c.id, key: vehAt(c.rec, kh), label: labelAt(c.rec, kh), sC: sOfKm(kh, W.dir, W.line.kmEnd) }); break; } } continue; }
       for (let k = 0; k < p.length && km === null; k++) { if (nowE >= p[k].ta && nowE <= p[k].td) { km = p[k].km; vo = 0; } else if (k < p.length - 1 && nowE > p[k].td && nowE < p[k + 1].ta) { const f = (nowE - p[k].td) / ((p[k + 1].ta - p[k].td) || 1); km = p[k].km + (p[k + 1].km - p[k].km) * f; vo = Math.abs(p[k + 1].km - p[k].km) * 1000 / ((p[k + 1].ta - p[k].td) || 1); } }
       if (km === null || vo < 5) { if (!st.has(c.id) || st.get(c.id).t0 > W.t) st.delete(c.id); continue; }
       if (dupHidden(c.rec, km)) { st.delete(c.id); continue; }      // chuyến Komachi/Tsubasa đang ghép với chuyến Tohoku cùng số hiệu: chỉ vẽ một đoàn ghép (chuyến Tohoku)
       const gap = (down ? km - kmP : kmP - km) * 1000;
       if (gap > 0 && gap < 40000) st.set(c.id, { t0: W.t + gap / Math.max(40, T.v + vo), v: vehAt(c.rec, km), label: labelAt(c.rec, km) }); }
     for (const [k, s] of st) if (W.t - s.t0 > 6) st.delete(k);
-    const arr = [...st.values()].filter(s => s.t0 - W.t < 150).sort((a, b) => a.t0 - b.t0); W.opposing = arr.map(s => s.t0); W.oppInfo = arr;
+    W.heldOpp = held;
+    // tàu ngược chiều CHẠY THÔNG QUA ga ta đang đỗ (không dừng ở ga này): lao qua đường thông qua phía ngược chiều; giờ qua ga nội suy giữa hai ga dừng kề của nó theo lịch thật cộng độ trễ
+    if (T.phase === 'dwell') { const kmS = W.line.stations[T.M[T.k].i].km, out = [], t0 = W.trip.t0, ob = W.oppThruObj || (W.oppThruObj = new Map());
+      for (const c of W.oppCat) { const p = c.pts, dl = NC && W.haz ? NC.delayOf(W, c.id) : null; if (dl && dl.hold > 0) continue;
+        for (let k = 0; k < p.length - 1; k++) { const a = p[k], b = p[k + 1]; if ((kmS - a.km) * (kmS - b.km) >= 0) continue; if (dupHidden(c.rec, kmS)) break;
+          const tp = a.td + (b.ta - a.td) * ((kmS - a.km) / (b.km - a.km)) + (dl ? dl.delay : 0) - t0; if (tp < W.t - 30 || tp > W.t + 150) break;
+          let o = ob.get(c.id); if (!o) { o = { id: c.id, label: labelAt(c.rec, kmS), v: vehAt(c.rec, kmS) }; ob.set(c.id, o); }
+          o.cr = o.t === undefined ? 0 : o.t - tp; o.tg = tp; o.cw = W.t; if (o.t === undefined) o.t = tp; out.push(o); break; } }
+      W.oppThru = out.sort((x, y) => x.t - y.t); } else W.oppThru = [];
+    const arr = [...st.values()].filter(s => s.t0 - W.t < 150).sort((a, b) => a.t0 - b.t0); W.opposing = T.phase === 'dwell' ? [] : arr.map(s => s.t0); W.oppInfo = T.phase === 'dwell' ? [] : arr;      // ta đang đỗ ở ga: tàu ngược chiều sắp tới ga (hoặc sẽ dừng ở ga này) không được vẽ như lao vụt qua làn bên cạnh (xuyên sân ga); trạng thái vẫn theo dõi để khi ta chạy lại thì khớp
   }
   // Đường đơn: ga sắp tới là ga chạy thông qua mà đoạn phía sau nó đang có tàu ngược chiều (theo lịch thật) thì điều độ ra lệnh dừng tránh ở ga đó (運転停車); tàu đã ở ga thì Sim.departBlock giữ cho tới khi đoạn trống
   function singleDispatch(W, T) {
@@ -1393,7 +1408,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

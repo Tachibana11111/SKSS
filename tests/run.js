@@ -852,6 +852,43 @@ if (section('32. Bảng giờ tàu ở màn thiết lập: màu tên tàu phủ 
   ok(window.TRAIN_COL.Hayabusa === window.TRAIN_COL.Yamabiko && window.TRAIN_COL.Komachi !== window.TRAIN_COL.Hayabusa && window.TRAIN_COL.Tsubasa !== window.TRAIN_COL.Hayabusa, 'chuyến ghép: Tohoku xanh lá, Komachi/Tsubasa màu riêng');
   I18N.lang = 'ja'; ok(_tn('Nozomi') === 'のぞみ' && _tn('Hayabusa') === 'はやぶさ' && _tn('Doctor Yellow') !== undefined, '_tn: tên loại tàu tiếng Nhật'); I18N.lang = 'vi'; ok(_tn('Nozomi') === 'Nozomi', '_tn: tiếng Việt giữ nguyên'); }
 
+if (section('34. Thời gian tàu thông qua theo giới hạn tốc độ ga')) { // thời gian tàu thông qua đi hết đoạn nhìn thấy phụ thuộc giới hạn tốc độ tại ga
+  const ln = Sim.lineOf('toh'), rec = ln.trains.find(t => t.d === 'down' && t.s.filter(e => !e[3]).length >= 4), st = rec.s.filter(e => !e[3]);
+  const trip = Sim.makeTrip('toh', rec, st[0][0], st[st.length - 1][0]), W = Sim.createWorld('toh', trip, { diff: 'easy', seed: 1, lead: false, events: false });
+  const ds = W.trip.M.map((m, k) => Sim.passDur(W, k, 404.7)), lim = W.trip.M.map(m => ln.meta.limits.some(([a, b, v]) => ln.stations[m.i].km >= a && ln.stations[m.i].km < b && v <= 110));
+  ok(ds.every(d => d >= 8 && d <= 40), 'passDur trong khoảng hợp lý: ' + ds.map(d => d.toFixed(1)).join(' '));
+  const slow = ds.filter((d, k) => lim[k]), fast = ds.filter((d, k) => !lim[k]);
+  ok(!slow.length || !fast.length || Math.min(...slow) > Math.max(...fast) + 5, 'ga giới hạn 110 km/h: tàu thông qua chậm hơn rõ rệt ga 285 km/h');
+}
+
+if (section('35. Tàu đỗ ở đường dừng bỏ trống khi ta chạy thông qua ga')) { // Komachi 1 chạy thông qua Utsunomiya: Yamabiko 201 đỗ ở đường phụ (đường dừng của ta để trống) phải có trong danh sách tàu đỗ
+  const ln = Sim.lineOf('aki'), rec = ln.trains.find(t => t.n == 1 && t.d === 'down' && t.t === 'Komachi'), st = rec.s.filter(e => !e[3]);
+  const trip = Sim.makeTrip('aki', rec, st[0][0], st[st.length - 1][0]), W = Sim.createWorld('aki', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+  const ku = trip.M.findIndex(m => ln.stations[m.i].en === 'Utsunomiya'), sU = Sim.sOfKm(ln.stations[trip.M[ku].i].km, 'down', ln.kmEnd); let n = 0, got = false;
+  while (!T.finished && n++ < 3e6 && T.x < sU + 100) { Sim.tick(W, 0.05, {}, true); if (n % 20 === 0 && Math.abs(sU - T.x) < 1500 && (W.stabled || []).some(b => b.i === trip.M[ku].i && b.label.includes('201'))) got = true; }
+  ok(!trip.M[ku].stop && got, 'chạy thông qua ga: tàu cùng chiều đỗ ở đường dừng bỏ trống của ta (Yamabiko 201 ở Utsunomiya)');
+}
+
+if (section('36. Đỗ ở ga: không có tàu ngược chiều "ma" lao qua làn bên cạnh')) {
+  const ln = Sim.lineOf('toh'); let run = 0, thru = 0, badThru = 0;
+  for (const [t, nn] of [['Hayabusa', 25], ['Nasuno', 279], ['Nasuno', 265]]) {
+    const rec = ln.trains.find(x => x.d === 'down' && x.t === t && x.n == nn), st = rec.s.filter(e => !e[3]);
+    const trip = Sim.makeTrip('toh', rec, st[0][0], st[nn === 265 ? Math.min(8, st.length - 1) : 3][0]), W = Sim.createWorld('toh', trip, { diff: 'easy', seed: 1, lead: false, events: true }), T = W.player; let n = 0, dw = 0, ghost = 0;
+    while (!T.finished && n++ < 3e6) { Sim.tick(W, 0.05, {}, true); if (T.phase === 'dwell' && W.t > 5) { dw++; if ((W.opposing || []).length) ghost++; for (const o of W.oppThru || []) { thru++; if (!o.v || !Sim.VEH[o.v] || !(o.t > W.t - 40)) badThru++; } } else if (T.phase === 'run' && T.v > 20 && (W.opposing || []).length) run++; }
+    ok(dw > 100 && ghost <= 3, t + ' ' + nn + ': đỗ ở ga thì danh sách tàu ngược chiều đang vẽ trống (' + dw + ' nhịp đỗ, ' + ghost + ' nhịp có tàu; cho phép 1 nhịp trễ mỗi lần vào ga)');
+  }
+  ok(run > 0, 'đang chạy giữa ga vẫn có tàu ngược chiều (' + run + ' nhịp)');
+  ok(thru > 0 && badThru === 0, 'đỗ ở ga: có tàu ngược chiều chạy thông qua ga (danh sách riêng oppThru, ' + thru + ' lượt), mọi mục hợp lệ (' + badThru + ' lỗi)');
+}
+
+if (section('37. Động đất: tàu ngược chiều bị giữ dừng giữa hai ga có trong danh sách vẽ; vật cản cùng chiều có kiểu tàu')) {
+  const ln = Sim.lineOf('tsk'), rec = ln.trains.find(t => t.t === 'Nozomi' && t.n == 1 && t.d === 'down'), st = rec.s.filter(e => !e[3]), iN = ln.stations.findIndex(s => s.en === 'Nagoya');
+  const trip = Sim.makeTrip('tsk', rec, st[0][0], iN), W = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 20460, lead: false, events: true }), T = W.player; let n = 0, held = 0, badH = 0, obsN = 0, badO = 0;
+  while (!T.finished && n++ < 3e6) { Sim.tick(W, 0.05, {}, true); for (const h of W.heldOpp || []) { held++; if (!Sim.VEH[h.key] || !(h.sC > 0)) badH++; } if (W.obs) { obsN++; if (!Sim.VEH[W.obs.key]) badO++; } }
+  ok(held > 0 && badH === 0, 'seed 20460 Nozomi 1: tàu ngược chiều bị giữ (động đất) dừng giữa đường có trong W.heldOpp (' + held + ' lượt, ' + badH + ' lỗi)');
+  ok(obsN > 0 && badO === 0, 'vật cản cùng chiều (W.obs) có kiểu tàu để vẽ (' + obsN + ' lượt, ' + badO + ' lỗi)');
+}
+
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);
   const T = Sim.lineOf('tsk'), H = Sim.lineOf('hok'), N = Sim.lineOf('nks');
@@ -921,23 +958,6 @@ if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, 
               ok(n1 === 'P', 'tạm dừng (mất focus/Esc): PA đang đọc dừng, không sang câu kế', n1); A.resumePlay();
               setTimeout(() => { const n2 = spoken.map(x => x[1]).join(''); ok(n2 === 'PPQ', 'tiếp tục sau tạm dừng: đọc lại câu đang dở rồi phát nốt phần còn lại (không bị ngắt)', n2); res(); }, 4200); }, 3000); }, 40); }, 2700); }, 3500); }, 900);
       }, 8500); })); }
-}
-
-if (section('34. Thời gian tàu thông qua theo giới hạn tốc độ ga')) { // thời gian tàu thông qua đi hết đoạn nhìn thấy phụ thuộc giới hạn tốc độ tại ga
-  const ln = Sim.lineOf('toh'), rec = ln.trains.find(t => t.d === 'down' && t.s.filter(e => !e[3]).length >= 4), st = rec.s.filter(e => !e[3]);
-  const trip = Sim.makeTrip('toh', rec, st[0][0], st[st.length - 1][0]), W = Sim.createWorld('toh', trip, { diff: 'easy', seed: 1, lead: false, events: false });
-  const ds = W.trip.M.map((m, k) => Sim.passDur(W, k, 404.7)), lim = W.trip.M.map(m => ln.meta.limits.some(([a, b, v]) => ln.stations[m.i].km >= a && ln.stations[m.i].km < b && v <= 110));
-  ok(ds.every(d => d >= 8 && d <= 40), 'passDur trong khoảng hợp lý: ' + ds.map(d => d.toFixed(1)).join(' '));
-  const slow = ds.filter((d, k) => lim[k]), fast = ds.filter((d, k) => !lim[k]);
-  ok(!slow.length || !fast.length || Math.min(...slow) > Math.max(...fast) + 5, 'ga giới hạn 110 km/h: tàu thông qua chậm hơn rõ rệt ga 285 km/h');
-}
-
-if (section('35. Tàu đỗ ở đường dừng bỏ trống khi ta chạy thông qua ga')) { // Komachi 1 chạy thông qua Utsunomiya: Yamabiko 201 đỗ ở đường phụ (đường dừng của ta để trống) phải có trong danh sách tàu đỗ
-  const ln = Sim.lineOf('aki'), rec = ln.trains.find(t => t.n == 1 && t.d === 'down' && t.t === 'Komachi'), st = rec.s.filter(e => !e[3]);
-  const trip = Sim.makeTrip('aki', rec, st[0][0], st[st.length - 1][0]), W = Sim.createWorld('aki', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
-  const ku = trip.M.findIndex(m => ln.stations[m.i].en === 'Utsunomiya'), sU = Sim.sOfKm(ln.stations[trip.M[ku].i].km, 'down', ln.kmEnd); let n = 0, got = false;
-  while (!T.finished && n++ < 3e6 && T.x < sU + 100) { Sim.tick(W, 0.05, {}, true); if (n % 20 === 0 && Math.abs(sU - T.x) < 1500 && (W.stabled || []).some(b => b.i === trip.M[ku].i && b.label.includes('201'))) got = true; }
-  ok(!trip.M[ku].stop && got, 'chạy thông qua ga: tàu cùng chiều đỗ ở đường dừng bỏ trống của ta (Yamabiko 201 ở Utsunomiya)');
 }
 
 Promise.all(global.__pending || []).then(() => { console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); } });

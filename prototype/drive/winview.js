@@ -220,6 +220,8 @@
     for (let jn = 0; jn < (L.meta.junctions || []).length; jn++) { const jc = L.meta.junctions[jn]; const sj = S.sOfKm(jc.km, W.dir, L.kmEnd); if (Math.abs(sj - sCam) > 3300) continue;
       items.push({ d: 9, fn: () => { for (let x = ox0 - 6; x < ox1 + 6; x += 12) { const s = sAt(x + 6, 12), off = S.trunkOff(W, s, jn), eo = side > 0 ? off : -off; if (Math.abs(off) < 2.2 || eo < 2.2) continue; const dd = dep(eo);
         ctx.fillStyle = mixc([20, 22, 24], [96, 98, 100], lit); ctx.fillRect(x, Y(0.3, dd), 12.6, Math.max(2, 0.3 * f / dd)); ctx.fillStyle = mixc([30, 32, 36], [160, 164, 168], lit); ctx.fillRect(x, Y(0.2, dd), 12.6, Math.max(1, 0.05 * f / dd)); if (Math.floor(s / 50) !== Math.floor((s - 12) / 50)) { const xm = X(Math.floor(s / 50) * 50, dd), kk = f / dd; ctx.fillStyle = mixc([30, 32, 36], [150, 156, 160], lit); ctx.fillRect(xm - 0.1 * kk, Y(7.5, dd), 0.2 * kk, Y(0, dd) - Y(7.5, dd)); } } } }); }
+    if (side < 0) for (const h of W.heldOpp || []) { const hv = S.VEH[h.key] || S.VEH.N700, sn = h.sC - hv.len / 2; if (sn > sCam + 220 || sn + hv.len < sCam - 220) continue; const dd = dep(ADJ - 1.45);
+      items.push({ d: dd, fn: () => { if (hv.parts) { let off = 0; for (const pk of hv.parts) { const pv = S.VEH[pk]; trainSide(pk, sn + off, pv.len, true, dd, 0); off += pv.len + (hv.gap || 2.5); } } else trainSide(h.key, sn, hv.len, true, dd, 0); } }); }      // tàu ngược chiều bị giữ dừng giữa hai ga
     // tàu trên đường nhánh / đường khác: tàu nhánh vừa tách, phần đoàn đã tách ở lại, tàu chạy trước ở đường khác
     for (const pk of W.parked || []) { if (pk.jn === undefined) continue; const pv = S.VEH[pk.key], off = S.trunkOff(W, pk.front - pv.len, pk.jn), eo = side > 0 ? off : -off; if (eo < 2.2 || Math.abs(pk.front - pv.len / 2 - sCam) > 500) continue; const dd = dep(eo - 1.45); items.push({ d: dd, fn: () => trainSide(pk.key, pk.front - pv.len, pv.len, false, dd, pk.mv ? pk.mv.v : 0) }); }
     { const Ld = W.lead; if (Ld && Ld.phase !== 'end' && Ld.fj !== undefined && Math.abs(Ld.x - Ld.veh.len / 2 - sCam) < 500) { const off = S.trunkOff(W, Ld.x - Ld.veh.len, Ld.fj), eo = side > 0 ? off : -off; if (eo > 2.2) { const dd = dep(eo - 1.45); items.push({ d: dd, fn: () => trainSide(Ld.veh.key, Ld.x - Ld.veh.len, Ld.veh.len, false, dd, Ld.v) }); } } }
@@ -229,6 +231,10 @@
     const pl = T.phase === 'dwell' ? S.passersAt(W, T.k) : null;
     if (pl) for (const p of pl) { const key = p.v || L.meta.defVeh, veh = S.VEH[key] || S.VEH.N700, pd = S.passDur(W, T.k, veh.len), u = (W.t - (p.t - pd / 2)) / pd; if (u <= 0 || u >= 1) continue; const q = sts.find(z => z.i === T.k), thr = q && q.st.tracks.find(t => t.thr && t.own), eo = thr ? out(thr.x) : (side < 0 ? ADJ : -ADJ);
       if (eo <= 0) continue; const sFront = T.x + (-veh.len + u * (veh.len + 520)), dd = dep(eo - 1.45); items.push({ d: dd, fn: () => trainSide(key, sFront - veh.len, veh.len, false, dd, 70) }); }
+    // tàu ngược chiều chạy thông qua ga ta đang đỗ: lao qua đường thông qua phía ngược chiều
+    if (T.phase === 'dwell') for (const o of W.oppThru || []) { const key = o.v || L.meta.defVeh, veh = S.VEH[key] || S.VEH.N700, pd = S.oppThruDur(W, T.k, veh.len), u = (W.t - (o.t - pd / 2)) / pd; if (u <= 0 || u >= 1) continue;
+      const q = sts.find(z => z.i === T.k), thr = q && q.st.tracks.find(t => !t.own && (t.thr || t.main)); if (!thr) continue; const eo = out(thr.x); if (eo <= 0) continue; const sn = T.x + S.oppThruZ(u, veh.len), dd = dep(eo - 1.45);
+      items.push({ d: dd, fn: () => { if (veh.parts) { let off = 0; for (const pk of veh.parts) { const pv = S.VEH[pk]; trainSide(pk, sn + off, pv.len, true, dd, 70); off += pv.len + (veh.gap || 2.5); } } else trainSide(key, sn, veh.len, true, dd, 70); } }); }
 
     // ---- hầm: tường bê tông sát cửa sổ che mọi thứ phía sau; mạch nối vỏ hầm mỗi 10 m; đèn trần chỉ ở hầm đô thị và quanh ga ngầm
     items.push({ d: 2.3, fn: () => { const dd = 2.3; let any = false;

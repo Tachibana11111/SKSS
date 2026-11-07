@@ -239,6 +239,7 @@ function drawFull() {
   { const lines = [], cols = []; let barFrac = null;
     const nm = M[j].name;
     if (T.phase === 'run') { lines.push(nm + '  ·  ' + (d >= 0 ? _t('còn ') + (d >= 1000 ? (d / 1000).toFixed(2) + ' km' : Math.round(d) + ' m') + _t(' tới vạch') : _t('QUÁ VẠCH ') + (-d).toFixed(1) + ' m')); cols.push(Math.abs(d) < 60 ? '#fff' : '#dbe6f2'); barFrac = clamp01(1 - d / 1500);
+      { const ps = M.find((m, q) => q !== j && !m.stop && (x => x > -500 && x < T.veh.len + 100)(T.x - (m.sOrig !== undefined ? m.sOrig : m.s))); if (ps) { lines.push(_t('Đang thông qua ga {0}', ps.name)); cols.push('#ffd88a'); } }      // đầu tàu cách ga thông qua < 500 m trước đến hết thân tàu qua ga
       if (W.diff.hint >= 1 && d > 0 && d < 9000) { const left = d - T.v * T.v / (2 * 0.55); lines.push(left > 30 ? _t('Gợi ý: bắt đầu phanh sau ~') + Math.round(left) + ' m' + (W.diff.hint >= 2 && T.v > 1 ? _t(' · nấc cần B') + Math.max(1, Math.min(7, Math.ceil(T.v * T.v / (2 * Math.max(d, 1)) / 0.75 * 7))) : '') : _t('Gợi ý: PHANH ngay')); cols.push(left > 30 ? '#9fc3ff' : '#ff8a4a'); }
       const tz = Sim.turnoutZones(T).find(z => z.s1 > T.x); if (tz) { lines.push(T.x < tz.s0 ? _t('Ghi {0} km/h sau {1} m', Math.round(tz.v * 3.6), Math.round(tz.s0 - T.x)) : _t('Đang qua ghi · ≤ ') + Math.round(tz.v * 3.6) + ' km/h'); cols.push('#ffc247'); } }
     else if (T.phase === 'dwell') { const e = -d; lines.push(nm + _t('  ·  LỆCH VẠCH ') + (e >= 0 ? '+' : '') + e.toFixed(2) + ' m'); cols.push('#fff');

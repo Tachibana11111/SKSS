@@ -334,6 +334,7 @@ I18N.add("en", {
 "Gợi ý: PHANH ngay": "Hint: BRAKE now",
 "Ghi {0} km/h sau {1} m": "Turnout {0} km/h in {1} m",
 "Đang qua ghi · ≤ ": "Passing a turnout · ≤ ",
+"Đang thông qua ga {0}": "Passing through {0}",
 "  ·  LỆCH VẠCH ": "  ·  OFF MARK ",
 "Cửa: ": "Doors: ",
 "MỞ (đỗ ": "OPEN (stopped ",
