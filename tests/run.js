@@ -889,6 +889,15 @@ if (section('37. Động đất: tàu ngược chiều bị giữ dừng giữa 
   ok(obsN > 0 && badO === 0, 'vật cản cùng chiều (W.obs) có kiểu tàu để vẽ (' + obsN + ' lượt, ' + badO + ' lỗi)');
 }
 
+if (section('38. Xuất phát từ Tokyo (đường ga nhập đường chính ngược chiều): chờ tàu ngược chiều vào ga, không có tàu ngược chiều trên đoạn đi chung')) {
+  const ln = Sim.lineOf('tsk'), rec = ln.trains.find(t => t.n == '65' && t.d === 'down' && t.t === 'Nozomi'), trip = Sim.makeTrip('tsk', rec, 0, 12), W = Sim.createWorld('tsk', trip, { diff: 'normal', seed: 69843, lead: true, events: true }), T = W.player;
+  let n = 0, blocked = 0, departedAt = null, bad = 0, msg = '';
+  while (!T.finished && n++ < 3e5 && T.x < 1200) { Sim.tick(W, 0.05, {}, true); if (T.phase === 'dwell') { const b = Sim.departBlock(T, true); if (b) { blocked++; msg = b; } } else if (departedAt === null) departedAt = W.t;
+    if (T.phase === 'run' && T.x > 330 && T.x < 870) for (const s of W.oppState.values()) { const d = (s.t0 - W.t) * 200; if (d > -450 && d < 900) bad++; } }
+  ok(departedAt !== null, 'tàu xuất phát được sau khi chờ (không kẹt ở ga)', String(departedAt));
+  ok(bad === 0, 'trên đoạn đi chung đường chính ngược chiều (330-870 m) không có tàu ngược chiều nào trong vùng va chạm', String(bad));
+  ok(blocked === 0 || /ngược chiều/.test(msg) || /opposite/.test(msg), 'lý do giữ tàu nêu rõ tàu ngược chiều', msg);
+}
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);
   const T = Sim.lineOf('tsk'), H = Sim.lineOf('hok'), N = Sim.lineOf('nks');

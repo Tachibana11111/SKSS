@@ -63,6 +63,7 @@
     for (const q of sts) if (q.stopHere && !q.m.mainStop) { const o = q.st.ours, w = trackWF(o, T.x, q.m.s); if (o.own ? w > 0 : true) c.lane += LAY.laneOf(o, T.x, q.m.s, w, spreadF(T.x, q.m.s), XA, XB); }      // đường của ta thuộc nhóm đường chính ngược chiều (ga cuối): đi qua ghi chữ X
     const hasSingle = !!(L.single && L.single.length);
     const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * spreadF(T.x + z, q.m.s); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };   // đoạn đường đơn: đường ngược chiều nhập vào đường ta   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
+    const fxOpp = z => { const xo = oppAt(Math.max(0, z)); return xo + (c.lane > xo ? 1.85 : -1.85); };      // mép gần camera của tàu ngược chiều (thân vẽ nhìn ngang) theo vị trí đường ngược chiều thật tại z, không cố định ADJ nên không lệch khỏi đường ray gần ga
     const inStationZone = (za, zb) => { const qs = sts.filter(q => zb > q.d - (FA + 50) && za < q.d + (FB + 20)); return qs.length ? { st: { extent: [Math.min(...qs.map(q => q.st.extent[0])), Math.max(...qs.map(q => q.st.extent[1]))] } } : null; };   // hợp các ga trong tầm (ga vừa qua và ga sắp tới)
 
     const inTun = S.inTunnel(W, T.x);
@@ -475,39 +476,40 @@
     // vẽ thân tàu bằng các lát ảnh nhìn ngang chiếu phối cảnh. sign=-1: thân kéo về phía sau mũi (tàu vượt); sign=+1: thân kéo ra xa mũi (tàu ngược chiều)
     const WL = root.WinLit, winLv = WL ? WL.level(night, zExit !== null, wx) : 0;      // ô cửa sổ tàu sáng đèn khi tối / trong hầm / mưa tuyết dày
     const glowAt = (X, Y, Z, rgb, r, al) => { if (Z < ZN || Z > 1500 || al < 0.03) return; const a = P(X, Y, Z), gr = Math.max(2.5, r * c.f / Z), g = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], gr); g.addColorStop(0, 'rgba(' + rgb + ',' + Math.min(1, al) + ')'); g.addColorStop(0.4, 'rgba(' + rgb + ',' + 0.4 * al + ')'); g.addColorStop(1, 'rgba(' + rgb + ',0)'); ctx.fillStyle = g; ctx.fillRect(a[0] - gr, a[1] - gr, gr * 2, gr * 2); };
-    const slices = (sp, lenM, zRef, fxp, sign) => {
-      if (!sp || !sp.ready) return; const m = sp.meta, xrel = Math.max(0.5, Math.abs(fxp - c.lane)), lo = sign < 0 ? Math.max(zRef - lenM, ZN) : Math.max(zRef, ZN), hi = sign < 0 ? zRef : zRef + lenM; if (hi <= lo) return;
+    const slices = (sp, lenM, zRef, fxp0, sign) => {
+      const fxp = typeof fxp0 === 'function' ? fxp0 : () => fxp0;      // vị trí ngang của thân tàu: số cố định, hoặc hàm theo z (tàu đang vào/ra đường ga qua ghi thì lệch ngang dần)
+      if (!sp || !sp.ready) return; const m = sp.meta, xrel = Math.max(0.5, Math.abs(fxp(Math.max(zRef, 1)) - c.lane)), lo = sign < 0 ? Math.max(zRef - lenM, ZN) : Math.max(zRef, ZN), hi = sign < 0 ? zRef : zRef + lenM; if (hi <= lo) return;
       const tOf = z => sign < 0 ? (zRef - z) / lenM : (z - zRef) / lenM;           // 0 ở mũi tàu, 1 ở đuôi
       let z = lo, n = 0;
       while (z < hi && n++ < 700) {
-        const dz = clamp(z * z * 3 / (c.f * xrel), 0.04, 8), z2 = Math.min(hi, z + dz), zm = (z + z2) / 2, xa = P(fxp, 0, z)[0], xb = P(fxp, 0, z2)[0];   // lát mảnh ≤ ~3 px nên thân tàu liền một khối, không bậc thang
+        const dz = clamp(z * z * 3 / (c.f * xrel), 0.04, 8), z2 = Math.min(hi, z + dz), zm = (z + z2) / 2, xa = P(fxp(z), 0, z)[0], xb = P(fxp(z2), 0, z2)[0];   // lát mảnh ≤ ~3 px nên thân tàu liền một khối, không bậc thang
         const x0 = Math.min(xa, xb), x1 = Math.max(xa, xb);
-        if (x1 > px - 40 && x0 < px + pw + 40) { const s0 = (1 - tOf(z)) * m.width, s1 = (1 - tOf(z2)) * m.width, sx = Math.min(s0, s1), sw = Math.max(0.5, Math.abs(s1 - s0)), hgt = c.f * 3.7 / zm, a0 = P(fxp, 0.1, zm); ctx.fillStyle = 'rgba(30,35,42,.96)'; ctx.fillRect(x0, a0[1] - hgt * 0.27, x1 - x0 + 0.8, hgt * 0.25); ctx.drawImage(sp.img, sx, 0, Math.min(sw, m.width - sx), m.height, x0, a0[1] - hgt, x1 - x0 + 0.8, hgt);
+        if (x1 > px - 40 && x0 < px + pw + 40) { const s0 = (1 - tOf(z)) * m.width, s1 = (1 - tOf(z2)) * m.width, sx = Math.min(s0, s1), sw = Math.max(0.5, Math.abs(s1 - s0)), hgt = c.f * 3.7 / zm, a0 = P(fxp(zm), 0.1, zm); ctx.fillStyle = 'rgba(30,35,42,.96)'; ctx.fillRect(x0, a0[1] - hgt * 0.27, x1 - x0 + 0.8, hgt * 0.25); ctx.drawImage(sp.img, sx, 0, Math.min(sw, m.width - sx), m.height, x0, a0[1] - hgt, x1 - x0 + 0.8, hgt);
           if (winLv > 0.06 && WL) { const ex = Math.min(sx + sw, m.width), ddx = (x1 - x0 + 0.8) / Math.max(0.5, Math.min(sw, m.width - sx)), top0 = a0[1] - hgt; WL.overlap(WL.get(sp), sx, ex, (wa, wb, ya, yb, id) => { const ax = Math.max(wa, sx), bx = Math.min(wb, ex); ctx.fillStyle = WL.fill(id, winLv); ctx.fillRect(x0 + (ax - sx) * ddx, top0 + ya / m.height * hgt, (bx - ax) * ddx + 0.5, (yb - ya) / m.height * hgt); }); } }      // gầm tàu đặc (tối): ảnh có khe hở giữa các bánh nên nếu không chèn thì thấy tà vẹt/ray của đường đó xuyen qua thân
         z = z2;
       }
     };
     if ((T.v > 20 || W.oppCat) && !S.oppHidden(W, T)) for (const t0 of W.opposing || []) { const VR = 200, zN = (t0 - W.t) * VR, key = S.oppKey(W, T, t0), veh = S.VEH[key] || S.VEH.N700; if (zN > 900 || zN < -veh.len - 20) continue;
-      const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), oic = iconFor(veh.parts ? veh.parts[0] : key);
+      const fxp = fxOpp(zN), oic = iconFor(veh.parts ? veh.parts[0] : key);
       items.push({ z: Math.max(zN, ZN + 1), fn: () => { if (zN > ZN && oic) drawFront(oic, oppAt(zN), zN, 1, 'head'); if (zN < 60) slicesVeh(veh, zN, fxp, 1); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
     // tàu ngược chiều bị giữ (động đất, mưa gió) dừng giữa hai ga: đứng yên trên đường ngược chiều; camera sau thì nó nằm phía sau lưng
-    for (const h of W.heldOpp || []) { const veh = S.VEH[h.key] || S.VEH.N700, zNf = h.sC - veh.len / 2 - T.x, fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85);
+    for (const h of W.heldOpp || []) { const veh = S.VEH[h.key] || S.VEH.N700, zNf = h.sC - veh.len / 2 - T.x, fxp = fxOpp(zNf);
       if (!W.rear) { if (zNf > 3000 || zNf < -veh.len - 20) continue; const oic = iconFor(veh.parts ? veh.parts[0] : h.key); items.push({ z: Math.max(zNf, ZN + 1), fn: () => { if (zNf > ZN && oic) drawFront(oic, oppAt(zNf), zNf, fadeA(zNf), 'head'); if (zNf < 60) slicesVeh(veh, zNf, fxp, 1, false); } }); }
       else { const zN = -(W.rearLen || 0) - zNf; if (zN < -veh.len - 20 || zN > 3000) continue; const ric = iconFor(veh.parts ? veh.parts[veh.parts.length - 1] : h.key), zTail = zN - veh.len; items.push({ z: Math.max(zN, ZN + 1), fn: () => { slicesVeh(veh, zN, fxp, -1, false); if (zTail > ZN && ric) drawFront(ric, oppAt(zTail), zTail, fadeA(zTail), 'tail'); } }); } }
     // camera sau: tàu ngược chiều đã lướt qua đầu tàu ta, chạy dọc thân rồi xa dần ra phía sau (mũi tàu ở xa, thân kéo về phía camera)
     if (W.rear && (T.v > 20 || W.oppCat) && !S.oppHidden(W, T)) for (const o of W.oppRear || []) { const VR = 200, veh = S.VEH[o.key] || S.VEH.N700, zN = (W.t - o.t0) * VR - W.rearLen; if (zN < -veh.len - 20 || zN > 900) continue;
-      const fxp = ADJ + (c.lane > ADJ ? 1.85 : -1.85), ric = iconFor(veh.parts ? veh.parts[veh.parts.length - 1] : o.key), zTail = zN - veh.len;
+      const fxp = fxOpp(zN), ric = iconFor(veh.parts ? veh.parts[veh.parts.length - 1] : o.key), zTail = zN - veh.len;
       items.push({ z: Math.max(zN, ZN + 1), fn: () => { slicesVeh(veh, zN, fxp, -1); if (zTail > ZN && ric) drawFront(ric, oppAt(zTail), zTail, 1, 'tail'); const u = 1 - Math.abs(zN) / 400; if (u > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.1 * u + ')'; ctx.fillRect(px, py, pw, ph); } } }); }
     function slicesVeh(veh, zRef, fxp, sign, mv) {      // đoàn ghép: vẽ lần lượt từng đoàn, đoàn sau cách đoàn trước một khe nối
       if (!veh.parts) { slices(R.sprites && R.sprites[SMAP[veh.key] || 'n700'], veh.len, zRef, fxp, sign); return; }
       let off = 0; for (const pk of veh.parts) { const pv = S.VEH[pk]; slices(R.sprites && R.sprites[SMAP[pk] || 'n700'], pv.len, zRef + sign * -1 * 0 + (sign < 0 ? -off : off), fxp, sign); off += pv.len + veh.gap; }
-      if (winLv > 0.08) { const zT = zRef + sign * veh.len, mvF = mv === false ? 0.45 : 1; glowAt(fxp, 1.1, zRef, '255,246,215', 1.3 + 1.2 * winLv, 0.9 * winLv * mvF); glowAt(fxp - 0.4, 1.1, zT, '255,40,30', 0.6, 0.55 + 0.45 * winLv); glowAt(fxp + 0.4, 1.1, zT, '255,40,30', 0.6, 0.55 + 0.45 * winLv); }      // đèn pha dịu ở đầu (tàu đang đứng chỉ còn đèn nhận dạng), hai đèn đuôi đỏ ở cuối
+      if (winLv > 0.08) { const zT = zRef + sign * veh.len, mvF = mv === false ? 0.45 : 1, fx = z => typeof fxp === 'function' ? fxp(z) : fxp; glowAt(fx(zRef), 1.1, zRef, '255,246,215', 1.3 + 1.2 * winLv, 0.9 * winLv * mvF); glowAt(fx(zT) - 0.4, 1.1, zT, '255,40,30', 0.6, 0.55 + 0.45 * winLv); glowAt(fx(zT) + 0.4, 1.1, zT, '255,40,30', 0.6, 0.55 + 0.45 * winLv); }      // đèn pha dịu ở đầu (tàu đang đứng chỉ còn đèn nhận dạng), hai đèn đuôi đỏ ở cuối
     }
     // đoàn Tohoku đang chờ ở sân ga (phía trước, cùng đường): thấy đuôi nó; phần đã tách ở lại thì nằm sau lưng
     for (const pk of W.parked || []) { const pv = S.VEH[pk.key], tail0 = pk.front - pv.len - T.x, tail = Math.max(tail0, 8); if (pk.kind !== 'wait' || tail0 < 0 || tail0 > 4000) continue;
       const qL = sts.find(q => Math.abs(q.m.s - pk.front) < 400), X = (pk.own ? c.lane : qL ? qL.st.ours.x : 0) + (pk.jn !== undefined ? S.trunkOff(W, pk.front - pv.len, pk.jn) : 0), pic = iconFor(pk.key);
       items.push({ z: tail, fn: () => { if (pic) drawFront(pic, X, tail, fadeA(tail), W.rear ? 'head' : 'tail'); else { const w = 3.4 * c.f / tail, a = P(X, 0.1, tail); ctx.fillStyle = '#d8dee6'; ctx.fillRect(a[0] - w / 2, a[1] - w * 1.1, w, w * 1.1); } } }); }
-    for (const sb of W.stabled || []) { const veh = S.VEH[sb.key], hi = sb.front - T.x, lo = hi - veh.len; if (lo > 1700 || hi < -20) continue; const X = sb.track.x, headHi = sb.face === 1;       // tàu đỗ ở đường phụ của ga: đầu tàu (đoàn thứ nhất) ở đầu cao nếu quay theo chiều chạy, ở đầu thấp nếu quay ngược
+    for (const sb of W.stabled || []) { const veh = S.VEH[sb.key], hi = sb.front - T.x, lo = hi - veh.len; if (lo > 1700 || hi < -20) continue; const tk = sb.track, qs = sts.find(q => q.i === sb.i), X = qs && tk.in0 !== undefined ? (z => tk.plain + (tk.x - tk.plain) * trackWF(tk, T.x + z, qs.m.s)) : tk.x, headHi = sb.face === 1;      // đường ga nhánh: lệch ngang dần theo ghi (không đi thẳng vào đường dừng)       // tàu đỗ ở đường phụ của ga: đầu tàu (đoàn thứ nhất) ở đầu cao nếu quay theo chiều chạy, ở đầu thấp nếu quay ngược
       items.push({ z: Math.max(lo, ZN + 1), fn: () => headHi ? slicesVeh(veh, hi, X, -1, false) : slicesVeh(veh, lo, X, 1, false) }); }
     const pl = T.phase === 'dwell' ? S.passersAt(W, T.k) : null;
     if (pl) for (const p of pl) { const pd = S.passDur(W, T.k, (S.VEH[p.v || W.line.meta.defVeh] || S.VEH.N700).len), u = (W.t - (p.t - pd / 2)) / pd, lo = W.rear ? -1.7 : 0; if (u > lo && u < 1) { const key = p.v || (W.line.meta.defVeh), veh = S.VEH[key] || S.VEH.N700, sp = R.sprites && R.sprites[SMAP[key] || 'n700'], fxp = 0 + (c.lane > 0 ? 1.85 : -1.85);

@@ -471,6 +471,7 @@
     if (hold != null && W.t < hold) return _t('Đang giữ tàu theo lệnh điều độ (còn {0} s)', Math.ceil(hold - W.t));
     const gz = gateZone(T); if (gz) return _t('Giữ tàu: {0} phía trước (còn {1} s)', gz.label, Math.ceil(gz.tB - W.t));
     if (T === W.player && !T.isLead && root.NatCat && root.NatCat.singleBusy) { const sb = root.NatCat.singleBusy(W, T); if (sb) return _t('Đường đơn: chờ {0} (ngược chiều) qua đoạn phía trước rồi mới được rời ga', sb); }
+    if (T === W.player && !T.isLead) { const oc = oppClash(W, T); if (oc) return _t('Đường ga nhập vào đường chính ngược chiều: chờ {0} (ngược chiều) vào ga rồi mới được rời ga ({1} s)', oc.label, oc.wait); }
     if (startOnly) return T.cut ? _t('Mất điện / kiểm tra sau sự cố') : null;
     if (T.waitFor && T.waitFor.train.phase !== 'end' && T.waitFor.train.x < T.waitFor.s + 120) return _t('Chờ {0} vượt qua ga', T.waitFor.train.label);
     if (T.cut) return _t('Mất điện / kiểm tra sau sự cố');
@@ -478,6 +479,13 @@
     if (T.coup) return T.coup.to.parts ? _t('Đang ghép toa (còn {0} s)', Math.ceil(coupLeft(T))) : _t('Đang tách toa (còn {0} s)', Math.ceil(coupLeft(T)));
     return null;
   }
+  // ga xuất phát có đường dừng thuộc nhóm đường ngược chiều (Tokyo...): sau khi rời ga tàu ta đi chung đường chính ngược chiều rồi mới chéo sang đường của mình (khoảng 330-870 m), nên không được rời ga khi có tàu ngược chiều sắp vào ga
+  function oppClash(W, T) {
+    const Ly = root.Layout, m = T.M[T.k], ls = m && W.line.stations[m.i]; if (!Ly || !ls || !ls.lay || !W.oppState || m.mainStop) return null;
+    const C = W._crossSt || (W._crossSt = {}), key = m.i + ':' + W.dir + ':' + (W.termPick && W.termPick[m.i] !== undefined ? W.termPick[m.i] : ''), st = C[key] || (C[key] = Ly.station(ls.lay, W.dir, Ly.pickOf(ls, m.i, W)));
+    if (st.ours.own) return null;
+    let b = null; for (const s of W.oppState.values()) { const d = s.t0 - W.t; if (d > -6 && d < 65 && (!b || s.t0 > b.t0)) b = s; }
+    return b ? { label: b.label, wait: Math.max(1, Math.ceil(b.t0 - W.t + 6)) } : null; }
   function departNow(T, silent) {
     const W = T.W;
     if (T.phase !== 'dwell' || T.v > 0.05) return false;
