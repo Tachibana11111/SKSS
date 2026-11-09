@@ -474,8 +474,6 @@ I18N.add("en", {
 "Đã xác nhận an toàn, tàu chạy lại.": "Safety has been confirmed; the train is resuming service.",
 "Tàu dừng do va chạm động vật.": "The train has stopped after hitting an animal.",
 "Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.": "A passenger on the train ahead is ill; our train is keeping its distance.",
-"CỬA SỔ TRÁI · toa giữa ({0}: {1} ô {2}×{3} m) · , / .": "LEFT WINDOW · middle car ({0}: {1} windows {2}×{3} m) · , / .",
-"CỬA SỔ PHẢI · toa giữa ({0}: {1} ô {2}×{3} m) · , / .": "RIGHT WINDOW · middle car ({0}: {1} windows {2}×{3} m) · , / .",
 "VẠCH": "MARK",
 " thông qua": " passing",
 "GÓC NHÌN ĐUÔI TÀU (B)": "TAIL VIEW (B)",
