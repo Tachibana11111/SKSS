@@ -191,6 +191,7 @@
     <label>Đến <select id="to"></select></label>
     <div id="driveOpts" style="display:contents">
     <label class="inl" id="realBox" title="Giờ Nhật Bản, thời tiết và động đất thật (Open-Meteo, P2PQuake). Cần mạng khi bấm Bắt đầu; Độ khó cố định Thường."><input type="checkbox" id="real"><span>Chế độ thực tế</span><small id="jstClock" style="color:var(--mut);margin-left:auto"></small></label>
+    <label class="inl" id="freeBox" title="Có nút tự lái; chuyến chạy không tính điểm, không ghi thành tựu và không lưu vào lịch sử/kỷ lục."><input type="checkbox" id="free"><span>Chế độ tự do</span></label>
     <label>Độ khó <select id="diff"></select></label>
     <label>Thời tiết <select id="weather"></select></label>
     <label class="w2">Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
@@ -603,7 +604,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) focus
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
-function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: realOn ? 'real' : $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, real: realOn && realSnap ? realSnap : undefined }; }
+function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: realOn ? 'real' : $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, real: realOn && realSnap ? realSnap : undefined, free: $('free').checked || undefined }; }
 function startDrive(r, opts) {
   opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec0 = r.rec || L.trains[r.recIdx], rec = r.veh && /^(E5|E7)$/.test(rec0.v) && Sim.VEH[r.veh] ? Object.assign({}, rec0, { v: r.veh, retro: 1 }) : rec0, trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert(_t('Chọn ga đi/đến hợp lệ cho chuyến này.')); return false; }
@@ -637,7 +638,8 @@ const act = {
   ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', _t('Không có lệnh nào cần nhắc lại.')); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
   confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', _t('Đèn pha: ') + ({ auto: _t('tự động'), on: _t('BẬT'), off: _t('TẮT') }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; }, quake(q) { Sim.injectQuake(W, q); }
 };
-function doAct(name, arg) { if (!W || replaying) return; recActs.push([tickCount, name, arg]); act[name](arg); }
+const autoOK = () => !!((recipe && recipe.free) || replaying);      // tự lái chỉ có ở chế độ tự do (xem lại chuyến cũ thì cho phép để phát lại đúng)
+function doAct(name, arg) { if (!W || replaying) return; if (name === 'auto' && !tutLessonActive && !autoOK()) { W.say('warn', _t('Tự lái chỉ dùng được ở chế độ tự do (bật ở màn hình thiết lập chuyến).')); return; } recActs.push([tickCount, name, arg]); act[name](arg); }
 addEventListener('keydown', e => {
   if (['INPUT', 'SELECT'].includes(document.activeElement.tagName) && e.key !== 'Enter') return;
   const k = e.key;
@@ -725,7 +727,7 @@ function finalize() {
     perfectStops: T.results.filter(r => !r.overrun && Math.abs(r.err) <= 0.5).length, stops: T.results.length, atc: T.atcCount, ackCount: W.ackCount || 0, ackPen: W.ackPen, paCount: W.paCount || 0,
     hadFire: W.faults.some(f => f.kind === 'fire'), fireTunnel: T.fireTunnel, deadViol: T.deadViol || 0, xingHit: T.xingHit || 0, scenario: { kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed } };
   let res = { fresh: [], best: null };
-  if (!replaying && !tutLessonActive) { const r2 = Object.assign({}, recipe); delete r2.rec; res = Store.record(ctxo, { recipe: r2, actions: recActs.slice(0, 5000) }); }
+  if (!replaying && !tutLessonActive && !recipe.free) { const r2 = Object.assign({}, recipe); delete r2.rec; res = Store.record(ctxo, { recipe: r2, actions: recActs.slice(0, 5000) }); }
   if (tutLessonActive && Tutorial.S.done && Tutorial.LESSONS.every(l => Tutorial.S.done[l.id])) { const r3 = Store.record({ kind: 'tutorial', allDone: true, score: 0, trainLabel: _t('Hướng dẫn'), scenario: { kind: 'tutorial' } }); res.fresh = res.fresh.concat(r3.fresh); }
   endInfo = { sc, fresh: res.fresh, best: res.best, advice: advise(sc) };
 }
@@ -824,7 +826,8 @@ function drawEnd() {
     txt(pen.map(p => p[0] + ' ' + p[1]).join(' · '), 60, y, '#8aa0b5', '13px system-ui'); y += 20; txt(_t('Điện {0} kWh (hoàn {1}) · Má phanh nóng nhất {2}% · bất an cao nhất {3}%', sc.kwh, sc.regen, Math.round((T.btMax || 0) * 100), Math.round(T.anxMax)), 60, y, '#8aa0b5', '13px system-ui');
     txt(_t('ĐIỂM: ') + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
     if (endInfo && endInfo.best) txt(_t('Tốt nhất cho cấu hình này: ') + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');
-    if (endInfo && endInfo.fresh.length) txt(_t('Thành tích mới: ') + endInfo.fresh.map(a => '★ ' + a.name).join('  '), 560, 748, '#ffd24a', 'bold 14px system-ui', 'center');
+    if (recipe && recipe.free) txt(_t('Chế độ tự do: không tính điểm, không ghi thành tựu'), 560, 748, '#8aa0b5', 'bold 14px system-ui', 'center');
+    else if (endInfo && endInfo.fresh.length) txt(_t('Thành tích mới: ') + endInfo.fresh.map(a => '★ ' + a.name).join('  '), 560, 748, '#ffd24a', 'bold 14px system-ui', 'center');
   } else drawSummary();
 }
 function drawSummary() {
