@@ -631,6 +631,16 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
     const rowsOf = t => { NatMap.V.sel = { tk: t.c.key }; log9.length = 0; NatMap.draw(ctx, 0, 58, 1920, 618, W9, T9, o9); return log9.filter(l => /phía trước|phía sau/.test(l)).join(' | '); };
     const rToki = tk9 ? rowsOf(tk9) : '', rYam = ym9 ? rowsOf(ym9) : '';
     ok(/trước: Yamabiko 51/.test(rToki) && /sau: Toki 301/.test(rYam), 'tooltip khác tuyến trên đoạn đường chung: Toki 301 [' + rToki + '] / Yamabiko 51 [' + rYam + ']'); NatMap.V.sel = null; }
+  // bản đồ toàn quốc: tàu bị giữ (động đất) phải đứng yên hẳn, không trườn theo độ trễ hiển thị (trước đây trườn ~10% tốc độ dù đã khoanh tròn/xám)
+  { const Lq = Sim.lineOf('tsk'), rq = Lq.trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), sq = rq.s.filter(e => !e[3]).map(e => e[0]), Wq = Sim.createWorld('tsk', Sim.makeTrip('tsk', rq, sq[0], sq[sq.length - 1]), { diff: 'normal', seed: 1, lead: false, events: false }), Tq = Wq.player, oq = { txt: noop, button: noop, close: noop, save: noop, checkin: noop };
+    const look = key => { NatMap.V.sel = null; NatMap.draw(ctx, 0, 58, 1920, 618, Wq, Tq, oq); const h = (NatMap.V.trains || []).find(x => x.t && x.t.c && x.t.c.key === key); return h ? h.t : null; };
+    Wq.t = 22440 - Wq.trip.t0; NatCat.step(Wq); let pick = null; { NatMap.draw(ctx, 0, 58, 1920, 618, Wq, Tq, oq); pick = NatMap.V.trains.map(h => h.t).find(t => !t.me && t.s.moving && !t.s.dwell); }
+    for (let i = 0; i < 6; i++) { Wq.t += 1; NatCat.step(Wq); look(pick.c.key); }      // chạy bình thường vài giây để độ trễ hiển thị có sẵn
+    const dq = Wq.haz.delay.get(pick.c.key), kms = []; dq.hold = 900; dq.why = 'eqk';
+    for (let i = 0; i < 40; i++) { Wq.t += 1; NatCat.step(Wq); const t = look(pick.c.key); if (t && i >= 3) kms.push(t.s.km); }
+    const mv = kms.length ? Math.max(...kms) - Math.min(...kms) : -1;
+    ok(kms.length > 20 && mv < 0.005, 'tàu bị giữ do động đất đứng yên trên bản đồ toàn quốc (dịch ' + (mv * 1000).toFixed(1) + ' m trong ' + kms.length + ' s)');
+    { const k0 = 'x'; NatMap.shownDelay(k0, 1000, 0, false); let e = 0; for (let i = 1; i <= 30; i++) e = NatMap.shownDelay(k0, 1000 + i, i * 1.0, true); ok(Math.abs(e - 30) < 1e-9, 'độ trễ hiển thị bám đúng 1 s/s khi bị giữ (' + e + ')'); const k1 = 'y'; NatMap.shownDelay(k1, 1000, 0, false); let f = 0; for (let i = 1; i <= 30; i++) f = NatMap.shownDelay(k1, 1000 + i, i * 1.0, false); ok(f < 30 - 1, 'không bị giữ: độ trễ hiển thị vẫn chậm hơn thật (giữ nguyên chống lùi tàu)'); } }
   // trùng tên ga giữa các tuyến (Sendai: Tohoku 仙台 / Kyushu 川内) phải là hai ga riêng; đoàn ghép (Yamabiko + Tsubasa cùng giờ) không bị tách bởi quy tắc giãn cách
   { const LNs = window.LINES; ok(NatMap.stations && Object.values(NatMap.stations()).filter(x => x.en === 'Sendai').length === 2, 'hai ga Sendai (Tohoku và Kyushu) là hai ga riêng trên bản đồ');
     const W10 = Sim.createWorld('tsk', Sim.makeTrip('tsk', Sim.lineOf('tsk').trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), 0, 12), { diff: 'hard', seed: 5, lead: false, events: true }), cat10 = NatCat.build(LNs);
