@@ -194,7 +194,7 @@
     <label class="inl" id="freeBox" title="Có nút tự lái; chuyến chạy không tính điểm, không ghi thành tựu và không lưu vào lịch sử/kỷ lục."><input type="checkbox" id="free"><span>Chế độ tự do</span></label>
     <label>Độ khó <select id="diff"></select></label>
     <label>Thời tiết <select id="weather"></select></label>
-    <label class="w2">Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px">🎲</button></span></label>
+    <label class="w2">Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px"><span data-ic="dice" data-size="18"></span></button></span></label>
     </div>
     <span id="legBox" style="display:none"><label>Thêm chặng <select id="via"></select></label><div class="btns" style="margin-top:4px"><button id="viaAdd">Thêm</button><button id="viaClr">Xoá chặng</button></div><span id="viaList" style="color:#8aa0b5;font-size:12px"></span></span>
     <button id="start" class="go" style="width:100%">Bắt đầu / chạy lại (R)</button>
@@ -215,8 +215,8 @@
 <div id="wrap">
   <canvas id="c" width="1780" height="900"></canvas>
   <div id="modal"></div>
-<div id="rot"><div>📱 Xoay ngang màn hình để chơi.<br><span style="color:#8aa0b5;font-size:14px">Cần chạm: cần kéo/phanh ở bảng bên dưới, nút Còi/Cửa/Tạm dừng ở bảng nút điều khiển. Nên bật toàn màn hình.</span></div></div>
-<button id="fsBtn" title="Toàn màn hình">⛶ Toàn màn hình</button>
+<div id="rot"><div><span data-ic="phone" data-size="22"></span> Xoay ngang màn hình để chơi.<br><span style="color:#8aa0b5;font-size:14px">Cần chạm: cần kéo/phanh ở bảng bên dưới, nút Còi/Cửa/Tạm dừng ở bảng nút điều khiển. Nên bật toàn màn hình.</span></div></div>
+<button id="fsBtn" title="Toàn màn hình"><span data-ic="full" data-size="16"></span> Toàn màn hình</button>
 <div id="ck" style="display:none;position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.82);align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:12px"><div style="color:#e8eef5;font:600 15px system-ui" id="ckTitle"></div><canvas id="ckCv" width="1920" height="618" style="width:min(96vw,1400px);height:auto;border-radius:8px;background:#0b0f14"></canvas><div style="color:#9fb4c9;font:13px system-ui;text-align:center" id="ckCap"></div><div style="display:flex;gap:8px"><button id="ckClose" style="background:#243447;color:#e8eef5;border:1px solid #33475e;border-radius:6px;padding:7px 18px;font:inherit;cursor:pointer">Đóng (Esc)</button></div><div style="color:#6b7f95;font:11px system-ui">Ảnh chỉ xem tạm, không được lưu; đóng cửa sổ là xoá.</div></div>
 </div>
 <aside id="sideR">
@@ -308,6 +308,7 @@
 <script src="japanmap_nt.js"></script>
 <script src="realmode.js"></script>
 <script src="natmap.js"></script>
+<script src="icons.js"></script>
 <script src="fullui.js"></script>
 <script src="audio.js"></script>
 <script src="tutorial.js"></script>
@@ -316,7 +317,7 @@
 <script src="strips.js"></script>
 <script src="music.js"></script>
 <script>
-I18N.applyDom(document.body); document.title = _t('Lái Shinkansen - bản thử 0.4'); document.documentElement.lang = I18N.lang;      // dịch văn bản tĩnh trong HTML theo ngôn ngữ đã chọn
+I18N.applyDom(document.body); Icons.hydrate(document); document.title = _t('Lái Shinkansen - bản thử 0.4'); document.documentElement.lang = I18N.lang;      // dịch văn bản tĩnh trong HTML theo ngôn ngữ đã chọn
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 let clk = [0, 0], volDrag = false, volRect = null;      // vị trí lần bấm gần nhất (cho thanh âm lượng) / đang kéo / vùng thanh
 let W_ = cv.width, H_ = cv.height, QS = 1;      // QS: hệ số độ phân giải vẽ (cố định 1) const LINES = window.LINES;
@@ -328,6 +329,7 @@ const SPR = {}; function loadSpr(name, meta) { const img = new Image(), o = { im
 const TP = {}; for (const k of Object.keys(window.TOPS || {})) { TP[k] = {}; for (const part of ['head', 'mid', 'tail']) { const img = new Image(), o = { img, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/top_' + k + '_' + part + '.png'; TP[k][part] = o; } }
 const FR = {}; for (const k of Object.keys(window.FRONTS || {})) { const img = new Image(), o = { img, ready: false }; img.onload = () => { o.ready = true; }; img.src = 'assets/front_' + k + '.png'; FR[k] = o; }
 if (window.N700_STRIP) loadSpr('n700', window.N700_STRIP); for (const [k, m] of Object.entries(window.SPRITES || {})) loadSpr(k, m);
+let HOME = null, recTainted = false, cabWarnAt = -1e9;      // HOME: thế giới của tàu ta khi đang ngồi buồng lái tàu khác (chế độ tự do); recTainted: chuyến này đã đổi tàu nên không xem lại được
 let mode = 'drive', W = null, T = null, scale = 1, auto = false, paused = false, lastT = performance.now(), btns = [];
 let tickCount = 0, recActs = [], recipe = null, replaying = null, ptr = 0, finalized = false, endT = null, endInfo = null, endPage = 0, tutorialRun = false;
 const hhmm = s => { const h = Math.floor(s / 3600) % 24, m = Math.floor(s % 3600 / 60); return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'); };
@@ -338,14 +340,14 @@ Object.entries(Sim.WEATHER).forEach(([k, v]) => { if (k === 'real') return; $('w
 for (let h = 6; h <= 20; h++) $('dHour').add(new Option(String(h).padStart(2, '0') + ':00', h, false, h === 8));
 Object.values(LINES).forEach(L => $('line').add(new Option(_ln(Sim.lineOf(L.id)), L.id)));
 const Lc = () => LINES[$('line').value];
-const stOpt = (s, i, t) => { const o = new Option(_s(s) + (t != null ? ' · ' + hhmm(t) : ''), i); o.dataset.rom = s.en; return o; };      // ô chọn ga: chữ hiển thị theo ngôn ngữ, dataset.rom giữ chữ La-tinh để lọc/chọn mặc định
+const stOpt = (s, i, t) => { const o = new Option(_sk(s) + (t != null ? ' · ' + hhmm(t) : ''), i); o.dataset.rom = I18N.romKey(s); return o; };      // ô chọn ga: chữ hiển thị theo ngôn ngữ, dataset.rom giữ chữ La-tinh để lọc/chọn mặc định
 let realOn = false, realSnap = null, realNote = '';      // chế độ thực tế: bật/tắt, snapshot dữ liệu thật của chuyến sắp chạy, ghi chú nếu thiếu dữ liệu
 const nextStop = (t, now) => { const st = t.s.filter(e => !e[3]); return st.find((e, k) => k < st.length - 1 && e[2] != null && e[2] >= now); };      // ga kế tiếp còn rời ga từ giờ `now`
 function trainList() {
   const L = Lc(), dir = $('dir').value, now = realOn ? RealMode.jstNow().sec : -1, live = t => realOn && !Sim.INSPECT[t.v]; $('train').innerHTML = '';
   L.trains.map((t, i) => [t, i]).filter(([t]) => t.d === dir && (!realOn || Sim.INSPECT[t.v] || RealMode.canDepart(t, now))).map(([t, i]) => [t, i, live(t) ? nextStop(t, now) : t.s[0]]).sort((a, b) => (a[2][2] || a[2][1]) - (b[2][2] || b[2][1])).forEach(([t, i, a]) => {
     const b = t.s[t.s.length - 1];
-    const opt = new Option(`${_tl(t.t, t.n)} · ${hhmm(a[2] != null ? a[2] : a[1])} ${_s(L.stations[a[0]])} → ${_s(L.stations[b[0]])} · ${Sim.VEH[t.v].name}${t.mir ? _t(' (ước)') : ''}`, i); opt.dataset.rom = `${t.t} ${t.n} · ${hhmm(a[2] != null ? a[2] : a[1])} ${L.stations[a[0]].en} → ${L.stations[b[0]].en}`; $('train').add(opt);
+    const opt = new Option(`${_tl(t.t, t.n)} · ${hhmm(a[2] != null ? a[2] : a[1])} ${_sk(L.stations[a[0]])} → ${_sk(L.stations[b[0]])} · ${Sim.VEH[t.v].name}${t.mir ? _t(' (ước)') : ''}`, i); opt.dataset.rom = `${t.t} ${t.n} ${_tl(t.t, t.n)} · ${hhmm(a[2] != null ? a[2] : a[1])} ${L.stations[a[0]].en} ${I18N.romKey(L.stations[a[0]])} → ${L.stations[b[0]].en} ${I18N.romKey(L.stations[b[0]])}`; $('train').add(opt);
   });
   const pref = realOn ? ([...$('train').options].find(o => !Sim.INSPECT[L.trains[+o.value].v]) || $('train').options[0]) : ([...$('train').options].find(o => /Nozomi|Hayabusa/.test(o.dataset.rom || o.text) && /→ (Shin-Osaka|Hakata|Shin-Aomori|Tokyo)/.test(o.dataset.rom || o.text)) || $('train').options[0]); if (pref) pref.selected = true;
   const none = realOn && !$('train').options.length; if (none) $('train').add(new Option(_t('Hết chuyến hôm nay (giờ Nhật {0})', RealMode.hhmm(now)), '')); $('start').disabled = none;
@@ -369,7 +371,7 @@ function stopList() {
   legsExtra = []; legUpd();
   const nowS = realOn ? RealMode.jstNow().sec : -1;
   seq.forEach((e, k) => { if (k < seq.length - 1 && (!realOn || (e[2] != null && e[2] >= nowS))) $('from').add(stOpt(L.stations[e[0]], e[0], e[2] != null ? e[2] : e[1])); if (k > 0) $('to').add(stOpt(L.stations[e[0]], e[0], e[1] != null ? e[1] : e[2])); });      // ga đi kèm giờ khởi hành, ga đến kèm giờ đến theo lịch
-  $('from').selectedIndex = 0; const pt = [...$('to').options].find(o => /^(Nagoya|Sendai)$/.test(o.dataset.rom || o.text)); if (pt) pt.selected = true; else $('to').selectedIndex = $('to').options.length - 1;
+  $('from').selectedIndex = 0; const pt = [...$('to').options].find(o => /^(Nagoya|Sendai)$/.test((o.dataset.rom || o.text).split('|')[0])); if (pt) pt.selected = true; else $('to').selectedIndex = $('to').options.length - 1;
   if ($('from').onchange) $('from').onchange();      // chọn lại ga đến hợp lệ (khi ga đi mặc định không còn là ga đầu)
 }
 $('line').onchange = trainList; $('dir').onchange = trainList; $('train').onchange = () => { stopList(); vehUpd(); tpUpd(); }; $('vehSel').addEventListener('change', () => tpUpd()); $('line').addEventListener('change', () => setTimeout(vehUpd, 0)); $('dir').addEventListener('change', () => setTimeout(vehUpd, 0));
@@ -517,23 +519,43 @@ function restoreScene(st) {
   paused = true; return true;
 }
 window.Snap = { state: sceneState, restore: restoreScene };
+// ---- vào buồng lái tàu khác (chế độ tự do): đoàn đó chạy tự lái cố định, các bộ điều khiển bị khoá (doAct); tàu của ta chạy tự lái nền trong HOME; quay về bằng bản đồ toàn quốc
+const foreignOn = () => !!HOME;
+const mapW = () => HOME ? HOME.W : W, mapT = () => HOME ? HOME.T : T;      // bản đồ toàn quốc luôn là bản đồ của tàu ta (thế giới HOME khi đang ở buồng lái tàu khác)
+const cabOK = () => !!(recipe && recipe.free && W && T && !replaying && !tutLessonActive && mode === 'drive');      // kể cả khi tàu của ta đang làm nhiệm vụ kiểm tra
+function enterCab(t) {
+  if (!cabOK() || t.me || t.home || !t.c || (t.s && t.s.dwell === 'end')) return;
+  const c = t.c, st = t.s, S = c.stops, now = W.trip.t0 + W.t, dwellI = st.dwell ? S[Math.min(st.k || 0, S.length - 1)].i : undefined;
+  const Wc = Sim.spawnAt(c.line, c.rec, now, { km: t.s0km != null ? t.s0km : st.km, kmh: st.moving ? st.kmh : 0, dwellI }, { diff: recipe.diff, seed: recipe.seed, weather: mapW().weatherKind || recipe.weather, real: recipe.real });
+  if (!Wc) { W.say('warn', _t('Không vào được buồng lái tàu này (đã tới ga cuối hoặc không dựng được).')); return; }
+  Wc.fgn = { c }; Wc.home = mapW() === W ? { W, T } : HOME; NatCat.bindEvents(Wc, mapW());      // sự cố ngẫu nhiên của danh mục dành cho tàu này xảy ra thật trong buồng lái, tự lái xử lý
+  if (HOME && W !== HOME.W && W.fgn) AUD.park(W, W.fgn.c.key);      // đang ở tàu khác thì cất phần phát thanh dở của nó
+  if (!HOME) HOME = { W, T };
+  HOME.W.fgnW = Wc; W = Wc; W.fgn = { c }; T = Wc.player; W.home = HOME; auto = true; recTainted = true; window.__W = W; window.__T = T; NatMap.V.sel = null;
+  W.say('info', _t('Bạn đang ở buồng lái {0}: tàu chạy tự lái, không điều khiển được.', W.trip.label));
+}
+function backHome() {
+  if (!HOME) return; const h = HOME; HOME = null; h.W.fgnW = null; if (W.fgn) AUD.park(W, W.fgn.c.key); W = h.W; T = h.T; W.home = undefined; auto = true; window.__W = W; window.__T = T; NatMap.V.sel = null;      // tàu của ta vẫn tự lái như trước khi đi (bấm T để tắt)
+  W.say('info', _t('Đã quay về tàu của bạn. Tự lái vẫn đang bật (bấm T để tắt).'));
+}
 // ---- check-in địa điểm (bản đồ toàn quốc): chụp cảnh buồng lái phía trước của một đoàn tàu tại thời điểm bấm, hiện xem tạm, đóng là xoá (không lưu)
 let ckOpen = false, ckWasPaused = false;
+const escHtml = x => String(x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function closeCheckin() { ckOpen = false; $('ck').style.display = 'none'; const c = $('ckCv'); c.width = 1; c.height = 1; paused = ckWasPaused; }
 async function checkinTrain(t) {
   if (ckOpen || !W) return; ckOpen = true; ckWasPaused = paused; paused = true; $('ck').style.display = 'flex'; $('ckTitle').textContent = t.label + _t(' · đang dựng cảnh...'); $('ckCap').textContent = '';
   const cvk = $('ckCv'); cvk.width = 1920; cvk.height = 618; const g = cvk.getContext('2d'); g.fillStyle = '#0b0f14'; g.fillRect(0, 0, 1920, 618);
-  const now = W.trip.t0 + W.t; let Wc = W, Tc = T, line = W.lineId, kmShow = 0, kmh = T.v * 3.6, status = '';
+  const Wm = mapW(), Tm = mapT(), now = Wm.trip.t0 + Wm.t; let Wc = Wm, Tc = Tm, line = Wm.lineId, kmShow = 0, kmh = Tm.v * 3.6, status = '';      // bản đồ (và "tàu của ta" trên đó) là của thế giới nhà
   try {
     if (!t.me) { const c = t.c, L = LINES[c.line], stops = c.rec.s.filter(e => !e[3]).map(e => e[0]), km = t.s0km != null ? t.s0km : t.s.km; line = c.line; kmShow = km; kmh = t.s.kmh || 0;
-      Wc = Sim.createWorld(c.line, Sim.makeTrip(c.line, c.rec, stops[0], stops[stops.length - 1]), { diff: 'easy', seed: W.seed || 1, lead: false, events: false }); Tc = Wc.player;
+      Wc = Sim.createWorld(c.line, Sim.makeTrip(c.line, c.rec, stops[0], stops[stops.length - 1]), { diff: 'easy', seed: Wm.seed || 1, lead: false, events: false }); Tc = Wc.player;
       Wc.t = now - Wc.trip.t0; Tc.x = Sim.sOfKm(km, c.rec.d, L.kmEnd); Tc.v = (t.s.moving ? kmh : 0) / 3.6; Tc.phase = t.s.dwell || !t.s.moving ? 'dwell' : 'run'; Tc.started = true; Tc.door = 'closed';
-      const H = W.haz, cell = H && H.cells.find(cl => W.t >= cl.t0 && W.t <= cl.t1 && NatCat.hav(t.s.lat, t.s.lon, cl.lat, cl.lon) < cl.r); if (cell) Wc.weatherKind = cell.kind === 'wind' ? 'typhoon' : cell.kind; }
-    else kmShow = Sim.kmOfS(T.x, W.dir, W.line.kmEnd);
+      const H = Wm.haz, cell = H && H.cells.find(cl => Wm.t >= cl.t0 && Wm.t <= cl.t1 && NatCat.hav(t.s.lat, t.s.lon, cl.lat, cl.lon) < cl.r); if (cell) Wc.weatherKind = cell.kind === 'wind' ? 'typhoon' : cell.kind; }
+    else kmShow = Sim.kmOfS(Tm.x, Wm.dir, Wm.line.kmEnd);
     const Ln = LINES[line], nearI = Ln.stations.reduce((b, s, i) => Math.abs(s.km - kmShow) < Math.abs(Ln.stations[b].km - kmShow) ? i : b, 0), nd = Math.abs(Ln.stations[nearI].km - kmShow);
     status = (t.held ? _t('đang dừng vì sự cố · ') : kmh < 1 ? _t('đang đứng · ') : Math.round(kmh) + ' km/h · ') + (nd < 0.1 ? _t('tại ga ') + _s(Ln.stations[nearI]) : _t('gần ga ') + _s(Ln.stations[nearI]) + _t(' (cách ') + nd.toFixed(1) + ' km)') + ' · ' + hhmm(now % 86400);
     for (let k = 0; k < 7 && ckOpen; k++) { Wc.rear = false; g.clearRect(0, 0, 1920, 618); CabView.draw(g, 0, 0, 1920, 618, Wc, Tc, { sprites: SPR, fronts: FR, aud: AUD }); await new Promise(r => setTimeout(r, k < 2 ? 80 : 160)); }      // vài lần để các tấm cảnh vật tải xong
-    if (ckOpen) { $('ckTitle').textContent = _t('📍 Check-in · {0} · {1}', t.label, _ln(Sim.lineOf(line))); $('ckCap').textContent = status; }
+    if (ckOpen) { $('ckTitle').innerHTML = Icons.svg('pin', 18) + ' ' + escHtml(_t('Check-in · {0} · {1}', t.label, _ln(Sim.lineOf(line)))); $('ckCap').textContent = status; }
   } catch (e) { $('ckTitle').textContent = _t('Không dựng được cảnh cho đoàn này'); $('ckCap').textContent = String(e.message || e); }
 }
 $('ckClose').onclick = closeCheckin;
@@ -547,24 +569,30 @@ async function takeSnapshot() {
   const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); };
   const png = await new Promise(res => off.toBlob(res, 'image/png')); save(png, base + '.png'); save(new Blob([code], { type: 'application/json' }), base + '.json');
   try { await navigator.clipboard.writeText(code); } catch (e) { }
-  W.say('info', _t('Đã chụp cảnh: {0}.png và .json (mã cảnh đã chép vào bộ nhớ tạm). Vẫn tạm dừng, bấm Esc hoặc nút ⏸ để chạy tiếp.', base)); return { st, png };
+  W.say('info', _t('Đã chụp cảnh: {0}.png và .json (mã cảnh đã chép vào bộ nhớ tạm). Vẫn tạm dừng, bấm Esc hoặc nút tạm dừng để chạy tiếp.', base)); return { st, png };
 }
 function pauseOverlay() {
   if (!W || !paused || snapMode || mode === 'profile' || mode === 'dispatch') return; const full = ui.cur === 'full', bw = 250, bx = (W_ - bw) / 2, by = full ? DASH_Y - 50 : H_ - 60;
   ctx.fillStyle = 'rgba(8,12,18,.78)'; ctx.beginPath(); ctx.roundRect(bx - 12, by - 28, bw + 24, 74, 10); ctx.fill(); txt(_t('TẠM DỪNG · bấm P để chạy tiếp'), W_ / 2, by - 8, '#ffc247', 'bold 14px system-ui', 'center');
-  button(bx, by, bw, 28, _t('📷 Chụp cảnh (F9)'), () => takeSnapshot(), true, '#2a8f5a');
+  button(bx, by, bw, 28, _t('Chụp cảnh (F9)'), () => takeSnapshot(), true, '#2a8f5a', 12, 'camera');
 }
 // ---- hộp chọn có tìm kiếm cho các danh sách dài (Tàu, Từ, Đến, Thêm chặng): mở bên cạnh ô chọn (không tràn đáy màn hình), gõ để lọc, ↑↓ Enter, Esc
-const norm = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
+const norm = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)), squash = t => t.replace(/[\s\-'’・·.]/g, '');      // katakana tìm như hiragana; bỏ khoảng trắng/gạch nối (nozomi65 = Nozomi 65)
 let picker = null;
+// ô tìm ga / tìm tàu trên bản đồ toàn quốc: danh sách dựng từ NatMap, chọn xong thì bản đồ dời tới ga/tàu đó
+function mapPick(kind, r) {
+  const items = NatMap.searchItems(kind), sel = document.createElement('select'); for (const it of items) { const o = new Option(it.label, it.key); o.dataset.rom = it.rom; sel.add(o); } sel.selectedIndex = -1;
+  sel.addEventListener('change', () => { NatMap.focus(kind, sel.value); });
+  const cr = cv.getBoundingClientRect(), k = cr.width / FW; openPicker(sel, { rect: { left: cr.left + r.x * k, right: cr.left + (r.x + r.w) * k, top: cr.top + r.y * k, bottom: cr.top + (r.y + r.h) * k }, width: Math.max(300, Math.round(r.w * k)) });
+}
 function closePicker() { if (picker) { picker.el.remove(); document.removeEventListener('mousedown', picker.out, true); picker = null; } }
-function openPicker(sel) {
-  closePicker(); const r = sel.getBoundingClientRect(), vw = innerWidth, vh = innerHeight, w = Math.min(460, vw - 16), maxH = Math.floor(vh * 0.82);
+function openPicker(sel, po) {      // po: { rect, width } khi mở từ ô vẽ trên canvas (bản đồ toàn quốc)
+  closePicker(); const r = po && po.rect || sel.getBoundingClientRect(), vw = innerWidth, vh = innerHeight, w = Math.min(po && po.width || 460, vw - 16), maxH = Math.floor(vh * 0.82);
   const el = document.createElement('div'); el.id = 'picker'; el.style.width = w + 'px'; el.style.maxHeight = maxH + 'px';
   const left = r.left < vw / 2 ? Math.min(r.right + 8, vw - w - 8) : Math.max(8, r.left - w - 8); el.style.left = left + 'px';
   const inp = document.createElement('input'); inp.placeholder = _t('Gõ để tìm…'); const list = document.createElement('div'); list.className = 'list'; el.append(inp, list); document.body.appendChild(el);
   const opts = [...sel.options]; let shown = [], hl = 0;
-  const render = () => { const q = norm(inp.value.trim()); shown = opts.filter(o => !q || norm(o.text + ' ' + (o.dataset.rom || '')).includes(q)); list.innerHTML = '';
+  const render = () => { const q = norm(inp.value.trim()); const qs = squash(q); shown = opts.filter(o => { if (!q) return true; return [o.text].concat((o.dataset.rom || '').split('|')).some(fv => { const h = norm(fv); return h.includes(q) || squash(h).includes(qs); }); }); list.innerHTML = '';
     if (!shown.length) { const n = document.createElement('div'); n.className = 'none'; n.textContent = _t('Không có mục nào khớp.'); list.appendChild(n); }
     shown.forEach((o, k) => { const d = document.createElement('div'); d.className = 'it' + (o.value === sel.value ? ' cur' : '') + (o.disabled ? ' dis' : '') + (k === hl ? ' hl' : ''); d.textContent = o.text; d.title = o.text;
       d.onmousedown = e => { e.preventDefault(); e.stopPropagation(); }; d.onclick = () => choose(o); list.appendChild(d); });
@@ -612,7 +640,7 @@ function startDrive(r, opts) {
   ui.radio = !trip.mission;      // nhiệm vụ kiểm tra: bảng KIỂM TRA thay chỗ điện đàm (O để đổi)
   W = Sim.createWorld(r.lineId, trip, { diff: r.diff, weather: r.weather, seed: r.seed, lead: r.lead, events: r.events, real: r.real });
   quakeSeen.clear(); if (r.real && r.real.eq) for (const q of r.real.eq) quakeSeen.add(RealMode.quakeKey(q));      // các trận đã có trong snapshot không đưa vào lần nữa
-  T = W.player; auto = false; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endT = null; endInfo = null; endPage = 0;
+  HOME = null; recTainted = false; T = W.player; auto = false; window.__W = W; window.__T = T; recipe = r; tickCount = 0; recActs = []; ptr = 0; finalized = false; endT = null; endInfo = null; endPage = 0;
   replaying = opts.replay || null; if (replaying) scale = 4; else if (scale > 16) scale = 1;
   if (!tutorialRun) tutLessonActive = false;
   W.say('info', _t('Chuyến {0} ({1}) · {2} → {3} · {4} · tải khách {5}%', trip.label, T.veh.name, _s(L.stations[trip.M[0].i]), _s(L.stations[trip.M[trip.M.length - 1].i]), Sim.DIFF[r.diff].name, Math.round(W.load * 100)) + (W.lead ? _t(' · tàu trước: {0}', W.leadLabel) : _t(' · không có tàu trước')) + (rec.mir ? _t(' · lịch ước tính (đối xứng)') : ''));
@@ -636,10 +664,10 @@ const act = {
   power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, setpw(n) { Sim.setPower(T, n); }, setbk(n) { Sim.setBrake(T, n); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
   door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, csAdj(d) { Sim.adjustCS(T, d); },
   ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', _t('Không có lệnh nào cần nhắc lại.')); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
-  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', _t('Đèn pha: ') + ({ auto: _t('tự động'), on: _t('BẬT'), off: _t('TẮT') }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; }, quake(q) { Sim.injectQuake(W, q); }
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', _t('Đèn pha: ') + ({ auto: _t('tự động'), on: _t('BẬT'), off: _t('TẮT') }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; }, quake(q) { Sim.injectQuake(W, q); if (HOME) Sim.injectQuake(HOME.W, q); }
 };
 const autoOK = () => !!((recipe && recipe.free) || replaying);      // tự lái chỉ có ở chế độ tự do (xem lại chuyến cũ thì cho phép để phát lại đúng)
-function doAct(name, arg) { if (!W || replaying) return; if (name === 'auto' && !tutLessonActive && !autoOK()) { W.say('warn', _t('Tự lái chỉ dùng được ở chế độ tự do (bật ở màn hình thiết lập chuyến).')); return; } recActs.push([tickCount, name, arg]); act[name](arg); }
+function doAct(name, arg) { if (!W || replaying) return; if (HOME && name !== 'quake') { if (performance.now() - cabWarnAt > 4000) { cabWarnAt = performance.now(); W.say('warn', _t('Đang ở buồng lái tàu khác: không điều khiển được (dùng nút Quay về tàu của bạn).')); } return; } if (name === 'auto' && !tutLessonActive && !autoOK()) { W.say('warn', _t('Tự lái chỉ dùng được ở chế độ tự do (bật ở màn hình thiết lập chuyến).')); return; } recActs.push([tickCount, name, arg]); act[name](arg); }
 addEventListener('keydown', e => {
   if (['INPUT', 'SELECT'].includes(document.activeElement.tagName) && e.key !== 'Enter') return;
   const k = e.key;
@@ -706,15 +734,16 @@ function frame(now) {
     const n = Math.ceil(sc * rdt / 0.05);
     for (let i = 0; i < n; i++) {
       if (replaying) { while (ptr < replaying.actions.length && replaying.actions[ptr][0] <= tickCount) { const a = replaying.actions[ptr++]; act[a[1]](a[2]); } }
-      Sim.tick(W, 0.05, {}, auto); tickCount++;
+      Sim.tick(W, 0.05, {}, auto); tickCount++; if (W.fgn) NatMap.follow(W); if (HOME) Sim.tick(HOME.W, 0.05, {}, true);
       if (W.newMsg) { W.newMsg = false; if (scale > 1 && !replaying) { scale = 1; break; } }
       if (T.finished) break;
     }
     if (W.camReq !== undefined && W.camSeen !== W.camReq) { W.camSeen = W.camReq; if (!replaying) ui.rear = W.camReq.rear; }      // cảnh nối ở đuôi: tự bật camera sau, nối xong tự tắt
     if (tutLessonActive) Tutorial.update(W, T, now);
+    if (HOME && T.finished) { const lbl = W.trip.label; backHome(); W.say('info', _t('{0} đã tới ga cuối: quay về tàu của bạn.', lbl)); }
     if (T.finished && !finalized) finalize();
   }
-  if (W) AUD.update(W, T, { scale, paused: paused || mode === 'profile' });
+  if (W) { AUD.update(W, T, { scale, paused: paused || mode === 'profile' }); if (HOME && !paused && W.fgn) AUD.bgTick(HOME.W, HOME.T, rdt * 1000); }      // tàu của ta (đang chạy nền) vẫn phát thanh ngầm
   draw(); requestAnimationFrame(frame);
 }
 function nextLeg() { const r = Object.assign({}, recipe, { leg: (recipe.leg || 0) + 1, carryT0: W.trip.t0 + W.t + 600 }); startDrive(r); }
@@ -756,7 +785,9 @@ function advise(sc) {
 // ---- vẽ
 function txt(s, x, y, c, f, al) { ctx.fillStyle = c || '#e8eef5'; ctx.font = f || '14px system-ui'; ctx.textAlign = al || 'left'; ctx.fillText(s, x, y); }
 function panel(x, y, w, h, c) { ctx.fillStyle = c || '#18212c'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill(); }
-function button(x, y, w, h, label, fn, on, color, fs) { ctx.fillStyle = on ? (color || '#2a6fd6') : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); txt(label, x + w / 2, y + h / 2 + (fs ? 5 : 4), on ? '#fff' : '#c8d4e2', (fs || 12) + 'px system-ui', 'center'); btns.push({ x: x + curOX, y: y + curOY, w, h, fn }); }
+function button(x, y, w, h, label, fn, on, color, fs, icon) { ctx.fillStyle = on ? (color || '#2a6fd6') : '#243447'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); const col = on ? '#fff' : '#c8d4e2', f = (fs || 12) + 'px system-ui';
+  if (icon) { ctx.font = f; const ic = Math.round(h * 0.58), gap = Math.round(h * 0.25), tw = ctx.measureText(label).width, x0 = x + (w - (ic + gap + tw)) / 2; Icons.draw(ctx, icon, x0 + ic / 2, y + h / 2, ic, col, 2); txt(label, x0 + ic + gap, y + h / 2 + (fs ? 5 : 4), col, f, 'left'); }      // biểu tượng tự vẽ bên trái chữ
+  else txt(label, x + w / 2, y + h / 2 + (fs ? 5 : 4), col, f, 'center'); btns.push({ x: x + curOX, y: y + curOY, w, h, fn }); }
 function lamp(x, y, label, on, color) { ctx.fillStyle = on ? color : '#243447'; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill(); if (on) { ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2; ctx.stroke(); } txt(label, x + 12, y + 4, on ? '#fff' : '#7a8ea5', '12px system-ui'); }
 const WHY = { turnout: _t('ghi vào/ra đường ga (80 km/h)'), line: _t('giới hạn tuyến'), stop: _t('mẫu dừng ga'), rain: _t('mưa lớn'), wind: _t('gió'), snow: _t('tuyết'), order: _t('lệnh điều độ'), fault: _t('sự cố bệ trục'), lead: _t('tàu phía trước'), eqk: _t('sự cố/động đất'), ga: _t('đang đỗ ga'), wire: _t('dây điện') };
 const ZC = { rain: '#2f6fd6', wind: '#8a96a6', snow: '#dfe9f5', order: '#e08a2f', fault: '#d64a4a', eqk: '#9a5ad6', wire: '#d6c24a' };
@@ -803,7 +834,7 @@ function drawEnd() {
   const bar = [];      // hàng nút ở giữa đáy hộp tổng kết
   bar.push([endPage === 0 ? _t('Trang: Điểm (Tab)') : _t('Trang: Tổng kết (Tab)'), 200, () => { endPage = (endPage + 1) % 2; }, true]);
   bar.push([_t('Chạy lại (R)'), 150, () => { tutLessonActive ? startLesson(Tutorial.S.lesson) : startDrive(recipe); }, false]);
-  if (!replaying) bar.push([_t('Xem lại chuyến này'), 190, () => { if (!recActs.length && !auto) { W.say('info', _t('Không có thao tác nào được ghi.')); return; } startDrive(recipe, { replay: { actions: recActs.slice() } }); }, false]);
+  if (!replaying && !recTainted) bar.push([_t('Xem lại chuyến này'), 190, () => { if (!recActs.length && !auto) { W.say('info', _t('Không có thao tác nào được ghi.')); return; } startDrive(recipe, { replay: { actions: recActs.slice() } }); }, false]);
   const bestRep = Store.get().replays[Store.scenarioKey({ kind: 'drive', line: recipe.lineId, dir: W.dir, train: W.trip.label, from: recipe.from, to: recipe.to, diff: recipe.diff, weather: recipe.weather, seed: recipe.seed })];
   if (bestRep && !replaying) bar.push([_t('Xem lại bản tốt nhất'), 210, () => startDrive(Object.assign({}, bestRep.recipe, { rec: undefined }), { replay: { actions: bestRep.actions } }), false]);
   if (endInfo && endInfo.more) bar.push([_t('Chặng tiếp theo (Enter) →'), 250, nextLeg, true, '#2a8f5a']);
@@ -972,7 +1003,7 @@ const M = (function () {
   m.setSolid = v => { m.solid = v; document.body.classList.toggle('mSolid', v); };
   m.trainShow = key => { const e = MT_LIST.find(x => x[0] === key); if (e) { mtBag = [e]; trainLoad(); } };      // chọn mẫu cụ thể (dùng khi kiểm thử)
   m.hide = function () { m.screen = null; m.setSolid(false); document.body.dataset.m = 'play'; el.style.display = 'none'; };
-  m.sync = function () {      // hiện menu Tạm dừng khi game tạm dừng (P, Esc, mất focus, nút ⏸), ẩn khi chạy lại
+  m.sync = function () {      // hiện menu Tạm dừng khi game tạm dừng (P, Esc, mất focus, nút tạm dừng), ẩn khi chạy lại
     const ok = W && paused && !snapMode && !ckOpen && (mode === 'drive' || mode === 'tutorial');
     if (!m.screen && ok) m.show('pause'); else if (m.screen === 'pause' && !paused) m.hide();
     // trình phát nhạc chỉ hiện ở menu (không hiện khi đang lái và ở lớp tạm dừng cùng các màn con của nó)

@@ -77,7 +77,7 @@
     const words = text.split(' '); let line = '', y = py + 46; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > pw - 28 && line) { ctx.fillText(line, px + 14, y); y += 19; line = w; } else line = t; } ctx.fillText(line, px + 14, y);
     const nt = !done && L.steps[S.step].note && L.steps[S.step].note(W, T); if (nt) { ctx.fillStyle = '#4cd68a'; ctx.textAlign = 'right'; ctx.fillText(nt, px + pw - 12, py + h - 30); ctx.textAlign = 'left'; }
     if (!done && L.steps[S.step].hint) { ctx.fillStyle = '#7a8ea5'; ctx.font = '11px system-ui'; ctx.textAlign = 'left'; ctx.fillText(_t('Phím: ') + L.steps[S.step].hint + _t(' · K = bỏ qua bước'), px + 14, py + h - 10); }
-    if (S.passedAt >= 0) { ctx.fillStyle = '#4cd68a'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right'; ctx.fillText(_t('✔ Đúng rồi!'), px + pw - 12, py + h - 12); } else if (S.banner && !done) { ctx.fillStyle = '#ff9a7a'; ctx.font = '12px system-ui'; ctx.textAlign = 'right'; ctx.fillText(S.banner, px + pw - 12, py + h - 12); }
+    if (S.passedAt >= 0) { ctx.fillStyle = '#4cd68a'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right'; ctx.fillText(_t('✓ Đúng rồi!'), px + pw - 12, py + h - 12); } else if (S.banner && !done) { ctx.fillStyle = '#ff9a7a'; ctx.font = '12px system-ui'; ctx.textAlign = 'right'; ctx.fillText(S.banner, px + pw - 12, py + h - 12); }
     ctx.restore();
   }
   root.Tutorial = { LESSONS, S, cfg, update, draw, skip, active };

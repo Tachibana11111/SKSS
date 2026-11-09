@@ -27,10 +27,26 @@
   };
   // tên ga hiển thị: tiếng Nhật dùng chữ Hán (jp), các ngôn ngữ khác giữ chữ La-tinh (en); tên tuyến tiếng Nhật lấy từ meta.pa (+ 新幹線)
   I18N.stn = s => (I18N.lang === 'ja' && s.jp) ? s.jp : s.en;
+  // tiếng Nhật: tên ga viết kanji kèm cách đọc hiragana trong ngoặc (danh sách, tooltip) — I18N.stk; các ngôn ngữ khác như I18N.stn
+  I18N.stk = s => { if (I18N.lang === 'ja' && s.jp) { const k = root.STATION_KANA && root.STATION_KANA[s.jp]; return k ? s.jp + '（' + k + '）' : s.jp; } return s.en; };
+  // kana → chữ La-tinh kiểu gõ romaji (shi/chi/tsu) và kiểu IME/kunrei (si/ti/tu) để tìm kiếm bằng bàn phím La-tinh
+  const RM = { あ: 'a', い: 'i', う: 'u', え: 'e', お: 'o', か: 'ka', き: 'ki', く: 'ku', け: 'ke', こ: 'ko', さ: 'sa', し: 'shi', す: 'su', せ: 'se', そ: 'so', た: 'ta', ち: 'chi', つ: 'tsu', て: 'te', と: 'to', な: 'na', に: 'ni', ぬ: 'nu', ね: 'ne', の: 'no', は: 'ha', ひ: 'hi', ふ: 'fu', へ: 'he', ほ: 'ho', ま: 'ma', み: 'mi', む: 'mu', め: 'me', も: 'mo', や: 'ya', ゆ: 'yu', よ: 'yo', ら: 'ra', り: 'ri', る: 'ru', れ: 're', ろ: 'ro', わ: 'wa', を: 'o', ん: 'n',
+    が: 'ga', ぎ: 'gi', ぐ: 'gu', げ: 'ge', ご: 'go', ざ: 'za', じ: 'ji', ず: 'zu', ぜ: 'ze', ぞ: 'zo', だ: 'da', ぢ: 'ji', づ: 'zu', で: 'de', ど: 'do', ば: 'ba', び: 'bi', ぶ: 'bu', べ: 'be', ぼ: 'bo', ぱ: 'pa', ぴ: 'pi', ぷ: 'pu', ぺ: 'pe', ぽ: 'po', ぁ: 'a', ぃ: 'i', ぅ: 'u', ぇ: 'e', ぉ: 'o' };
+  const RMY = { き: 'ky', し: 'sh', ち: 'ch', に: 'ny', ひ: 'hy', み: 'my', り: 'ry', ぎ: 'gy', じ: 'j', ぢ: 'j', び: 'by', ぴ: 'py' };
+  I18N.romaji = text => {
+    const t = String(text).replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)); let out = '', dbl = false;
+    for (let i = 0; i < t.length; i++) { const c = t[i], n = t[i + 1];
+      if (c === 'っ') { dbl = true; continue; }
+      let r; if (n && 'ゃゅょ'.includes(n) && RMY[c]) { r = RMY[c] + { ゃ: 'a', ゅ: 'u', ょ: 'o' }[n]; if (c === 'し' || c === 'ち' || c === 'じ' || c === 'ぢ') r = RMY[c] + { ゃ: 'a', ゅ: 'u', ょ: 'o' }[n]; i++; } else if (c === 'ー') r = ''; else r = RM[c] !== undefined ? RM[c] : c;
+      if (dbl && r) { out += r.startsWith('ch') ? 't' : r[0]; } dbl = false; out += r; }
+    return out;
+  };
+  I18N.romKun = r => r.replace(/shi/g, 'si').replace(/chi/g, 'ti').replace(/tsu/g, 'tu').replace(/fu/g, 'hu').replace(/ji/g, 'zi').replace(/sh([aueo])/g, 's$1').replace(/ch([aueo])/g, 't$1').replace(/j([aueo])/g, 'z$1').replace(/\bn\b/g, 'n');
+  I18N.romKey = s => { const k = root.STATION_KANA && root.STATION_KANA[s.jp] || '', h = k ? I18N.romaji(k) : ''; return [s.en, s.jp || '', k, h, h ? I18N.romKun(h) : ''].join('|'); };      // các trường cách nhau '|' để so khớp từng trường (không dính chữ giữa hai trường)
   I18N.ln = L => (I18N.lang === 'ja' && L.meta && L.meta.pa) ? L.meta.pa + '新幹線' : L.name;
   // tên chuyến: tiếng Nhật dùng tên kana (のぞみ1号), ngôn ngữ khác giữ 'Nozomi 1'
   const JAT = { Nozomi: 'のぞみ', Hikari: 'ひかり', Kodama: 'こだま', Mizuho: 'みずほ', Sakura: 'さくら', Tsubame: 'つばめ', Kamome: 'かもめ', Hayabusa: 'はやぶさ', Hayate: 'はやて', Yamabiko: 'やまびこ', Nasuno: 'なすの', Komachi: 'こまち', Tsubasa: 'つばさ', Toki: 'とき', Tanigawa: 'たにがわ', Asama: 'あさま', Kagayaki: 'かがやき', Hakutaka: 'はくたか', Tsurugi: 'つるぎ' }, JAX = { 'Doctor Yellow': 'ドクターイエロー' };
   I18N.tl = (t, n) => { if (I18N.lang === 'ja') { if (JAT[t]) return JAT[t] + n + '号'; if (JAX[t]) return JAX[t] + ' ' + n; } return t + ' ' + n; };
   I18N.tn = t => (I18N.lang === 'ja' && (JAT[t] || JAX[t])) || t;      // chỉ tên loại tàu (không số hiệu): のぞみ / Nozomi
-  root.I18N = I18N; root._t = I18N.t; root._tl = I18N.tl; root._tn = I18N.tn; root._s = I18N.stn; root._ln = I18N.ln;
+  root.I18N = I18N; root._t = I18N.t; root._tl = I18N.tl; root._tn = I18N.tn; root._s = I18N.stn; root._sk = I18N.stk; root._ln = I18N.ln;
 })(typeof window !== 'undefined' ? window : globalThis);

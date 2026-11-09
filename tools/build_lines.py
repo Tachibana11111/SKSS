@@ -179,12 +179,25 @@ def read_kyushu_tsubame():
     good = lambda v: v not in ('‥', '', 'ㇾ')
     for (name, equip), cells in tr.items():
         no = re.sub(r'\D', '', name); raw = []; prev = -1
+        # sửa lỗi gõ giờ trong PDF trước khi nối qua nửa đêm: một giờ vọt lên quá 90 phút so với cả ga trước lẫn ga sau (vd. 23:12 thay vì 20:12 ở Tsubame 334) là giá trị sai, thay bằng trung điểm; không sửa thì các ga sau bị cộng thêm 24 giờ và đoàn "chạy" tới 44:44
+        pts = []
+        for j in order:
+            dep, arr = cells.get((j, '発'), '‥'), cells.get((j, '着'), '‥')
+            if good(dep) or good(arr): pts.append([j, sec(arr) if good(arr) else None, sec(dep) if good(dep) else None])
+        rep = lambda e: e[2] if e[2] is not None else e[1]
+        for q in range(1, len(pts) - 1):
+            x0, x1, x2 = rep(pts[q - 1]), rep(pts[q]), rep(pts[q + 1])
+            if x1 - x0 > 5400 and x1 - x2 > 5400:
+                dlt = (x0 + x2) // 2 - x1
+                for k in (1, 2):
+                    if pts[q][k] is not None: pts[q][k] += dlt
+        fixed = {p[0]: p for p in pts}
         for j in order:
             dep, arr = cells.get((j, '発'), '‥'), cells.get((j, '着'), '‥')
             if not good(dep) and not good(arr):
                 if dep == 'ㇾ': raw.append((j, None, None, True))
                 continue
-            ta = sec(arr) if good(arr) else None; td = sec(dep) if good(dep) else None
+            ta = fixed[j][1]; td = fixed[j][2]
             t = td if td is not None else ta
             while t < prev - 600: t += 86400
             if td is not None and td < t: td = t

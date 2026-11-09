@@ -28,13 +28,38 @@
     return { lon: a.lon + (b.lon - a.lon) * f, lat: a.lat + (b.lat - a.lat) * f, dx: (b.lon - a.lon) * KX, dy: -(b.lat - a.lat), idx: f < 0.5 ? j : j + 1 };
   }
   // trạng thái một đoàn theo lịch tại giờ `now` (đã trừ độ trễ): null nếu chưa hiện / đã biến mất (hiện sớm và biến mất muộn 10 s)
-  function stateOf(LN, c, now) {
+  // ---- đoạn giữa hai ga dừng của một đoàn: tăng tốc đều, chạy đều, phanh theo đường cong ATC tới vạch dừng; ga có ghi rẽ vào đường sân ga (Sim.G.turnoutIn/Out/V) thì ≤ 80 km/h trong 1.150 m trước và 630 m sau ga như tàu thật;
+  // tốc độ chạy đều tìm sao cho tổng thời gian đúng giờ biểu đồ (giờ rời/đến không đổi). Bảng (thời gian → quãng đường, tốc độ) tính một lần cho mỗi đoạn.
+  const A_ACC = 0.6, SEGC = new Map();      // m/s² [I]
+  function segTable(LN, c, k, kq) {
+    const S = c.stops, p = S[k], q = S[kq === undefined ? k + 1 : kq], Ts = c.ta(q) - c.td(p), L = LN[c.line], D = Math.abs(L.stations[q.i].km - L.stations[p.i].km) * 1000, key = c.line + '|' + p.i + '|' + q.i + '|' + c.rec.d + '|' + Math.round(Ts);
+    if (SEGC.has(key)) return SEGC.get(key); if (!(Ts > 0) || !(D > 0)) { SEGC.set(key, null); return null; }
+    const Sim = root.Sim, G = Sim && Sim.G, Ly = root.Layout, A_DEC = G ? G.aATC : 0.72, dv = i => { try { const st = L.stations[i]; return !!(Ly && st && st.lay && Ly.diverts(st.lay, c.rec.d, Ly.pickOf(st, i, null))); } catch (e) { return false; } };
+    const limO = G && dv(p.i) ? G.turnoutOut : 0, limI = G && dv(q.i) ? G.turnoutIn : 0, vT = G ? G.turnoutV : 80 / 3.6, N = Math.max(120, Math.min(1500, Math.round(D / 50))), dx = D / N;
+    const vAt = (x, vc) => { let v = Math.min(vc, Math.sqrt(2 * A_ACC * x + 0.0001), Math.sqrt(2 * A_DEC * (D - x) + 0.0001));
+      if (limO) v = Math.min(v, x < limO ? vT : Math.sqrt(vT * vT + 2 * A_ACC * (x - limO))); if (limI) v = Math.min(v, x > D - limI ? vT : Math.sqrt(vT * vT + 2 * A_DEC * (D - limI - x))); return Math.max(v, 0.3); };
+    const total = vc => { let t = 0; for (let i = 0; i < N; i++) t += dx / vAt((i + 0.5) * dx, vc); return t; };
+    let lo = 3, hi = 120; if (total(hi) >= Ts) lo = hi; else { for (let it = 0; it < 24; it++) { const mid = (lo + hi) / 2; if (total(mid) > Ts) lo = mid; else hi = mid; } lo = hi; }
+    const vc = lo, tt = new Float32Array(N + 1), vv = new Float32Array(N + 1); let t = 0;
+    for (let i = 0; i <= N; i++) { vv[i] = i === 0 || i === N ? 0 : vAt(i * dx, vc); if (i < N) { tt[i] = t; t += dx / vAt((i + 0.5) * dx, vc); } else tt[i] = t; }
+    const sc = Ts / (t || Ts); for (let i = 0; i <= N; i++) { tt[i] *= sc; vv[i] /= sc; }      // khớp đúng Ts (chuyển động chậm hơn lịch thì kéo giãn)
+    const T0 = { Ts, D, N, dx, tt, vv }; SEGC.set(key, T0); return T0;
+  }
+  function segAt(T0, t) {      // t (giây kể từ lúc rời ga) → { f: phần quãng đường (0..1), v: m/s }
+    const tt = T0.tt, N = T0.N; if (t <= 0) return { f: 0, v: 0 }; if (t >= T0.Ts) return { f: 1, v: 0 };
+    let a = 0, b = N; while (b - a > 1) { const m = (a + b) >> 1; if (tt[m] <= t) a = m; else b = m; }
+    const u = (t - tt[a]) / ((tt[a + 1] - tt[a]) || 1); return { f: (a + u) / N, v: T0.vv[a] + (T0.vv[a + 1] - T0.vv[a]) * u };
+  }
+  function segTime(T0, x) { const N = T0.N, g = Math.max(0, Math.min(N, x / T0.dx)), a = Math.min(N - 1, Math.floor(g)); return T0.tt[a] + (T0.tt[a + 1] - T0.tt[a]) * (g - a); }
+  function stateOf(LN, c, now, skip) {
     if (now < c.t0 || now > c.t1) return null; const L = LN[c.line], S = c.stops, K = i => L.stations[i].km;
     const pos = i => { const s = L.stations[i]; return { lon: s.lon, lat: s.lat, idx: i }; };
     for (let k = 0; k < S.length; k++) {
-      const p = S[k], q = S[k + 1];
+      if (skip && skip.has(k) && k > 0 && k < S.length - 1) continue;      // ga được cho thông qua: không có thời gian đỗ, đoạn đi nối liền với đoạn sau
+      let kq = k + 1; while (skip && skip.has(kq) && kq < S.length - 1) kq++;
+      const p = S[k], q = S[kq];
       if (now >= c.ta(p) - (k === 0 ? 10 : 0) && now <= c.td(p) + (k === S.length - 1 ? 10 : 0)) { const nb = q || S[k - 1], d = L.stations[nb.i]; return Object.assign(pos(p.i), { dwell: k === 0 ? 'wait' : k === S.length - 1 ? 'end' : 'stop', k, dx: (d.lon - L.stations[p.i].lon) * KX * (q ? 1 : -1), dy: -(d.lat - L.stations[p.i].lat) * (q ? 1 : -1), km: K(p.i) }); }
-      if (q && now > c.td(p) && now < c.ta(q)) { const f = (now - c.td(p)) / ((c.ta(q) - c.td(p)) || 1), km = K(p.i) + (K(q.i) - K(p.i)) * f, a = atKm(L, km), sg = Math.sign(K(q.i) - K(p.i)) || 1; return { lon: a.lon, lat: a.lat, idx: a.idx, dx: a.dx * sg, dy: a.dy * sg, k, km, moving: true, kmh: Math.abs(K(q.i) - K(p.i)) / ((c.ta(q) - c.td(p)) / 3600) }; }
+      if (q && now > c.td(p) && now < c.ta(q)) { const Ts = c.ta(q) - c.td(p), T0 = segTable(LN, c, k, kq), pr = T0 ? segAt(T0, now - c.td(p)) : { f: (now - c.td(p)) / (Ts || 1), v: Math.abs(K(q.i) - K(p.i)) * 1000 / (Ts || 1) }, km = K(p.i) + (K(q.i) - K(p.i)) * pr.f, a = atKm(L, km), sg = Math.sign(K(q.i) - K(p.i)) || 1; return { lon: a.lon, lat: a.lat, idx: a.idx, dx: a.dx * sg, dy: a.dy * sg, k, nk: kq, km, moving: true, kmh: pr.v * 3.6 }; }
     }
     return null;
   }
@@ -79,8 +104,49 @@
     return rf.g === line ? rf.k : null;
   }
   // giờ (theo lịch) mà đoàn c đi qua vị trí km của tuyến mình (nội suy giữa hai ga dừng; null nếu ngoài hành trình)
-  function timeAtKm(LN, c, km) { const L = LN[c.line], S = c.stops; for (let k = 0; k < S.length - 1; k++) { const k0 = L.stations[S[k].i].km, k1 = L.stations[S[k + 1].i].km; if (km >= Math.min(k0, k1) && km <= Math.max(k0, k1)) { const f = (km - k0) / ((k1 - k0) || 1); return c.td(S[k]) + (c.ta(S[k + 1]) - c.td(S[k])) * f; } } return null; }
+  function timeAtKm(LN, c, km, skip) { const L = LN[c.line], S = c.stops; for (let k = 0; k < S.length - 1;) { let kq = k + 1; while (skip && skip.has(kq) && kq < S.length - 1) kq++; const k0 = L.stations[S[k].i].km, k1 = L.stations[S[kq].i].km; if (km >= Math.min(k0, k1) && km <= Math.max(k0, k1)) { const f = (km - k0) / ((k1 - k0) || 1); const T0 = segTable(LN, c, k, kq); return c.td(S[k]) + (T0 ? segTime(T0, f * Math.abs(k1 - k0) * 1000) : (c.ta(S[kq]) - c.td(S[k])) * f); } k = kq; } return null; }
   // tàu đi trước thật của người chơi (W.lead) có vị trí thật trong mô phỏng: ép độ trễ của đoàn đó trong danh mục sao cho vị trí theo lịch trùng vị trí thật, để giãn cách với các tàu khác tính đúng
+  // tàu của ta đang vào buồng lái tàu khác (W.fgnW, chạy thật bằng mô phỏng riêng): bản sao của nó trong danh mục được kéo khớp đúng vị trí/trạng thái đỗ của tàu thật (giống tàu đi trước), nên mọi tàu khác tính giãn cách theo tàu thật;
+  // còn sự giữ tàu (động đất, mưa gió) vẫn do bản sao tính (d.hold) và tàu thật tuân theo (NatMap.follow)
+  // ---- sự kiện ngẫu nhiên cho MỌI đoàn trong danh mục (cùng hạt giống và độ khó với chuyến của ta): lệnh điều độ, hành khách bệnh, cửa lỗi, nhường tàu vượt, hỏng thiết bị (dừng ở ga dừng), thú va chạm, xe kẹt đường ngang (dừng giữa đường),
+  // hiếm: đứt dây điện / cháy. Số sự kiện lấy theo W.diff.events (tỉ lệ theo thời gian chạy), mỗi sự kiện giữ đoàn (d.hold) một lúc rồi đoàn chạy tiếp; thời gian trễ dồn lại như các giữ tàu khác. Thiên tai/động đất/mưa gió vẫn là chung cả bản đồ.
+  const strHash = str => { let x = 7; for (let i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) % 100003; return x; };
+  function planOf(W, c) {
+    const P = W._evPlan || (W._evPlan = new Map()); let p = P.get(c.key); if (p) return p; p = [];
+    const D = W.diff, seed = W.seed || 1, kh = strHash(c.key), h = u => hs(seed * 977 + kh, u), span = c.t1 - c.t0;
+    const cp = root.Sim.coupleOf && root.Sim.coupleOf(c.rec);      // đoàn ghép (Yamabiko + Tsubasa...): chỉ đoàn Tohoku sinh sự kiện, đoàn mini nhận cùng lúc (partnerOf) để hai đoàn luôn đi chung
+    if (D && D.events && span > 600 && c.rec !== W.trip.rec && !(cp && cp.role !== 'toh')) {
+      const n0 = D.events[0] + Math.floor(h(1) * (D.events[1] - D.events[0] + 1)), n = Math.round(n0 * Math.min(1, span / 9000)), ST = root.Sim.INSPECT && root.Sim.INSPECT[c.rec.v] ? ['hold', 'overtake', 'planned', 'fault', 'skip'] : ['hold', 'addstop', 'sick', 'doorfault', 'overtake', 'planned', 'fault', 'skip'], RD = ['animal', 'xingcar', 'workers', 'slow'];
+      for (let i = 0; i < n; i++) { const u = 10 + i * 5, at = c.t0 + span * (0.12 + 0.6 * h(u + 1));
+        if (h(u) < 0.65) { const kind = ST[Math.floor(h(u + 2) * ST.length)]; p.push({ at, kind, st: 'dwell', dur: Math.round(kind === 'sick' ? 180 : kind === 'overtake' ? 90 : kind === 'skip' ? 0 : 60 + 90 * h(u + 3)) }); }
+        else { const kind = RD[Math.floor(h(u + 2) * RD.length)]; if (kind === 'animal' && h(u + 3) < 0.3) p.push({ at, kind, st: 'run', dur: Math.round(360 + 240 * h(u + 4)) }); else if (kind === 'xingcar') p.push({ at, kind, st: 'run', dur: Math.round(120 + 180 * h(u + 3)) }); else if (kind === 'slow') p.push({ at, kind, st: 'run', dur: Math.round(600 + 600 * h(u + 3)) }); else if (kind === 'workers') p.push({ at, kind, st: 'run', dur: 90 }); } }
+      if (h(80) < (D.rare || 0)) { const wire = h(82) < 0.5; p.push({ at: c.t0 + span * (0.2 + 0.5 * h(81)), kind: wire ? 'wire' : 'fire', st: 'run', dur: Math.round(wire ? 600 + 900 * h(83) : 900) }); }
+      p.sort((a, b) => a.at - b.at);
+    }
+    P.set(c.key, p); return p;
+  }
+  const partnerOf = (W, c) => { const cp = root.Sim.coupleOf && root.Sim.coupleOf(c.rec); if (!cp) return null; const P = W._cpl || (W._cpl = new Map()); if (!P.has(c.key)) P.set(c.key, build(root.LINES).find(x => x.rec === cp.partner) || null); return P.get(c.key); };
+  function applyEv(W, LN, H, c, d, s, ev, tNow) {      // một sự kiện của danh mục: dừng giữ (d.hold), chạy chậm một lúc (d.slowT), hoặc cho thông qua ga kế (d.skip); đoàn ghép: đoàn kia nhận cùng lúc
+    const dd = [d], c2 = partnerOf(W, c); if (c2) { let d2 = H.delay.get(c2.key); if (!d2) { d2 = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; H.delay.set(c2.key, d2); } dd.push(d2); }
+    for (const x of dd) {
+      if (ev.kind === 'slow' || ev.kind === 'workers') { x.slowT = tNow + ev.dur; x.slowV = (ev.kind === 'slow' ? 170 : 230) / 3.6; x.slowK = ev.kind; }
+      else if (ev.kind === 'skip') { const kn = s.k + 1, S = c.stops; if (kn < S.length - 1) { const st = (x === d ? c : c2).stops, kk = x === d ? kn : st.findIndex(e => e.i === S[kn].i); if (kk > 0 && kk < st.length - 1) (x.skip || (x.skip = new Set())).add(kk); } }
+      else if (!(x.hold > 0)) { x.hold = ev.dur; x.why = ev.kind; }
+    }
+  }
+  // tàu vào buồng lái từ bản đồ: các sự kiện của danh mục dành cho tàu này (chưa xảy ra) được đưa vào thế giới riêng của nó, tàu tự lái xử lý (còi, nhắc lệnh, đóng cửa, hộp thoại); khi sự kiện xảy ra ở đó thì bản đồ không lặp lại
+  function bindEvents(Wc, Wh) {
+    const c = Wc.fgn && Wc.fgn.c; if (!c || !Wh) return; step(Wh); if (!Wh.haz) return; const nowAbs = Wh.trip.t0 + Wh.t;
+    for (const ev of planOf(Wh, c)) { if (ev.done) continue; const e = { at: Math.max(ev.at, nowAbs) - Wc.trip.t0, abs: true, done: false };
+      e.fire = w => { if (ev.done) return; if (root.Sim.fgnEvent(w, ev.kind, ev.dur)) { ev.done = true; if (ev.kind === 'skip' && w._lastSkip !== undefined) { let d = Wh.haz.delay.get(c.key); if (!d) { d = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; Wh.haz.delay.set(c.key, d); } const kk = c.stops.findIndex(x => x.i === w._lastSkip); if (kk > 0 && kk < c.stops.length - 1) (d.skip || (d.skip = new Set())).add(kk); } } else { e.done = false; e.at = w.t + 5; } };
+      Wc.events.push(e); }
+  }
+  function alignFgn(W, LN, H, tNow) {
+    const Wf = W.fgnW, Tf = Wf && Wf.player, c = Wf && Wf.fgn && Wf.fgn.c; if (!Tf || !c || Tf.finished) return;
+    let d = H.delay.get(c.key); if (!d) { d = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; H.delay.set(c.key, d); }
+    if (Tf.phase === 'dwell') { const m = Tf.M[Math.min(Tf.k, Tf.M.length - 1)], p = c.stops.find(e => m && e.i === m.i); if (p) { d.delay = tNow - Math.min(c.td(p) - 1, c.ta(p) + Math.max(0, Tf.dwellT)); d.rate = 0; return; } }
+    const t = timeAtKm(LN, c, root.Sim.kmOfS(Tf.x, Wf.dir, Wf.line.kmEnd), d.skip); if (t != null) { d.delay = tNow - t; d.rate = 0; }
+  }
   function alignLead(W, LN, H, tNow) {
     const Ld = W.lead, lr = W.leadRef; if (!Ld || !lr || Ld.phase !== 'run') return;
     if (W._leadC === undefined) W._leadC = build(LN).find(c => c.rec.t === lr.t && c.rec.n === lr.n && c.rec.d === lr.d) || null; const c = W._leadC; if (!c || !LN[W.lineId]) return;
@@ -109,19 +175,22 @@
   const WARM = 1800, WSLOW = { rain: 0.06, snow: 0.09, wind: 0.2 };
   // cập nhật độ trễ tới giờ hiện tại của game (bước 5 s; mở bản đồ muộn thì tự bù từ đầu chuyến)
   function step(W) {
+    if (W.fgn) return;      // thế giới của tàu vào buồng lái từ bản đồ dùng bản đồ của tàu ta (không tự cập nhật)
     const LN = root.LINES; if (!LN || !W.trip) return; if (!W.haz) init(W); const H = W.haz, cat = build(LN), end = W.trip.t0 + W.t;
-    while (H.lastT < end - 0.01) { const dt = Math.min(5, end - H.lastT), tNow = H.lastT + dt, wt = tNow - W.trip.t0, act = []; if (tNow >= W.trip.t0) alignLead(W, LN, H, tNow);
+    while (H.lastT < end - 0.01) { const dt = Math.min(5, end - H.lastT), tNow = H.lastT + dt, wt = tNow - W.trip.t0, act = []; if (tNow >= W.trip.t0) alignLead(W, LN, H, tNow); alignFgn(W, LN, H, tNow);
       for (const c of cat) { let d = H.delay.get(c.key); const eff = tNow - (d ? d.delay : 0); if (eff < c.t0 || eff > c.t1) continue;
         if (!d) { d = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; H.delay.set(c.key, d); }
         d._d0 = d.delay;
         if (d.sacc > 0 && d.hold <= 0) { const rc = Math.min(d.sacc, dt * 0.25); d.delay -= rc; d.sacc -= rc; }      // phần chậm do chờ tránh tàu trên đường đơn được bù dần (chạy nhanh hơn lịch ~25%) để trễ không dồn lại cả ngày
-        const s = stateOf(LN, c, eff); if (!s) continue; if (d.hold > 0) { act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: true, cid: c.cid, c, s, eff }); d.hold -= dt; d.delay += dt; if (d.why === 'single') d.sacc = (d.sacc || 0) + dt; continue; }
+        const s = stateOf(LN, c, eff, d.skip); if (!s) continue; if (d.hold > 0) { act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: true, cid: c.cid, c, s, eff }); d.hold -= dt; d.delay += dt; if (d.why === 'single') d.sacc = (d.sacc || 0) + dt; continue; }
+        if (c !== W._leadC) { const plan = planOf(W, c); for (const ev of plan) { if (ev.done || tNow < ev.at) continue; if (ev.st === 'dwell' ? s.dwell !== 'stop' : (s.dwell || !s.moving)) continue; ev.done = true; applyEv(W, LN, H, c, d, s, ev, tNow); break; } }
+        if (d.hold > 0) { act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: true, cid: c.cid, c, s, eff }); d.hold -= dt; d.delay += dt; continue; }
         for (let qi = 0; qi < H.quakes.length; qi++) { const q = H.quakes[qi]; if (d.hit[qi] || wt < q.t) continue; const R = hav(s.lat, s.lon, q.lat, q.lon), tS = q.t + Math.hypot(R, q.depth) / VS;
           if (wt >= tS) { d.hit[qi] = 1; const sh = shindoAt(q, R); if (sh >= 4) { const h0 = (sh >= 5 ? 900 : 420) * (0.8 + hs(qi, c.rec.n | 0) * 0.5) - (wt - tS); if (h0 > 0) { d.hold = h0; d.why = 'eqk'; d.shake = wt; } } } }      // đoàn xuất hiện muộn sau trận động đất (kể cả ngay ở ga xuất phát) chỉ bị giữ phần còn lại
         if (d.hold <= 0 && c !== W._leadC) gateFor(LN, c, s, eff, wt, H, d);      // (bản sao của tàu đi trước thật do alignLead ép khớp với mô phỏng, không giữ theo ô)      // mưa/gió giữ tàu: chờ ở ga (kể cả ga xuất phát, ga chạy thông qua) trước ô giữ tàu tới khi hết hạn
-        if (d.hold <= 0 && !s.dwell) for (const cl of H.cells) if (wt >= cl.t0 && wt <= cl.t1 && hav(s.lat, s.lon, cl.lat, cl.lon) < cl.r) { d.delay += dt * (WSLOW[cl.kind] || 0.05); if (!d.why) d.why = cl.kind; break; }
+        if (d.hold <= 0 && !s.dwell) { let rt = 0, rk = null; if (d.slowT > tNow && s.kmh > d.slowV * 3.6) { rt = 1 - d.slowV * 3.6 / s.kmh; rk = d.slowK; } for (const cl of H.cells) if (wt >= cl.t0 && wt <= cl.t1 && hav(s.lat, s.lon, cl.lat, cl.lon) < cl.r) { const q = cl.kind === 'rain' && cl.t0 > -1e8 && cl.t1 < 1e8 && s.kmh > 70 ? 1 - 70 / s.kmh : (WSLOW[cl.kind] || 0.05); if (q > rt) { rt = q; rk = cl.kind; } } if (rk) { d.delay += dt * rt; if (!d.why) d.why = rk; } }      // nhiều ô chồng nhau: lấy ô chậm nhất; ô mưa của kế hoạch chuyến (chạy chậm 70 km/h như quy định) không bị ô thời tiết chung che mất
         act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: false, cid: c.cid, dwell: !!s.dwell, loop: !!(s.dwell && canPass(LN, c.line, s.idx, c.rec.d)), c, s, eff }); }
-      { const P0 = W.player; if (P0 && !P0.finished && tNow > W.trip.t0 && LN[W.lineId]) act.push({ d: { delay: 0 }, g: refOf(LN, W.lineId, root.Sim.kmOfS(P0.x, W.dir, W.line.kmEnd)), dir: W.dir, still: false, dwell: P0.phase === 'dwell', loop: P0.phase === 'dwell' && canPass(LN, W.lineId, P0.M[P0.k].i, W.dir), me: true, cid: (function () { const r0 = W.trip.rec, s0 = r0 && r0.s.find(e => !e[3]); return s0 ? r0.d + '|' + LN[W.lineId].stations[s0[0]].jp + '|' + Math.round((s0[2] != null ? s0[2] : s0[1]) / 5) : ''; })() }); }      // tàu của người chơi cũng là vật cản (không bị chậm)
+      { const P0 = W.player; if (P0 && !P0.foreign && !P0.finished && tNow > W.trip.t0 && LN[W.lineId]) act.push({ d: { delay: 0 }, g: refOf(LN, W.lineId, root.Sim.kmOfS(P0.x, W.dir, W.line.kmEnd)), dir: W.dir, still: false, dwell: P0.phase === 'dwell', loop: P0.phase === 'dwell' && canPass(LN, W.lineId, P0.M[P0.k].i, W.dir), me: true, cid: (function () { const r0 = W.trip.rec, s0 = r0 && r0.s.find(e => !e[3]); return s0 ? r0.d + '|' + LN[W.lineId].stations[s0[0]].jp + '|' + Math.round((s0[2] != null ? s0[2] : s0[1]) / 5) : ''; })() }); }      // tàu của người chơi cũng là vật cản (không bị chậm)
       // một đường mỗi chiều: tàu đi sau không thể vượt tàu phía trước giữa hai ga (chỉ vượt được ở ga khi tàu trước đang đỗ); tiến sát thì bị chậm dần
       const grp = new Map(); for (const a of act) { a.km = a.g.k; const g = a.g.g + a.dir; (grp.get(g) || grp.set(g, []).get(g)).push(a); }
       for (const [g, arr] of grp) { const sg = arr[0].dir === 'down' ? 1 : -1; arr.sort((x, y) => sg * (x.km - y.km));
@@ -173,13 +242,17 @@
     const LN = root.LINES, L = LN && LN[W.lineId]; if (!L || !W.trip) { W.obs = null; return; } if (!W.haz) init(W);
     if (W.pcid === undefined) { const r0 = W.trip.rec, s0 = r0 && r0.s.find(e => !e[3]); W.pcid = s0 ? r0.d + '|' + L.stations[s0[0]].jp + '|' + Math.round((s0[2] != null ? s0[2] : s0[1]) / 5) : ''; }      // đối tác ghép đoàn của tàu ta không phải vật cản
     const cat = build(LN), now = W.trip.t0 + W.t, sg = W.dir === 'down' ? 1 : -1, me = refOf(LN, W.lineId, root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd)), lr = W.leadRef; let best = null;
-    for (const c of cat) { if (c.rec.d !== W.dir || c.rec === W.trip.rec) continue; if (W.pcid && c.cid === W.pcid) continue; if (lr && c.rec.t === lr.t && c.rec.n === lr.n && c.rec.d === lr.d) continue;
-      const d = W.haz.delay.get(c.key), s = stateOf(LN, c, now - (d ? d.delay : 0)); if (!s || (s.dwell && canPass(LN, c.line, s.idx, c.rec.d))) continue; if (root.Sim.dupHidden(c.rec, s.km)) continue; const rf = refOf(LN, c.line, s.km); if (rf.g !== me.g) continue;
+    for (const c of cat) { if (c.rec.d !== W.dir || c.rec === W.trip.rec || (W.fgn && W.home && c.rec === W.home.W.trip.rec)) continue; if (W.pcid && c.cid === W.pcid) continue; if (lr && c.rec.t === lr.t && c.rec.n === lr.n && c.rec.d === lr.d) continue;
+      const d = delayOf(W, c.key), s = stateOf(LN, c, now - (d ? d.delay : 0), d && d.skip); if (!s || (s.dwell && canPass(LN, c.line, s.idx, c.rec.d))) continue; if (root.Sim.dupHidden(c.rec, s.km)) continue; const rf = refOf(LN, c.line, s.km); if (rf.g !== me.g) continue;
       const dist = sg * (rf.k - me.k) * 1000; if (dist <= 0 || dist > 15000) continue; if (!best || dist < best.dist) best = { dist, c, d, s }; }
+    if (W.fgn && W.home) { const Wh = W.home.W, Th = Wh.player;      // tàu của ta (chạy nền) cũng là vật cản thật của tàu đang ngồi, ở vị trí thật chứ không phải bản sao theo lịch
+      if (Th && !Th.finished && Wh.dir === W.dir && !(Th.phase === 'dwell' && canPass(LN, Wh.lineId, Th.M[Math.min(Th.k, Th.M.length - 1)].i, Wh.dir))) { const rfh = refOf(LN, Wh.lineId, root.Sim.kmOfS(Th.x, Wh.dir, Wh.line.kmEnd)), dist = sg * (rfh.k - me.k) * 1000;
+        if (rfh.g === me.g && dist > 0 && dist < 15000 && (!best || dist < best.dist)) best = { dist, home: Th, Wh }; } }
+    if (best && best.home) { const Th = best.home; W.obs = { x: T.x + best.dist, key: Th.veh.key, dw: Th.phase === 'dwell', len: Th.veh.len, v: Th.v, t: W.t, label: best.Wh.trip.label }; return; }
     if (!best) { W.obs = null; return; }
     const veh = root.Sim.VEH[root.Sim.vehAt(best.c.rec, best.s.km)] || root.Sim.VEH[best.c.rec.v] || root.Sim.VEH.N700, held = best.d && best.d.hold > 0, rate = best.d ? best.d.rate || 0 : 0;
     W.obs = { x: T.x + best.dist, key: root.Sim.vehAt(best.c.rec, best.s.km), dw: !!best.s.dwell, len: veh.len, v: held ? 0 : (best.s.kmh || 0) * (1 - rate) / 3.6, t: W.t, label: root.Sim.labelAt(best.c.rec, best.s.km) };
   }
-  const delayOf = (W, key) => { const d = W.haz && W.haz.delay.get(key); return d ? d : null; };
-  root.NatCat = { canPass, updateObstacle, refOf, KX, VP, VS, hav, shindoAt, build, atKm, stateOf, init, step, delayOf, singleBusy, playerClaim };
+  const delayOf = (W, key) => { const H = W.fgn && W.home ? W.home.W.haz : W.haz, d = H && H.delay.get(key); return d ? d : null; };      // tàu vào buồng lái từ bản đồ: tàu khác (ngược chiều, đỗ ga, thông qua) theo độ trễ/giữ của bản đồ của tàu ta
+  root.NatCat = { bindEvents, canPass, updateObstacle, refOf, KX, VP, VS, hav, shindoAt, build, atKm, stateOf, init, step, delayOf, singleBusy, playerClaim };
 })(typeof window !== 'undefined' ? window : globalThis);

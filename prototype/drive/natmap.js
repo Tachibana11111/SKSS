@@ -31,10 +31,29 @@
   const DSH = new Map();
   // đang bị giữ (động đất, thời tiết): độ trễ hiển thị tăng đúng 1 s/s nên tàu đứng yên hẳn (0,9 sẽ để nó trườn 10% tốc độ)
   function shownDelay(key, now, dl, held) { let e = DSH.get(key); if (!e || now < e.t || now - e.t > 30) e = { v: dl, t: now }; else e = { v: dl > e.v ? Math.min(dl, e.v + (now - e.t) * (held ? 1 : 0.9)) : dl, t: now }; DSH.set(key, e); return e.v; }
+  // thời tiết của bản đồ tàu ta áp lên đoạn đường của tàu này: các ô mưa của kế hoạch chuyến (hazPlan) đổi thành vùng chạy chậm 70 km/h trên tuyến này (gạt mưa, hiệu ứng mưa như tàu ta)
+  function syncWeather(W, Wh) {
+    if (W._wxT !== undefined && W.t - W._wxT < 5 && W.t >= W._wxT) return; W._wxT = W.t; W.weatherKind = Wh.weatherKind || W.weatherKind;
+    const H = Wh.haz, LN = root.LINES, L = LN[W.lineId], M = W.player.M; if (!H || !L) return;
+    const done = W._wxDone || (W._wxDone = new Set()), off = Wh.trip.t0 - W.trip.t0, Sim = root.Sim;
+    H.cells.forEach((cl, i) => {
+      if (done.has(i) || cl.kind !== 'rain' || cl.stop || cl.t0 < -1e8 || cl.t1 > 1e8) return; const tA = cl.t0 + off, tB = cl.t1 + off; if (tB < W.t || tA > W.t + 1800) return; done.add(i);
+      let lo = null, hi = null; for (let s = M[0].s; s <= M[M.length - 1].s; s += 2000) { const km = Sim.kmOfS(s, W.dir, W.line.kmEnd), a = atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))); if (NC().hav(a.lat, a.lon, cl.lat, cl.lon) < cl.r) { if (lo === null) lo = s; hi = s; } }
+      if (lo !== null) W.zones.push({ s0: lo - 1000, s1: hi + 1000, v: 70 / 3.6, tA: Math.max(tA, W.t), tB, kind: 'rain', label: _t('mưa ≥ 50 mm/h') }); });
+  }
+  // tàu đang được ta ngồi buồng lái (Sim.spawnAt; W.fgn = { c }, W.home = thế giới của tàu ta): chạy thật bằng mô phỏng, cùng luật ATC như tàu của ta (giới hạn tuyến, vùng mưa, ghi rẽ, tàu phía trước ở vị trí thật qua bản đồ của tàu ta — NatCat.updateObstacle);
+  // bản sao trong danh mục bị kéo khớp tàu thật (NatCat.alignFgn). Ở đây chỉ còn việc đồng bộ thời tiết và dừng tàu khi bản đồ của tàu ta đang giữ nó (động đất, mưa gió lớn)
+  function follow(W) {
+    const F = W.fgn, T = W.player, Wh = W.home && W.home.W; if (!F || !T || !Wh || T.finished || !NC()) return;
+    NC().step(Wh); syncWeather(W, Wh);
+    const d = NC().delayOf(Wh, F.c.key); if (d && d.hold > 0) { T.mapCap = 0; T.mapWhy = d.why === 'eqk' || d.why === 'rain' || d.why === 'wind' || d.why === 'snow' ? d.why : 'stop'; } else { T.mapCap = undefined; T.mapWhy = undefined; }
+  }
+  // lý do giữ/làm chậm đoàn (d.why) → chữ hiện trên tooltip
+  const whyTxt = w => ({ eqk: _t('động đất'), rain: _t('mưa'), snow: _t('tuyết'), wind: _t('gió'), hold: _t('lệnh điều độ'), addstop: _t('dừng thêm theo lệnh điều độ'), sick: _t('hành khách bệnh'), doorfault: _t('cửa lỗi'), overtake: _t('nhường tàu vượt'), planned: _t('điều chỉnh lịch'), fault: _t('hỏng thiết bị'), animal: _t('va chạm động vật'), xingcar: _t('xe kẹt ở đường ngang'), wire: _t('đứt dây điện'), fire: _t('cháy/khói trên tàu'), single: _t('đường đơn'), slow: _t('chạy chậm theo lệnh'), workers: _t('nhân viên làm việc') })[w] || _t('thời tiết');
   function gather(W, T) {
     const LN = root.LINES, now = W.trip.t0 + W.t, out = [], me = W.trip.rec;
     for (const c of CAT) { if (c.rec === me || (W.mission && me && c.rec.v === me.v) || (c.line === W.lineId && me && c.rec.t === me.t && c.rec.n === me.n && c.rec.d === me.d)) continue;
-      const d = NC().delayOf(W, c.key), s = NC().stateOf(LN, c, now - shownDelay(c.key, now, d ? d.delay : 0, !!(d && d.hold > 0))); if (!s) continue;
+      const d = NC().delayOf(W, c.key), s = NC().stateOf(LN, c, now - shownDelay(c.key, now, d ? d.delay : 0, !!(d && d.hold > 0)), d && d.skip); if (!s) continue;
       if (root.Sim.dupHidden(c.rec, s.km)) continue;      // Komachi/Tsubasa đang đi chung với Tohoku: chỉ vẽ một đoàn (chuyến Tohoku mang tên cả hai)
       { const cm = me && root.Sim.coupleOf(me); if (cm && cm.partner === c.rec && T && T.veh && T.veh.parts && root.Sim.onShared(cm, s.km)) continue; }      // đối tác của tàu mình đang ghép chung: đã gộp vào tam giác của ta
       const held = !!(d && d.hold > 0); if (held) { s.moving = false; s.kmh = 0; } else if (d && d.rate > 0.02 && s.kmh) s.kmh *= (1 - d.rate);      // tốc độ thực: giảm dần khi bị chậm/chặn giãn cách
@@ -42,7 +61,10 @@
       if (Ld && lr && Ld.phase !== 'end' && c.rec.t === lr.t && c.rec.n === lr.n && c.rec.d === lr.d && LN[W.lineId]) {      // tàu đi trước của ta: vẽ đúng vị trí thật trong mô phỏng thay vì theo lịch, để không bị ta vượt mặt
         const L2 = LN[W.lineId], km2 = root.Sim.kmOfS(Ld.x, W.dir, W.line.kmEnd), a2 = atKm(L2, Math.max(L2.stations[0].km, Math.min(L2.stations[L2.stations.length - 1].km, km2))), sg2 = W.dir === 'down' ? 1 : -1; s0km = s.km;
         s.lon = a2.lon; s.lat = a2.lat; s.idx = a2.idx; s.dx = a2.dx * sg2; s.dy = a2.dy * sg2; s.moving = Ld.v > 0.5; s.kmh = Ld.v * 3.6; s.km = km2; s.dwell = Ld.phase === 'dwell' ? 'stop' : undefined; if (!s.dwell && s.k === undefined) s.k = 0; }
-      out.push({ c, s, s0km, d, held, col: colAt(c.line, s.idx), label: root.Sim.labelAt(c.rec, s.km) }); }
+      let isFgn = false;      // tàu ta đang ngồi buồng lái (thế giới riêng W.fgnW): vẽ ở vị trí thật của nó, không phải vị trí bản sao
+      { const Wf = W.fgnW; if (Wf && Wf.player && c.rec === Wf.trip.rec && LN[Wf.lineId]) { const Tf = Wf.player, L2 = LN[Wf.lineId], km2 = root.Sim.kmOfS(Tf.x, Wf.dir, Wf.line.kmEnd), a2 = atKm(L2, Math.max(L2.stations[0].km, Math.min(L2.stations[L2.stations.length - 1].km, km2))), sg2 = Wf.dir === 'down' ? 1 : -1, mi = Tf.M[Math.min(Tf.k, Tf.M.length - 1)], si = c.stops.findIndex(e => mi && e.i === mi.i);
+          s.lon = a2.lon; s.lat = a2.lat; s.idx = a2.idx; s.dx = a2.dx * sg2; s.dy = a2.dy * sg2; s.moving = Tf.v > 0.5; s.kmh = Tf.v * 3.6; s.km = km2; s0km = null; if (si >= 0) s.k = si; s.dwell = Tf.phase === 'dwell' ? 'stop' : undefined; if (!s.dwell && s.k === undefined) s.k = 0; isFgn = true; } }
+      out.push({ c, s, s0km, d, held: held && !isFgn, fgn: isFgn, col: colAt(c.line, s.idx), label: root.Sim.labelAt(c.rec, s.km) }); }
     const L = LN[W.lineId]; if (L && T) { const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd), a = atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))), sg = W.dir === 'down' ? 1 : -1;
       out.push({ me: true, s: { lon: a.lon, lat: a.lat, idx: a.idx, dx: a.dx * sg, dy: a.dy * sg, moving: T.v > 0.5, kmh: T.v * 3.6, km }, col: colAt(W.lineId, a.idx), label: (T ? root.Sim.hudLabel(W, T) : W.trip.label) || _t('Tàu của bạn'), line: W.lineId }); }
     return out;
@@ -68,7 +90,7 @@
   function draw(ctx, x, y, w, h, W, T, o) {
     if (!ST && !build()) { ctx.fillStyle = '#0b0f14'; ctx.fillRect(x, y, w, h); return; }
     const r = V.rect = [x, y, w, h], dk = !V.light, txt0 = o.txt, btn0 = o.button, mini = !!o.mini, U = mini ? 1 : 1.35;      // U: hệ số phóng chữ và phần tử (bản đồ lớn dễ đọc hơn; ô nhỏ giữ nguyên)
-    const txt = U === 1 ? txt0 : (t, tx, ty, col, f, al) => txt0(t, tx, ty, col, f ? f.replace(/(\d+)px/, (m, n) => Math.round(n * U) + 'px') : f, al), btn = (bx0, by0, bw0, bh0, lab, fn, on, col, fs) => btn0(bx0, by0, Math.round(bw0 * U), Math.round(bh0 * U), lab, fn, on, col, Math.round((fs || 12) * U));
+    const txt = U === 1 ? txt0 : (t, tx, ty, col, f, al) => txt0(t, tx, ty, col, f ? f.replace(/(\d+)px/, (m, n) => Math.round(n * U) + 'px') : f, al), btn = (bx0, by0, bw0, bh0, lab, fn, on, col, fs, icon) => btn0(bx0, by0, Math.round(bw0 * U), Math.round(bh0 * U), lab, fn, on, col, Math.round((fs || 12) * U), icon);
     NC().step(W); const H = W.haz || { cells: [], quakes: [] }, wt = W.t, kmPx = V.s / 111;
     if (!V.fit) { V.fit = true; V.s = h / 15.5; V.cx = 137.6; V.cy = 38.0; }
     ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
@@ -99,12 +121,12 @@
         if (kana) txt(kana, q[0] + rad + 4, q[1] + 3 - (s.big ? 13 : 11) * U, col, '7px system-ui');      // furigana phía trên chữ kanji
         txt(_s(s), q[0] + rad + 4, q[1] + 4, col, (s.big ? 'bold 13px' : '11px') + ' system-ui'); } }
     // tàu: tam giác chỉ hướng
-    const tr = gather(W, T), hits = []; V.trains = hits;
+    const tr = gather(W, T), hits = []; V.trains = hits; V.all = tr;      // V.all: mọi đoàn đang có trên bản đồ (kể cả ngoài khung nhìn) cho ô tìm tàu
     for (const t of tr) { const q = P(t.s.lon, t.s.lat, r); if (q[0] < x - 20 || q[0] > x + w + 20 || q[1] < y - 20 || q[1] > y + h + 20) continue; const ang = Math.atan2(t.s.dy, t.s.dx), sz = (t.me ? 8.5 : 5.2) * z * (U > 1 ? 1.3 : 1);
       if (t.held) { ctx.strokeStyle = 'rgba(255,80,60,.9)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(q[0], q[1], 9 * z, 0, 7); ctx.stroke(); }
       const shk = t.d && wt - (t.d.shake - W.trip.t0 * 0 ) < 6 && t.d.shake > -1e8 && wt >= t.d.shake ? (Math.random() - 0.5) * 4 : 0; q[0] += shk; q[1] += shk;
       ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(ang); ctx.beginPath(); ctx.moveTo(sz, 0); ctx.lineTo(-sz * 0.8, sz * 0.7); ctx.lineTo(-sz * 0.8, -sz * 0.7); ctx.closePath(); ctx.fillStyle = t.s.dwell || !t.s.moving && !t.me ? (dk ? '#8896a6' : '#6b7886') : t.col; ctx.fill(); ctx.strokeStyle = t.me ? '#fff' : dk ? 'rgba(255,255,255,.85)' : 'rgba(20,30,40,.85)'; ctx.lineWidth = t.me ? 2.2 : 1; ctx.stroke(); ctx.restore();
-      if (t.me) { const k = 1 + 0.25 * Math.sin(performance.now() / 300); ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(q[0], q[1], 15 * z * k, 0, 7); ctx.stroke(); }
+      if (t.me || t.fgn) { const k = 1 + 0.25 * Math.sin(performance.now() / 300); ctx.strokeStyle = t.fgn ? 'rgba(74,163,255,.95)' : 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(q[0], q[1], 15 * z * k, 0, 7); ctx.stroke(); }
       hits.push({ x: q[0], y: q[1], t }); }
     for (const qk of H.quakes) { const age = wt - qk.t; if (age < 0 || age > 420) continue; const q = P(qk.lon, qk.lat, r), fade = Math.max(0, Math.min(1, (420 - age) / 120)), rp = NC().VP * age * kmPx, rs = NC().VS * age * kmPx;
       ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(255,210,74,' + 0.85 * fade + ')'; ctx.beginPath(); ctx.arc(q[0], q[1], rp, 0, 7); ctx.stroke(); ctx.lineWidth = 2.6; ctx.strokeStyle = 'rgba(255,70,50,' + 0.9 * fade + ')'; ctx.beginPath(); ctx.arc(q[0], q[1], rs, 0, 7); ctx.stroke();
@@ -114,6 +136,9 @@
     if (!mini) {
     // chú giải và nút
     const bwU = Math.round(120 * U), bx = x + w - 390 - bwU, lx = x + 14, rowH = Math.round(17 * U); let ly = y + h - 14 - SEGS.length * rowH; ctx.fillStyle = dk ? 'rgba(8,12,18,.78)' : 'rgba(255,255,255,.82)'; ctx.fillRect(lx - 8, ly - 20 * U, Math.round(150 * U), SEGS.length * rowH + 26 * U);
+    if (o.pick) { const sw = 150, sh = 28, gy = Math.round(6 * U), y2 = ly - Math.round(20 * U) - Math.round(sh * U) - gy, y1 = y2 - Math.round(sh * U) - gy;      // hai ô chọn có tìm kiếm (ga, tàu) rộng bằng ô chú giải, nằm ngay trên nó
+      btn(lx - 8, y1, sw, sh, _t('Tìm ga…'), () => o.pick('station', { x: lx - 8, y: y1, w: Math.round(sw * U), h: Math.round(sh * U) }), true, '#2a6fd6', 12, 'search');
+      btn(lx - 8, y2, sw, sh, _t('Tìm tàu…'), () => o.pick('train', { x: lx - 8, y: y2, w: Math.round(sw * U), h: Math.round(sh * U) }), true, '#2a6fd6', 12, 'search'); }
     txt(_t('Tuyến'), lx, ly - 4, dk ? '#8aa0b5' : '#445', 'bold 11px system-ui'); for (const sg of SEGS) { ctx.fillStyle = sg.col; ctx.fillRect(lx, ly + 6 * U, 22 * U, 5 * U); txt(I18N.lang === 'ja' && SEGJA[sg.key] || sg.name, lx + 30 * U, ly + 12 * U, dk ? '#e8eef5' : '#1b2633', '11px system-ui'); ly += rowH; }
     // ba nút vuông ở góc trên phải: định vị tàu của tôi · nền sáng/tối · đóng (D); biểu tượng vẽ bằng nét
     const sq = 32, ss = Math.round(sq * U), ex = bx + bwU - ss, ey = y + 10, ic = (px, py, col, fn) => {
@@ -132,14 +157,21 @@
       if (V.sel.en) { title = I18N.lang === 'ja' ? (V.sel.jp || V.sel.en) + (root.STATION_KANA && root.STATION_KANA[V.sel.jp] ? '(' + root.STATION_KANA[V.sel.jp] + ')' : '') : V.sel.en + ' ' + (V.sel.jp || ''); const rr = stationRows(V.sel.jp, W, T); sub = rr.length ? _t('Tàu quanh giờ hiện tại:') : _t('Không có tàu nào trong 30 phút tới.'); for (const q of rr.slice(0, 12)) rows.push([q[1], q[2]]); }
       else if (selT) { const t = selT, L = t.me ? root.LINES[t.line] : root.LINES[t.c.line]; title = t.label; const st = t.s;
         if (t.me) { sub = _t('TÀU CỦA BẠN · ') + Math.round(st.kmh) + ' km/h'; rows.push(['km ' + st.km.toFixed(1) + ' / ' + L.stations[L.stations.length - 1].km.toFixed(0), t.col]); { const jN = root.Sim.nextTarget(T), mN = T.M[jN]; if (mN && T.phase !== 'dwell') { const rem = Math.max(0, (mN.s - T.x) / 1000); rows.push([_t('tới ') + mN.name + (mN.arr != null ? _t(' lúc ') + hhmm(W.trip.t0 + mN.arr) : '') + _t(' · còn ') + (rem < 10 ? rem.toFixed(1) : Math.round(rem)) + ' km', t.col]); } } }
-        else { if (t.held) rows.push([_t('ĐANG DỪNG do ') + (t.d.why === 'eqk' ? _t('động đất') : _t('thời tiết')) + _t(' (còn ~{0} phút)', Math.max(1, Math.round(t.d.hold / 60))), '#ff6b5a']); else if (t.d && t.d.delay > 90) rows.push([_t('trễ ~{0} phút', Math.round(t.d.delay / 60)) + (t.d.why ? ' (' + (t.d.why === 'eqk' ? _t('động đất') : t.d.why === 'rain' ? _t('mưa') : t.d.why === 'snow' ? _t('tuyết') : _t('gió')) + ')' : ''), '#ffb84a']); const S = t.c.stops, a = _s(L.stations[S[0].i]), b = _s(L.stations[S[S.length - 1].i]), nxt = S[Math.min(S.length - 1, (st.k || 0) + (st.dwell === 'wait' || st.dwell === 'stop' ? 0 : 1))];
-          sub = root.Sim.vehAt(t.c.rec, st.km) + ' · ' + a + ' → ' + b + (() => { const ci = root.Sim.coupleOf(t.c.rec); if (!ci || !root.Sim.onShared(ci, st.km)) return ''; const L2 = root.LINES[ci.role === 'toh' ? ci.line : t.c.line], r2 = ci.partner, q = r2.s.filter(e => !e[3]), Lp = ci.role === 'toh' ? root.LINES[ci.line] : root.LINES.toh; return ' + ' + _s(Lp.stations[q[q.length - 1][0]]); })(); rows.push([st.dwell === 'wait' ? _t('chờ xuất phát tại ') + a : st.dwell === 'end' ? _t('đã tới ') + b : st.dwell ? _t('đang đỗ tại ') + _s(L.stations[S[st.k].i]) : (st.kmh < 2 ? _t('đang dừng chờ giãn cách an toàn') : _t('đang chạy ~') + Math.round(st.kmh) + ' km/h'), t.col]); if (!st.dwell && nxt) { const remK = Math.abs(L.stations[nxt.i].km - (t.s0km != null ? t.s0km : st.km)); rows.push([_t('tới ') + _s(L.stations[nxt.i]) + _t(' lúc ') + hhmm(t.c.ta(nxt) + (t.d ? t.d.delay : 0)) + _t(' · còn ') + (remK < 10 ? remK.toFixed(1) : Math.round(remK)) + ' km', t.col]); } } }
+        else { if (t.fgn) rows.push([_t('BẠN ĐANG Ở BUỒNG LÁI TÀU NÀY'), '#4aa3ff']); if (t.held) rows.push([_t('ĐANG DỪNG do ') + whyTxt(t.d.why) + _t(' (còn ~{0} phút)', Math.max(1, Math.round(t.d.hold / 60))), '#ff6b5a']); else if (t.d && t.d.delay > 90) rows.push([_t('trễ ~{0} phút', Math.round(t.d.delay / 60)) + (t.d.why ? ' (' + whyTxt(t.d.why) + ')' : ''), '#ffb84a']); const S = t.c.stops, a = _sk(L.stations[S[0].i]), b = _sk(L.stations[S[S.length - 1].i]), nxt = S[Math.min(S.length - 1, st.dwell === 'wait' || st.dwell === 'stop' ? (st.k || 0) : st.nk !== undefined ? st.nk : (st.k || 0) + 1)];
+          sub = root.Sim.vehAt(t.c.rec, st.km) + ' · ' + a + ' → ' + b + (() => { const ci = root.Sim.coupleOf(t.c.rec); if (!ci || !root.Sim.onShared(ci, st.km)) return ''; const L2 = root.LINES[ci.role === 'toh' ? ci.line : t.c.line], r2 = ci.partner, q = r2.s.filter(e => !e[3]), Lp = ci.role === 'toh' ? root.LINES[ci.line] : root.LINES.toh; return ' + ' + _sk(Lp.stations[q[q.length - 1][0]]); })(); rows.push([st.dwell === 'wait' ? _t('chờ xuất phát tại ') + a : st.dwell === 'end' ? _t('đã tới ') + b : st.dwell ? _t('đang đỗ tại ') + _sk(L.stations[S[st.k].i]) : (st.kmh < 2 ? _t('đang dừng chờ giãn cách an toàn') : _t('đang chạy ~') + Math.round(st.kmh) + ' km/h'), t.col]); if (!st.dwell && nxt) { const remK = Math.abs(L.stations[nxt.i].km - (t.s0km != null ? t.s0km : st.km)); rows.push([_t('tới ') + _sk(L.stations[nxt.i]) + _t(' lúc ') + hhmm(t.c.ta(nxt) + (t.d ? t.d.delay : 0)) + _t(' · còn ') + (remK < 10 ? remK.toFixed(1) : Math.round(remK)) + ' km', t.col]); } } }
       if (selT) { const LNs = root.LINES, rf = o2 => NC().refOf(LNs, o2.me || o2.s0km != null ? W.lineId : o2.c.line, o2.s.km), dirOf = o2 => o2.me ? W.dir : o2.c.rec.d, keyOf = o2 => rf(o2).g + dirOf(o2), sg = dirOf(selT) === 'down' ? 1 : -1, grp = tr.filter(o2 => o2 !== selT && keyOf(o2) === keyOf(selT)), k0 = rf(selT).k; let ah = null, bh = null;
         for (const o2 of grp) { const dd = sg * (rf(o2).k - k0); if (dd > 0 && (!ah || dd < ah.d)) ah = { o: o2, d: dd }; else if (dd <= 0 && (!bh || dd > bh.d)) bh = { o: o2, d: dd }; }
         const fk = v => (v < 10 ? v.toFixed(1) : Math.round(v)) + ' km'; rows.push([ah ? _t('Tàu phía trước: ') + ah.o.label + ' · ' + fk(ah.d) : _t('Không có tàu phía trước (cùng chiều, cùng tuyến)'), ah ? ah.o.col : '#8896a6']); rows.push([bh ? _t('Tàu phía sau: ') + bh.o.label + ' · ' + fk(-bh.d) : _t('Không có tàu phía sau (cùng chiều, cùng tuyến)'), bh ? bh.o.col : '#8896a6']); }
-      const cw = Math.round(560 * U), rh = Math.round(18 * U), ch = Math.round(54 * U) + rows.length * rh + (rows.length ? 6 : 0) + (selT && o.checkin ? Math.round(34 * U) : 0), ax = V.sel.en ? P(V.sel.lon, V.sel.lat, r) : (() => { const hh = (V.trains || []).find(h => h.t === selT); return hh ? [hh.x, hh.y] : [x + 30, y + 60]; })(); let cx = ax[0] + 16, cy = ax[1] + 16; if (cx + cw > x + w - 8) cx = ax[0] - 16 - cw; if (cy + ch > y + h - 8) cy = y + h - 8 - ch; cx = Math.max(x + 8, cx); cy = Math.max(y + 8, cy); ctx.fillStyle = dk ? 'rgba(8,12,18,.9)' : 'rgba(255,255,255,.92)'; ctx.fillRect(cx, cy, cw, ch); ctx.strokeStyle = '#4aa3ff'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, cw, ch);
+      const fz = n => Math.round(n * U), mw = (str, f) => { ctx.font = f; return ctx.measureText(str).width; };
+      const lbCk = _t('Check-in địa điểm'), lbEn = _t('Vào buồng lái'), lbBk = _t('Quay về tàu của bạn'), bwOf = lab => Math.max(110, Math.ceil(mw(lab, fz(12) + 'px system-ui') / U) + 54);      // độ rộng nút theo chữ (đủ cả 3 ngôn ngữ), đơn vị chưa nhân U
+      const showBk = !!(selT && selT.me && o.back), showCk = !showBk && !!(selT && o.checkin), showEn = showCk && !!o.enter && !selT.me && !selT.fgn && !(selT.s && selT.s.dwell === 'end'), wCk = bwOf(lbCk), wEn = bwOf(lbEn), wBk = bwOf(lbBk);
+      const btnRow = showBk ? wBk : showCk ? wCk + (showEn ? 8 + wEn : 0) : 0;
+      let need = Math.max(mw(title, 'bold ' + fz(15) + 'px system-ui') + 24, mw(sub, fz(12) + 'px system-ui') + 24, ...rows.map(q => mw(q[0], fz(12) + 'px system-ui') + fz(26) + 14), (btnRow ? btnRow * U + 24 : 0));
+      const cw = Math.round(Math.max(fz(280), Math.min(need, fz(640)))), rh = Math.round(18 * U), ch = Math.round(54 * U) + rows.length * rh + (rows.length ? 6 : 0) + (btnRow ? Math.round(34 * U) : 0), ax = V.sel.en ? P(V.sel.lon, V.sel.lat, r) : (() => { const hh = (V.trains || []).find(h => h.t === selT); return hh ? [hh.x, hh.y] : [x + 30, y + 60]; })(); let cx = ax[0] + 16, cy = ax[1] + 16; if (cx + cw > x + w - 8) cx = ax[0] - 16 - cw; if (cy + ch > y + h - 8) cy = y + h - 8 - ch; cx = Math.max(x + 8, cx); cy = Math.max(y + 8, cy); ctx.fillStyle = dk ? 'rgba(8,12,18,.9)' : 'rgba(255,255,255,.92)'; ctx.fillRect(cx, cy, cw, ch); ctx.strokeStyle = '#4aa3ff'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, cw, ch);
       txt(title, cx + 12, cy + 22 * U, dk ? '#fff' : '#111', 'bold 15px system-ui'); txt(sub, cx + 12, cy + 42 * U, dk ? '#8aa0b5' : '#445', '12px system-ui'); rows.forEach((q, i) => { ctx.fillStyle = q[1]; ctx.fillRect(cx + 12, cy + 55 * U + i * rh, 8 * U, 8 * U); txt(q[0], cx + 26 * U, cy + 63 * U + i * rh, dk ? '#e8eef5' : '#1b2633', '12px system-ui'); });
-      if (selT && o.checkin) btn(cx + 12, cy + ch - Math.round(32 * U), 200, 26, _t('📍 Check-in địa điểm'), () => o.checkin(selT), true, '#2a8f5a', 12);      // chụp cảnh buồng lái phía trước của đoàn này ngay lúc bấm (xem tạm, không lưu)
+      if (showBk) btn(cx + 12, cy + ch - Math.round(32 * U), wBk, 26, lbBk, () => o.back(), true, '#2a8f5a', 12, 'back');
+      else if (showCk) { btn(cx + 12, cy + ch - Math.round(32 * U), wCk, 26, lbCk, () => o.checkin(selT), true, '#2a8f5a', 12, 'pin');
+        if (showEn) btn(cx + 12 + Math.round((wCk + 8) * U), cy + ch - Math.round(32 * U), wEn, 26, lbEn, () => o.enter(selT), true, '#2a6fd6', 12, 'train'); }      // chụp cảnh buồng lái phía trước của đoàn này ngay lúc bấm (xem tạm, không lưu)
     }
     }
     ctx.restore();
@@ -147,7 +179,7 @@
   // ô nhỏ cạnh khung 2D: bản đồ toàn quốc bám theo tam giác của ta (không nút, không thẻ chi tiết)
   function drawMini(ctx, x, y, w, h, W, T, o) {
     if (!ST && !build()) return; const L = root.LINES[W.lineId]; if (!L) return;
-    const sv = { cx: V.cx, cy: V.cy, s: V.s, rect: V.rect, sel: V.sel, trains: V.trains, fit: V.fit, drag: V.drag }, km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd), a = NC().atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km)));
+    const sv = { cx: V.cx, cy: V.cy, s: V.s, rect: V.rect, sel: V.sel, trains: V.trains, fit: V.fit, drag: V.drag }, fW = o.focus ? o.focus.W : W, fT = o.focus ? o.focus.T : T, fL = root.LINES[fW.lineId] || L, km = root.Sim.kmOfS(fT.x, fW.dir, fW.line.kmEnd), a = NC().atKm(fL, Math.max(fL.stations[0].km, Math.min(fL.stations[fL.stations.length - 1].km, km)));
     V.cx = a.lon; V.cy = a.lat; V.s = h / 0.55;      // ~60 km theo chiều cao ô: chỉ quan tâm tàu của ta và tàu gặp trên đường; muốn xem rộng thì hoán đổi (D) V.sel = null; V.fit = true;
     try { draw(ctx, x, y, w, h, W, T, Object.assign({}, o, { mini: true })); } finally { Object.assign(V, sv); }
   }
@@ -164,5 +196,16 @@
     if (!best) { bd = 196; for (const h of V.trains || []) { const d = (h.x - px) ** 2 + (h.y - py) ** 2; if (d < bd) { bd = d; best = { tk: h.t.me ? 'me' : h.t.c.key }; } } }
     V.sel = best; return true;
   }
-  root.NatMap = { V, shownDelay, stationRows, stations: () => ST, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
+  // danh sách cho ô tìm kiếm trên bản đồ: tất cả ga (theo tên đang dùng) / tất cả đoàn đang có trên bản đồ; chọn thì dời bản đồ tới đó và mở thẻ chi tiết
+  function searchItems(kind) {
+    if (!ST && !build()) return [];
+    if (kind === 'station') return Object.keys(ST).map(jp => { const s = ST[jp], kana = root.STATION_KANA && root.STATION_KANA[jp] || ''; return { key: jp, label: _sk(s), rom: I18N.romKey(s) }; }).sort((a, b) => a.label.localeCompare(b.label, I18N.locale || undefined));
+    return (V.all || []).map(t => ({ key: t.me ? 'me' : t.c.key, label: (t.label || '?') + (t.me ? ' ★' : ''), rom: (t.label || '') + '|' + I18N.romaji(t.label || '') + '|' + (t.c ? t.c.rec.t + ' ' + t.c.rec.n + '|' + (root.LINES[t.c.line].name || '') : '') })).sort((a, b) => a.label.localeCompare(b.label, I18N.locale || undefined, { numeric: true }));
+  }
+  function focus(kind, key) {
+    if (kind === 'station') { const s = ST && ST[key]; if (!s) return; V.sel = s; V.cx = s.lon; V.cy = s.lat; }
+    else { const t = (V.all || []).find(x => (x.me ? 'me' : x.c.key) === key); if (!t) return; V.sel = { tk: key }; V.cx = t.s.lon; V.cy = t.s.lat; }
+    V.s = 120000; V.fit = true;      // phóng to hết cỡ tới điểm tìm thấy
+  }
+  root.NatMap = { V, shownDelay, follow, searchItems, focus, stationRows, stations: () => ST, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
 })(typeof window !== 'undefined' ? window : globalThis);

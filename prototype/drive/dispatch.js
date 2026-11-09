@@ -113,7 +113,7 @@
       ctx.fillStyle = '#7a8ea5'; ctx.font = '11px system-ui'; ctx.fillText('Mẹo: tàu chậm (Kodama) đỗ ở ga có đường tránh', 804, 566); ctx.fillText('để tàu nhanh vượt; giữ tàu quá lâu làm trễ dây chuyền.', 804, 580);
     }
     // điều khiển thời gian
-    btn(ctx, 800, 596, 60, 22, D.paused ? '▶ chạy' : '⏸ dừng', () => { D.paused = !D.paused; }, D.paused); [[4, '×4'], [16, '×16'], [64, '×64'], [150, '×150']].forEach(([s, l], i) => btn(ctx, 866 + i * 56, 596, 52, 22, l, () => { D.scale = s; }, D.scale === s));
+    btn(ctx, 800, 596, 60, 22, D.paused ? '▶ chạy' : 'dừng', () => { D.paused = !D.paused; }, D.paused); [[4, '×4'], [16, '×16'], [64, '×64'], [150, '×150']].forEach(([s, l], i) => btn(ctx, 866 + i * 56, 596, 52, 22, l, () => { D.scale = s; }, D.scale === s));
     btn(ctx, 800, 624, 148, 22, 'Chạy lại (R)', () => { if (D.scenario) start(D.scenario); }, false); btn(ctx, 952, 624, 148, 22, 'Kết thúc sớm', () => { if (!D.over) finish(); }, false);
 
     // ---- bảng dưới: nhật ký + điểm

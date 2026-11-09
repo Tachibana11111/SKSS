@@ -142,6 +142,7 @@
   GameAudio.prototype.chain = function (W, steps, o) {
     o = o || {}; if (!steps.length) return;
     if (!this.enabled || !root.speechSynthesis) { for (const s of steps) if (s.pa) this.log(W, s.pa); return; }      // tắt tiếng / không có giọng đọc: chỉ hiện phụ đề
+    if (this.bgB) { const b = this.bgB; if (o.urgent) { b.jobs = []; b.v = null; b.nextGap = undefined; } b.jobs.push({ W, steps: steps.slice(), ok: o.ok, born: performance.now() }); return; }      // thế giới đang chạy nền (tàu khác đang được ngồi): chỉ xếp hàng, không phát tiếng
     if (o.urgent) this.cancelPlay();
     (this.jobs = this.jobs || []).push({ W, steps: steps.slice(), ok: o.ok, born: performance.now() }); this.pump();
   };
@@ -165,10 +166,10 @@
     if (st.mel) {
       const Mel = root.Melody, seg = Mel && Mel.SEG[st.mel], cx = this.ctx;
       if (!seg || !this.melBuf || !cx) { done(true); return; }      // chưa tải xong / không có file: bỏ qua melody (vẫn phát PA)
-      c.kind = 'mel'; c.seg = seg; c.dep = !!st.dep; c.off = c.off || 0; this.startMel(c, done); return;
+      c.kind = 'mel'; c.seg = seg; c.dep = !!st.dep; c.off = st.off || c.off || 0; this.startMel(c, done); return;
     }
     if (st.pa) {
-      if (!redo) this.log(W, st.pa); const ss = root.speechSynthesis; if (!ss) { done(true); return; }
+      if (!redo && !st.noLog) this.log(W, st.pa); const ss = root.speechSynthesis; if (!ss) { done(true); return; }
       c.kind = 'pa'; const tok = {}; c.tok = tok;
       const text = GameAudio.yomi(st.pa.ja); let fin = false; const end = skip => { if (fin || c.tok !== tok) return; fin = true; clearTimeout(this.spkT); done(skip); };      // c.tok: bỏ qua sự kiện kết thúc của câu đã bị ngắt khi tạm dừng
       this.spkT = setTimeout(() => { try { ss.cancel(); } catch (e) { } end(); }, 6000 + text.length * 160);      // onend không bao giờ đến trên một số trình duyệt di động: chống kẹt hàng đợi
@@ -211,6 +212,7 @@
   // ---- cập nhật mỗi khung hình ----
   GameAudio.prototype.update = function (W, T, st) {
     if (!this.ready || !W || !T) return;
+    if (this.curW !== W) this.switchTo(W, T);      // đổi tàu (vào buồng lái tàu khác / quay về): kênh phát thanh của tàu cũ chuyển sang chạy ngầm, kênh của tàu mới được nạp
     if (st.paused && !this.pzState) { this.pzState = true; this.pausePlay(); } else if (!st.paused && this.pzState) { this.pzState = false; this.resumePlay(); }      // game tạm dừng thì PA/melody cũng dừng, tiếp tục thì phát nốt
     const c = this.ctx, t = c.currentTime, v = T.v, kmh = v * 3.6, active = this.enabled && !st.paused && st.scale <= 4;
     const now = performance.now(), dt = Math.min(0.25, (now - this.rt.last) / 1000); this.rt.last = now;
@@ -299,7 +301,7 @@
     return st.platSign > 0 ? { ja: '左側', vi: _t('trái') } : { ja: '右側', vi: _t('phải') };
   };
   GameAudio.prototype.announce = function (W, T, p) {
-    const M = T.M, A = this.ann; if (W.mission) return;      // tàu kiểm tra: không phát thanh
+    const M = T.M, A = this.ann; if (W.mission || (root.Sim && root.Sim.INSPECT && root.Sim.INSPECT[W.trip.rec.v])) return;      // tàu kiểm tra (làm nhiệm vụ hay xem từ bản đồ): không phát thanh
     const Mel = root.Melody, L = W.line, sg = W.dir === 'down' ? 1 : -1, Sm = root.Sim;
     const nameJ = k => M[k].jp || M[k].name, typeJ = TYPEJ[W.trip.rec.t] || '', no = W.trip.rec.n;
     const last = M.length - 1, destJ = nameJ(last), dest = M[last].rom || M[last].name;
@@ -354,6 +356,58 @@
     if (W.leadStopAt !== undefined && W.leadStopAt !== A.leadStop) { A.leadStop = W.leadStopAt; this.chain(W, mel(melHere()).concat([pa('前を走る列車で、急病のお客様が出たため、間隔をあけて運転しております。', _t('Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.'))])); }
   };
   GameAudio.prototype.stopAll = function () { this.cancelPlay(); this.silence(); };      // dừng hẳn mọi âm thanh đang/sắp phát: chuỗi thông báo, giọng đọc, melody, âm nền
-  GameAudio.prototype.reset = function (W) { this.cancelPlay(); this.silence(); this.prev = {}; this.ann = {}; this.msgCount = W ? W.msgs.length : 0; this.lastResults = 0; this.lastMast = undefined; };
+  GameAudio.prototype.reset = function (W) { this.cancelPlay(); this.silence(); this.prev = {}; this.ann = {}; this.msgCount = W ? W.msgs.length : 0; this.lastResults = 0; this.lastMast = undefined; this.curW = W || null; this.persist = new Map(); this.bgB = null; };
+  // ---- kênh phát thanh theo từng tàu: tàu không được ngồi buồng lái vẫn "phát ngầm" (tiếng tắt, thời gian vẫn trôi, phụ đề vẫn ghi); quay về thì phát nốt phần còn lại nếu còn ----
+  GameAudio.prototype.estMs = function (st) {
+    if (st.beep) return 1300; if (st.mel) { const seg = root.Melody && root.Melody.SEG[st.mel]; return seg ? Math.max(0, (seg[1] - seg[0] - (st.off || 0)) * 1000) : 0; }
+    if (st.pa) return 500 + GameAudio.yomi(st.pa.ja).length * 150; return 0;
+  };
+  GameAudio.prototype.prevOf = function (W, T) { return { horn: T.horn, hornN: T.hornN, atc: T.atc, door: T.door, phase: T.phase, eqk: W.eqkActive, finished: T.finished, pw: T.pw, bk: T.bk, tun: false, animalHit: T.animalHit, rain: W.rainHere, dec: !!W.decision, fire: W.fireActive, wires: (W.wires || []).length, pa: W.paEvent }; };
+  GameAudio.prototype.toBundle = function (W) {      // kênh đang phát thật → kênh ngầm (giữ phần đang dở: melody theo giây đã phát, PA đọc lại từ đầu, khoảng ngắt còn lại)
+    const b = { W, ann: this.ann || {}, prev: this.prev || {}, msgCount: this.msgCount || 0, lastResults: this.lastResults || 0, jobs: this.jobs || [], v: null, nextGap: this.nextGap, at: performance.now() };
+    if (this.busy && this.cur && !this.pz) this.pausePlay();
+    const c = this.cur;
+    if (this.busy && c) {
+      if (c.kind === 'wait') b.v = { phase: 'gap', left: c.left !== undefined ? c.left : Math.max(0, c.due - performance.now()), st: c.st, job: c.job };
+      else if (c.kind === 'mel') { const st = Object.assign({}, c.st, { off: c.off || 0 }); b.v = { phase: 'play', st, job: c.job, rem: this.estMs(st) }; }
+      else b.v = { phase: 'play', st: c.kind === 'pa' ? Object.assign({}, c.st, { noLog: true }) : c.st, job: c.job, rem: this.estMs(c.st) };
+    }
+    this.cancelPlay(); return b;
+  };
+  GameAudio.prototype.fromBundle = function (b) {
+    this.ann = b.ann; this.prev = b.prev; this.msgCount = b.msgCount; this.lastResults = b.lastResults; this.jobs = b.jobs; this.nextGap = b.nextGap; this.lastEnd = performance.now(); this.busy = false; this.cur = null;
+    if (b.v) { const v = b.v; let job = v.job; if (!this.jobs.includes(job)) { job = { W: job.W, steps: [], ok: job.ok, born: performance.now() }; this.jobs.unshift(job); } job.steps.unshift(v.st); if (v.phase === 'gap') this.nextGap = v.left; }
+    b.v = null; this.pump();
+  };
+  GameAudio.prototype.vtick = function (b, dt) {      // chạy ngầm kênh b thêm dt ms (không tiếng)
+    for (let guard = 0; dt > 0 && guard < 60; guard++) {
+      let v = b.v;
+      if (!v) { const now = performance.now(), jobs = b.jobs; let job = jobs[0]; while (job && (!job.steps.length || (job.ok && !job.ok()) || now - job.born > 120000)) { jobs.shift(); job = jobs[0]; } if (!job) return;
+        let st = job.steps.shift(); while (st && st.gap !== undefined) { b.nextGap = st.gap; st = job.steps.shift(); } if (!st) continue;
+        v = b.v = { phase: 'gap', left: b.nextGap !== undefined ? b.nextGap : GAPMS, st, job }; b.nextGap = undefined; }
+      if (v.phase === 'gap') { if (dt < v.left) { v.left -= dt; return; } dt -= v.left; if (v.job.ok && !v.job.ok()) { b.v = null; continue; } if (v.st.pa && !v.st.noLog) this.log(v.job.W, v.st.pa); v.phase = 'play'; v.rem = this.estMs(v.st); }
+      if (v.phase === 'play') { if (dt < v.rem) { v.rem -= dt; return; } dt -= v.rem; b.v = null; }
+    }
+  };
+  GameAudio.prototype.bgTick = function (W, T, dtMs) {      // tàu đang chạy nền: vẫn sinh các thông báo của nó (vào ga, mưa, động đất...) và cho chạy ngầm
+    const b = W._aud; if (!b || !this.ready) return; const sv = { ann: this.ann, bgB: this.bgB };
+    this.ann = b.ann; this.bgB = b; try { if (!W.mission) this.announce(W, T, b.prev); } finally { this.ann = sv.ann; this.bgB = sv.bgB; }
+    b.prev = Object.assign(b.prev, this.prevOf(W, T)); b.msgCount = W.msgs.length; b.lastResults = T.results.length; this.vtick(b, dtMs);
+  };
+  GameAudio.prototype.switchTo = function (Wn, Tn) {
+    const Wo = this.curW; if (Wo === Wn) return; if (Wo) Wo._aud = this.toBundle(Wo); else this.cancelPlay();
+    this.curW = Wn; this.lastMast = undefined; this.prevSw = undefined; this.prevWt = undefined;
+    let b = Wn._aud;
+    if (!b) {      // tàu mới vào (buồng lái tàu khác): coi như đã chạy được một đoạn — không phát lời chào đầu chuyến; phần PA còn dở lần trước (nếu có) chạy tiếp theo thời gian đã trôi
+      const fg = !!Wn.fgn; b = { W: Wn, ann: fg ? { start: true, nxt: Tn.k, apr: -1 } : {}, prev: fg ? this.prevOf(Wn, Tn) : {}, msgCount: Wn.msgs.length, lastResults: fg ? Tn.results.length : 0, jobs: [], v: null, at: performance.now() };
+      const key = Wn.fgn && Wn.fgn.c && Wn.fgn.c.key, sv = key && this.persist && this.persist.get(key);
+      if (sv) { this.persist.delete(key); const o = sv.b; for (const j of o.jobs) { j.W = Wn; j.ok = null; } if (o.v) { o.v.job.W = Wn; o.v.job.ok = null; } this.vtick(o, performance.now() - sv.at); b.jobs = o.jobs; b.v = o.v; b.nextGap = o.nextGap; }
+    } else this.vtick(b, 0);
+    Wn._aud = null; this.fromBundle(b);
+  };
+  GameAudio.prototype.park = function (W, key) {      // thế giới sắp bị bỏ (rời buồng lái tàu khác): cất phần phát thanh còn dở theo khoá tàu để lần sau vào lại phát nốt
+    let b = null; if (this.curW === W) { b = this.toBundle(W); this.curW = null; } else b = W._aud || null;
+    if (b && key) (this.persist || (this.persist = new Map())).set(key, { b, at: performance.now() }); W._aud = null;
+  };
   root.GameAudio = GameAudio;
 })(typeof window !== 'undefined' ? window : globalThis);
