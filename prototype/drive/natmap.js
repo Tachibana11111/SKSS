@@ -94,15 +94,23 @@
     NC().step(W); const H = W.haz || { cells: [], quakes: [] }, wt = W.t, kmPx = V.s / 111;
     if (!V.fit) { V.fit = true; V.s = h / 15.5; V.cx = 137.6; V.cy = 38.0; }
     ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-    ctx.fillStyle = dk ? '#0d1a28' : '#cfe3f3'; ctx.fillRect(x, y, w, h);
+    // nền đất liền (≈ 8.700 điểm, chiếm ~85% thời gian vẽ bản đồ): chỉ vẽ lại khi bản đồ dời/phóng/đổi nền; còn lại dán từ canvas đệm
+    const land = (c, rr) => {
+    c.fillStyle = dk ? '#0d1a28' : '#cfe3f3'; c.fillRect(rr[0], rr[1], rr[2], rr[3]);
     const M = root.JPMAP; if (M) {
-      ctx.beginPath(); for (const p of M) for (const ring of p.r) { for (let i = 0; i < ring.length; i += 2) { const q = P(ring[i] / 1000, ring[i + 1] / 1000, r); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.closePath(); }
-      ctx.fillStyle = dk ? '#1c2b3b' : '#f3f0e6'; ctx.fill('evenodd'); ctx.strokeStyle = dk ? '#2c3f54' : '#c9c4b4'; ctx.lineWidth = 0.8; ctx.stroke();
+      c.beginPath(); for (const p of M) for (const ring of p.r) { for (let i = 0; i < ring.length; i += 2) { const q = P(ring[i] / 1000, ring[i + 1] / 1000, rr); i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); } c.closePath(); }
+      c.fillStyle = dk ? '#1c2b3b' : '#f3f0e6'; c.fill('evenodd'); c.strokeStyle = dk ? '#2c3f54' : '#c9c4b4'; c.lineWidth = 0.8; c.stroke();
     }
     const NT = root.JPMAP_NT; if (NT) {      // Lãnh thổ phương Bắc (Nhật coi là của mình, Nga quản lý): tô nhạt hơn, viền nét đứt
-      ctx.beginPath(); for (const p of NT) { const ring = p.r; for (let i = 0; i < ring.length; i += 2) { const q = P(ring[i] / 1000, ring[i + 1] / 1000, r); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.closePath(); }
-      ctx.fillStyle = dk ? 'rgba(28,43,59,.55)' : 'rgba(243,240,230,.6)'; ctx.fill(); ctx.save(); ctx.setLineDash([3, 2]); ctx.strokeStyle = dk ? '#4d647c' : '#a59f8c'; ctx.lineWidth = 0.9; ctx.stroke(); ctx.restore();
+      c.beginPath(); for (const p of NT) { const ring = p.r; for (let i = 0; i < ring.length; i += 2) { const q = P(ring[i] / 1000, ring[i + 1] / 1000, rr); i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); } c.closePath(); }
+      c.fillStyle = dk ? 'rgba(28,43,59,.55)' : 'rgba(243,240,230,.6)'; c.fill(); c.save(); c.setLineDash([3, 2]); c.strokeStyle = dk ? '#4d647c' : '#a59f8c'; c.lineWidth = 0.9; c.stroke(); c.restore();
     }
+    };
+    const SC = typeof QS === 'number' ? QS : 1, lk = [x, y, w, h, V.cx.toFixed(5), V.cy.toFixed(5), V.s.toFixed(3), dk ? 1 : 0, SC].join('|'), LCs = V._land || (V._land = {}), LC = LCs[mini ? 1 : 0] || (LCs[mini ? 1 : 0] = {});
+    if (typeof document !== 'undefined' && document.createElement && document.createElement.call) {
+      if (LC.key !== lk) { if (!LC.cv) LC.cv = document.createElement('canvas'); const pw = Math.max(1, Math.round(w * SC)), ph = Math.max(1, Math.round(h * SC)); if (LC.cv.width !== pw || LC.cv.height !== ph) { LC.cv.width = pw; LC.cv.height = ph; } const g = LC.cv.getContext('2d'); g.setTransform(SC, 0, 0, SC, 0, 0); g.clearRect(0, 0, w, h); land(g, [0, 0, w, h]); LC.key = lk; }
+      ctx.drawImage(LC.cv, x, y, w, h);
+    } else land(ctx, r);
     for (const cl of H.cells) { if (wt < cl.t0 || wt > cl.t1) continue; const q = P(cl.lon, cl.lat, r), rad = cl.r * kmPx; if (q[0] + rad < x || q[0] - rad > x + w || q[1] + rad < y || q[1] - rad > y + h) continue;
       const col = cl.kind === 'rain' ? '59,130,246' : cl.kind === 'snow' ? '226,238,255' : '170,180,190'; ctx.fillStyle = 'rgba(' + col + ',.2)'; ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.fill();
       ctx.strokeStyle = 'rgba(' + col + ',.6)'; ctx.lineWidth = 1; ctx.setLineDash(cl.kind === 'wind' ? [5, 4] : []); ctx.stroke(); ctx.setLineDash([]); txt(cl.kind === 'rain' ? _t('mưa lớn') : cl.kind === 'snow' ? _t('tuyết') : _t('gió mạnh'), q[0], q[1] + 4, dk ? 'rgba(220,235,255,.9)' : 'rgba(20,40,80,.9)', '11px system-ui', 'center'); }

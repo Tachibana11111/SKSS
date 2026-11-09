@@ -29,3 +29,11 @@
 - Game có 7 tuyến: `tsk`, `toh` (+Hokkaido), `jts`, `hok`, `nks`, `yam`, `aki`. Tham số riêng từng tuyến nằm trong `LINE_META` (`sim.js`) và `tools/build_struct.py`; xem `docs/11-mo-rong-tuyen.md`. Thêm tuyến mới = thêm danh sách ga trong `build_lines.py`, cấu hình trong `build_struct.py`, `LINE_META`, rồi chạy lại `python -X utf8 tools/build_lines.py` và `node tests/run.js`.
 - Hình E7/E6/E8/H5/923/E926 đã có (người dùng tự tải, xem `assets/NGUON.md`). Chưa có E2 và N700-8 thật. Không tải thêm ảnh khi chưa hỏi người dùng.
 - Mini-Shinkansen: mini luôn ở phía bắc đoàn ghép (đầu khi xuống, đuôi khi lên). Camera cuối đoàn: phím B.
+
+## Cập nhật 2026-11-10
+- **Chạy kiểm thử:** `node tests/run.js` (tuần tự, ~15 phút) hoặc `node tests/run-parallel.js [--jobs=N]` (mỗi phần một tiến trình, phần chậm xếp trước; thời gian đo lưu ở `tests/.timings.json`, không commit; ~12 phút, nhanh hơn khi ít máy bận). `--only=k` chạy riêng phần thứ k, `--shard=k/N` chạy lô. Đừng sửa mã trong lúc một lượt kiểm thử đang chạy.
+- **Kiến trúc mô phỏng** (thế giới `W`, danh mục tàu, bản đồ, ngó buồng lái): đọc `docs/14-kien-truc-mo-phong.md` trước khi sửa `natcat.js`/`natmap.js`/`spawnAt`. **Độ tin cậy** các cơ chế mới ([N]/[D]/[I]): `docs/15-do-tin-cay-co-che-moi.md`. Có thay đổi cơ chế thì cập nhật hai tài liệu này.
+- **Dữ liệu giờ tàu:** `python -X utf8 tools/build_lines.py` kiểm tra giờ (không giảm, khoảng cách ga ≤ 3 giờ, ≤ 28:00) và dừng nếu sai; `data-lines.js` là file sinh ra, sửa ở bộ sinh chứ không sửa tay.
+- **Chế độ tự do:** không chọn thì không có tự lái, có điểm/thành tựu; chọn thì có tự lái và ngó buồng lái tàu khác, không ghi điểm.
+- Giao diện không dùng emoji: dùng `icons.js` (`Icons.draw` cho canvas, `data-ic` cho HTML). Tiếng Nhật: tên ga hiển thị kèm hiragana (`_sk`), tìm bằng romaji (`I18N.romKey`).
+- Test chuỗi dịch: mọi `_t('…')` mới phải có bản dịch Anh và Nhật (`lang-en.js`, `lang-ja.js`), không còn khoá thừa.

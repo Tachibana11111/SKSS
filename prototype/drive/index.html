@@ -531,6 +531,7 @@ function enterCab(t) {
   Wc.fgn = { c }; Wc.home = mapW() === W ? { W, T } : HOME; NatCat.bindEvents(Wc, mapW());      // sự cố ngẫu nhiên của danh mục dành cho tàu này xảy ra thật trong buồng lái, tự lái xử lý
   if (HOME && W !== HOME.W && W.fgn) AUD.park(W, W.fgn.c.key);      // đang ở tàu khác thì cất phần phát thanh dở của nó
   if (!HOME) HOME = { W, T };
+  try { Store.setting('tipCab', 1); } catch (e) { }      // đã vào buồng lái một lần: không cần gợi ý nữa
   HOME.W.fgnW = Wc; W = Wc; W.fgn = { c }; T = Wc.player; W.home = HOME; auto = true; recTainted = true; window.__W = W; window.__T = T; NatMap.V.sel = null;
   W.say('info', _t('Bạn đang ở buồng lái {0}: tàu chạy tự lái, không điều khiển được.', W.trip.label));
 }
@@ -706,6 +707,12 @@ addEventListener('keydown', e => {
 const radio = { w: null, scroll: 0, total: 0, max: 0, viewH: 0, top: 0, x0: 0, x1: 0, bar: null, drag: null };
 const cvXY = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W_ / r.width, (e.clientY - r.top) * H_ / r.height]; };
 cv.addEventListener('wheel', e => { if ((mode !== 'drive' && mode !== 'tutorial') || !W) return; const [x, y] = cvXY(e); if (ui.nat && NatMap.wheel(x, y, e.deltaY)) { e.preventDefault(); return; } if (x >= radio.x0 && x <= radio.x1 && y >= radio.top - 4 && radio.max > 0) { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + e.deltaY * 0.6)); e.preventDefault(); } }, { passive: false });
+// cử chỉ cảm ứng cho bản đồ toàn quốc: một ngón kéo để dời bản đồ, hai ngón chụm/giãn để thu phóng; chạm nhanh (không kéo) vẫn là bấm bình thường (chuột và con lăn như cũ)
+let tch = null;
+const tXY = t => { const r = cv.getBoundingClientRect(); return [(t.clientX - r.left) * FW / r.width, (t.clientY - r.top) * FH / r.height]; };
+cv.addEventListener('touchstart', e => { if (!ui.nat || (mode !== 'drive' && mode !== 'tutorial') || !W) return; if (e.touches.length === 1) { const [x, y] = tXY(e.touches[0]); tch = { one: true, x, y, moved: false }; NatMap.down(x, y); } else if (e.touches.length === 2) { NatMap.up(); const a = tXY(e.touches[0]), b = tXY(e.touches[1]); tch = { two: true, d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1 }; e.preventDefault(); } }, { passive: false });
+cv.addEventListener('touchmove', e => { if (!tch || !ui.nat) return; if (tch.two && e.touches.length === 2) { const a = tXY(e.touches[0]), b = tXY(e.touches[1]), d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, k = d / tch.d; NatMap.wheel((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, -Math.log(k) / 0.0016); tch.d = d; e.preventDefault(); } else if (tch.one && e.touches.length === 1) { const [x, y] = tXY(e.touches[0]); if (Math.abs(x - tch.x) + Math.abs(y - tch.y) > 6) tch.moved = true; NatMap.move(x, y); if (tch.moved) e.preventDefault(); } }, { passive: false });
+cv.addEventListener('touchend', e => { if (!tch) return; if (tch.one) { window.__natMoved = NatMap.up(); } tch = e.touches.length ? tch : null; });
 cv.addEventListener('mousedown', e => { if (ui.sndOpen && volRect) { const [vx, vy] = cvXY(e); if (vx >= volRect[0] && vx <= volRect[0] + volRect[2] && vy >= volRect[1] && vy <= volRect[1] + volRect[3]) { volDrag = true; setVolFromX(vx); return; } } if (ui.nat) { const [nx, ny] = cvXY(e); NatMap.down(nx, ny); return; } if (!radio.bar) return; const [x, y] = cvXY(e), b = radio.bar; if (x >= b.x - 4 && x <= b.x + b.w + 4) { if (y >= b.y && y <= b.y + b.h) radio.drag = { dy: y - b.y }; else { radio.scroll = Math.max(0, Math.min(radio.max, radio.scroll + (y < b.y ? -1 : 1) * radio.viewH * 0.8)); } e.preventDefault(); } });
 window.addEventListener('mousemove', e => { if (volDrag) { setVolFromX(cvXY(e)[0]); return; } if (ui.nat) { const [nx, ny] = cvXY(e); NatMap.move(nx, ny); } if (!radio.drag) return; const [, y] = cvXY(e), th = radio.bar.h, f = (y - radio.drag.dy - radio.top) / Math.max(1, radio.viewH - th); radio.scroll = Math.max(0, Math.min(radio.max, f * radio.max)); });
 window.addEventListener('mouseup', () => { radio.drag = null; volDrag = false; if (ui.nat) window.__natMoved = NatMap.up(); });

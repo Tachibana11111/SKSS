@@ -1,6 +1,6 @@
 # Nhật ký tiến độ
 
-Cập nhật lần cuối: 2026-10-22 (prototype 0.4 + 7 tuyến)
+Cập nhật lần cuối: 2026-11-10 (prototype 0.4 + 7 tuyến; chế độ tự do, ngó buồng lái, bản đồ thống nhất)
 
 ## Giai đoạn hiện tại: 0 – Xây bộ tri thức nghiệp vụ
 
@@ -17,6 +17,8 @@ Cập nhật lần cuối: 2026-10-22 (prototype 0.4 + 7 tuyến)
 | 11 | Mở rộng tuyến | **bản 1** (`11-mo-rong-tuyen.md`: Joetsu, Hokuriku, Hokkaido, Yamagata, Akita, Nishi-Kyushu) |
 | 10 | Thiết kế game | **bản 1** (`10-thiet-ke-game.md`: chế độ, tuyến/tàu, ATC, sự kiện, chấm điểm, độ khó, hiệu chuẩn, giới hạn) |
 | 09 | Sự cố | **bản 1 xong** (thống kê FY2022 122 vụ, động đất 2004–2026 kèm thời gian khôi phục 13–52 ngày, bão/mưa, thiết bị/ghép tách, dây điện 1/2024, an ninh, gấu, khung khôi phục, thư viện sự kiện game; lỗ hổng ở §10) |
+| 14 | Kiến trúc mô phỏng | **bản 1** (`14-kien-truc-mo-phong.md`: tàu thật và bản sao danh mục, NatCat, ngó buồng lái, bất biến và bẫy) |
+| 15 | Độ tin cậy cơ chế mới | **bản 1** (`15-do-tin-cay-co-che-moi.md`: nhãn [N]/[D]/[I] cho đường tốc độ, sự cố ngẫu nhiên, ngó buồng lái, tàu kiểm tra, dữ liệu Tsubame) |
 | – | `audit-cross-01-09.md` | **rà soát chéo 01–09 xong (2026-10-21)**: 5 lỗi đã sửa, các chênh lệch còn lại ở mục C |
 | – | `audit-01-04.md` | kết quả hoàn thiện lần 3: các hạng mục chính đã xong; còn 6 mục mức thấp |
 | – | `data/` | JR East 570 chuyến (6.219 dòng ga) + JR West 268 chuyến (6.777 dòng ga); `tools/` chứa script lấy và phân tích dữ liệu |
@@ -65,3 +67,7 @@ Cập nhật lần cuối: 2026-10-22 (prototype 0.4 + 7 tuyến)
 - **(2026-10-22/23) Cảnh vật thật OpenStreetMap:** bản đồ nhỏ vẽ nhà/đường/công viên thật; buồng lái dùng dải tranh 2D hai bên (nhà kiểu Nhật, cây, cột điện) từ dữ liệu OSM, phủ ~95% tuyến. Xem `12-canh-vat-osm.md`. Dữ liệu OSM không vào repo. Đã bỏ tab Điều độ khỏi giao diện (mã vẫn còn).
 - **(2026-11-06) Melody + chuỗi PA:** thêm `melody.js` và file âm thanh `assets/melody/melodies.m4a`; PA phát theo chuỗi melody → ngắt 2,5 s → PA, đèn cửa xanh chờ PA + melody khởi hành, mốc sắp tới ga 2,5 km (3,5 km ở 3 ga Kyushu), PA cảm ơn ở ga cuối gộp vào chuỗi sắp tới ga, sửa lỗi PA vẫn phát sau khi thoát menu. Quy tắc đầy đủ ở `docs/13-melody-pa.md`.
 - **(2026-11-06) Tàu đỗ ở ga là tàu thật:** bỏ tàu nền ngẫu nhiên (`genStabled`); `refreshDwellers` (`sim.js`) lấy các tàu đang dừng ở ga từ danh mục tàu (cùng nguồn với bản đồ toàn quốc/tooltip): tàu ngược chiều ở đường dừng chiều kia, tàu cùng chiều chỉ ở đường phụ cùng chiều (ga không có đường phụ thì không có). Cập nhật mỗi giây theo giờ biểu đồ (kể cả trễ); tàu hãm vào ga (40 m/s về 0 trong 30 s) rồi đỗ, tới giờ đi thì tăng tốc ra (1 m/s², 45 s); tàu xuất phát/kết thúc tại ga đó không có chuyển động vào/ra.
+- **(2026-11-07 → 11-10) Chế độ tự do và ngó buồng lái:** ô "Chế độ tự do" ở màn thiết lập (không chọn thì không có tự lái và có điểm/thành tựu; chọn thì có tự lái, không ghi điểm). Ở chế độ tự do, bản đồ toàn quốc có nút "Vào buồng lái" để ngó buồng lái tàu bất kỳ (tàu ta tự lái nền, điều khiển bị khoá, quay về bằng nút); tàu được chọn chạy thật theo ATC và bản đồ của tàu ta (`Sim.spawnAt`, `NatMap.follow`, `NatCat.alignFgn`). Chi tiết: `docs/14-kien-truc-mo-phong.md`.
+- **(2026-11-08 → 11-10) Bản đồ thống nhất:** đường tốc độ giữa hai ga (tăng tốc, chạy đều, phanh ATC, 80 km/h quanh ga có ghi), mưa 70 km/h, sự cố ngẫu nhiên cho MỌI đoàn theo seed/độ khó (12 loại, đoàn ghép cùng lúc), tooltip ghi lý do, phát thanh theo từng tàu (phát ngầm khi ở tàu khác). Độ tin cậy từng cơ chế: `docs/15-do-tin-cay-co-che-moi.md`.
+- **(2026-11-09) Tàu kiểm tra:** vào buồng lái được, không hành khách/PA/mở cửa, tự lái chạy theo ATC cao nhất. **Sửa lỗi dữ liệu:** Tsubame 333/334 bị cộng nhầm 24 giờ (lỗi gõ giờ trong PDF) làm tàu kiểm tra Tokaido xuất phát lúc 70:44; bộ sinh dữ liệu (`tools/build_lines.py`) nay có bước kiểm tra giờ trước khi ghi `data-lines.js`.
+- **(2026-11-10) Giao diện và hạ tầng:** bỏ emoji (biểu tượng tự vẽ `icons.js`); ô tìm ga/tàu trên bản đồ (phóng to hết cỡ, tìm bằng romaji, tên ga tiếng Nhật kèm hiragana); ô hướng dẫn bài học đặt dưới điện đàm, chữ tự co theo ô và xuống dòng; bản đồ toàn quốc vẽ nền đất liền một lần rồi dán (khung vẽ bản đồ giảm ~22 → ~11 ms); cử chỉ cảm ứng (kéo, chụm/giãn) và gợi ý "ngó buồng lái" hiện một lần; bộ test chạy song song `node tests/run-parallel.js` (xem CLAUDE.md).

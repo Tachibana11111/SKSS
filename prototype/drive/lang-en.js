@@ -654,6 +654,8 @@ I18N.add("en", {
 "Đến": "To",
 "Chế độ thực tế": "Real-time mode",
 "Chế độ tự do": "Free mode",
+"Mẹo: bấm một tàu trên bản đồ rồi chọn \"Vào buồng lái\" để ngó buồng lái tàu đó. Muốn về tàu của mình, bấm nút \"Quay về tàu của bạn\" phía trên bảng điều khiển hoặc bấm tàu của bạn trên bản đồ.": "Tip: click a train on the map and choose \"Enter cab\" to look into its cab. To get back to your own train, press the \"Return to your train\" button above the control panel or click your train on the map.",
+"Đã hiểu": "Got it",
 "Tìm ga…": "Find station…",
 "Tìm tàu…": "Find train…",
 "Trưởng tàu: hành khách bệnh đột ngột. Điều độ giữ tàu tại {0} thêm {1} s để đưa cấp cứu. Không khởi hành trước {2}. Nhấn Y để nhắc lại lệnh.": "Conductor: a passenger has suddenly fallen ill. Dispatch holds the train at {0} for {1} more s for the emergency. Do not depart before {2}. Press Y to read the order back.",

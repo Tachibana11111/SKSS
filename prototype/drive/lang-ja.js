@@ -654,6 +654,8 @@ I18N.add("ja", {
 "Đến": "到着",
 "Chế độ thực tế": "リアルタイムモード",
 "Chế độ tự do": "フリーモード",
+"Mẹo: bấm một tàu trên bản đồ rồi chọn \"Vào buồng lái\" để ngó buồng lái tàu đó. Muốn về tàu của mình, bấm nút \"Quay về tàu của bạn\" phía trên bảng điều khiển hoặc bấm tàu của bạn trên bản đồ.": "ヒント:マップ上の列車を選んで「運転台に入る」を押すと、その列車の運転台をのぞけます。自分の列車に戻るには、操作パネルの上の「自分の列車に戻る」ボタン、またはマップ上の自分の列車を押してください。",
+"Đã hiểu": "わかりました",
 "Tìm ga…": "駅を探す…",
 "Tìm tàu…": "列車を探す…",
 "Trưởng tàu: hành khách bệnh đột ngột. Điều độ giữ tàu tại {0} thêm {1} s để đưa cấp cứu. Không khởi hành trước {2}. Nhấn Y để nhắc lại lệnh.": "車掌:急病のお客様が出ました。急病人対応のため、{0}で{1}秒間さらに停車します。{2}前には発車できません。指令の復唱はYキー。",

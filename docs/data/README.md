@@ -39,3 +39,6 @@ Dữ liệu có bản quyền của JR West và Kotsu Shimbunsha; **chỉ dùng 
 - **JR East:** chỉ chuyến định kỳ ngày thường/ngày nghỉ; chuyến ◆ chỉ có ở danh sách (trừ Shin-Aomori). Không gồm tàu không qua Tokyo/Omiya/Shinagawa/Shin-Aomori (một số chuyến ngắn Mishima/Shizuoka, Tsurugi, Shin-Osaka–Nagoya…).
 - **JR West:** chỉ một ngày mỗi tệp, chỉ chuyến rời Shin-Osaka. **Chưa có:** Kyushu chiều lên, Tsubame, Kamome (Nishi-Kyushu): chỉ có trên bảng PDF/ảnh.
 - Lịch đổi mỗi kỳ sửa đổi. Dòng xe chỉ có trên trang Tokaido/Sanyo.
+
+## Ghi chú sửa dữ liệu (2026-11)
+- **Tsubame 334 (chiều lên) và 333 (chiều xuống, đối xứng ước tính):** bảng PDF JR Kyushu có một ga bị gõ nhầm giờ (23:12 thay vì 20:12); bộ sinh từng cộng thêm 24 giờ cho các ga sau. Đã thay giờ lệch bằng trung điểm hai ga kề **[I]** (không đối chiếu nguồn). `tools/build_lines.py` nay kiểm tra giờ trước khi ghi và dừng nếu sai (giờ không giảm, hai ga liền nhau ≤ 3 giờ, ≤ 28:00, không trùng chuyến).

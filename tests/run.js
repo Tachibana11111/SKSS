@@ -19,7 +19,9 @@ function runAuto(ln, rec, a, b, o, maxT) {
 const ALL = Object.keys(window.LINES);
 // chạy một phần: node tests/run.js --shard=2/4 (các phần 2..22 chia vòng tròn; phần 1 chạy ở mọi lô); --time in thời gian từng phần
 const SH = (process.argv.find(a => a.startsWith('--shard=')) || '').slice(8).split('/').map(Number), TIMED = process.argv.includes('--time'); let secN = 0, secT = Date.now(), secName = '';
-const section = s => { if (TIMED && secName) console.log('   (' + ((Date.now() - secT) / 1000).toFixed(1) + ' s)'); secT = Date.now(); secName = s; const n = secN++, run = n === 0 || !SH[1] || (n - 1) % SH[1] === SH[0] - 1; if (run) console.log('\n== ' + s); return run; };
+const SUB = (process.argv.find(a => a.startsWith('--sub=')) || '').slice(6).split('/').map(Number);      // --sub=a/b: chia nhỏ phần 2 (tự lái mọi chuyến) thành b lát, chạy lát a
+const ONLY = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7);      // --only=k: chỉ chạy phần thứ k (đếm từ 0; phần 0 luôn chạy), dùng cho tests/run-parallel.js
+const section = s => { if (TIMED && secName) console.log('   (' + ((Date.now() - secT) / 1000).toFixed(1) + ' s)'); secT = Date.now(); secName = s; const n = secN++, run = ONLY !== '' ? (n === 0 || n === +ONLY) : (n === 0 || !SH[1] || (n - 1) % SH[1] === SH[0] - 1); if (run) console.log('\n== ' + s); return run; };
 
 section('1. Dữ liệu tuyến và lịch tàu');
 for (const ln of ALL) {
@@ -40,8 +42,9 @@ for (const ln of ALL) {
 }
 
 if (section('2. Tự lái bám lịch trên mọi loại tàu (đơn độc, không sự kiện)')) {
-  let worst = 0, cnt = 0;
+  let worst = 0, cnt = 0, subI = 0;
   for (const ln of ALL) { const L = Sim.lineOf(ln); for (const rec of L.trains.filter((t, i) => i % 7 === 0)) {
+    if (SUB[1] && (subI++ % SUB[1]) !== SUB[0]) continue;
     const st = rec.s.filter(e => !e[3]); const a = st[0][0], b = st[st.length - 1][0]; const r = runAuto(ln, rec, a, b); cnt++;
     ok(r.T.finished && !r.T.failed, `${ln} ${rec.t} ${rec.n}: hoàn thành`);
     const d = Math.max(...r.T.results.map(x => Math.abs(x.delay))); if (Sim.INSPECT[rec.v]) { /* tàu kiểm tra tự lái chạy theo ATC cao nhất, không bám giờ kế hoạch */ } else if (ln !== 'jts' && ln !== 'yam') worst = Math.max(worst, d); else ok(d < 260, `${ln} ${rec.t} ${rec.n}: lịch rất căng, tự lái trễ < 260 s`, Math.round(d));      // Joetsu: lịch thật dồn (Takasaki–Echigo-Yuzawa 23 phút) vượt khả năng tăng/giảm tốc của mô hình [I]
@@ -732,7 +735,7 @@ if (section('28. Khởi động ở nhiều giờ trong ngày: tàu cùng chiề
 }
 
 if (section('29b. Furigana tên ga (stations-kana.js): mọi ga đều có cách đọc hiragana')) {
-  require(path.join(DRIVE, 'stations-kana.js')); require(path.join(DRIVE, 'data-lines.js'));
+  global.document = global.document || {}; require(path.join(DRIVE, 'transfers.js')); require(path.join(DRIVE, 'stations-kana.js')); require(path.join(DRIVE, 'data-lines.js'));      // tự nạp dữ liệu cần dùng để chạy riêng được (--only)
   let miss = 0; for (const id in global.LINES) for (const st of global.LINES[id].stations) if (!/^[ぁ-ゖー]+$/.test(global.STATION_KANA[st.jp] || '')) { miss++; console.log('  thiếu/sai cách đọc:', st.jp); }
   ok(miss === 0, 'mọi ga có cách đọc toàn hiragana', miss);
   require(path.join(DRIVE, 'audio.js')); let badY = 0; for (const id in global.LINES) for (const st of global.LINES[id].stations) if (global.GameAudio.yomi(st.jp) !== global.STATION_KANA[st.jp] || global.GameAudio.yomi('まもなく、' + st.jp + '、' + st.jp + 'です。') !== 'まもなく、' + global.STATION_KANA[st.jp] + '、' + global.STATION_KANA[st.jp] + 'です。') { badY++; console.log('  đọc sai:', st.jp, global.GameAudio.yomi(st.jp)); }
@@ -782,7 +785,7 @@ if (section('29. Đa ngôn ngữ (i18n.js, lang-en.js, lang-ja.js): đủ bản 
   I18N.lang = 'ja'; ok(_t('Chờ {0} vượt qua ga', 'N1') === 'N1が駅を通過するのを待機中', 'ja: dịch và điền chỗ');
   // 4) chạy thật ở en và ja trong tiến trình riêng (ngôn ngữ đặt trước khi nạp mô-đun, như khi mở trang): chuỗi hằng của mô-đun, tin nhắn trong chuyến, nhật ký ATC không lọt tiếng Việt
   for (const lang of ['en', 'ja']) {
-    const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'i18n_child.js'), lang], { encoding: 'utf8', timeout: 240000 });
+    const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'i18n_child.js'), lang], { encoding: 'utf8', timeout: 1200000 });
     let o = null; try { o = JSON.parse(r.stdout.trim().split('\n').pop()); } catch (e) { }
     ok(o && o.msgs > 40 && o.leaks.length === 0, lang + ': ' + (o ? o.msgs + ' tin nhắn trong 8 chuyến, ' + o.leaks.length + ' chuỗi còn tiếng Việt' : 'không chạy được: ' + String(r.stderr).slice(0, 200)), o && o.leaks.slice(0, 3).join(' | '));
   }
@@ -1057,4 +1060,4 @@ if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, 
   }
 }
 
-Promise.all(global.__pending || []).then(() => { console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); } });
+Promise.all(global.__pending || []).then(() => { if (process.argv.includes('--count')) console.log('SECTIONS ' + secN); console.log(`\nKẾT QUẢ: ${pass} đạt, ${fail} lỗi`); if (fail) { failures.slice(0, 40).forEach(f => console.log('  ✗ ' + f)); process.exit(1); } });

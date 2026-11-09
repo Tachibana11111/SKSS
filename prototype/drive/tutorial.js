@@ -68,17 +68,38 @@
     if (st.check(W, T, S.st)) { S.passedAt = now; S.banner = ''; }
   }
   function skip(W, T) { if (!active()) return; const L = LESSONS[S.lesson]; if (S.step < L.steps.length) { S.step++; S.entered = false; S.passedAt = -1; S.banner = ''; if (S.step >= L.steps.length) S.done[L.id] = true; } }
-  function draw(ctx, px, py, pw, W, T) {
-    if (!active()) return; const L = LESSONS[S.lesson], n = L.steps.length, done = S.step >= n;
-    const h = 112; ctx.save(); ctx.fillStyle = 'rgba(14,22,34,.9)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(px, py, pw, h, 10); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ffc247'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'left'; ctx.fillText(L.title, px + 14, py + 22); ctx.textAlign = 'right'; ctx.fillText(done ? _t('XONG') : _t('bước ') + (S.step + 1) + '/' + n, px + pw - 12, py + 22); ctx.textAlign = 'left';
-    ctx.fillStyle = '#e8eef5'; ctx.font = '14px system-ui';
+  // ngắt dòng theo bề rộng: chữ La-tinh theo từ, chữ Nhật/Hán theo từng ký tự (không có dấu cách); từ dài quá bề rộng thì cắt theo ký tự
+  function wrapLines(ctx, text, maxW) {
+    const toks = String(text).match(/[\u3000-\u9FFF\uFF00-\uFFEF]|[^\s\u3000-\u9FFF\uFF00-\uFFEF]+|\s+/g) || [], out = []; let line = '';
+    const fit = t => ctx.measureText(t).width <= maxW;
+    for (const tk of toks) {
+      if (/^\s+$/.test(tk)) { if (line) line += ' '; continue; }
+      if (fit(line + tk)) { line += tk; continue; }
+      if (line.trim()) { out.push(line.trimEnd()); line = ''; }
+      if (fit(tk)) { line = tk; continue; }
+      for (const ch of tk) { if (fit(line + ch)) line += ch; else { out.push(line); line = ch; } }
+    }
+    if (line.trim()) out.push(line.trimEnd()); return out;
+  }
+  // ô hướng dẫn (viền vàng): đặt dưới khung điện đàm; ph = chiều cao ô; chữ thân bài tự chọn cỡ lớn nhất vừa ô, dòng dài thì xuống dòng (cả ba ngôn ngữ)
+  function draw(ctx, px, py, pw, W, T, ph) {
+    if (!active()) return; const L = LESSONS[S.lesson], n = L.steps.length, done = S.step >= n, h = ph || 112, pad = 14, mw = pw - 2 * pad;
+    ctx.save(); ctx.fillStyle = 'rgba(14,22,34,.92)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(px, py, pw, h, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffc247'; ctx.font = 'bold 15px system-ui'; ctx.textAlign = 'left'; const cnt = done ? _t('XONG') : _t('bước ') + (S.step + 1) + '/' + n, cw = ctx.measureText(cnt).width;
+    let title = L.title; while (title.length > 3 && ctx.measureText(title).width > mw - cw - 12) title = title.slice(0, -2); if (title !== L.title) title += '…';
+    ctx.fillText(title, px + pad, py + 26); ctx.textAlign = 'right'; ctx.fillText(cnt, px + pw - pad, py + 26); ctx.textAlign = 'left';
     const text = done ? (S.banner || _t('Bài đã xong. Bấm P rồi chọn Về menu chính → Học lái để chọn bài khác, hoặc nhấn R để làm lại.')) : L.steps[S.step].text;
-    const words = text.split(' '); let line = '', y = py + 46; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > pw - 28 && line) { ctx.fillText(line, px + 14, y); y += 19; line = w; } else line = t; } ctx.fillText(line, px + 14, y);
-    const nt = !done && L.steps[S.step].note && L.steps[S.step].note(W, T); if (nt) { ctx.fillStyle = '#4cd68a'; ctx.textAlign = 'right'; ctx.fillText(nt, px + pw - 12, py + h - 30); ctx.textAlign = 'left'; }
-    if (!done && L.steps[S.step].hint) { ctx.fillStyle = '#7a8ea5'; ctx.font = '11px system-ui'; ctx.textAlign = 'left'; ctx.fillText(_t('Phím: ') + L.steps[S.step].hint + _t(' · K = bỏ qua bước'), px + 14, py + h - 10); }
-    if (S.passedAt >= 0) { ctx.fillStyle = '#4cd68a'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'right'; ctx.fillText(_t('✓ Đúng rồi!'), px + pw - 12, py + h - 12); } else if (S.banner && !done) { ctx.fillStyle = '#ff9a7a'; ctx.font = '12px system-ui'; ctx.textAlign = 'right'; ctx.fillText(S.banner, px + pw - 12, py + h - 12); }
+    const nt = !done && L.steps[S.step].note && L.steps[S.step].note(W, T), hint = !done && L.steps[S.step].hint ? _t('Phím: ') + L.steps[S.step].hint + _t(' · K = bỏ qua bước') : '';
+    ctx.font = '13px system-ui'; const hintL = hint ? wrapLines(ctx, hint, mw) : [];
+    const statusTxt = S.passedAt >= 0 ? _t('✓ Đúng rồi!') : (S.banner && !done ? S.banner : (nt || '')), statusFont = S.passedAt >= 0 ? 'bold 17px system-ui' : '14px system-ui';
+    ctx.font = statusFont; const statusL = statusTxt ? wrapLines(ctx, statusTxt, mw) : [];
+    const footH = hintL.length * 17 + statusL.length * 20 + (hintL.length || statusL.length ? 10 : 0), top = py + 40, bodyH = h - 40 - footH - 8;
+    let fs = 20, lines = []; for (; fs >= 13; fs--) { ctx.font = fs + 'px system-ui'; lines = wrapLines(ctx, text, mw); if (lines.length * Math.round(fs * 1.3) <= bodyH) break; }
+    ctx.fillStyle = '#e8eef5'; ctx.font = fs + 'px system-ui'; const lh = Math.round(fs * 1.3); lines.forEach((l, i) => ctx.fillText(l, px + pad, top + fs + i * lh));
+    let y = py + h - 8 - hintL.length * 17 - statusL.length * 20 + 14;      // dòng trạng thái (đúng rồi / chưa đúng / ghi chú) rồi tới dòng phím
+    ctx.font = statusFont; ctx.fillStyle = S.passedAt >= 0 ? '#4cd68a' : (S.banner && !done ? '#ff9a7a' : '#4cd68a'); for (const l of statusL) { ctx.fillText(l, px + pad, y); y += 20; }
+    ctx.font = '13px system-ui'; ctx.fillStyle = '#8fa3b8'; y += 3; for (const l of hintL) { ctx.fillText(l, px + pad, y); y += 17; }
     ctx.restore();
   }
-  root.Tutorial = { LESSONS, S, cfg, update, draw, skip, active };
+  root.Tutorial = { LESSONS, S, cfg, update, draw, skip, active, wrapLines };
 })(typeof window !== 'undefined' ? window : globalThis);

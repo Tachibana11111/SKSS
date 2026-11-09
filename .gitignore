@@ -26,3 +26,4 @@ data-osm/
 tools/_tmp/
 tools/data-src/
 prototype/drive/assets/JR_logo.png
+tests/.timings.json

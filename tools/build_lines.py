@@ -376,6 +376,30 @@ for line in trains:
             down[0][1] = None; down[-1][2] = None
             lst.append(dict(t='Tsubame', n=str(int(t['n']) - 1) if t['n'].isdigit() else t['n'], d='down', v=t['v'], s=down, src='M', mir=1))
     out[line] = dict(LINES[line], trains=[dict(dict(t=x['t'], n=x['n'], d=x['d'], v=x['v'], s=x['s'], src=x['src'], mir=x['mir']), **({'cp': x['cp']} if 'cp' in x else {})) for x in lst])
+# ---- kiểm tra dữ liệu trước khi ghi: lỗi gõ giờ trong nguồn (PDF/HTML) từng làm một chuyến "chạy" tới 44:44 mà không ai biết (Tsubame 334, 11/2026)
+def validate_lines(out):
+    errs = []
+    for ln, d in out.items():
+        seen = set()
+        for t in d['trains']:
+            lab = ln + ' ' + t['t'] + ' ' + str(t['n']) + ' ' + t['d']
+            if t.get('v') in ('T4', 'E926'): continue      # tàu kiểm tra: giờ dựng lại lúc chạy (retimeInspect)
+            key = (t['t'], t['n'], t['d'])
+            if key in seen: errs.append(lab + ': trùng chuyến')
+            seen.add(key); prev = None; pe = None
+            for e in t['s']:
+                for k in (1, 2):
+                    v = e[k]
+                    if v is None: continue
+                    if v > 28 * 3600: errs.append(lab + ': ga %s giờ %d vượt 28:00' % (e[0], v))
+                    elif prev is not None and v < prev - 1: errs.append(lab + ': ga %s giờ %d nhỏ hơn giờ trước %d' % (e[0], v, prev))
+                    elif prev is not None and v - prev > 3 * 3600: errs.append(lab + ': ga %s cách ga trước %.1f giờ (nghi lỗi gõ giờ)' % (e[0], (v - prev) / 3600))
+                    prev = v
+    if errs:
+        print('DỮ LIỆU LỖI (%d chỗ), không ghi data-lines.js:' % len(errs))
+        for x in errs[:40]: print('  ' + x)
+        raise SystemExit(1)
+validate_lines(out)
 js = '// Sinh tự động bởi tools/build_lines.py (lịch JR East 2610 ngày thường + JR West 20/10/2026; km thực từ Wikipedia JP). Chỉ dùng cá nhân.\nwindow.LINES = ' + json.dumps(out, ensure_ascii=False, separators=(',', ':')) + ';\n'
 open(os.path.join(ROOT, 'prototype', 'drive', 'data-lines.js'), 'w', encoding='utf-8').write(js)
 for ln, v in out.items():

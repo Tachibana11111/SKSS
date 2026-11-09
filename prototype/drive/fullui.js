@@ -300,15 +300,24 @@ function drawFull() {
   // ---- lớp phủ: quyết định điều độ, hướng dẫn, chưa chạy, kết thúc, cảnh báo viền
   if (W.decision) { const dd = W.decision, left = Math.max(0, dd.timeout - (W.t - dd.t0)); ctx.fillStyle = 'rgba(40,30,8,.96)'; ctx.strokeStyle = '#ffc247'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(560, 210, 800, 70, 10); ctx.fill(); ctx.stroke();
     txt(dd.text, 576, 234, '#ffe9b0', 'bold 14px system-ui'); txt(_t('Còn ') + Math.ceil(left) + ' s', 1340, 234, '#ffc247', 'bold 13px system-ui', 'right'); button(576, 248, 170, 24, dd.a.label, () => doAct('ack'), true, '#2a8f5a'); button(756, 248, 170, 24, dd.b.label, () => doAct('no'), true, '#8f3a3a'); }
-  if (tutLessonActive) Tutorial.draw(ctx, (FW - 560) / 2, TOPH + 14, 560, W, T);
+  if (tutLessonActive) { const ty = (ui.radio && !ui.focus ? 72 + 340 : 72) + 12; Tutorial.draw(ctx, 16, ty, 496, W, T, Math.min(DASH_Y - 12 - ty, 300)); }      // ô hướng dẫn: ngay dưới khung điện đàm (cùng bề rộng), cách điện đàm và bảng điều khiển 12 px
   if (T.finished && tutLessonActive) drawTutEnd();
   else if (T.finished) { ctx.save(); ctx.translate(400, 60); curOX = 400; curOY = 60; drawEnd(); ctx.restore(); curOX = 0; curOY = 0; }
   if (T.atcOn === false && blink) { ctx.strokeStyle = 'rgba(255,60,60,.85)'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, FW - 8, FH - 8); } else if (T.cut) { ctx.strokeStyle = 'rgba(154,90,214,.8)'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, FW - 8, FH - 8); }
   if (ui.nat) { btns = btns.filter(b => !(b.x + b.w / 2 > MAIN_R[0] && b.x + b.w / 2 < MAIN_R[0] + MAIN_R[2] && b.y + b.h / 2 > MAIN_R[1] && b.y + b.h / 2 < MAIN_R[1] + MAIN_R[3]));      // bản đồ toàn quốc phủ kín khung chính, che cả các lớp phủ và nút bên dưới
-   ctx.save(); ctx.beginPath(); ctx.rect(MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]); ctx.clip(); NatMap.draw(ctx, MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3], mapW(), mapT(), { txt, button, checkin: t => checkinTrain(t), pick: mapPick, enter: cabOK() ? t => enterCab(t) : null, back: foreignOn() ? backHome : null, close: () => { ui.nat = false; }, save: v => { try { Store.setting('natLight', v ? 1 : 0); } catch (e) { } } }); ctx.restore(); drawPip(); drawNatTile(); }
+   ctx.save(); ctx.beginPath(); ctx.rect(MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]); ctx.clip(); NatMap.draw(ctx, MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3], mapW(), mapT(), { txt, button, checkin: t => checkinTrain(t), pick: mapPick, enter: cabOK() ? t => enterCab(t) : null, back: foreignOn() ? backHome : null, close: () => { ui.nat = false; }, save: v => { try { Store.setting('natLight', v ? 1 : 0); } catch (e) { } } }); ctx.restore(); drawCabTip(); drawPip(); drawNatTile(); }
   drawTopBar(blink);
 }
 // màn kết thúc rút gọn của hướng dẫn: chỉ kết quả và hai nút (chạy lại bài / bài kế)
+// gợi ý một lần khi mở bản đồ toàn quốc ở chế độ tự do: cách ngó buồng lái tàu khác (ẩn khi bấm "Đã hiểu" hoặc sau lần vào buồng lái đầu tiên; nhớ trong hồ sơ)
+function drawCabTip() {
+  if (!(recipe && recipe.free) || foreignOn() || Store.setting('tipCab')) return;
+  const bw = 820, tx = _t('Mẹo: bấm một tàu trên bản đồ rồi chọn "Vào buồng lái" để ngó buồng lái tàu đó. Muốn về tàu của mình, bấm nút "Quay về tàu của bạn" phía trên bảng điều khiển hoặc bấm tàu của bạn trên bản đồ.'), bt = _t('Đã hiểu');
+  ctx.save(); ctx.font = '16px system-ui'; const lines = Tutorial.wrapLines(ctx, tx, bw - 190), bh = Math.max(56, lines.length * 22 + 24), x = (FW - bw) / 2, y = DASH_Y - bh - 14;
+  ctx.fillStyle = 'rgba(14,22,34,.94)'; ctx.strokeStyle = '#4aa3ff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x, y, bw, bh, 10); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#e8eef5'; ctx.textAlign = 'left'; lines.forEach((l, i) => ctx.fillText(l, x + 16, y + 28 + i * 22)); ctx.restore();
+  button(x + bw - 150, y + (bh - 34) / 2, 134, 34, bt, () => { try { Store.setting('tipCab', 1); } catch (e) { } }, true, '#2a6fd6', 13);
+}
 function drawTutEnd() {
   const sc = Sim.score(T, W), x = (FW - 520) / 2, y = 250, S = Tutorial.S, L = Tutorial.LESSONS[S.lesson], nxt = S.lesson + 1 < Tutorial.LESSONS.length ? S.lesson + 1 : -1;
   ctx.fillStyle = 'rgba(8,12,18,.94)'; ctx.strokeStyle = T.failed ? '#ff6464' : '#4cd68a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(x, y, 520, 190, 12); ctx.fill(); ctx.stroke();
