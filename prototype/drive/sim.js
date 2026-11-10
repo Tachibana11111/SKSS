@@ -782,6 +782,16 @@
   const OPP_Z0 = 900, OPP_Z1 = 300, oppThruDur = (W, k, len) => { const st = W.line.stations[W.trip.M[k].i], v = Math.max(40, Math.min(285, limitKm(W.line, st.km))) / 3.6; return Math.min(50, (len + OPP_Z0 + OPP_Z1) / v); };
   const oppThruZ = (u, len) => OPP_Z0 - u * (len + OPP_Z0 + OPP_Z1);      // vị trí mũi tàu so với mũi tàu ta (m)
   const passersAt = (W, k) => (W.passDyn && W.passDyn.k === k ? W.passDyn.list : (W.passers && W.passers[k]) || []);
+  // vị trí tàu ngược chiều đúng như bản đồ toàn quốc (đường tốc độ tăng tốc/chạy đều/phanh, ga cho thông qua), đổi sang km của tuyến ta; null = không tính được (dùng nội suy thẳng như cũ); {km:null} = đang đỗ ga hoặc chưa/không còn hiện
+  function oppPos(W, c, nowE, dl) {
+    const NC = root.NatCat, LN = root.LINES; if (!NC || !LN) return null;
+    const M = W.oppNC || (W.oppNC = new Map(NC.build(LN).map(x => [x.key, x]))), cat = M.get(c.id); if (!cat) return null;
+    const s = NC.stateOf(LN, cat, nowE, dl && dl.skip); if (!s) return { km: null }; if (!s.moving) return { km: null };
+    const J = W.oppJp || (W.oppJp = new Map(W.line.stations.map((q, i) => [q.jp, i]))), Lc = LN[cat.line], S = cat.stops, p = S[s.k], q = S[s.nk];
+    const ip = J.get(Lc.stations[p.i].jp), iq = J.get(Lc.stations[q.i].jp); if (ip === undefined || iq === undefined) return null;
+    const kp = Lc.stations[p.i].km, kq = Lc.stations[q.i].km, f = (s.km - kp) / ((kq - kp) || 1), a = W.line.stations[ip].km, b = W.line.stations[iq].km;
+    return { km: a + (b - a) * f, vo: Math.abs(b - a) / (Math.abs(kq - kp) || 1) * s.kmh / 3.6 };
+  }
   function refreshOpposing(W, T) {
     if (T.phase === 'dwell' && W.opposing && W.opposing.length) { W.opposing = []; W.oppInfo = []; }      // vừa vào ga: bỏ ngay danh sách đang vẽ (không đợi nhịp cập nhật 0,4 s)
     if (!W.oppCat || (W.oppAt !== undefined && W.t - W.oppAt < 0.4 && W.t >= W.oppAt)) return; W.oppAt = W.t;
@@ -789,10 +799,10 @@
     if (T.phase === 'dwell') refreshPassers(W, T);
     const now = W.trip.t0 + W.t, kmP = kmOfS(T.x, W.dir, W.line.kmEnd), down = W.dir === 'down', st = W.oppState || (W.oppState = new Map());
     const held = [];
-    for (const c of W.oppCat) { const p = c.pts, dl = NC && W.haz ? NC.delayOf(W, c.id) : null, nowE = now - (dl ? dl.delay : 0); let km = null, vo = 0;
-      if (dl && dl.hold > 0) { st.delete(c.id); for (let k = 0; k < p.length - 1; k++) { const a = p[k], b = p[k + 1]; if (nowE > a.td && nowE < b.ta) { const f = (nowE - a.td) / ((b.ta - a.td) || 1), kh = a.km + (b.km - a.km) * f, gc = (down ? kh - kmP : kmP - kh) * 1000;      // tàu ngược chiều đang bị giữ (động đất, mưa gió) dừng giữa hai ga: vẫn nằm trên đường, vẽ đứng yên
+    for (const c of W.oppCat) { const p = c.pts, dl = NC && W.haz ? NC.delayOf(W, c.id) : null, nowE = now - (dl ? dl.delay : 0), px = oppPos(W, c, nowE, dl); let km = null, vo = 0;
+      if (dl && dl.hold > 0) { st.delete(c.id); for (let k = 0; k < p.length - 1; k++) { const a = p[k], b = p[k + 1]; if (nowE > a.td && nowE < b.ta) { const f = (nowE - a.td) / ((b.ta - a.td) || 1), kh = px && px.km != null ? px.km : a.km + (b.km - a.km) * f, gc =(down ? kh - kmP : kmP - kh) * 1000;      // tàu ngược chiều đang bị giữ (động đất, mưa gió) dừng giữa hai ga: vẫn nằm trên đường, vẽ đứng yên
             if (gc > -1500 && gc < 4500 && !dupHidden(c.rec, kh)) held.push({ id: c.id, key: vehAt(c.rec, kh), label: labelAt(c.rec, kh), sC: sOfKm(kh, W.dir, W.line.kmEnd) }); break; } } continue; }
-      for (let k = 0; k < p.length && km === null; k++) { if (nowE >= p[k].ta && nowE <= p[k].td) { km = p[k].km; vo = 0; } else if (k < p.length - 1 && nowE > p[k].td && nowE < p[k + 1].ta) { const f = (nowE - p[k].td) / ((p[k + 1].ta - p[k].td) || 1); km = p[k].km + (p[k + 1].km - p[k].km) * f; vo = Math.abs(p[k + 1].km - p[k].km) * 1000 / ((p[k + 1].ta - p[k].td) || 1); } }
+      if (px) { if (px.km != null) { km = px.km; vo = px.vo; } } else for (let k = 0; k < p.length && km === null; k++) { if (nowE >= p[k].ta && nowE <= p[k].td) { km = p[k].km; vo = 0; } else if (k < p.length - 1 && nowE > p[k].td && nowE < p[k + 1].ta) { const f = (nowE - p[k].td) / ((p[k + 1].ta - p[k].td) || 1); km = p[k].km + (p[k + 1].km - p[k].km) * f; vo = Math.abs(p[k + 1].km - p[k].km) * 1000 / ((p[k + 1].ta - p[k].td) || 1); } }
       if (km === null || vo < 5) { if (!st.has(c.id) || st.get(c.id).t0 > W.t) st.delete(c.id); continue; }
       if (dupHidden(c.rec, km)) { st.delete(c.id); continue; }      // chuyến Komachi/Tsubasa đang ghép với chuyến Tohoku cùng số hiệu: chỉ vẽ một đoàn ghép (chuyến Tohoku)
       const gap = (down ? km - kmP : kmP - km) * 1000;

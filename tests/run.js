@@ -577,6 +577,11 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
     ok(W.haz && W.haz.cells.length >= 1, 'có ô thời tiết (' + (W.haz ? W.haz.cells.length : 0) + ' ô, ' + (W.haz ? W.haz.quakes.length : 0) + ' động đất)');
     Sim.requestClose(T); T.pw = 13; let n = 0, seen = 0; while (!T.finished && n++ < 3e5 && W.t < 6000) { Sim.tick(W, 0.05, {}, true); if ((W.opposing || []).some(t0 => Math.abs(t0 - W.t) < 0.2)) seen++; if (n % 400 === 0) { /* NatCat.step chạy trong refreshOpposing */ } }
     ok(seen > 0, 'có tàu ngược chiều lướt qua theo lịch trong chuyến (' + seen + ' lần)');
+    // tàu ngược chiều trong các góc nhìn phải lướt qua đúng lúc hai tàu giao nhau trên bản đồ (cùng đường tốc độ NatCat), không trễ/sớm vài km
+    { const W2 = Sim.createWorld('tsk', Sim.makeTrip('tsk', r, st[0], st[st.length - 1]), { diff: 'easy', seed: 5, lead: false, events: true }), T2 = W2.player, cats = new Map(NatCat.build(window.LINES).map(x => [x.key, x])); Sim.requestClose(T2); T2.pw = 13; let n2 = 0, cmp = 0, worst = 0, wid = '';
+      while (!T2.finished && n2++ < 3e5 && W2.t < 6000) { Sim.tick(W2, 0.05, {}, true); if (n2 % 10) continue;
+        for (const [id, s] of W2.oppState || []) { if (Math.abs(s.t0 - W2.t) > 0.25) continue; const cat = cats.get(id), dl = NatCat.delayOf(W2, id), q = cat && NatCat.stateOf(window.LINES, cat, W2.trip.t0 + W2.t - (dl ? dl.delay : 0), dl && dl.skip); if (!q || !q.moving) continue; const kmP = Sim.kmOfS(T2.x, W2.dir, W2.line.kmEnd), e = Math.abs(q.km - kmP) * 1000; cmp++; if (e > worst) { worst = e; wid = id; } } }
+      ok(cmp > 0 && worst < 600, 'tàu ngược chiều qua mặt đúng chỗ bản đồ cho là gặp nhau (' + cmp + ' lần, lệch xa nhất ' + Math.round(worst) + ' m ' + wid + ')'); }
     NatCat.step(W); let held = 0, delayed = 0; for (const d of W.haz.delay.values()) { if (d.delay > 0) delayed++; if (d.why === 'eqk') held++; }
     ok(W.haz.lastT >= W.trip.t0 + W.t - 6, 'độ trễ tích luỹ tới giờ hiện tại (' + delayed + ' đoàn trễ, ' + held + ' dừng vì động đất)');
     // một đường mỗi chiều: không có đôi tàu cùng chiều nào đổi thứ tự giữa hai ga (chỉ vượt ở ga khi tàu trước đang đỗ)
