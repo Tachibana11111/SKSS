@@ -97,15 +97,15 @@ function lever(x, y, w, h, kind) {
 
 function drawRadioFull(x, y, w, h) {
   ctx.fillStyle = 'rgba(10,14,20,.66)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill(); ctx.strokeStyle = 'rgba(80,100,125,.6)'; ctx.lineWidth = 1; ctx.stroke();
-  txt(_t('ĐIỆN ĐÀM  (O: ẩn)'), x + 12, y + 20, '#fff', 'bold 13px system-ui');
-  const C = { info: '#9fc3ff', warn: '#ffc247', bad: '#ff7a7a', stop: '#4cd68a', pa: '#b8c4d4' }, VT = y + 30, VB = y + h - 8, viewH = VB - VT, LW = w;
-  ctx.font = '12px system-ui'; const rr = []; let total = 0;
-  for (let i = W.msgs.length - 1; i >= Math.max(0, W.msgs.length - 200); i--) { const m = W.msgs[i], lines = wrapText(fmt(m.t) + '  ' + (m.ack && !m.done ? _t('[CHỜ NHẮC LẠI] ') : '') + m.text, LW - 40), hh = lines.length * 15 + 8; rr.push({ m, lines, y: total, h: hh }); total += hh; }
+  txt(_t('ĐIỆN ĐÀM  (O: ẩn)'), x + 12, y + 21, '#fff', 'bold 15px system-ui');
+  const C = { info: '#9fc3ff', warn: '#ffc247', bad: '#ff7a7a', stop: '#4cd68a', pa: '#b8c4d4' }, VT = y + 34, VB = y + h - 8, viewH = VB - VT, LW = w;
+  ctx.font = '15px system-ui'; const rr = []; let total = 0;
+  for (let i = W.msgs.length - 1; i >= Math.max(0, W.msgs.length - 200); i--) { const m = W.msgs[i], lines = wrapText(fmt(m.t) + '  ' + (m.ack && !m.done ? _t('[CHỜ NHẮC LẠI] ') : '') + m.text, LW - 40), hh = lines.length * 19 + 10; rr.push({ m, lines, y: total, h: hh }); total += hh; }
   if (radio.w !== W) { radio.w = W; radio.scroll = 0; radio.total = 0; }
   const maxScroll = Math.max(0, total - viewH); if (radio.scroll > 0 && total > radio.total) radio.scroll += total - radio.total;
   radio.total = total; radio.scroll = Math.max(0, Math.min(maxScroll, radio.scroll)); radio.max = maxScroll; radio.viewH = viewH; radio.top = VT; radio.x0 = x; radio.x1 = x + w;
   ctx.save(); ctx.beginPath(); ctx.rect(x, VT, w, viewH); ctx.clip();
-  for (const r of rr) { const y0 = VT + r.y - radio.scroll; if (y0 + r.h < VT || y0 > VB) continue; r.lines.forEach((l, q) => txt(l, x + 12, y0 + 12 + q * 15, C[r.m.kind] || '#c8d4e2', '12px system-ui')); ctx.fillStyle = 'rgba(80,100,125,.4)'; ctx.fillRect(x + 12, y0 + r.h - 4, w - 36, 1); }
+  for (const r of rr) { const y0 = VT + r.y - radio.scroll; if (y0 + r.h < VT || y0 > VB) continue; r.lines.forEach((l, q) => txt(l, x + 12, y0 + 14 + q * 19, C[r.m.kind] || '#c8d4e2', '15px system-ui')); ctx.fillStyle = 'rgba(80,100,125,.4)'; ctx.fillRect(x + 12, y0 + r.h - 4, w - 36, 1); }
   ctx.restore(); radio.bar = null;
   if (maxScroll > 0) { const th = Math.max(30, viewH * viewH / total), ty = VT + (viewH - th) * radio.scroll / maxScroll; radio.bar = { x: x + w - 14, y: ty, w: 8, h: th };
     ctx.fillStyle = 'rgba(36,52,71,.8)'; ctx.beginPath(); ctx.roundRect(x + w - 14, VT, 8, viewH, 4); ctx.fill(); ctx.fillStyle = radio.drag ? '#6fb0ff' : '#4a6a8f'; ctx.beginPath(); ctx.roundRect(x + w - 14, ty, 8, th, 4); ctx.fill(); }
