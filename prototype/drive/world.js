@@ -31,7 +31,7 @@
     const key = lid + '/' + k, c = cache.get(key); if (c !== undefined) return c === 'loading' ? undefined : c;
     if (have[lid] === false) return null;
     cache.set(key, 'loading');
-    if (typeof document === 'undefined') { cache.set(key, null); return null; }
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function' || !document.head) { cache.set(key, null); return null; }      // không có DOM thật (kiểm thử chạy tuần tự có phần đặt document = {}): không nạp đoạn dữ liệu
     const sc = document.createElement('script'); sc.src = `world/${lid}/${k}.js`; sc.onerror = () => { cache.set(key, null); sc.remove(); }; sc.onload = () => sc.remove(); document.head.appendChild(sc);      // thẻ script: chạy được cả khi mở bằng file://
     return undefined;
   }
