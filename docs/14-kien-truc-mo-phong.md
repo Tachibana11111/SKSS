@@ -54,9 +54,19 @@ HOME.W.fgnW = thế giới tàu được chọn          // để bản đồ v�
 - **Thứ tự tick/step**: `Sim.tick(W)` chạy trước `NatMap.follow` → sự kiện của thế giới ngồi xảy ra trước khi bản đồ kịp giữ tàu.
 - **Kiểm thử**: mỗi bất biến trên có test trong `tests/run.js` (phần bản đồ toàn quốc, phần khởi động nhiều giờ, phần tự lái, phần dữ liệu). Chạy song song: `node tests/run-parallel.js`.
 
+## 6b. Đoàn ghép Tohoku + mini (Hayabusa/Komachi, Yamabiko/Tsubasa) [D/I]
+
+- **Hai bản ghi một đoàn.** `coupleOf(rec)` nối bản ghi Tohoku (`role 'toh'`) với bản ghi mini (`role 'mini'`) cùng số hiệu; `splitKm` = km ga ghép/tách (Morioka 496,5; Fukushima 255,1). Mẫu tàu theo vị trí là `vehAt(rec, km)`: đang đi chung thì `E6+E5`/`E5+E6`, đã tách thì chỉ còn mini (`rec.cp[1]` cho Komachi/Tsubasa chiều xuống, vì bản ghi chiều xuống ghi sẵn "E6+E5" từ ga xuất phát). Nhãn tên là `labelAt`.
+- **Vạch dừng lùi (`m.sOrig`).** Chiều lên, tàu mini tới ga ghép dừng cách đuôi đoàn Tohoku đang chờ đúng chiều dài E5 + khe nối (≈ 255 m); `m.sOrig` là vị trí tham chiếu của ga (hình học sân ga, ghi), `m.s` là vạch dừng thật. Mọi thứ vẽ theo hình học sân ga (số toa, biển tên ga, đồng hồ cột, nhân viên: `cabview.js`) phải neo theo `sOrig` (`q.d`), chỉ vạch dừng mục tiêu neo theo `m.s` (`q.dm`). Bản đồ vẽ mũi tên tàu ta theo `Sim.mapX(T)` (bù dần về `sOrig` khi tới gần vạch lùi) để tàu đã vào ga không bị vẽ cách ga ~250 m.
+- **Tàu đỗ ở ga ghép/tách trong góc nhìn (`refreshDwellers`).** Đoàn ghép đang đỗ ngay tại ga ghép được vẽ thành **hai đoàn riêng cùng đường** (`W.stabled`: Tohoku và mini, mini ở phía bắc). Tách (chiều xuống): vào ga cùng nhau, mini rời trước, Tohoku rời sau ≥ 25 s. Ghép (chiều lên): Tohoku vào trước, mini vào sau ≥ 20 s rồi cả hai cùng rời. Đối tác ghép của chính tàu ta không vẽ thêm ở đường kề.
+- **Ghép chiều lên: chờ Tohoku thật (`joinState`, `joinBlock`, `joinGate`, `joinSync`, `joinGeom` trong `sim.js`).** Đoàn Tohoku đối tác là bản sao danh mục (có độ trễ/giữ). Quy tắc theo thứ tự: (1) tàu mini **chờ ở ga dừng liền trước ga ghép** (Shizukuishi, Yonezawa) cho tới khi dự đoán nó tới ga ghép sau Tohoku ≥ 20 s (`eta ≤ bây giờ + 0,92·tr − 20`, `tr` = thời gian chạy kế hoạch gốc); bị giữ thì chờ không giờ; (2) trên đường, giờ đến kế hoạch ở ga ghép dời thành `eta + 110 s` để tự lái/người lái canh theo; (3) ATC chặn tàu mini **ngoài đoạn ghi nối vào tuyến Tohoku** (junction `line:'toh'`, cách ga ~2 km, dài ~1,2 km) với đệm 500 m, tới khi Tohoku còn ≤ 45 s là đỗ (đã qua khỏi đoạn ghi); (4) đoàn Tohoku chờ chỉ hiện 34 s trước giờ đến, chạy vào ga (hãm từ 90 km/h trong 420 m) và đỗ ở vị trí tham chiếu; (5) mini vào ga, dừng ở vạch lùi rồi nối 100–300 s (tính theo thời gian đỗ gốc). Chưa có Tohoku thật thì không nối, tàu mini đã vào ga thì chờ ở vạch (`cpWait`).
+- **Đường đơn (`singleStep`, `snapHold`).** Tàu danh mục bị giữ vì đường đơn phía trước có tàu ngược chiều được kéo về **đúng ga** (không đứng cách ga ~200 m), và tìm "ga phía trước" bằng khoảng cách km theo chiều chạy (không dùng `segOf` khi đang đứng đúng ga).
+
 ## 7. Hạn chế đã biết [?]
 
 - Hai thế giới (tàu ta, tàu ngồi) tự chọn đường vào ga riêng (ga Tokyo): khi quay về, tàu kia có thể hiện ở đường khác với lúc ngồi buồng lái. Đã quyết định chưa xử lý.
 - Tàu ngồi buồng lái chỉ chịu sự cố do kế hoạch danh mục; mô hình giữ tàu giữa đường (`still`) coi tàu như đứng trên đường chính.
 - Bản đồ chưa có các giới hạn ATC khác (đường cong, vùng chậm cố định) ngoài mưa và ghi rẽ; tàu ngồi buồng lái có đủ.
 - Ước lượng thời gian câu PA khi phát ngầm theo độ dài chữ (150 ms/ký tự) **[I]**.
+- Chiều xuống (mini ở phía trước tách ở Morioka/Fukushima rồi chạy trước ra nhánh): chưa kiểm xem mini có chiếm đoạn ghi nối khi đoàn Tohoku còn đang tách hay không.
+- Tàu mini đã vào ga ghép mà Tohoku mới bị giữ (rất hiếm, sau điểm thả 45 s) vẫn chờ ở vạch lùi trong sân ga; đoàn Tohoku hiện ra phía trước nó chứ không đi xuyên qua.

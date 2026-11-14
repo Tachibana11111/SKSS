@@ -62,10 +62,10 @@
         const L2 = LN[W.lineId], km2 = root.Sim.kmOfS(Ld.x, W.dir, W.line.kmEnd), a2 = atKm(L2, Math.max(L2.stations[0].km, Math.min(L2.stations[L2.stations.length - 1].km, km2))), sg2 = W.dir === 'down' ? 1 : -1; s0km = s.km;
         s.lon = a2.lon; s.lat = a2.lat; s.idx = a2.idx; s.dx = a2.dx * sg2; s.dy = a2.dy * sg2; s.moving = Ld.v > 0.5; s.kmh = Ld.v * 3.6; s.km = km2; s.dwell = Ld.phase === 'dwell' ? 'stop' : undefined; if (!s.dwell && s.k === undefined) s.k = 0; }
       let isFgn = false;      // tàu ta đang ngồi buồng lái (thế giới riêng W.fgnW): vẽ ở vị trí thật của nó, không phải vị trí bản sao
-      { const Wf = W.fgnW; if (Wf && Wf.player && c.rec === Wf.trip.rec && LN[Wf.lineId]) { const Tf = Wf.player, L2 = LN[Wf.lineId], km2 = root.Sim.kmOfS(Tf.x, Wf.dir, Wf.line.kmEnd), a2 = atKm(L2, Math.max(L2.stations[0].km, Math.min(L2.stations[L2.stations.length - 1].km, km2))), sg2 = Wf.dir === 'down' ? 1 : -1, mi = Tf.M[Math.min(Tf.k, Tf.M.length - 1)], si = c.stops.findIndex(e => mi && e.i === mi.i);
+      { const Wf = W.fgnW; if (Wf && Wf.player && c.rec === Wf.trip.rec && LN[Wf.lineId]) { const Tf = Wf.player, L2 = LN[Wf.lineId], km2 = root.Sim.kmOfS(root.Sim.mapX(Tf), Wf.dir, Wf.line.kmEnd), a2 = atKm(L2, Math.max(L2.stations[0].km, Math.min(L2.stations[L2.stations.length - 1].km, km2))), sg2 = Wf.dir === 'down' ? 1 : -1, mi = Tf.M[Math.min(Tf.k, Tf.M.length - 1)], si = c.stops.findIndex(e => mi && e.i === mi.i);
           s.lon = a2.lon; s.lat = a2.lat; s.idx = a2.idx; s.dx = a2.dx * sg2; s.dy = a2.dy * sg2; s.moving = Tf.v > 0.5; s.kmh = Tf.v * 3.6; s.km = km2; s0km = null; if (si >= 0) s.k = si; s.dwell = Tf.phase === 'dwell' ? 'stop' : undefined; if (!s.dwell && s.k === undefined) s.k = 0; isFgn = true; } }
       out.push({ c, s, s0km, d, held: held && !isFgn, fgn: isFgn, col: colAt(c.line, s.idx), label: root.Sim.labelAt(c.rec, s.km) }); }
-    const L = LN[W.lineId]; if (L && T) { const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd), a = atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))), sg = W.dir === 'down' ? 1 : -1;
+    const L = LN[W.lineId]; if (L && T) { const km = root.Sim.kmOfS(root.Sim.mapX(T), W.dir, W.line.kmEnd), a = atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))), sg = W.dir === 'down' ? 1 : -1;
       out.push({ me: true, s: { lon: a.lon, lat: a.lat, idx: a.idx, dx: a.dx * sg, dy: a.dy * sg, moving: T.v > 0.5, kmh: T.v * 3.6, km }, col: colAt(W.lineId, a.idx), label: (T ? root.Sim.hudLabel(W, T) : W.trip.label) || _t('Tàu của bạn'), line: W.lineId }); }
     return out;
   }
@@ -83,7 +83,7 @@
       const sNow = NC().stateOf(root.LINES, c, now - (dly ? dly.delay : 0)), dist = sNow ? Math.abs(sNow.km - km) : null;      // khoảng cách thật từ tàu tới ga (km đường), cả hai chiều
       rows.push([ev.arr, root.Sim.labelAt(c.rec, km) + ' (' + (c.rec.d === 'down' ? _t('xuống') : _t('lên')) + ') · ' + stt + (dist == null ? '' : dist < 0.05 ? _t(' · tại ga') : _t(' · cách ') + fmtKm(dist)), colAt(c.line, j)]);
     }
-    { const L = root.LINES[W.lineId], j = L && T ? L.stations.findIndex(s => s.jp === en) : -1; if (j >= 0) { const kmP = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd), dist = Math.abs(kmP - L.stations[j].km); if (dist < 60) rows.push([now - 1e6, _t('TÀU CỦA BẠN · ') + (dist < 0.05 ? _t('tại ga') : _t('cách ') + fmtKm(dist)), '#ffffff']); } }
+    { const L = root.LINES[W.lineId], j = L && T ? L.stations.findIndex(s => s.jp === en) : -1; if (j >= 0) { const kmP = root.Sim.kmOfS(root.Sim.mapX(T), W.dir, W.line.kmEnd), dist = Math.abs(kmP - L.stations[j].km); if (dist < 60) rows.push([now - 1e6, _t('TÀU CỦA BẠN · ') + (dist < 0.05 ? _t('tại ga') : _t('cách ') + fmtKm(dist)), '#ffffff']); } }
     rows.sort((x, y) => x[0] - y[0]); return rows;
   }
 
@@ -215,5 +215,5 @@
     else { const t = (V.all || []).find(x => (x.me ? 'me' : x.c.key) === key); if (!t) return; V.sel = { tk: key }; V.cx = t.s.lon; V.cy = t.s.lat; }
     V.s = 120000; V.fit = true;      // phóng to hết cỡ tới điểm tìm thấy
   }
-  root.NatMap = { V, shownDelay, follow, searchItems, focus, stationRows, stations: () => ST, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
+  root.NatMap = { V, shownDelay, follow, searchItems, focus, stationRows, stations: () => ST, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(root.Sim.mapX(T), W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
 })(typeof window !== 'undefined' ? window : globalThis);

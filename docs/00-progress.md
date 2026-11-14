@@ -1,6 +1,6 @@
 # Nhật ký tiến độ
 
-Cập nhật lần cuối: 2026-11-10 (prototype 0.4 + 7 tuyến; chế độ tự do, ngó buồng lái, bản đồ thống nhất)
+Cập nhật lần cuối: 2026-11-14 (prototype 0.4 + 7 tuyến; chế độ tự do, ngó buồng lái, bản đồ thống nhất)
 
 ## Giai đoạn hiện tại: 0 – Xây bộ tri thức nghiệp vụ
 
@@ -71,3 +71,4 @@ Cập nhật lần cuối: 2026-11-10 (prototype 0.4 + 7 tuyến; chế độ t�
 - **(2026-11-08 → 11-10) Bản đồ thống nhất:** đường tốc độ giữa hai ga (tăng tốc, chạy đều, phanh ATC, 80 km/h quanh ga có ghi), mưa 70 km/h, sự cố ngẫu nhiên cho MỌI đoàn theo seed/độ khó (12 loại, đoàn ghép cùng lúc), tooltip ghi lý do, phát thanh theo từng tàu (phát ngầm khi ở tàu khác). Độ tin cậy từng cơ chế: `docs/15-do-tin-cay-co-che-moi.md`.
 - **(2026-11-09) Tàu kiểm tra:** vào buồng lái được, không hành khách/PA/mở cửa, tự lái chạy theo ATC cao nhất. **Sửa lỗi dữ liệu:** Tsubame 333/334 bị cộng nhầm 24 giờ (lỗi gõ giờ trong PDF) làm tàu kiểm tra Tokaido xuất phát lúc 70:44; bộ sinh dữ liệu (`tools/build_lines.py`) nay có bước kiểm tra giờ trước khi ghi `data-lines.js`.
 - **(2026-11-10) Giao diện và hạ tầng:** bỏ emoji (biểu tượng tự vẽ `icons.js`); ô tìm ga/tàu trên bản đồ (phóng to hết cỡ, tìm bằng romaji, tên ga tiếng Nhật kèm hiragana); ô hướng dẫn bài học đặt dưới điện đàm, chữ tự co theo ô và xuống dòng; bản đồ toàn quốc vẽ nền đất liền một lần rồi dán (khung vẽ bản đồ giảm ~22 → ~11 ms); cử chỉ cảm ứng (kéo, chụm/giãn) và gợi ý "ngó buồng lái" hiện một lần; bộ test chạy song song `node tests/run-parallel.js` (xem CLAUDE.md).
+- **(2026-11-11 → 11-14) Sửa lỗi và hoàn thiện đoàn ghép:** tàu ngược chiều trong góc nhìn lấy vị trí đúng như bản đồ (lệch tới 3,6 km trước đó); PA báo đúng phía cửa mở ở ga cuối nhiều đường (theo đường tàu được xếp vào); chữ điện đàm to hơn, bỏ dải đen đáy khung buồng lái, hạt mưa đọng trên kính trước/sau và cần gạt nước xoá hạt; tàu bị giữ do đường đơn đứng đúng ga; nhãn mẫu tàu Komachi/Tsubasa sau ga tách; mũi tên tàu ở ga ghép; phụ kiện sân ga neo theo hình học sân ga; đoàn ghép đỗ ở Morioka/Fukushima hiện thành hai đoàn riêng, tách/ghép thấy rời nhau; tàu mini chiều lên chờ đoàn Tohoku thật (chờ ở ga trước, ATC chặn ngoài đoạn ghi nối, Tohoku chạy vào ga rồi mới nối). Chi tiết: `docs/14-kien-truc-mo-phong.md` mục 6b, độ tin cậy: `docs/15-do-tin-cay-co-che-moi.md` mục 6.

@@ -202,6 +202,14 @@
       for (const a of act) if (!a.me && a.d._d0 !== undefined) { const r = Math.max(0, Math.min(1, (a.d.delay - a.d._d0) / dt)); a.d.rate = (a.d.rate || 0) * 0.6 + r * 0.4; }      // tỉ lệ thời gian bị chậm/chặn: tốc độ thực = tốc độ lịch × (1 − rate), giảm dần mượt
       H.lastT = tNow; }
   }
+  // tàu bị giữ ở ga vì đường đơn phía trước có tàu ngược chiều: bị chặn khi còn cách ga tới ~200 m, nhưng "giữ ở ga" nghĩa là phải đứng đúng ga (tàu thật trong buồng lái đã vào ga rồi): kéo thời điểm hiệu lực tới đúng vị trí ga (chỉ tiến, không lùi)
+  function snapHold(LN, a, kmS, tNow, dt) {
+    const s = a.s, c = a.c; if (!s || !s.moving || s.nk === undefined || !c) return; const L = LN[c.line], p = c.stops[s.k], q = c.stops[s.nk]; if (!p || !q) return;
+    const kp = L.stations[p.i].km, kq = L.stations[q.i].km; let eNew = null;
+    if (Math.abs(kq - kmS) < 0.05) eNew = c.ta(q) + 0.5;      // ga kế là ga dừng của đoàn: vào ga và đỗ
+    else if ((kmS - kp) * (kq - kp) > 0 && Math.abs(kmS - kp) < Math.abs(kq - kp)) { const T0 = segTable(LN, c, s.k, s.nk); if (T0) eNew = c.td(p) + segTime(T0, Math.max(0, Math.abs(kmS - kp) * 1000 - 3)); }      // ga thông qua: đứng đúng vị trí ga trong đoạn
+    if (eNew !== null && eNew > a.eff) a.d.delay = tNow + dt - eNew;      // +dt: bước kế tiếp tàu còn tiến thêm một bước trước khi độ trễ bắt đầu cộng dồn
+  }
   // Đường đơn (Yamagata, Akita phần mini-Shinkansen): giữa hai ga kề nhau chỉ một chiều được chiếm. Chỉ xét giữa TÀU CỦA NGƯỜI CHƠI và các đoàn trong danh mục (các đoàn danh mục không chờ nhau: giờ phần mini là ước tính [I] nên chúng
   // hay gặp nhau giữa đường, chặn nhau sẽ làm trễ dồn cả ngày): người chơi đã rời ga vào đoạn nào thì tàu ngược chiều tới sau bị giữ ở ga (dừng sát ga); tàu ngược chiều đang ở trong đoạn thì người chơi phải chờ ở ga (Sim.departBlock → singleBusy).
   // Nhờ vậy hai tàu ngược chiều gặp nhau ở ga chứ không chạy xuyên qua nhau giữa hai ga.
@@ -219,10 +227,10 @@
     for (const a of ent) {
       if (a.me) continue; const i = segOf(a.km); if (i < 0) continue; let j = -1, ready = false;
       if (a.dwell || (a.s && a.s.dwell)) { if (a.s.dwell === 'end') continue; j = S.findIndex(st => Math.abs(st.km - a.km) < 0.15); const p = a.c.stops[a.s.k]; ready = !!p && a.eff + 2 * dt >= a.c.td(p) - 6; }      // nhìn trước 2 nhịp: giữ tàu trước khi nó kịp nhích khỏi ga
-      else if (!a.still || a.d.why === 'single') { const jj = a.dir === 'down' ? i + 1 : i; if (jj >= 0 && jj < S.length && Math.abs(S[jj].km - a.km) <= M) { j = jj; ready = true; } }
+      else if (!a.still || a.d.why === 'single') { const jj = S.findIndex(st => a.dir === 'down' ? (st.km - a.km >= -0.02 && st.km - a.km <= M) : (a.km - st.km >= -0.02 && a.km - st.km <= M)); if (jj >= 0) { j = jj; ready = true; } }      // ga phía trước theo chiều chạy trong vòng 200 m (kể cả đang đứng đúng ga, nơi segOf trả về đoạn phía sau)
       if (j < 0 || !ready) continue; const nx = a.dir === 'down' ? j : j - 1; if (!single(nx)) continue;
       const o = mine.get(nx);
-      if (o && o.dir !== a.dir) { a.d.hold = Math.max(a.d.hold, 12); a.d.why = 'single'; }
+      if (o && o.dir !== a.dir) { const fresh = !(a.d.hold > 0 && a.d.why === 'single'); a.d.hold = Math.max(a.d.hold, 12); a.d.why = 'single'; if (fresh && !a.dwell) snapHold(LN, a, S[j].km, tNow, dt); }
       else { if (a.d.why === 'single' && a.d.hold > 0) { a.d.hold = 0; a.d.why = ''; } const ck = nx + a.dir; if (!cat[a.dir].has(nx)) { cat[a.dir].set(nx, { dir: a.dir, label: lab(a) }); cc[ck] = { seg: nx, dir: a.dir, t: tNow, label: lab(a) }; } }      // đoạn không bị người chơi chiếm: tàu danh mục đi vào và giữ đoạn cho người chơi biết
     }
     H.segOwner[line] = cat;

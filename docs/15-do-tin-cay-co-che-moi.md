@@ -57,3 +57,16 @@ Không có nguồn nào nói các sự cố này xảy ra với tần suất đ�
 
 - **Sửa lỗi Tsubame 333/334 (11/2026) [D]:** bảng PDF JR Kyushu của chuyến Tsubame 334 có một ga bị gõ nhầm giờ (23:12 thay vì 20:12); bộ sinh dữ liệu từng cộng thêm 24 giờ cho các ga sau, làm chuyến này "chạy" tới 44:44 và chuyến đối xứng 333 tới 70:44. Đã thay giờ lệch bằng trung điểm hai ga kề — giá trị 20:12 là nội suy **[I]**, không đối chiếu nguồn. Chuyến xuống Tsubame 333 vốn là đối xứng ước tính **[I]**.
 - **Kiểm tra tự động (bộ sinh + test):** mọi chuyến khách phải có giờ không giảm dọc hành trình, hai ga liền nhau cách nhau không quá 3 giờ, không có giờ vượt 28:00. Vi phạm làm `tools/build_lines.py` dừng và làm `tests/run.js` báo lỗi.
+
+## 6. Ghép/tách Tohoku + mini và đường đơn (11/2026)
+
+| Cơ chế | Nhãn | Ghi chú |
+|---|---|---|
+| Hai bản ghi cùng số hiệu, cùng giờ ở đoạn chung là một đoàn ghép | **[D]** | Dò từ lịch hai tuyến (`miniPairs`); các cặp Hayabusa/Komachi và Yamabiko/Tsubasa |
+| Chiều lên: mini nối vào đuôi Tohoku ở Morioka/Fukushima; chiều xuống: Tohoku tách, mini chạy trước | **[N]** | Mô tả vận hành Akita/Yamagata Shinkansen (docs/11); mức chi tiết thời gian là **[I]** |
+| Lịch cho hai đoàn cùng giờ tới ga ghép | **[D]** | Dữ liệu thật; trong game Tohoku vào ga trước, mini vào sau (thứ tự là **[I]**) |
+| Tàu mini phải chờ ngoài đoạn ghi nối cho tới khi Tohoku đỗ | **[I]** | Suy luận từ an toàn tuyến chung: không để hai đoàn cùng chiếm đoạn ghi nối |
+| Đoạn ghi nối cách ga ghép 2 km, dài 1,2 km | **[I]** | Giá trị trong `LINE_META.junctions`, không có nguồn công bố |
+| Chờ ở ga liền trước ga ghép (Shizukuishi, Yonezawa) | **[I]** | Chính sách của game theo yêu cầu thiết kế; hệ số 0,92 (thời gian chạy thực ≈ 90–98% kế hoạch) đo trong mô phỏng |
+| Nối 100–300 s, đoàn Tohoku vào ga 34 s, hãm từ 90 km/h trong 420 m | **[I]** | Giá trị của game |
+| Tàu bị giữ do đường đơn đứng đúng ga | **[I]** | Cách mô hình hoá giữ tàu; giữa hai ga chỉ một chiều được chiếm |
