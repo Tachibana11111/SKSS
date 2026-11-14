@@ -72,7 +72,7 @@
   function stationRows(en, W, T) {
     const now = W.trip.t0 + W.t, rows = [], me = W.trip.rec, fmtKm = v => (v < 10 ? v.toFixed(1) : Math.round(v)) + ' km';
     for (const c of CAT) { if (c.rec === me || (W.mission && me && c.rec.v === me.v)) continue;      // lái tàu kiểm tra: đoàn cùng loại là chính ta, không hiện lần nữa
-      const L = root.LINES[c.line], j = L.stations.findIndex(s => s.jp === en); if (j < 0) continue; const km = L.stations[j].km, S = c.stops; let ev = null; if (root.Sim.dupHidden(c.rec, km)) continue;
+      const L = root.LINES[c.line], j = L.stations.findIndex(s => s.jp === en); if (j < 0) continue; const km = L.stations[j].km, S = c.stops; let ev = null; if (root.Sim.dupHidden(c.rec, km) || (me && root.Sim.ownPair(me, c.rec, km))) continue;
       for (let k = 0; k < S.length && !ev; k++) {
         if (S[k].i === j) ev = { stop: true, arr: c.ta(S[k]), dep: c.td(S[k]), first: k === 0, last: k === S.length - 1 };
         else if (k < S.length - 1) { const k0 = L.stations[S[k].i].km, k1 = L.stations[S[k + 1].i].km; if (km > Math.min(k0, k1) && km < Math.max(k0, k1)) { const f = (km - k0) / (k1 - k0), t = c.td(S[k]) + (c.ta(S[k + 1]) - c.td(S[k])) * f; ev = { stop: false, arr: t, dep: t }; } }

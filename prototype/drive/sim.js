@@ -217,14 +217,14 @@
       if (k === 0 || k === trip.M.length - 1 || !m.stop || !m.loop || m.arr == null) return;
       const arr = trip.t0 + m.arr, dep = trip.t0 + (m.dep != null ? m.dep : m.arr);
       for (const rec of catalog) {
-        if (rec === trip.rec) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
+        if (rec === trip.rec || ownPair(trip.rec, rec, L.stations[m.i].km)) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
         const t = timeAt(L, rec, m.i); if (t == null) continue;
         if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: labelAt(rec, L.stations[m.i].km), t: t - trip.t0, v: vehAt(rec, L.stations[m.i].km) });
       }
       for (const sh of shareInfo(L)) {            // tàu của tuyến cha chạy chung đường (trước ngã rẽ) thông qua ga ta đang đỗ ở đường tránh
         if (!sh.j.shared || m.i > sh.maxI) continue;
         for (const rec of sh.LF.trains) {
-          if (rec.d !== trip.dir) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
+          if (rec.d !== trip.dir || ownPair(trip.rec, rec, L.stations[m.i].km)) continue; const e = trainSeq(rec).find(x => x.i === m.i); if (e && e.stop) continue;
           const t = timeAt(sh.LF, rec, m.i); if (t == null) continue;
           if (t > arr - 5 && t < dep + 60) (out[k] = out[k] || []).push({ label: labelAt(rec, sh.LF.stations[m.i].km), t: t - trip.t0, v: vehAt(rec, sh.LF.stations[m.i].km) });
         }
@@ -436,6 +436,8 @@
   }
   // vị trí mũi tàu để vẽ lên bản đồ: vạch dừng bị lùi lại để chờ ghép/tách (m.sOrig) thì cộng bù dần khi tới gần, để tàu đã vào ga hiện đúng chỗ ga chứ không dừng trước ga ~250 m
   function mapX(T) { let x = T.x; for (const m of T.M) { if (m.sOrig === undefined || !m.stop) continue; const sh = m.sOrig - m.s; if (!(sh > 0)) continue; const u = 1 - Math.abs(x - m.s) / 1500; if (u > 0) x += sh * Math.min(1, u); } return x; }
+  // rec2 là đối tác ghép của chuyến rec đang đi chung đoạn tại km (cùng một đoàn ghép): không được coi là tàu khác
+  const ownPair = (rec, rec2, km) => { const ci = rec && coupleOf(rec); return !!ci && ci.partner === rec2 && onShared(ci, km); };
   const onShared = (ci, km) => !!ci && km != null && km <= ci.splitKm + 0.05;
   // tên chuyến theo vị trí km: đang đi chung thì ghép tên cả hai ("Hayabusa 36 + Komachi 36", Tohoku trước); sau khi tách chỉ còn tên của chính nó
   function labelAt(rec, km) {
@@ -829,7 +831,7 @@
     const NC = root.NatCat, k = T.k; if (!NC) return;
     if (!T.M[k].loop) { W.passDyn = { k, list: ((W.passers && W.passers[k]) || []).filter(p => p.syn) }; return; }      // ga chỉ có hai đường (không đường tránh): tàu cùng chiều không thể chạy xuyên qua tàu đang đỗ, nên không có tàu thông qua
     if (!W.passCand || W.passCand.k !== k) { const en = W.line.stations[T.M[k].i].jp, list = [];
-      for (const c of NC.build(root.LINES)) { if (c.rec.d !== W.dir || c.rec === W.trip.rec) continue; const LL = root.LINES[c.line], jj = LL.stations.findIndex(s => s.jp === en); if (jj < 0) continue; const kmJ = LL.stations[jj].km, S = c.stops;
+      for (const c of NC.build(root.LINES)) { if (c.rec.d !== W.dir || c.rec === W.trip.rec) continue; const LL = root.LINES[c.line], jj = LL.stations.findIndex(s => s.jp === en); if (jj < 0) continue; const kmJ = LL.stations[jj].km, S = c.stops; if (ownPair(W.trip.rec, c.rec, kmJ)) continue;      // đối tác ghép của chính đoàn ta (Hayabusa ↔ Komachi cùng số hiệu) đang đi chung với ta: không phải tàu khác thông qua
         if (S.some(p => p.i === jj)) continue;
         for (let q = 0; q < S.length - 1; q++) { const k0 = LL.stations[S[q].i].km, k1 = LL.stations[S[q + 1].i].km; if (kmJ > Math.min(k0, k1) && kmJ < Math.max(k0, k1)) { list.push({ c, tb: c.td(S[q]) + (c.ta(S[q + 1]) - c.td(S[q])) * ((kmJ - k0) / (k1 - k0)) }); break; } } }
       W.passCand = { k, list }; W.passObj = new Map(); }
@@ -1547,7 +1549,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { supportAt, supportColumns, wireAt, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { ownPair, supportAt, supportColumns, wireAt, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

@@ -1008,6 +1008,14 @@ if (section('33a. Đoàn ghép Tohoku + mini và đường đơn: mẫu tàu sau
     { const cand = T0.trains.filter(t => t.d === 'up' && !t.cp && t.s.length > 8 && t.s.some(e => !e[3] && T0.stations[e[0]].jp === '福島'))[0], st = cand.s.filter(e => !e[3]).map(e => e[0]), trip = Sim.makeTrip('toh', cand, st[0], st[st.length - 1]), W = Sim.createWorld('toh', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, j = T.M.findIndex(m => /Fukushima/.test(m.name));
       W.t = fk(T0, ym123) + 100 - trip.t0; T.x = T.M[j].s - 600; T.k = j; T.phase = 'run'; W.dwAt = undefined; Sim.tick(W, 0.05, {}, true); const sb = W.stabled || [], e8 = sb.find(e => e.key === 'E8'), e5 = sb.find(e => e.key === 'E5');
       ok(e8 && e5 && e8.track === e5.track && Math.abs(Math.abs(e5.front - e8.front) - (Sim.VEH.E5.len + 2.5)) < 6 && e8.label === 'Tsubasa 123' && e5.label === 'Yamabiko 123', 'ga tách Fukushima: Yamabiko 123 và Tsubasa 123 là hai đoàn riêng cùng đường, nối đuôi nhau', JSON.stringify(sb.map(e => [e.label, e.key, Math.round(e.front - T.M[j].s)]))); } }
+  // đối tác ghép của chính đoàn ta (Hayabusa 3 ↔ Komachi 3) không bao giờ là "tàu khác thông qua" khi ta đỗ ở ga có đường tránh
+  { const h3 = Sim.lineOf('toh').trains.find(t => t.t === 'Hayabusa' && t.n === '3' && t.d === 'down'), k3 = A.trains.find(t => t.t === 'Komachi' && t.n === '3' && t.d === 'down');
+    ok(Sim.ownPair(h3, k3, 300) && Sim.ownPair(k3, h3, 300) && !Sim.ownPair(h3, k3, 600) && !Sim.ownPair(h3, h3, 300), 'ownPair: đối tác ghép chỉ tính khi đang đi chung đoạn (≤ ga tách Morioka)');
+    let bad = 0, chk = 0; const names = new Set();
+    for (const [lid, rec] of [['toh', h3], ['aki', k3]]) { const st = rec.s.filter(e => !e[3]).map(e => e[0]), Wp = Sim.createWorld(lid, Sim.makeTrip(lid, rec, st[0], st[st.length - 1]), { diff: 'easy', seed: 1, lead: false, events: true }), Tp = Wp.player;
+      for (const k of Object.keys(Wp.passers || {})) for (const p of Wp.passers[k]) { chk++; if (/Hayabusa 3|Komachi 3/.test(p.label)) { bad++; names.add(p.label); } }
+      Tp.M.forEach((m, k) => { if (!m.loop || k === 0) return; Tp.k = k; Tp.phase = 'dwell'; const arr = m.arr != null ? m.arr : (m.pt != null ? m.pt : 0); for (const dt of [-40, 0, 40, 100]) { Wp.t = arr + dt; Wp.oppAt = undefined; Sim.refreshOpposing(Wp, Tp); for (const p of Sim.passersAt(Wp, k)) { chk++; if (/Hayabusa 3|Komachi 3/.test(p.label)) { bad++; names.add(p.label); } } } }); }
+    ok(chk > 5 && bad === 0, 'đoàn Hayabusa 3 + Komachi 3 không xuất hiện trong danh sách tàu thông qua ga của chính nó (' + chk + ' mục kiểm, ' + bad + ' sai)', [...names].join('|')); }
   // đường đơn: tàu bị giữ phải đứng đúng ga (không đứng cách ga ~200 m)
   { const NC = global.NatCat; let ev = 0, bad = 0, worst = 0;
     for (const [seed, tEnd] of [[3, 5200], [1, 7600]]) { const Wh = Sim.createWorld('aki', Sim.makeTrip('aki', k10, 22, 0), { diff: 'easy', seed, lead: false, events: true }), Th = Wh.player, cat = NC.build(window.LINES), seenK = new Set(); let n = 0;
@@ -1071,6 +1079,14 @@ if (section('33c. Mặt đầu/đuôi tàu ướm theo hình dáng mũi tàu c�
     CV.draw(mk(), 0, 0, 1920, 620, W, T, { sprites: { n700: SP }, fronts: { n700: { ready: true, img: FI } }, aud: null }); const layered = cnt; cnt = 0;
     CV.draw(mk(), 0, 0, 1920, 620, W, T, { sprites: {}, fronts: { n700: { ready: true, img: FI } }, aud: null }); const flat = cnt;
     ok(layered >= 40 && flat >= 1 && flat <= 2, 'mặt trước tàu ngược chiều: ' + layered + ' dải nghiêng theo mũi khi có ảnh nhìn ngang, ' + flat + ' tấm phẳng khi không có', [layered, flat]);
+    { const stN = (face, key) => { W.opposing = []; W.oppInfo = []; W.stabled = [{ key, i: -1, front: T.x + 16 + Sim.VEH[key].len, track: { x: -4.3, i: 0 }, face, label: key, k: 0 }]; cnt = 0; CV.draw(mk(), 0, 0, 1920, 620, W, T, { sprites: { n700: SP }, fronts: { n700: { ready: true, img: FI } }, aud: null }); return cnt; };
+      const hd = stN(-1, 'N700'), tl = stN(1, 'N700'), far = (() => { W.stabled[0].front = T.x + 900 + Sim.VEH.N700.len; cnt = 0; CV.draw(mk(), 0, 0, 1920, 620, W, T, { sprites: { n700: SP }, fronts: { n700: { ready: true, img: FI } }, aud: null }); return cnt; })();
+      ok(hd >= 40 && tl >= 40 && far <= 2, 'tàu đỗ ở đường cạnh có mặt đầu (quay ngược chiều) và mặt đuôi (cùng chiều) vát theo mũi: ' + hd + ' / ' + tl + ' dải khi ở gần, ' + far + ' tấm khi ở xa', [hd, tl, far]); W.stabled = []; }
+    { const drawCoupled = (key, dtv) => { W.stabled = []; W.opposing = [W.t + dtv]; W.oppInfo = [{ t0: W.t + dtv, v: key }]; cnt = 0; CV.draw(mk(), 0, 0, 1920, 620, W, T, { sprites: { n700: SP, e5: SP, e6: SP }, fronts: { n700: { ready: true, img: FI }, e5: { ready: true, img: FI }, e6: { ready: true, img: FI } }, aud: null }); return cnt; };
+      const jn = drawCoupled('E5+E6', (14 - (Sim.VEH.E5.len + 2.5)) / 200), single = drawCoupled('E5', (14 - (Sim.VEH.E5.len + 2.5)) / 200), jd = drawCoupled('E6+E5', (14 - (Sim.VEH.E6.len + 2.5)) / 200), jd8 = drawCoupled('E8+E5', (14 - (Sim.VEH.E8.len + 2.5)) / 200);
+      ok(jd >= 90 && jd8 >= 90, 'chiều rời Tokyo (E6+E5, E8+E5, mini đi trước): mũi E5 lộ ra sau đuôi mini (' + jd + ' / ' + jd8 + ' dải)', [jd, jd8]);
+      ok(jn >= 90 && single === 0, 'chỗ nối giữa hai đoàn của đoàn ghép có mặt mũi vát lộ ra trong khe (' + jn + ' dải ở đoàn ghép, ' + single + ' ở tàu đơn cùng vị trí)', [jn, single]); W.opposing = []; W.oppInfo = []; }
+    ok(Math.abs(CV.faceX(-4.3, 0, 1) - (-4.3 - 1.7)) < 1e-9 && Math.abs(CV.faceX(4.3, 0, 0.9) - (4.3 + 1.53)) < 1e-9 && Math.abs(CV.faceX(-12.9, 0, 1) - (-12.9 - 1.7)) < 1e-9, 'faceX: mép gần camera của mặt trước trùng mặt phẳng thân ở mọi làn, hai bên đường'); 
     if (prevDoc === undefined) delete global.document; else global.document = prevDoc; }
 }
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {

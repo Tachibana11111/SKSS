@@ -50,6 +50,7 @@ HOME.W.fgnW = thế giới tàu được chọn          // để bản đồ v�
 - **Không bước (`step`) thế giới `W.fgn`**: nó dùng bản đồ của tàu ta (`step` thoát ngay nếu `W.fgn`).
 - **`stateOf` phải nhận `d.skip`** ở mọi nơi tính vị trí theo độ trễ (bản đồ, `step`, `updateObstacle`, test); quên thì đoàn bị cho thông qua ga hiện "đổi thứ tự" giả.
 - **Đoàn ghép** (`coupleOf`) đi chung nên sự cố áp cho cả hai cùng lúc (`partnerOf`); nếu chỉ áp một đoàn thì đoàn kia vượt qua giữa đường.
+- **Đối tác ghép của chính đoàn ta không phải tàu khác** (`Sim.ownPair(rec, rec2, km)`): bản ghi Komachi/Tsubasa và bản ghi Hayabusa/Yamabiko cùng số hiệu là MỘT đoàn khi đi chung đoạn (≤ ga tách). Mọi danh sách "tàu khác" quét danh mục phải loại nó: tàu đỗ ở ga (`refreshDwellers`), tàu thông qua ga ta đỗ (`passers`, `refreshPassers`), vật cản (`updateObstacle`, theo `cid`), bản đồ (`gather`), bảng ga (`stationRows`). Quên loại thì ta nhận thông báo và hoạt ảnh "tàu thông qua" về chính đoàn của mình (gặp ở Shin-Shirakawa).
 - **Tàu kiểm tra** (`Sim.INSPECT[rec.v]`): không sự cố hành khách, không PA, tự lái chạy theo ATC cao nhất; thế giới điều độ (`createNetwork`) không có `W.trip`, mọi điều kiện đọc `W.trip` phải kiểm tra tồn tại.
 - **Thứ tự tick/step**: `Sim.tick(W)` chạy trước `NatMap.follow` → sự kiện của thế giới ngồi xảy ra trước khi bản đồ kịp giữ tàu.
 - **Kiểm thử**: mỗi bất biến trên có test trong `tests/run.js` (phần bản đồ toàn quốc, phần khởi động nhiều giờ, phần tự lái, phần dữ liệu). Chạy song song: `node tests/run-parallel.js`.
