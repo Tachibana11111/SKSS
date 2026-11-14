@@ -7,7 +7,8 @@ ROOT = os.path.join(os.path.dirname(__file__), '..', 'prototype', 'drive', 'asse
 SPECS = {'n700': ('n700_jrwest_large.webp', (20, 100, 260, 330)), 'n700s': ('src_n700s.webp', (40, 110, 280, 360)),
          'e5': ('src_e5.webp', (60, 90, 290, 320)), 's800': ('src_s800.png', (1400, 130, 1650, 360)),
          'e7': ('e7 w7.png', (30, 100, 210, 290)), 'e6': ('e6.png', (45, 120, 200, 290)), 'e8': ('e8.png', (45, 120, 200, 290)), 'h5': ('h5.png', (62, 95, 245, 275)),
-         't4': ('doctor yellow.png', (50, 150, 225, 340)), 'e926': ('east-i.png', (60, 130, 225, 335)), 'e2': ('src_e2.png', (25, 125, 200, 305))}
+         't4': ('doctor yellow.png', (50, 150, 225, 340)), 'e926': ('east-i.png', (60, 130, 225, 335)), 'e2': ('src_e2.png', (25, 125, 200, 305)),
+         'kamome': ('src_n700s8.webp', (50, 120, 235, 315))}
 
 def shift(a, dy, dx):
     out = np.zeros_like(a)

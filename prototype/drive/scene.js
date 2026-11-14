@@ -162,8 +162,9 @@
     } else { ctx.fillStyle = '#0e141b'; ctx.fillRect(px, base, pw, ph); }
     if (drop <= 0.5) { ctx.fillStyle = inSnow && !tun ? '#b8c4d2' : '#19212b'; ctx.fillRect(px, base + 3, pw, ph); }
     // ---- trụ điện và dây điện (cuộn theo vận tốc thật)
-    const sp = 50 * K, off = (T.x * K) % sp; ctx.strokeStyle = '#3a4c60'; ctx.lineWidth = 4;
-    for (let sx = px - sp; sx < px + pw + sp; sx += sp) { const x = sx - off + sp; ctx.beginPath(); ctx.moveTo(x, base - 70); ctx.lineTo(x, base); ctx.stroke(); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 10, base - 66); ctx.lineTo(x + 10, base - 66); ctx.stroke(); ctx.lineWidth = 4; if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(x - 10, base - 70, 20, 4); } }
+    const sp = 50 * K, off = (T.x * K) % sp; const sup = root.Sim.supportAt(W.line, W.lineId, root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd), { single: !!(W.line.single && W.line.single.length) && root.Sim.singleEff(W, T.x) > 0.6 }), pcol = sup.pole === 'conc' ? '#7b8794' : sup.pole === 'pipe' ? '#4d6178' : '#3a4c60', pwid = sup.pole === 'conc' ? 6 : sup.pole === 'pipe' ? 3 : 4;      // chất liệu cột theo đoạn (thép / bê tông / ống thép), kiểu tay đòn theo kết cấu
+    ctx.strokeStyle = pcol; ctx.lineWidth = pwid;
+    for (let sx = px - sp; sx < px + pw + sp; sx += sp) { const x = sx - off + sp; ctx.beginPath(); ctx.moveTo(x, base - 70); ctx.lineTo(x, base); ctx.stroke(); ctx.lineWidth = sup.kind === 'pipe' ? 2 : 3; ctx.beginPath(); if (sup.kind === 'bracket') { ctx.moveTo(x, base - 66); ctx.lineTo(x + 16, base - 66); ctx.moveTo(x, base - 52); ctx.lineTo(x + 9, base - 66); } else { ctx.moveTo(x - 10, base - 66); ctx.lineTo(x + 10, base - 66); } ctx.stroke(); ctx.lineWidth = pwid; if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(x - 10, base - 70, 20, 4); } }
     ctx.strokeStyle = '#2f3f50'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(px, base - 60); ctx.lineTo(px + pw, base - 60); ctx.stroke();
     ctx.strokeStyle = '#6b7f95'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, base); ctx.lineTo(px + pw, base); ctx.stroke();
     ctx.strokeStyle = '#2a3a4c'; ctx.lineWidth = 2; const dens = 28, o2 = (T.x * K) % dens; for (let sx = px - dens; sx < px + pw + dens; sx += dens) { ctx.beginPath(); ctx.moveTo(sx - o2 + dens, base + 4); ctx.lineTo(sx - o2 + dens, base + 12); ctx.stroke(); }

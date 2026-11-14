@@ -123,6 +123,27 @@
   function ivIndex(list) { const a = (list || []).slice().sort((x, y) => x[0] - y[0]); for (let i = 0; i + 1 < a.length; i++) if (a[i + 1][0] < a[i][1]) return null; return a; }
   function ivFind(a, km) { let lo = 0, hi = a.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (a[m][0] <= km) { r = m; lo = m + 1; } else hi = m - 1; } return r >= 0 && km < a[r][1] ? a[r] : null; }
   function structAt(L, km) { let ix = L._stIx; if (ix === undefined || L._stSrc !== L.struct) { ix = L._stIx = ivIndex(L.struct); L._stSrc = L.struct; } if (ix === null) { for (const [a, b, k] of L.struct || []) if (km >= a && km < b) return k; return 'g'; } const e = ivFind(ix, km); return e ? e[2] : 'g'; }
+  // ---- Giá đỡ dây điện trên cao (cabview.js, scene.js): kiểu giá theo kết cấu và bối cảnh, chất liệu cột đổi theo từng đoạn 6 km, kiểu treo dây theo tuyến. Nguồn và nhãn: docs/12 mục "Giá đỡ dây điện".
+  // Không bao giờ có cột đứng giữa hai đường (supportColumns): hai cột ở hai mép ngoài hoặc một cột bên (đường đơn).
+  const SUP_POLES = { tsk: ['steel', 'steel', 'conc'], toh: ['steel', 'conc', 'conc'], jts: ['conc', 'steel', 'pipe'], hok: ['conc', 'pipe', 'conc'], nks: ['conc', 'pipe', 'steel'], yam: ['steel', 'conc'], aki: ['steel', 'conc'] };
+  const SUP_SIMPLE_FROM = { toh: 496.5, yam: 257.1, aki: 498.5, hok: 107.0 };      // km từ đó dùng simple catenary (trước đó là compound nặng chung với tuyến cha); jts luôn compound, nks luôn simple
+  function wireAt(L, id, km) {
+    if (id === 'tsk') { if (L._hkKm === undefined) { const h = L.stations.find(x => x.en === 'Hakata'); L._hkKm = h ? h.km : null; } return L._hkKm !== null && km > L._hkKm + 0.3 ? 'simple' : 'compound'; }      // Tokaido/Sanyo: compound nặng; Kyushu (sau Hakata): simple
+    if (id === 'jts') return 'compound'; if (id === 'nks') return 'simple';
+    return SUP_SIMPLE_FROM[id] !== undefined && km >= SUP_SIMPLE_FROM[id] ? 'simple' : 'compound';
+  }
+  // o: { single: tàu ở đoạn đường đơn, wide: hành lang rộng (ga nhiều đường) } → { kind: 'portal' | 'pipe' | 'cage' | 'bracket' | 'tunnel', pole: 'steel' | 'conc' | 'pipe', wire: 'compound' | 'simple' }
+  function supportAt(L, id, km, o) {
+    o = o || {}; const st = structAt(L, km), kind = st === 't' ? 'tunnel' : o.single ? 'bracket' : o.wide ? 'cage' : (st === 'v' || st === 'b') ? 'pipe' : 'portal';
+    const pl = SUP_POLES[id] || ['steel'], hsh = hash01(Math.floor(km / 6) + 1, id.charCodeAt(0) * 31 + id.charCodeAt(1));
+    let pole = pl[Math.floor(hsh * pl.length)]; if (kind === 'pipe' && pole === 'steel') pole = 'pipe';      // xà ống thép nhẹ đi với cột thép ống hoặc cột bê tông
+    return { kind, pole, wire: wireAt(L, id, km) };
+  }
+  // vị trí các cột (X, m) của một giá: hai cột ở hai mép ngoài; đường đơn một cột bên; không bao giờ ở giữa hai đường (heads = X của các dây)
+  function supportColumns(kind, xa, xb, heads) {
+    const lo = Math.min(...heads), hi = Math.max(...heads), cols = kind === 'bracket' ? [xa] : kind === 'tunnel' ? [] : [xa, xb];
+    return cols.filter(x => !(x > lo + 0.01 && x < hi - 0.01));
+  }
   function curveAt(L, km) { for (const [a, b, R, sg] of L.curves || []) if (km >= a && km < b) return { R, sg, a, b }; return null; }
   function biomeAt(L, km) { const m = L.meta; let ix = m._bmIx; if (ix === undefined || m._bmSrc !== m.biomes) { ix = m._bmIx = ivIndex(m.biomes); m._bmSrc = m.biomes; } if (ix === null) { for (const [a, b, t] of m.biomes) if (km >= a && km < b) return t; return 'field'; } const e = ivFind(ix, km); return e ? e[2] : 'field'; }
   function gradeKm(L, km) {                                               // ‰ theo chiều tăng km: mô phỏng [I]
@@ -1526,7 +1547,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { supportAt, supportColumns, wireAt, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

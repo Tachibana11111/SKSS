@@ -1028,6 +1028,51 @@ if (section('33a. Đoàn ghép Tohoku + mini và đường đơn: mẫu tàu sau
   // phụ kiện sân ga (số toa, biển tên ga, đồng hồ cột, nhân viên) neo theo hình học sân ga (q.d), không theo vạch dừng bị lùi (q.dm; nếu không sẽ lơ lửng ngoài đầu sân ga)
   { const cv = require('fs').readFileSync(path.join(DRIVE, 'cabview.js'), 'utf8'); const uses = (cv.match(/q\.dm/g) || []).length; ok(uses <= 3, 'cabview: phụ kiện sân ga neo theo q.d, chỉ còn vạch dừng thật dùng q.dm (' + uses + ' chỗ)', uses); }
 }
+if (section('33b. Giá đỡ dây điện trên cao: kiểu theo kết cấu, chất liệu cột đổi theo đoạn, kiểu treo dây theo tuyến, không cột giữa hai đường, vẽ không lỗi')) {
+  const SA = Sim.supportAt, WA = Sim.wireAt, LNS = window.LINES, kinds = new Set(), poles = new Set();
+  // kiểu giá theo kết cấu: hầm → giá treo trần; cầu cạn/cầu → xà ống thép nhẹ; nền đắp → cổng thép; đường đơn → cột bên + tay đòn; hành lang rộng (ga) → xà かご
+  { let okK = true, nT = 0, nP = 0, nG = 0; for (const id of Object.keys(LNS)) { const L = LNS[id]; for (let km = 1; km < L.kmEnd; km += 0.7) { const st = Sim.structAt(L, km), r = SA(L, id, km, {}); kinds.add(r.kind); poles.add(r.pole); if (st === 't') { nT++; if (r.kind !== 'tunnel') okK = false; } else if (st === 'v' || st === 'b') { nP++; if (r.kind !== 'pipe') okK = false; } else { nG++; if (r.kind !== 'portal') okK = false; } if (!['steel', 'conc', 'pipe'].includes(r.pole) || !['compound', 'simple'].includes(r.wire)) okK = false; } }
+    ok(okK && nT > 100 && nP > 100 && nG > 100, 'kiểu giá đỡ theo kết cấu (hầm / cầu cạn, cầu / nền đắp) ở mọi tuyến (' + nT + '/' + nP + '/' + nG + ' mẫu)');
+    const L0 = LNS.tsk; let kg = 1; while (kg < L0.kmEnd && Sim.structAt(L0, kg) !== 'g') kg += 0.5; ok(SA(L0, 'tsk', kg, { single: true }).kind === 'bracket' && SA(L0, 'tsk', kg, { wide: true }).kind === 'cage' && SA(L0, 'tsk', kg, { single: true, wide: true }).kind === 'bracket', 'đường đơn → cột bên + tay đòn; hành lang rộng → xà かご');
+    ok(kinds.has('portal') && kinds.has('pipe') && kinds.has('tunnel') && poles.size === 3, 'đủ các kiểu giá và 3 chất liệu cột xuất hiện trên các tuyến', [...kinds, ...poles].join(',')); }
+  // chất liệu cột đổi theo từng đoạn 6 km, ổn định (cùng vị trí luôn cùng kết quả) và có nhiều hơn một loại trên tuyến dài
+  { const L = LNS.tsk, a = new Set(); let stable = true, changes = 0, prev = null; for (let km = 1; km < L.kmEnd; km += 3) { const r = SA(L, 'tsk', km, { }), r2 = SA(L, 'tsk', km, {}); if (r.pole !== r2.pole) stable = false; if (Sim.structAt(L, km) === 'g') { a.add(r.pole); if (prev && prev !== r.pole) changes++; prev = r.pole; } }
+    ok(stable && a.size >= 2 && changes >= 3, 'tsk: chất liệu cột đổi theo đoạn (' + [...a].join('/') + ', ' + changes + ' lần đổi), ổn định theo vị trí'); }
+  // kiểu treo dây theo tuyến: compound nặng (Tokaido, Sanyo, Joetsu, Tohoku phía nam Morioka, đoạn chung của Hokuriku) / simple (Kyushu, Hokuriku từ Takasaki, Tohoku từ Morioka, nhánh mini, Tây Kyushu)
+  { const hk = LNS.tsk.stations.find(x => x.en === 'Hakata').km, W1 = (id, km) => WA(LNS[id], id, km);
+    ok(W1('tsk', 100) === 'compound' && W1('tsk', hk - 5) === 'compound' && W1('tsk', hk + 50) === 'simple', 'dây treo Tokaido/Sanyo compound, Kyushu (sau Hakata) simple');
+    ok(W1('toh', 300) === 'compound' && W1('toh', 520) === 'simple' && W1('jts', 200) === 'compound' && W1('hok', 50) === 'compound' && W1('hok', 250) === 'simple' && W1('nks', 20) === 'simple' && W1('yam', 300) === 'simple' && W1('yam', 200) === 'compound' && W1('aki', 520) === 'simple' && W1('aki', 300) === 'compound', 'dây treo theo tuyến/đoạn: Tohoku, Joetsu, Hokuriku, Tây Kyushu, Yamagata, Akita'); }
+  // không bao giờ có cột đứng giữa hai đường
+  { let bad = 0, n = 0; for (const kind of ['portal', 'pipe', 'cage', 'bracket', 'tunnel']) for (const [xa, xb, heads] of [[5, -9.5, [0, -4.3]], [1.2, -5.5, [0, -4.3]], [20, -30, [0, -4.3, -10, -15, -22]], [1.2, -1.2, [0]], [-2, 2, [0, -4.3]], [-4, 4, [0, -4.3]]]) { const cols = Sim.supportColumns(kind, xa, xb, heads), lo = Math.min(...heads), hi = Math.max(...heads); for (const x of cols) { n++; if (x > lo + 0.01 && x < hi - 0.01) bad++; } }
+    ok(bad === 0 && n > 20, 'không có cột giữa hai đường ở mọi kiểu giá (' + n + ' cột kiểm, ' + bad + ' sai)'); }
+  // vẽ khung nhìn buồng lái và khung 2D ngang không lỗi trên mọi tuyến, cả hai chiều, mọi dạng đoạn (kể cả đường đơn của Akita/Yamagata)
+  { global.hhmm = global.hhmm || (s => String(s)); global.CanvasRenderingContext2D = global.CanvasRenderingContext2D || function () { }; global.CanvasRenderingContext2D.prototype.roundRect = global.CanvasRenderingContext2D.prototype.roundRect || function () { };
+    require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js')); require(path.join(DRIVE, 'scene.js'));
+    const noop = () => { }, ctx = new Proxy({}, { get: (t, k) => k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop), set: (t, k, v) => { t[k] = v; return true; } });
+    let nd = 0, err = '', single = 0; for (const id of Object.keys(LNS)) for (const dir of ['down', 'up']) { const L = LNS[id], rec = L.trains.find(t => t.d === dir && t.s.filter(e => !e[3]).length >= 3), st = rec.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld(id, Sim.makeTrip(id, rec, st[0], st[st.length - 1]), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+      for (let km = 2; km < W.line.kmEnd; km += 11) { T.x = Sim.sOfKm(km, dir, W.line.kmEnd); T.v = 60; if (L.single && L.single.length && Sim.singleEff(W, T.x + 100) > 0.6) single++; try { global.CabView.draw(ctx, 0, 0, 1920, 620, W, T, { sprites: {}, aud: null, imgs: {} }); global.Scene.draw(ctx, 0, 0, 800, 300, W, T, Sim); nd++; } catch (e) { err = err || id + ' ' + dir + ' km' + km + ': ' + e.message; } } }
+    ok(err === '' && nd > 300 && single > 5, 'vẽ buồng lái và 2D ngang với giá đỡ mới không lỗi (' + nd + ' khung, ' + single + ' ở đường đơn)' + err, err); }
+}
+if (section('33c. Mặt đầu/đuôi tàu ướm theo hình dáng mũi tàu của ảnh nhìn ngang (cabview.js): tính hình dáng mũi, vẽ nhiều lớp')) {
+  global.hhmm = global.hhmm || (s => String(s)); require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js'));
+  const CV = global.CabView, LENM = 100, NPX = 1000, hOf = x => 30 + 70 * Math.min(1, x / 120, (NPX - 1 - x) / 120);      // thân cao 100, mũi và đuôi thon dần về 30 trong 12 m
+  const hs = new Float32Array(NPX); for (let x = 0; x < NPX; x++) hs[x] = hOf(x);
+  const nz = CV.noseFromHeights(hs, LENM);
+  ok(nz && nz.head && nz.tail && nz.head.NL > 8 && nz.head.NL < 14 && nz.tail.NL > 8 && nz.tail.NL < 14, 'độ dài mũi/đuôi đọc từ ảnh khoảng 12 m', nz && [nz.head.NL, nz.tail.NL]);
+  { const r = nz.head.r; let mono = true; for (let i = 1; i < r.length; i++) if (r[i] < r[i - 1] - 1e-6) mono = false; ok(mono && r[0] > 0.28 && r[0] < 0.4 && r[r.length - 1] === 1, 'tỉ lệ chiều cao tăng dần từ đầu mũi (~0,3) tới thân (1)', Array.from(r).map(v => v.toFixed(2)).join(' ')); }
+  { const nb = CV.noseFromHeights(hs, LENM, 120), n0 = CV.noseFromHeights(hs, LENM); ok(Math.abs(nb.bodyR - 100 / 120) < 0.02 && n0.bodyR === 0, 'tỉ lệ thân/ảnh (bodyR) lấy theo trung vị chiều cao thân để co mặt trước cho khớp thân (T4, E926 có ụ trên mái)', [nb.bodyR, n0.bodyR]); }
+  ok(CV.noseFromHeights(new Float32Array(500), LENM) === null && CV.noseFromHeights(new Float32Array(5), LENM) === null, 'ảnh trống hoặc quá nhỏ: không dựng mũi (quay về tấm phẳng)');
+  // vẽ: có ảnh nhìn ngang đọc được thì mặt trước vẽ thành nhiều lớp; không thì một tấm phẳng
+  { const prevDoc = global.document, FI = { width: 100, height: 50 }, SP = { ready: true, img: {}, meta: { width: NPX, height: 100 } }, noop = () => { }; let cnt = 0;
+    const mk = () => new Proxy({}, { get: (t, k) => k === 'drawImage' ? img => { if (img === FI) cnt++; } : k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop), set: (t, k, v) => { t[k] = v; return true; } });
+    global.document = { head: { appendChild: noop }, body: { appendChild: noop }, createElement: () => ({ width: 0, height: 0, getContext: () => ({ drawImage: noop, getImageData: (x, y, w, h) => { const d = new Uint8ClampedArray(w * h * 4); for (let c = 0; c < w; c++) { const ht = Math.round(hOf(c * NPX / w) * h / 100); for (let r = h - ht; r < h; r++) d[(r * w + c) * 4 + 3] = 255; } return { data: d }; } }) }) };
+    const L = window.LINES.tsk, rec = L.trains.find(t => t.d === 'down' && t.s.length > 6), st = rec.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, st[0], st[st.length - 1]), { diff: 'easy', seed: 1, lead: false, events: true }), T = W.player; let kg = 10; while (kg < L.kmEnd && !(Sim.structAt(L, kg) === 'g' && Sim.structAt(L, kg + 1) === 'g')) kg += 0.5;
+    T.x = Sim.sOfKm(kg, 'down', L.kmEnd); T.v = 60; W.opposing = [W.t + 0.08]; W.oppInfo = [];
+    CV.draw(mk(), 0, 0, 1920, 620, W, T, { sprites: { n700: SP }, fronts: { n700: { ready: true, img: FI } }, aud: null }); const layered = cnt; cnt = 0;
+    CV.draw(mk(), 0, 0, 1920, 620, W, T, { sprites: {}, fronts: { n700: { ready: true, img: FI } }, aud: null }); const flat = cnt;
+    ok(layered >= 40 && flat >= 1 && flat <= 2, 'mặt trước tàu ngược chiều: ' + layered + ' dải nghiêng theo mũi khi có ảnh nhìn ngang, ' + flat + ' tấm phẳng khi không có', [layered, flat]);
+    if (prevDoc === undefined) delete global.document; else global.document = prevDoc; }
+}
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);
   const T = Sim.lineOf('tsk'), H = Sim.lineOf('hok'), N = Sim.lineOf('nks');
