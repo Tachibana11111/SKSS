@@ -125,6 +125,7 @@
     }
     P.set(c.key, p); return p;
   }
+  const nearXing = (LN, c, s) => { const xs = LN[c.line] && LN[c.line].xings; return !!(xs && xs.length && xs.some(k => Math.abs(k - s.km) < 0.4)); };      // xe kẹt chỉ xảy ra ở đường ngang thật (chỉ Yamagata và Akita có; Shinkansen thật không có đường ngang): sự kiện chờ tới khi tàu qua sát một đường ngang, không có thì không xảy ra
   const partnerOf = (W, c) => { const cp = root.Sim.coupleOf && root.Sim.coupleOf(c.rec); if (!cp) return null; const P = W._cpl || (W._cpl = new Map()); if (!P.has(c.key)) P.set(c.key, build(root.LINES).find(x => x.rec === cp.partner) || null); return P.get(c.key); };
   function applyEv(W, LN, H, c, d, s, ev, tNow) {      // một sự kiện của danh mục: dừng giữ (d.hold), chạy chậm một lúc (d.slowT), hoặc cho thông qua ga kế (d.skip); đoàn ghép: đoàn kia nhận cùng lúc
     const dd = [d], c2 = partnerOf(W, c); if (c2) { let d2 = H.delay.get(c2.key); if (!d2) { d2 = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; H.delay.set(c2.key, d2); } dd.push(d2); }
@@ -186,7 +187,7 @@
         d._d0 = d.delay;
         if (d.sacc > 0 && d.hold <= 0) { const rc = Math.min(d.sacc, dt * 0.25); d.delay -= rc; d.sacc -= rc; }      // phần chậm do chờ tránh tàu trên đường đơn được bù dần (chạy nhanh hơn lịch ~25%) để trễ không dồn lại cả ngày
         const s = stateOf(LN, c, eff, d.skip); if (!s) continue; if (d.hold > 0) { act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: true, cid: c.cid, c, s, eff }); d.hold -= dt; d.delay += dt; if (d.why === 'single') d.sacc = (d.sacc || 0) + dt; continue; }
-        if (c !== W._leadC) { const plan = planOf(W, c); for (const ev of plan) { if (ev.done || tNow < ev.at) continue; if (ev.st === 'dwell' ? s.dwell !== 'stop' : (s.dwell || !s.moving)) continue; ev.done = true; applyEv(W, LN, H, c, d, s, ev, tNow); break; } }
+        if (c !== W._leadC) { const plan = planOf(W, c); for (const ev of plan) { if (ev.done || tNow < ev.at) continue; if (ev.st === 'dwell' ? s.dwell !== 'stop' : (s.dwell || !s.moving)) continue; if (ev.kind === 'xingcar' && !nearXing(LN, c, s)) continue; ev.done = true; applyEv(W, LN, H, c, d, s, ev, tNow); break; } }
         if (d.hold > 0) { act.push({ d, g: refOf(LN, c.line, s.km), dir: c.rec.d, still: true, cid: c.cid, c, s, eff }); d.hold -= dt; d.delay += dt; continue; }
         for (let qi = 0; qi < H.quakes.length; qi++) { const q = H.quakes[qi]; if (d.hit[qi] || wt < q.t) continue; const R = hav(s.lat, s.lon, q.lat, q.lon), tS = q.t + Math.hypot(R, q.depth) / VS;
           if (wt >= tS) { d.hit[qi] = 1; const sh = shindoAt(q, R); if (sh >= 4) { const h0 = (sh >= 5 ? 900 : 420) * (0.8 + hs(qi, c.rec.n | 0) * 0.5) - (wt - tS); if (h0 > 0) { d.hold = h0; d.why = 'eqk'; d.shake = wt; } } } }      // đoàn xuất hiện muộn sau trận động đất (kể cả ngay ở ga xuất phát) chỉ bị giữ phần còn lại

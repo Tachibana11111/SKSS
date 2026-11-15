@@ -1099,6 +1099,11 @@ if (section('33d. Hồi quy từ soak test: chuyến từng bị ngoại lệ (k
   { const r = runSoak('tsk', 'Tsubame', 302, 'up', 9, 'snow'); ok(r && !r.err && r.T.finished, 'Tsubame 302 chiều lên (hạt giống 9, tuyết): không ngoại lệ khi kế hoạch ngừng chạy cắt hành trình', r && r.err && String(r.err.stack).split('\n').slice(0, 2).join(' | ')); }
   { const r = runSoak('jts', 'Toki', 302, 'up', 9, 'snow'); ok(r && !r.err && r.T.finished, 'Toki 302 chiều lên (hạt giống 9, tuyết): không ngoại lệ', r && r.err && String(r.err.stack).split('\n').slice(0, 2).join(' | ')); }
   { const r = runSoak('jts', 'Tanigawa', 471, 'down', 8, 'snow'); ok(r && !r.err && !r.T.collision && r.T.finished, 'Tanigawa 471 sau Hayabusa 3 ở Omiya: tàu đi trước vừa rời đường sân ga bên cạnh không bị tính là va chạm', r && (r.err ? String(r.err.stack).split('\n')[0] : 'collision=' + r.T.collision)); }
+  { /* xe kẹt đường ngang chỉ có ở tuyến có đường ngang (Yamagata, Akita): tàu danh mục trên Tokaido/Tohoku/Joetsu không được bị 'xe kẹt' (Shinkansen thật không có đường ngang) */
+    const catAll = NatCat.build(window.LINES); let bad = 0, tot = 0, ex = '';
+    for (const ln of ['tsk', 'toh', 'jts']) for (const sd of [1, 2, 3]) { const L = Sim.lineOf(ln), rec = L.trains.find(t => t.d === 'down' && t.s.filter(e => !e[3]).length > 6), st = rec.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld(ln, Sim.makeTrip(ln, rec, st[0], st[st.length - 1]), { diff: 'hard', seed: sd, lead: false, events: true }); W.t = 20000; NatCat.step(W);
+      for (const [key, d] of W.haz.delay) { if (d.why !== 'xingcar') continue; tot++; const c = catAll.find(x => x.key === key); if (c && !(window.LINES[c.line].xings || []).length) { bad++; ex = ex || key; } } }
+    ok(bad === 0, 'tàu danh mục trên tuyến không có đường ngang không bị sự kiện xe kẹt đường ngang', [bad, tot, ex]); }
   { const r = runSoak('yam', 'Tsubasa', 150, 'up', 7, undefined); ok(r && !r.err && r.T.finished, 'Tsubasa 150 chiều lên (Yamagata): chạy hết hành trình', r && r.err && String(r.err.stack).split('\n')[0]);
     ok(r && r.W.msgs.some(m => /đoạn đường đơn phía sau/.test(m.text)), 'đường đơn: ga thông qua mà đoạn sau có tàu ngược chiều thì điều độ ra lệnh dừng tránh (trước đây không bao giờ ra lệnh vì nextTarget chỉ trả về ga dừng)'); }
 }
