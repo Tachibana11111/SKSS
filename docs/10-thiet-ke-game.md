@@ -9,7 +9,7 @@ Game cá nhân (không phân phối) mô phỏng **lái tàu Shinkansen kết h�
 2. **Điều độ:** xem cả mạng nhiều tàu tự chạy theo lịch thật (biểu đồ chạy tàu dạng đồ thị khoảng cách–thời gian); xử lý sự cố bằng lệnh giữ, thông qua, cho vượt.
 3. **Hướng dẫn:** ba bài có chỉ dẫn từng bước, chạy trên mô phỏng thật.
 
-Góc nhìn đã **chốt phương án D (2026-10-21)**: giữ **2D nhìn ngang** và thêm **khung nhìn buồng lái phía trước** (giả 3D bằng phép chiếu phối cảnh, `cabview.js`: ray hội tụ, sân ga/vạch dừng/biển khoảng cách phóng to khi lại gần, tàu chạy trước, tàu ngược chiều, tàu chạy qua, công nhân, hươu, biển báo, hầm, thời tiết). Tàu khác nhìn từ phía trước dùng hình mặt trước thật cắt từ bản vẽ rail.kychung.com; mọi thứ còn lại **vẽ bằng code** nên đơn giản. Đổi sang engine 3D thật vẫn chưa quyết định.
+Góc nhìn đã **chốt phương án D (2026-10-21)**: giữ **2D nhìn ngang** và thêm **khung nhìn buồng lái phía trước** (giả 3D bằng phép chiếu phối cảnh, `cabview.js`: ray hội tụ, sân ga/vạch dừng/biển khoảng cách phóng to khi lại gần, tàu chạy trước, tàu ngược chiều, tàu chạy qua, công nhân, biển báo, hầm, thời tiết). Tàu khác nhìn từ phía trước dùng hình mặt trước thật cắt từ bản vẽ rail.kychung.com; mọi thứ còn lại **vẽ bằng code** nên đơn giản. Đổi sang engine 3D thật vẫn chưa quyết định.
 
 ## 2. Tuyến và dữ liệu
 | Tuyến | Ga | Chiều dài (km thực) | Chuyến | Nguồn |
@@ -66,7 +66,6 @@ Số sự kiện mỗi chuyến: Dễ 1 · Thường 2–3 · Khó 4–5 · Chuy
 | Đề nghị cho tàu nhanh vượt | **quyết định**: Y chấp nhận (giữ 90 s, +3 điểm phối hợp) hoặc N từ chối (−3) | chọn trong 40 s | [N] docs/05; điểm [I] |
 | Chạy chậm theo lệnh (170) | vùng 15–30 km | giảm tốc | [N] docs/05 |
 | Nhân viên làm việc cạnh đường | ≤ 230 km/h và phải bấm còi | bấm H | [I] |
-| Hươu/lợn rừng | bấm còi ~1 km trước thì bỏ chạy; không thì va chạm, phanh khẩn, dừng kiểm tra | bấm H | [N] docs/09 (động vật) |
 | Lỗi cửa toa / nhiệt ổ trục | cửa kẹt một lần / ≤ 230 km/h tới hết chuyến | nhắc lệnh | [N] docs/06 |
 | Hành khách bệnh trên tàu | dừng thêm 180 s ở ga để cứu thương | phanh đúng vạch | [N] docs/09 |
 | **Dây điện hỏng** | mất điện đoạn phía trước, dừng ở ga gần nhất 25–50 phút, tàu đứng giữa đường làm khách bất an | phát thanh trấn an | [N] docs/09 (23/1/2024) |
@@ -75,7 +74,7 @@ Số sự kiện mỗi chuyến: Dễ 1 · Thường 2–3 · Khó 4–5 · Chuy
 | Bất an hành khách | tăng khi tàu đứng giữa đường (đầy sau 15 phút); phát thanh (M) giảm 45; 100% = hoảng loạn (−10) | nhấn M mỗi ~45 s | [I] |
 
 ## 7. Chấm điểm (mỗi chuyến, tối đa 100) **[I]**
-`điểm = 0,7 × trung bình(độ chính xác dừng + đúng giờ)/2 + 0,3 × độ êm − ATC·8 − đi sớm − nhắc lệnh trễ − còi/động vật − gạt mưa − bất an − cháy ± phối hợp`
+`điểm = 0,7 × trung bình(độ chính xác dừng + đúng giờ)/2 + 0,3 × độ êm − ATC·8 − đi sớm − nhắc lệnh trễ − còi − gạt mưa − bất an − cháy ± phối hợp`
 - Độ chính xác dừng theo ngưỡng ±0,5/1/2/5/15 m × hệ số độ khó (Dễ 2,0 … Chuyên gia 0,5).
 - Đúng giờ: trong −30…+15 s được 100; trễ trừ dần; **thời gian mất do sự kiện được miễn trừ**.
 - Độ êm: giật (đạo hàm gia tốc) > 0,7 m/s³ bị trừ.

@@ -775,7 +775,7 @@ function advise(sc) {
   const last = T.results[T.results.length - 1]; if (last && !last.overrun && last.delay - last.excused > 45) out.push(_t('Đến trễ ~{0} s không do sự kiện: giữ tốc độ sát vòng ATC hơn ở đoạn dài.', Math.round(last.delay - last.excused)));
   if (sc.comfort < 70) out.push(_t('Độ êm thấp: tránh đổi nấc liên tục, tăng/giảm một nấc rồi chờ.'));
   if (sc.ackPen > 0) out.push(_t('Nhắc lại lệnh điều độ chậm: nhấn Y ngay khi thấy "[CHỜ NHẮC LẠI]".'));
-  if (sc.hornPen > 0) out.push(_t('Quên bấm còi (nhân viên làm việc/động vật): xem thanh cam và biểu tượng trên bản đồ.'));
+  if (sc.hornPen > 0) out.push(_t('Quên bấm còi (nhân viên làm việc): xem thanh cam và biểu tượng trên bản đồ.'));
   if (sc.wiperPen > 0) out.push(_t('Quên bật gạt mưa khi vào vùng mưa (V).'));
   if (sc.atcOffPen > 0) out.push(_t('Cắt ATC (hoặc chạy quá 30 km/h khi ATC cắt): ATC là bảo vệ chính, chỉ cắt khi có lệnh.'));
   if (sc.lampPen > 0) out.push(_t('Tắt đèn pha khi đang trong hầm hoặc ban đêm (L): dùng chế độ tự động hoặc bật.'));
@@ -860,7 +860,7 @@ function drawEnd() {
     let y = 226; txt('Ga', 60, y, '#8aa0b5'); txt(_t('Kết quả'), 230, y, '#8aa0b5'); txt(_t('Dừng'), 850, y, '#8aa0b5'); txt(_t('Đúng giờ'), 940, y, '#8aa0b5'); y += 22;
     const rows = sc.out, lh = rows.length > 12 ? 18 : 24;
     rows.forEach(o => { txt(o[0], 60, y, '#fff', '13px system-ui'); txt(o[1], 230, y, '#fff', '13px system-ui'); txt(o[2], 850, y, '#fff', '13px system-ui'); txt(o[3], 940, y, '#fff', '13px system-ui'); y += lh; });
-    y += 8; const pen = [[_t('Độ êm'), sc.comfort + '/100'], ['ATC', '−' + sc.atcPen], [_t('Khởi hành sớm'), '−' + sc.earlyPen], [_t('Nhắc lệnh'), '−' + sc.ackPen], [_t('Còi/động vật'), '−' + sc.hornPen], [_t('Gạt mưa'), '−' + sc.wiperPen], [_t('Đèn pha'), '−' + (sc.lampPen || 0)], [_t('Cắt ATC'), '−' + (sc.atcOffPen || 0)], [_t('Bất an'), '−' + sc.anxPen], [_t('Cháy'), '−' + sc.firePen], [_t('Đoạn cách điện'), '−' + (sc.deadPen || 0)], [_t('Đường ngang'), '−' + (sc.xingPen || 0)], [_t('Phối hợp'), (sc.netBonus >= 0 ? '+' : '') + sc.netBonus]];
+    y += 8; const pen = [[_t('Độ êm'), sc.comfort + '/100'], ['ATC', '−' + sc.atcPen], [_t('Khởi hành sớm'), '−' + sc.earlyPen], [_t('Nhắc lệnh'), '−' + sc.ackPen], [_t('Còi'), '−' + sc.hornPen], [_t('Gạt mưa'), '−' + sc.wiperPen], [_t('Đèn pha'), '−' + (sc.lampPen || 0)], [_t('Cắt ATC'), '−' + (sc.atcOffPen || 0)], [_t('Bất an'), '−' + sc.anxPen], [_t('Cháy'), '−' + sc.firePen], [_t('Đoạn cách điện'), '−' + (sc.deadPen || 0)], [_t('Đường ngang'), '−' + (sc.xingPen || 0)], [_t('Phối hợp'), (sc.netBonus >= 0 ? '+' : '') + sc.netBonus]];
     txt(pen.map(p => p[0] + ' ' + p[1]).join(' · '), 60, y, '#8aa0b5', '13px system-ui'); y += 20; txt(_t('Điện {0} kWh (hoàn {1}) · Má phanh nóng nhất {2}% · bất an cao nhất {3}%', sc.kwh, sc.regen, Math.round((T.btMax || 0) * 100), Math.round(T.anxMax)), 60, y, '#8aa0b5', '13px system-ui');
     txt(_t('ĐIỂM: ') + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
     if (endInfo && endInfo.best) txt(_t('Tốt nhất cho cấu hình này: ') + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');

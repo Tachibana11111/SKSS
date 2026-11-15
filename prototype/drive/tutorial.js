@@ -28,7 +28,6 @@
         { text: _t('Vào vùng mưa: ATC giảm xuống 70 km/h, hãy giảm tốc kịp (phanh, rồi N). Chạy qua vùng mưa.'), hint: '↓ Space', init: st => { st.in = false; }, check: (W, T, st) => { if (W.rainHere) st.in = true; return st.in && !W.rainHere; } },
         { text: _t('Ra khỏi vùng mưa: tắt gạt mưa (V), kéo lại tốc độ.'), hint: 'V', check: (W, T) => !T.wiper && !W.rainHere },
         { text: _t('Điều độ báo NHÂN VIÊN LÀM VIỆC cạnh đường: giữ tốc độ ≤ 230 km/h khi qua khu đó (xem thanh cam trên bản đồ). Tàu tự bấm còi báo hiệu.'), hint: '', onEnter: (W, T) => root.Sim.inject(W, 'workers', { ahead: 6000 }), check: (W, T) => W.workers.length && W.workers[0].checked && W.workers[0].hornOK, fail: (W, T) => W.workers.length && W.workers[0].checked && !W.workers[0].hornOK },
-        { text: _t('Báo HƯƠU trên đường ray: tàu tự bấm còi khi còn khoảng 1 km để xua hươu; bạn chỉ cần theo dõi và giữ tốc độ an toàn.'), hint: '', onEnter: (W, T) => root.Sim.inject(W, 'animal', { ahead: 5000 }), check: (W, T) => W.animals.length && W.animals[0].resolved && W.animals[0].hornOK, fail: (W, T) => W.animals.length && W.animals[0].resolved && !W.animals[0].hornOK },
         { text: _t('Điều độ GIỮ tàu thêm ở ga tới. Nhấn Y xác nhận, dừng đúng vạch và chờ tới khi được thả.'), hint: 'Y', onEnter: (W, T) => root.Sim.inject(W, 'hold', { sec: 90 }), check: (W, T) => (W.ackCount || 0) >= 2 },
         { text: _t('Chạy tiếp, dừng ở các ga, hoàn thành chuyến.'), hint: '', check: (W, T) => T.finished }
       ] },

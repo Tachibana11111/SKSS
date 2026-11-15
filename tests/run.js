@@ -94,10 +94,6 @@ if (section('5. Sự kiện: tiêm từng loại và hậu quả')) {
   const run = (W, until) => { const T = W.player; let n = 0; while (!until(W, T) && !T.finished && n++ < 4e6) Sim.tick(W, 0.05, {}, true); return T; };
   let W = mkw(); Sim.inject(W, 'rain', { ahead: 3000 }); let T = run(W, w => w.rainHere); ok(W.rainHere, 'mưa: tàu vào vùng mưa'); T = run(W, (w, t) => !w.rainHere); ok(T.wiperBad >= 0, 'mưa: có theo dõi gạt mưa'); ok(W.ackCount >= 1, 'mưa: tự lái nhắc lại lệnh');
   W = mkw(); Sim.inject(W, 'workers', { ahead: 4000 }); T = run(W, w => w.workers[0].checked); ok(W.workers[0].hornOK, 'công nhân: tự lái bấm còi');
-  W = mkw(); Sim.inject(W, 'animal', { ahead: 5000 }); T = run(W, w => w.animals[0].resolved); ok(W.animals[0].hornOK && !T.animalHit, 'hươu: bấm còi → an toàn');
-  W = mkw(); Sim.inject(W, 'animal', { ahead: 5000 }); T = W.player; { let n = 0; while (!W.animals[0].resolved && n++ < 4e6) { Sim.tick(W, 0.05, {}, true); if (W.animals[0].hornOK) break; } } // không còi: tắt tự bấm
-  { const W2 = mkw(); Sim.inject(W2, 'animal', { ahead: 5000 }); const T2 = W2.player; Sim.requestClose(T2); let n = 0; while (!W2.animals[0].resolved && n++ < 4e6) { if (T2.door === 'closed' && T2.phase === 'dwell') Sim.setPower(T2, 13); if (T2.phase === 'run') Sim.setPower(T2, T2.v < 80 ? 13 : 0); Sim.tick(W2, 0.05, {}, false); if (T2.door === 'open' && T2.phase === 'dwell' && T2.dwellT > 1) Sim.requestClose(T2); }
-    ok(T2.animalHit === 0 && W2.animals[0].hornOK, 'hươu: người lái tự lái tay vẫn được tự bấm còi (không còn nút còi) → an toàn'); }
   W = mkw(); Sim.inject(W, 'eqk', { sec: 200 }); T = W.player; ok(T.cut && W.eqkActive, 'động đất: cắt điện'); { let n = 0; while (W.eqkActive && n++ < 1e5) Sim.tick(W, 0.05, {}, true); } ok(!W.eqkActive && !T.cut, 'động đất: hết thời gian kiểm tra thì chạy lại'); ok(W.zones.some(z => z.kind === 'eqk'), 'động đất: có vùng chạy chậm sau sự cố');
   W = mkw(); Sim.inject(W, 'overtake'); ok(!!W.decision, 'đề nghị cho vượt: có quyết định'); Sim.answerDecision(W, 'a'); ok(W.netScore === 3 && !W.decision, 'chấp nhận: +3'); Sim.inject(W, 'overtake'); Sim.answerDecision(W, 'b'); ok(W.netScore === 0, 'từ chối: −3');
   W = mkw(); Sim.inject(W, 'wire'); ok(W.wires.length === 1 && W.zones.some(z => z.kind === 'wire'), 'dây điện: tạo sự cố'); T = run(W, w => w.player.phase === 'end'); ok(T.finished, 'dây điện: vẫn hoàn thành chuyến');
@@ -155,7 +151,7 @@ if (section('9. Hướng dẫn (bot làm theo từng bước)')) {
       if (li === 0) { if (s === 0) Sim.requestClose(T); else if (s === 1 && T.door === 'closed') Sim.setPower(T, 1); else if (s === 2) Sim.setPower(T, Math.min(13, T.pw + (n % 30 === 0 ? 1 : 0))); else if (s === 3) Sim.setPower(T, 13); else if (s === 4) Sim.coast(T);
         else if (s === 5) Sim.setBrake(T, S.st.hit ? 0 : 2); else if (s === 6) { Sim.setBrake(T, 0); if (T.v * 3.6 < 190) Sim.setPower(T, 8); else if (n % 20 === 0) Sim.toggleCS(T); } else if (s === 7) Sim.setBrake(T, S.st.hit ? 0 : 1); }
       if (li >= 1 && s === 0 && T.door === 'open') Sim.requestClose(T);
-      if (li === 1) { if (s === 2) T.wiper = true; if (s === 4) T.wiper = false; if (s === 1 || s === 7) Sim.ackOldest(W); if (s === 5) for (const z of W.workers) if (!z.checked && T.x >= z.s0 - 600) Sim.honk(T); if (s === 6) for (const a of W.animals) if (!a.resolved && T.x >= a.s - 1200) Sim.honk(T); }
+      if (li === 1) { if (s === 2) T.wiper = true; if (s === 4) T.wiper = false; if (s === 1 || s === 6) Sim.ackOldest(W); if (s === 5) for (const z of W.workers) if (!z.checked && T.x >= z.s0 - 600) Sim.honk(T); }
       if (li === 2) { if (s === 1 && W.decision) Sim.answerDecision(W, 'a'); if (s === 2 && T.cut) Sim.announcePA(T); if (s === 4) Sim.ackOldest(W); }
       if (li === 3) { if (s === 1) { T.pan = false; } if (s === 2) T.pan = true; if (s === 3) { if (!S.st.off) T.atcOn = false; else T.atcOn = true; } if (s === 4 && W.lead) { if (W.lead.x - W.lead.veh.len - T.x < 1200) { Sim.setPower(T, 0); Sim.setBrake(T, 7); } else Sim.coast(T); } }
       const manual = li === 0 && s <= 7; Sim.tick(W, 0.05, {}, !manual); Tutorial.update(W, T, now);
@@ -703,7 +699,7 @@ if (section('27. Bản đồ toàn quốc (natmap.js): vẽ không lỗi, màu �
     const stn = { jp: '東京', en: 'Tokyo' }, key = I18N.romKey(stn); ok(/Tokyo/.test(key) && /toukyou/.test(key) && /toukyou/.test(key.toLowerCase()), 'romKey: có cả Tokyo và toukyou để tìm (' + key + ')');
     const lg = I18N.lang; I18N.lang = 'ja'; const jk = I18N.stk(stn); I18N.lang = 'vi'; const vk = I18N.stk(stn); I18N.lang = lg; ok(jk === '東京（とうきょう）' && vk === 'Tokyo', 'tên ga tiếng Nhật kèm hiragana trong ngoặc (' + jk + ' / ' + vk + ')'); }
   // sự kiện ngẫu nhiên áp cho mọi đoàn trong danh mục theo hạt giống và độ khó của chuyến (lệnh điều độ, hành khách bệnh, cửa lỗi...): cùng hạt giống thì giống nhau, đổi hạt giống/độ khó thì khác
-  { const Lq = Sim.lineOf('tsk'), rq = Lq.trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), sq = rq.s.filter(e => !e[3]).map(e => e[0]), EV = new Set(['hold', 'addstop', 'sick', 'doorfault', 'overtake', 'planned', 'fault', 'animal', 'xingcar', 'wire', 'fire']);
+  { const Lq = Sim.lineOf('tsk'), rq = Lq.trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), sq = rq.s.filter(e => !e[3]).map(e => e[0]), EV = new Set(['hold', 'addstop', 'sick', 'doorfault', 'overtake', 'planned', 'fault', 'xingcar', 'wire', 'fire']);
     const run = (seed, diff) => { const Wx = Sim.createWorld('tsk', Sim.makeTrip('tsk', rq, sq[0], sq[sq.length - 1]), { diff, seed, lead: false, events: false }); Wx.t = 15000; NatCat.step(Wx); let n = 0, sk = 0, sl = 0, sig = ''; for (const [k, d] of Wx.haz.delay) { if (EV.has(d.why)) n++; if (d.skip && d.skip.size) sk++; if (d.slowK) sl++; sig += k + ':' + Math.round(d.delay) + ';'; } return { n, sk, sl, sig }; };
     const a = run(11, 'hard'), b = run(11, 'hard'), c2 = run(12, 'hard'), e1 = run(11, 'easy'), e7 = run(11, 'expert');
     ok(a.n > 0 && a.sig === b.sig, 'sự kiện ngẫu nhiên của danh mục: có xảy ra và cùng hạt giống thì giống hệt (' + a.n + ' đoàn bị)'); ok(a.sig !== c2.sig, 'sự kiện ngẫu nhiên của danh mục: đổi hạt giống thì khác'); ok(e7.n > e1.n, 'sự kiện ngẫu nhiên của danh mục: độ khó cao thì nhiều đoàn bị hơn (dễ ' + e1.n + ' / chuyên gia ' + e7.n + ')'); 
@@ -965,9 +961,9 @@ if (section('36. Đỗ ở ga: không có tàu ngược chiều "ma" lao qua là
 
 if (section('37. Động đất: tàu ngược chiều bị giữ dừng giữa hai ga có trong danh sách vẽ; vật cản cùng chiều có kiểu tàu')) {
   const ln = Sim.lineOf('tsk'), rec = ln.trains.find(t => t.t === 'Nozomi' && t.n == 1 && t.d === 'down'), st = rec.s.filter(e => !e[3]), iN = ln.stations.findIndex(s => s.en === 'Nagoya');
-  const trip = Sim.makeTrip('tsk', rec, st[0][0], iN), W = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 20460, lead: false, events: true }), T = W.player; let n = 0, held = 0, badH = 0, obsN = 0, badO = 0;
+  const trip = Sim.makeTrip('tsk', rec, st[0][0], iN), W = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 20461, lead: false, events: true }), T = W.player; let n = 0, held = 0, badH = 0, obsN = 0, badO = 0;
   while (!T.finished && n++ < 3e6) { Sim.tick(W, 0.05, {}, true); for (const h of W.heldOpp || []) { held++; if (!Sim.VEH[h.key] || !(h.sC > 0)) badH++; } if (W.obs) { obsN++; if (!Sim.VEH[W.obs.key]) badO++; } }
-  ok(held > 0 && badH === 0, 'seed 20460 Nozomi 1: tàu ngược chiều bị giữ (động đất) dừng giữa đường có trong W.heldOpp (' + held + ' lượt, ' + badH + ' lỗi)');
+  ok(held > 0 && badH === 0, 'seed 20461 Nozomi 1: tàu ngược chiều bị giữ (động đất) dừng giữa đường có trong W.heldOpp (' + held + ' lượt, ' + badH + ' lỗi)');
   ok(obsN > 0 && badO === 0, 'vật cản cùng chiều (W.obs) có kiểu tàu để vẽ (' + obsN + ' lượt, ' + badO + ' lỗi)');
 }
 
@@ -1106,6 +1102,27 @@ if (section('33d. Hồi quy từ soak test: chuyến từng bị ngoại lệ (k
     ok(bad === 0, 'tàu danh mục trên tuyến không có đường ngang không bị sự kiện xe kẹt đường ngang', [bad, tot, ex]); }
   { const r = runSoak('yam', 'Tsubasa', 150, 'up', 7, undefined); ok(r && !r.err && r.T.finished, 'Tsubasa 150 chiều lên (Yamagata): chạy hết hành trình', r && r.err && String(r.err.stack).split('\n')[0]);
     ok(r && r.W.msgs.some(m => /đoạn đường đơn phía sau/.test(m.text)), 'đường đơn: ga thông qua mà đoạn sau có tàu ngược chiều thì điều độ ra lệnh dừng tránh (trước đây không bao giờ ra lệnh vì nextTarget chỉ trả về ga dừng)'); }
+}
+if (section('33e. Nền đất: tấm bê tông dưới ray và hàng rào thép (chỉ kết cấu nền đất, ngoài ga, hở ở đường ngang), vẽ được')) {
+  const LNS = window.LINES;
+  // luật: cầu cạn, cầu, hầm và gần ga không có hàng rào/tấm bê tông; nền đất thì có; hở đúng quanh mỗi đường ngang (chỉ Yamagata, Akita)
+  { let nG = 0, bad = 0; for (const id of Object.keys(LNS)) { const L = LNS[id]; for (let km = L.stations[0].km; km < L.kmEnd; km += 0.1) { const k = Sim.structAt(L, km), fa = Sim.fenceAt(L, km, false), sl = Sim.slabAt(L, km, false);
+      if (k !== 'g') { if (fa || sl) bad++; } else { nG++; const nearX = (L.xings || []).some(q => Math.abs(q - km) < 0.0055); if (!sl || fa === nearX) bad++; }
+      if (Sim.fenceAt(L, km, true) || Sim.slabAt(L, km, true)) bad++; } }
+    ok(nG > 3000 && bad === 0, 'luật nền đất: hàng rào và tấm bê tông chỉ ở kết cấu nền đất, không ở ga (' + nG + ' mẫu nền đất, ' + bad + ' sai)', [nG, bad]); }
+  { let gaps = 0, bad = 0; for (const id of ['yam', 'aki']) { const L = LNS[id]; for (const q of L.xings) { if (Sim.structAt(L, q - 0.03) !== 'g' || Sim.structAt(L, q + 0.03) !== 'g') continue; gaps++; if (Sim.fenceAt(L, q, false) || Sim.fenceAt(L, q - 0.004, false) || Sim.fenceAt(L, q + 0.004, false) || !Sim.fenceAt(L, q - 0.03, false) || !Sim.fenceAt(L, q + 0.03, false)) bad++; } }
+    ok(gaps > 80 && bad === 0, 'hàng rào hở quanh mỗi đường ngang của Yamagata và Akita (' + gaps + ' chỗ, ' + bad + ' sai)', [gaps, bad]);
+    ok(['tsk', 'toh', 'jts', 'hok', 'nks'].every(id => !(LNS[id].xings || []).length), 'các tuyến Shinkansen thật không có đường ngang: hàng rào liên tục'); }
+  ok(Sim.FENCE_H === 3.6 && Sim.FENCE_OFF === 1.0, 'hàng rào cao 3,6 m (ngang tàu), cách cột giá đỡ 1 m về phía ngoài');
+  // hàng rào được vẽ ở nền đất và không ở cầu cạn: đếm lệnh vẽ khi bật/tắt luật
+  { global.hhmm = global.hhmm || (s => String(s)); global.CanvasRenderingContext2D = global.CanvasRenderingContext2D || function () { }; global.CanvasRenderingContext2D.prototype.roundRect = global.CanvasRenderingContext2D.prototype.roundRect || function () { };
+    require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js'));
+    const noop = () => { }; let strokes = 0; const ctx = new Proxy({}, { get: (t, k) => { if (k === 'stroke') return () => { strokes++; }; return k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop); }, set: (t, k, v) => { t[k] = v; return true; } });
+    const L = LNS.tsk, rec = L.trains.find(t => t.d === 'down' && t.s.filter(e => !e[3]).length >= 3), st = rec.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, st[0], st[st.length - 1]), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+    const count = km => { T.x = Sim.sOfKm(km, 'down', L.kmEnd); T.v = 60; strokes = 0; global.CabView.draw(ctx, 0, 0, 1920, 620, W, T, { sprites: {}, aud: null, imgs: {} }); return strokes; };
+    const orig = Sim.fenceAt; const withG = count(45.2), withV = count(51.0); Sim.fenceAt = () => false; const noG = count(45.2), noV = count(51.0); Sim.fenceAt = orig;
+    ok(withG > noG + 40, 'cabview vẽ hàng rào ở đoạn nền đất (tsk km 45,2: ' + withG + ' nét so với ' + noG + ' khi tắt)', [withG, noG]);
+    ok(withV === noV, 'cabview không vẽ hàng rào ở cầu cạn (tsk km 51, cầu cạn tới km 56: ' + withV + ' nét, bằng khi tắt luật)', [withV, noV]); }
 }
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);

@@ -144,6 +144,10 @@
     const lo = Math.min(...heads), hi = Math.max(...heads), cols = kind === 'bracket' ? [xa] : kind === 'tunnel' ? [] : [xa, xb];
     return cols.filter(x => !(x > lo + 0.01 && x < hi - 0.01));
   }
+  // Đoạn đường trên nền đất (kết cấu 'g'; không phải cầu cạn, cầu, hầm, ga): tấm bê tông dưới ray và hàng rào thép hai bên, cách cột giá đỡ 1 m về phía ngoài, hở ở đường ngang (chỉ Yamagata, Akita). [I: quy ước thiết kế của game, không phải dữ liệu từng đoạn]
+  const FENCE_H = 3.6, FENCE_OFF = 1.0, XING_GAP_KM = 0.0055, FENCE_XGAP = XING_GAP_KM * 1000;      // cao ngang tàu (N700 ≈ 3,65 m), cách cột 1 m, nửa chiều dài chỗ hở ở đường ngang (5,5 m)
+  function slabAt(L, km, nearStation) { return !nearStation && structAt(L, km) === 'g'; }
+  function fenceAt(L, km, nearStation) { if (!slabAt(L, km, nearStation)) return false; for (const k of L.xings || []) if (Math.abs(k - km) < XING_GAP_KM) return false; return true; }
   function curveAt(L, km) { for (const [a, b, R, sg] of L.curves || []) if (km >= a && km < b) return { R, sg, a, b }; return null; }
   function biomeAt(L, km) { const m = L.meta; let ix = m._bmIx; if (ix === undefined || m._bmSrc !== m.biomes) { ix = m._bmIx = ivIndex(m.biomes); m._bmSrc = m.biomes; } if (ix === null) { for (const [a, b, t] of m.biomes) if (km >= a && km < b) return t; return 'field'; } const e = ivFind(ix, km); return e ? e[2] : 'field'; }
   function gradeKm(L, km) {                                               // ‰ theo chiều tăng km: mô phỏng [I]
@@ -239,7 +243,7 @@
     const veh = cpDone ? VEH[opts.cp[1]] : (VEH[opts.veh] || VEH['N700']), downTrip = M[M.length - 1].i >= M[0].i;
     const T = { M, W, veh, load: opts.load != null ? opts.load : 0.7, k: 0, x: M[0].s, v: 0, f: 0, cmd: 0, pw: 0, bk: 0, notch: 0, a: 0, phase: 'dwell', dwellT: 0, started: false, atc: false, atcCount: 0, atcOk: 0, confirmed: false, needConfirm: false,
       allowed: 0, why: '', results: [], log: [], comfort: 0, jerkTime: 0, earlyDep: 0, excused: 0, holds: {}, forced: -1, cut: false, arrT: 0, free: 0,
-      lamp: 'auto', lampBad: 0, atcOn: true, pan: true, atcArm: -1e9, atcOffBad: 0, atcCuts: 0, door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, animalHit: 0,
+      lamp: 'auto', lampBad: 0, atcOn: true, pan: true, atcArm: -1e9, atcOffBad: 0, atcCuts: 0, door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, 
       xingHit: 0, cp: opts.cp ? { i: opts.cp[0], v: opts.cp[1], done: cpDone, kind: downTrip ? 'split' : 'join' } : null, coup: null, cc: null, gapX: 0, deadViol: 0, vcbUntil: -1e9, bt: 0, kwh: 0, regen: 0, grade: 0, anx: 0, anxMax: 0, paAt: -999, fireTunnel: 0, waitFor: null, blockedT: 0, trace: [],
       isLead: !!opts.lead, label: opts.label || '', id: opts.id || '' };
     // chuyến mini-Shinkansen xuất phát từ Tokyo: bắt đầu bằng cảnh ghép với đoàn Tohoku ở sân ga (khoảng cách thu lại rồi nối)
@@ -324,7 +328,6 @@
   function honk(T) {
     const W = T.W; if (W.t - T.hornAt < 0.6 && T.started) return; T.hornAt = W.t; T.horn = 1.4; T.hornN = (T.hornN || 0) + 1;
     for (const z of W.workers || []) if (!z.checked && T.x >= z.s0 - 800 && T.x <= z.s1) z.hornOK = true;
-    for (const an of W.animals || []) if (!an.resolved && an.active && T.x >= an.s - 1500 && T.x <= an.s - 100) { an.hornOK = true; if (an.fleeT0 === undefined) an.fleeT0 = W.t; }
   }
   // Công tắc ATC (bật / cắt). Cắt ATC phải bấm hai lần trong 4 s để tránh bấm nhầm; bật lại thì tức thì. Khi cắt: không còn phanh tự động ATC [I]
   function toggleATC(T) {
@@ -671,11 +674,6 @@
       if (z.checked || T.x <= z.s1) continue; z.checked = true;
       if (z.hornOK) W.say('info', _t('Đã bấm còi báo hiệu khi qua khu có nhân viên làm việc.')); else { T.hornPen += 4; W.say('bad', _t('Quên bấm còi khi qua khu có nhân viên làm việc trên đường.')); }
     }
-    for (const an of W.animals || []) {
-      if (!an.active || an.resolved || T.x < an.s - 120) continue; an.resolved = true;
-      if (an.hornOK) W.say('info', _t('Con vật chạy khỏi đường ray khi nghe còi. An toàn.'));
-      else { T.animalHit++; W.shakeAt = W.t; W.shakeAmp = 5; T.cut = true; W.eqkActive = true; W.eqkRelease = W.t + 360 + W.rnd() * 240; W.recoverText = _t('Kiểm tra xe và đường xong sau va chạm động vật.'); W.recoverV = 120; W.say('bad', _t('VA CHẠM ĐỘNG VẬT: phanh khẩn cấp. Dừng kiểm tra đầu máy và đường.')); }
-    }
   }
   function plannedTime(T) {
     const M = T.M;
@@ -701,7 +699,6 @@
   function autoHorn(T) {       // còi tự động khi tới gần nhân viên làm việc / thú rừng trên đường (không còn nút còi)
     const W = T.W;
     for (const z of W.workers || []) if (!z.checked && T.x >= z.s0 - 600 && T.x <= z.s0 + 200) honk(T);
-    for (const an of W.animals || []) if (an.active && !an.resolved && T.x >= an.s - 1200 && T.x <= an.s - 800) honk(T);
     if (T.phase !== 'run' || T.isLead) return;
     // các chỗ còi tự kêu thêm, mỗi chỗ một lần [I: lựa chọn của game, chưa có quy định kiểm chứng]: ga không dừng (còn 600 m), đường ngang đang bị chắn (còn 700 m), tàu phía trước đứng trên đường chính (còn 1500 m)
     const once = key => { W.hornDone = W.hornDone || {}; if (W.hornDone[key]) return false; W.hornDone[key] = true; return true; };
@@ -809,7 +806,7 @@
   function baseWorld(lineId, dir, diffKey, seed, weather) {
     const L = lineOf(lineId), diff = DIFF[diffKey || 'normal'];
     const W = { t: 0, line: L, lineId, dir, diff, diffKey: diffKey || 'normal', zones: [], msgs: [], events: [], lead: null, running: false, weather: weather || 'auto', seed: seed || 1,
-      pending: [], faults: [], workers: [], animals: [], wires: [], ackPen: 0, rainHere: false, rnd: rng((seed || 1) * 7919 + 13), netScore: 0, decision: null, trace: true,
+      pending: [], faults: [], workers: [], wires: [], ackPen: 0, rainHere: false, rnd: rng((seed || 1) * 7919 + 13), netScore: 0, decision: null, trace: true,
       say(kind, text, o) { const m = { t: this.t, kind, text }; this.msgs.push(m); if (kind !== 'pa') this.newMsg = true; if (o && o.ack) { m.ack = true; this.pending.push(m); } } };
     W.dead = deadSections(L, dir); W.xings = worldXings(L, dir); W.parked = []; W.stabled = [];
     return W;
@@ -1194,7 +1191,7 @@
     else if (kind === 'overtake') inject(W, 'overtake');
     else if (kind === 'fault') { const car = 1 + Math.floor(W.rnd() * Math.max(1, T.veh.cars)); W.faults.push({ car, kind: 'hotbox', text: _t('Toa {0}: nhiệt độ ổ trục cao', car), level: 'bad', t: W.t }); W.zones.push({ s0: -1e9, s1: 1e9, v: 230 / 3.6, tA: W.t, tB: 1e9, kind: 'fault', label: _t('nhiệt độ ổ trục cao') }); W.say('bad', _t('CẢNH BÁO TIMS: toa {0} nhiệt độ bệ ổ trục cao. Hạn chế ≤ 230 km/h tới hết chuyến (tài liệu 06 §5.4). Nhấn Y để nhắc lại lệnh.', car), { ack: true }); }
     else if (kind === 'skip') { const j = nextTarget(T); if (j >= last || !M[j].stop) return true; M[j].stop = false; T.orderAt = W.t; fillPlan(M); W._lastSkip = M[j].i; W.say('warn', _t('Điều độ: THÔNG QUA ga {0} (không dừng). Chạy tiếp tới {1}. Nhấn Y để nhắc lại lệnh.', M[j].name, M[nextTarget(T)].name), { ack: true }); }
-    else if (kind === 'animal' || kind === 'workers' || kind === 'wire' || kind === 'fire') inject(W, kind);
+    else if (kind === 'workers' || kind === 'wire' || kind === 'fire') inject(W, kind);
     else if (kind === 'xingcar') { const cand = W.xings.filter(g => !g.hit && g.s > T.x + 3500 && (g.s - M[last].s) * sgn < 0 && Math.abs(g.s - T.x) < 25000); if (cand.length) W.armedX = { xg: cand[0], s: cand[0].s }; }
     else if (kind === 'slow') { const s1 = T.x + sgn * 20000; W.zones.push({ s0: Math.min(T.x, s1), s1: Math.max(T.x, s1), v: 170 / 3.6, tA: W.t, tB: W.t + dur, kind: 'order', label: _t('chạy chậm theo lệnh') }); W.say('warn', _t('Điều độ: kiểm tra nền đường/thi công, chạy chậm ≤ 170 km/h trên một đoạn phía trước (xem bản đồ). Nhấn Y để nhắc lại lệnh.'), { ack: true }); }
     return true;
@@ -1361,7 +1358,7 @@
       ev(0, w => w.say('info', _t('Dự báo: tuyết dày ở vùng núi. Chạy chậm theo quy định (tài liệu 06 §5.3).')));
     }
     if (!isReal) { if (weather === 'rain') pool.push('rain', 'rain'); if (weather === 'typhoon') pool.push('rain', 'wind', 'rain'); }
-    const orders = ['hold', 'skip', 'addstop', 'slow', 'workers', 'animal', 'doorfault', 'sick', 'overtake', 'planned']; if (W.lead) orders.push('leadstop');
+    const orders = ['hold', 'skip', 'addstop', 'slow', 'workers', 'doorfault', 'sick', 'overtake', 'planned']; if (W.lead) orders.push('leadstop');
     const rare = ['wire', 'fire'];
     while (pool.length < n) pool.push(orders[Math.floor(rnd() * orders.length)]);
     if (D.fault && rnd() < D.fault) pool.push('fault');
@@ -1413,10 +1410,6 @@
         ev(at, w => { const T = w.player, s = T.x + sgn * gap; if ((s - lastS) * sgn > -len) return; const s0 = Math.min(s, s + sgn * len), s1 = Math.max(s, s + sgn * len);
           const z = { s0, s1, checked: false, hornOK: false }; w.workers.push(z); w.zones.push({ s0, s1, v: 230 / 3.6, tA: w.t, tB: w.t + 1500, kind: 'order', label: _t('nhân viên làm việc') });
           w.say('warn', _t('Điều độ: có nhân viên bảo trì làm việc cạnh đường ở phía trước (3 km). Chạy ≤ 230 km/h và BẤM CÒI (H) khi tới gần. Nhấn Y để nhắc lại lệnh.'), { ack: true }); });
-      } else if (kind === 'animal') {
-        const gap = 18000 + rnd() * 9000;
-        ev(at, w => { const T = w.player, s = T.x + sgn * gap; if ((s - lastS) * sgn > -2000) return; w.animals.push({ s, active: true, resolved: false, hornOK: false });
-          w.say('warn', _t('Báo từ trạm: hươu/lợn rừng xuất hiện gần đường ray phía trước. Bấm còi (H) khi còn khoảng 1 km để xua đuổi, nếu không có thể va chạm.')); });
       } else if (kind === 'doorfault') {
         ev(at, w => { const car = 1 + Math.floor(rnd() * Math.max(1, w.player.veh.cars)); w.faults.push({ car, kind: 'door', text: _t('Toa {0}: cửa lỗi (không đóng hoàn toàn)', car), level: 'warn', t: w.t }); w.player.doorFaultOnce = true; w.say('warn', _t('TIMS: toa {0} báo lỗi cửa. Lần đóng cửa tới có thể phải mở lại.', car)); });
       } else if (kind === 'fault') {
@@ -1465,12 +1458,11 @@
   }
 
 
-  // Tạo sự kiện có chủ đích (dùng cho bài hướng dẫn và kiểm thử). kind: rain | workers | animal | hold | overtake | eqk | wire | fire | sick | leadstop
+  // Tạo sự kiện có chủ đích (dùng cho bài hướng dẫn và kiểm thử). kind: rain | workers | hold | overtake | eqk | wire | fire | sick | leadstop
   function inject(W, kind, o) {
     o = o || {}; const T = W.player, M = T.M, sgn = M[M.length - 1].s >= M[0].s ? 1 : -1;
     if (kind === 'rain') { const s0 = Math.min(T.x + sgn * (o.ahead || 1500), T.x + sgn * ((o.ahead || 1500) + 9000)), s1 = Math.max(T.x + sgn * (o.ahead || 1500), T.x + sgn * ((o.ahead || 1500) + 9000)); W.zones.push({ s0, s1, v: 70 / 3.6, tA: W.t, tB: W.t + 900, kind: 'rain', label: _t('mưa ≥ 50 mm/h') }); W.say('warn', _t('Mưa 50 mm/h: chạy chậm 70 km/h trong vùng mưa. Nhấn Y để nhắc lại lệnh.'), { ack: true }); }
     else if (kind === 'workers') { const s = T.x + sgn * (o.ahead || 6000), s0 = Math.min(s, s + sgn * 3000), s1 = Math.max(s, s + sgn * 3000); W.workers.push({ s0, s1, checked: false, hornOK: false }); W.zones.push({ s0, s1, v: 230 / 3.6, tA: W.t, tB: W.t + 1500, kind: 'order', label: _t('nhân viên làm việc') }); W.say('warn', _t('Điều độ: có nhân viên làm việc cạnh đường phía trước. BẤM CÒI (H) khi tới gần. Nhấn Y để nhắc lại lệnh.'), { ack: true }); }
-    else if (kind === 'animal') { W.animals.push({ s: T.x + sgn * (o.ahead || 6000), active: true, resolved: false, hornOK: false }); W.say('warn', _t('Báo từ trạm: hươu xuất hiện gần đường ray phía trước. Bấm còi (H) khi còn khoảng 1 km.')); }
     else if (kind === 'hold') { const j = Math.min(M.length - 1, nextTarget(T)); const rel = W.t + (o.sec || 90) + 60; T.holds[j] = rel; W.say('warn', _t('Điều độ: giữ tàu tại {0} thêm {1} s. Nhấn Y để nhắc lại lệnh.', M[j].name, o.sec || 90), { ack: true }); }
     else if (kind === 'overtake') { W.decision = { t0: W.t, timeout: 40, text: _t('Điều độ đề nghị: cho tàu nhanh phía sau vượt. Chấp nhận giữ thêm 90 s?'), a: { label: _t('Chấp nhận (Y)'), fn: w2 => { w2.netScore += 3; w2.say('stop', _t('Đã chấp nhận. +3 điểm phối hợp.')); } }, b: { label: _t('Từ chối (N)'), fn: w2 => { w2.netScore -= 3; w2.say('warn', _t('Đã từ chối. −3 điểm phối hợp.')); } } }; W.say('warn', W.decision.text + _t('  [Y] chấp nhận · [N] từ chối (40 s).')); }
     else if (kind === 'eqk') { W.eqkAt = W.t; W.eqkActive = true; W.eqkRelease = W.t + (o.sec || 300); for (const X of allTrains(W)) X.cut = true; W.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên. Phát thanh trấn an hành khách (M).')); }
@@ -1546,13 +1538,13 @@
     });
     n = Math.max(1, n);
     const comfort = Math.max(0, 100 - T.comfort * D.comfortK), atcPen = T.atcCount * 8, earlyPen = Math.min(30, T.earlyDep * 0.3);
-    const ackPen = Math.min(20, W.ackPen), hornPen = Math.min(20, T.hornPen + T.animalHit * 8), wiperPen = Math.min(10, Math.round(T.wiperBad / 20)), lampPen = Math.min(10, Math.round((T.lampBad || 0) / 30)), atcOffPen = Math.min(30, Math.round((T.atcOffBad || 0) / 8) + (T.atcCuts || 0) * 3);
+    const ackPen = Math.min(20, W.ackPen), hornPen = Math.min(20, T.hornPen), wiperPen = Math.min(10, Math.round(T.wiperBad / 20)), lampPen = Math.min(10, Math.round((T.lampBad || 0) / 30)), atcOffPen = Math.min(30, Math.round((T.atcOffBad || 0) / 8) + (T.atcCuts || 0) * 3);
     const colPen = T.collision ? 100 : 0, anxPen = Math.min(15, Math.round(Math.max(0, T.anxMax - 60) / 2.5)) + (T.panic ? 10 : 0), firePen = T.fireTunnel ? 15 : 0, deadPen = Math.min(20, (T.deadViol || 0) * 6), xingPen = Math.min(40, (T.xingHit || 0) * 25), netBonus = clamp(W.netScore || 0, -9, 9);
     const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - lampPen - atcOffPen - anxPen - firePen - deadPen - xingPen - colPen + netBonus)));
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { ownPair, supportAt, supportColumns, wireAt, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

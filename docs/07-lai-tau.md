@@ -51,7 +51,7 @@ Danh sách thiết bị **có nguồn** ở §4.1–4.2. Các thiết bị khác
 | PHS gọi trưởng tàu, radio tàu gọi điều độ | [N] | Điện đàm; **nhắc lại lệnh (Y)** với điều độ; thông báo trưởng tàu khi đóng cửa |
 | Hỗ trợ dừng/TASC | [N] | Chưa (thời đại 2026 trở về trước: phanh dừng bằng tay) |
 | Công tắc đóng cửa, đèn đóng cửa | [K] | Enter bắt đầu đóng cửa (9–15 s, cửa có thể kẹt), đèn ĐÓNG CỬA, rồi kéo cần để đi |
-| Còi | [K] | Phím H: bắt buộc ở khu có nhân viên làm việc, và để xua động vật (sự kiện) **[I]** |
+| Còi | [K] | Phím H: bắt buộc ở khu có nhân viên làm việc **[I]** |
 | Gạt mưa | [K] | Phím V: phải bật khi có mưa, nếu không bị trừ điểm |
 | Còn lại (đèn, bơm cần điện, bộ ngắt mạch chính, đồng hồ áp suất, nút khẩn…) | [K] | Chưa có (chỉ phanh khẩn Q) |
 

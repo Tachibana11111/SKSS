@@ -11,7 +11,7 @@ Giữa hai đoạn (melody, PA) ngắt **1 giây** (người chơi tự chỉnh 
 - **Ga đầu, sau khi đèn xanh:** melody đặc thù của tuyến (theo đoạn) → PA cảm ơn/giới thiệu chuyến → các ga dừng kèm giờ đến (tên → ngắt 0 s → giờ → ngắt 0,5 s → ga kế; ga cuối "終点…") → PA ga dừng kế tiếp.
 - **Ga giữa tuyến, sau đèn xanh:** PA ga kế tiếp (+ xin lỗi nếu trễ > 2 phút), không melody.
 - **Sắp tới ga:** cách ga **2,5 km** (3,5 km ở Hakata, Kumamoto, Kagoshima-Chuo; không quá 60% khoảng cách tới ga dừng trước — ví dụ Ueno 2,4 km) → melody (ga đặc biệt: melody riêng của ga) → "まもなく…" → đổi tàu → bên cửa mở. **Ga cuối:** cùng một chuỗi, thêm PA cảm ơn ở cuối (một melody duy nhất), không còn PA "終点…" khi dừng.
-- **Sự kiện/sự cố:** mưa/tuyết chạy chậm, ngừng chạy do mưa/gió, va chạm động vật, tàu trước gặp sự cố, động đất xong chạy lại → melody tuyến (theo đoạn đang chạy) → ngắt → PA. **Động đất lúc bắt đầu:** tiếng bíp 4 nốt như cũ (ngắt 0,2 s trước PA). Trễ giờ/điều chỉnh lịch: không melody.
+- **Sự kiện/sự cố:** mưa/tuyết chạy chậm, ngừng chạy do mưa/gió, tàu trước gặp sự cố, động đất xong chạy lại → melody tuyến (theo đoạn đang chạy) → ngắt → PA. **Động đất lúc bắt đầu:** tiếng bíp 4 nốt như cũ (ngắt 0,2 s trước PA). Trễ giờ/điều chỉnh lịch: không melody.
 - PA khẩn (urgent) ngắt chuỗi đang phát; thoát ra menu thì ngắt hết (`GameAudio.stopAll`).
 - Melody khởi hành phát qua bộ lọc (nhỏ hơn, bớt âm cao) như tiếng sân ga; âm lượng chung với PA.
 

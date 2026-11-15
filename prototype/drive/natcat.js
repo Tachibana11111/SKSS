@@ -108,7 +108,7 @@
   // tàu đi trước thật của người chơi (W.lead) có vị trí thật trong mô phỏng: ép độ trễ của đoàn đó trong danh mục sao cho vị trí theo lịch trùng vị trí thật, để giãn cách với các tàu khác tính đúng
   // tàu của ta đang vào buồng lái tàu khác (W.fgnW, chạy thật bằng mô phỏng riêng): bản sao của nó trong danh mục được kéo khớp đúng vị trí/trạng thái đỗ của tàu thật (giống tàu đi trước), nên mọi tàu khác tính giãn cách theo tàu thật;
   // còn sự giữ tàu (động đất, mưa gió) vẫn do bản sao tính (d.hold) và tàu thật tuân theo (NatMap.follow)
-  // ---- sự kiện ngẫu nhiên cho MỌI đoàn trong danh mục (cùng hạt giống và độ khó với chuyến của ta): lệnh điều độ, hành khách bệnh, cửa lỗi, nhường tàu vượt, hỏng thiết bị (dừng ở ga dừng), thú va chạm, xe kẹt đường ngang (dừng giữa đường),
+  // ---- sự kiện ngẫu nhiên cho MỌI đoàn trong danh mục (cùng hạt giống và độ khó với chuyến của ta): lệnh điều độ, hành khách bệnh, cửa lỗi, nhường tàu vượt, hỏng thiết bị (dừng ở ga dừng), xe kẹt đường ngang (dừng giữa đường),
   // hiếm: đứt dây điện / cháy. Số sự kiện lấy theo W.diff.events (tỉ lệ theo thời gian chạy), mỗi sự kiện giữ đoàn (d.hold) một lúc rồi đoàn chạy tiếp; thời gian trễ dồn lại như các giữ tàu khác. Thiên tai/động đất/mưa gió vẫn là chung cả bản đồ.
   const strHash = str => { let x = 7; for (let i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) % 100003; return x; };
   function planOf(W, c) {
@@ -116,10 +116,10 @@
     const D = W.diff, seed = W.seed || 1, kh = strHash(c.key), h = u => hs(seed * 977 + kh, u), span = c.t1 - c.t0;
     const cp = root.Sim.coupleOf && root.Sim.coupleOf(c.rec);      // đoàn ghép (Yamabiko + Tsubasa...): chỉ đoàn Tohoku sinh sự kiện, đoàn mini nhận cùng lúc (partnerOf) để hai đoàn luôn đi chung
     if (D && D.events && span > 600 && c.rec !== W.trip.rec && !(cp && cp.role !== 'toh')) {
-      const n0 = D.events[0] + Math.floor(h(1) * (D.events[1] - D.events[0] + 1)), n = Math.round(n0 * Math.min(1, span / 9000)), ST = root.Sim.INSPECT && root.Sim.INSPECT[c.rec.v] ? ['hold', 'overtake', 'planned', 'fault', 'skip'] : ['hold', 'addstop', 'sick', 'doorfault', 'overtake', 'planned', 'fault', 'skip'], RD = ['animal', 'xingcar', 'workers', 'slow'];
+      const n0 = D.events[0] + Math.floor(h(1) * (D.events[1] - D.events[0] + 1)), n = Math.round(n0 * Math.min(1, span / 9000)), ST = root.Sim.INSPECT && root.Sim.INSPECT[c.rec.v] ? ['hold', 'overtake', 'planned', 'fault', 'skip'] : ['hold', 'addstop', 'sick', 'doorfault', 'overtake', 'planned', 'fault', 'skip'], RD = ['xingcar', 'workers', 'slow'];
       for (let i = 0; i < n; i++) { const u = 10 + i * 5, at = c.t0 + span * (0.12 + 0.6 * h(u + 1));
         if (h(u) < 0.65) { const kind = ST[Math.floor(h(u + 2) * ST.length)]; p.push({ at, kind, st: 'dwell', dur: Math.round(kind === 'sick' ? 180 : kind === 'overtake' ? 90 : kind === 'skip' ? 0 : 60 + 90 * h(u + 3)) }); }
-        else { const kind = RD[Math.floor(h(u + 2) * RD.length)]; if (kind === 'animal' && h(u + 3) < 0.3) p.push({ at, kind, st: 'run', dur: Math.round(360 + 240 * h(u + 4)) }); else if (kind === 'xingcar') p.push({ at, kind, st: 'run', dur: Math.round(120 + 180 * h(u + 3)) }); else if (kind === 'slow') p.push({ at, kind, st: 'run', dur: Math.round(600 + 600 * h(u + 3)) }); else if (kind === 'workers') p.push({ at, kind, st: 'run', dur: 90 }); } }
+        else { const kind = RD[Math.floor(h(u + 2) * RD.length)]; if (kind === 'xingcar') p.push({ at, kind, st: 'run', dur: Math.round(120 + 180 * h(u + 3)) }); else if (kind === 'slow') p.push({ at, kind, st: 'run', dur: Math.round(600 + 600 * h(u + 3)) }); else if (kind === 'workers') p.push({ at, kind, st: 'run', dur: 90 }); } }
       if (h(80) < (D.rare || 0)) { const wire = h(82) < 0.5; p.push({ at: c.t0 + span * (0.2 + 0.5 * h(81)), kind: wire ? 'wire' : 'fire', st: 'run', dur: Math.round(wire ? 600 + 900 * h(83) : 900) }); }
       p.sort((a, b) => a.at - b.at);
     }

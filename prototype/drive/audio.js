@@ -112,7 +112,6 @@
   GameAudio.prototype.atcAlarm = function () { for (let i = 0; i < 3; i++) this.tone(1200, 0.12, 'square', 0.1, i * 0.2); };
   GameAudio.prototype.eew = function () { for (let i = 0; i < 6; i++) { this.tone(932, 0.16, 'sine', 0.22, i * 0.34); this.tone(698, 0.16, 'sine', 0.22, i * 0.34 + 0.17); } };
   GameAudio.prototype.eb = function () { this.burst(1.2, 0.35, 6000, 0.8, 'highpass'); this.tone(900, 0.2, 'square', 0.12); this.tone(700, 0.2, 'square', 0.12, 0.25); };
-  GameAudio.prototype.thud = function () { this.tone(80, 0.35, 'sine', 0.5, 0, 40); this.burst(0.25, 0.4, 500, 1, 'lowpass'); };
   GameAudio.prototype.msg = function (kind) {
     if (kind === 'bad') { for (let i = 0; i < 3; i++) this.tone(520, 0.14, 'triangle', 0.2, i * 0.2); }
     else if (kind === 'warn') { this.tone(700, 0.12, 'triangle', 0.16); this.tone(880, 0.16, 'triangle', 0.16, 0.16); }
@@ -280,7 +279,6 @@
     if (T.results.length > this.lastResults) this.arrive();
     this.lastResults = T.results.length;
     if (W.eqkActive && !p.eqk) this.eew();
-    if (T.animalHit > (p.animalHit || 0)) this.thud();
     if (T.finished && !p.finished) this.finish(true);
     if (W.msgs.length > this.msgCount) { const nm = W.msgs.slice(this.msgCount).filter(m => m.kind !== 'pa'); this.msgCount = W.msgs.length; if (nm.length && !(W.eqkActive && !p.eqk)) this.msg(nm.some(m => m.kind === 'bad') ? 'bad' : nm.some(m => m.kind === 'warn') ? 'warn' : nm[nm.length - 1].kind); }
     if (W.decision && !p.dec) this.tone(660, 0.12, 'triangle', 0.18) ; p.dec = !!W.decision;
@@ -288,7 +286,7 @@
     if ((W.wires || []).length > (p.wires || 0)) { this.burst(1.2, 0.4, 3000, 0.6, 'bandpass'); this.tone(90, 0.5, 'sawtooth', 0.12); } p.wires = (W.wires || []).length;
     if (W.paEvent !== undefined && W.paEvent !== p.pa) { this.tone(880, 0.15, 'sine', 0.14); this.tone(1175, 0.35, 'sine', 0.14, 0.18); } p.pa = W.paEvent;
     this.announce(W, T, p);
-    this.prev = Object.assign(p, { horn: T.horn, hornN: T.hornN, atc: T.atc, door: T.door, phase: T.phase, eqk: W.eqkActive, finished: T.finished, pw: T.pw, bk: T.bk, tun: inTun, animalHit: T.animalHit });
+    this.prev = Object.assign(p, { horn: T.horn, hornN: T.hornN, atc: T.atc, door: T.door, phase: T.phase, eqk: W.eqkActive, finished: T.finished, pw: T.pw, bk: T.bk, tun: inTun });
   };
   GameAudio.prototype.inTunnel = function (W, T) {
     return root.Sim.inTunnel(W, T.x);
@@ -352,7 +350,6 @@
       this.chain(W, mel(melHere()).concat([pa(rain ? 'ただいま、大雨のため、運転を見合わせております。' : 'ただいま、強風のため、運転を見合わせております。', rain ? _t('Tạm ngừng chạy do mưa lớn.') : _t('Tạm ngừng chạy do gió mạnh.'))]), { urgent: true }); }
     if (W.eqkActive && !p.eqk) this.chain(W, [{ beep: true }, { gap: 200 }, pa('ただいま、地震のため、緊急停止いたしました。そのまま、しばらくお待ちください。', _t('Tàu dừng khẩn cấp do động đất. Xin quý khách ngồi yên chờ.'))], { urgent: true });
     if (!W.eqkActive && p.eqk) this.chain(W, mel(melHere()).concat([pa('安全が確認できましたので、運転を再開いたします。', _t('Đã xác nhận an toàn, tàu chạy lại.'))]));
-    if (T.animalHit > (p.animalHit || 0)) this.chain(W, mel(melHere()).concat([pa('ただいま、動物と衝突したため、停車しております。', _t('Tàu dừng do va chạm động vật.'))]), { urgent: true });
     if (W.leadStopAt !== undefined && W.leadStopAt !== A.leadStop) { A.leadStop = W.leadStopAt; this.chain(W, mel(melHere()).concat([pa('前を走る列車で、急病のお客様が出たため、間隔をあけて運転しております。', _t('Tàu phía trước có hành khách bệnh, tàu giữ khoảng cách.'))])); }
   };
   GameAudio.prototype.stopAll = function () { this.cancelPlay(); this.silence(); };      // dừng hẳn mọi âm thanh đang/sắp phát: chuỗi thông báo, giọng đọc, melody, âm nền
@@ -362,7 +359,7 @@
     if (st.beep) return 1300; if (st.mel) { const seg = root.Melody && root.Melody.SEG[st.mel]; return seg ? Math.max(0, (seg[1] - seg[0] - (st.off || 0)) * 1000) : 0; }
     if (st.pa) return 500 + GameAudio.yomi(st.pa.ja).length * 150; return 0;
   };
-  GameAudio.prototype.prevOf = function (W, T) { return { horn: T.horn, hornN: T.hornN, atc: T.atc, door: T.door, phase: T.phase, eqk: W.eqkActive, finished: T.finished, pw: T.pw, bk: T.bk, tun: false, animalHit: T.animalHit, rain: W.rainHere, dec: !!W.decision, fire: W.fireActive, wires: (W.wires || []).length, pa: W.paEvent }; };
+  GameAudio.prototype.prevOf = function (W, T) { return { horn: T.horn, hornN: T.hornN, atc: T.atc, door: T.door, phase: T.phase, eqk: W.eqkActive, finished: T.finished, pw: T.pw, bk: T.bk, tun: false, rain: W.rainHere, dec: !!W.decision, fire: W.fireActive, wires: (W.wires || []).length, pa: W.paEvent }; };
   GameAudio.prototype.toBundle = function (W) {      // kênh đang phát thật → kênh ngầm (giữ phần đang dở: melody theo giây đã phát, PA đọc lại từ đầu, khoảng ngắt còn lại)
     const b = { W, ann: this.ann || {}, prev: this.prev || {}, msgCount: this.msgCount || 0, lastResults: this.lastResults || 0, jobs: this.jobs || [], v: null, nextGap: this.nextGap, at: performance.now() };
     if (this.busy && this.cur && !this.pz) this.pausePlay();

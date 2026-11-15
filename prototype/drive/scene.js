@@ -1,4 +1,4 @@
-// Khung cảnh cận cảnh: tàu thật, sân ga, cửa chắn, hành khách, tàu trước/tàu vượt/tàu ngược chiều, công nhân, hươu, biển chạy chậm,
+// Khung cảnh cận cảnh: tàu thật, sân ga, cửa chắn, hành khách, tàu trước/tàu vượt/tàu ngược chiều, công nhân, biển chạy chậm,
 // tuyết, gió, sét, động đất rung, phong cảnh (núi Phú Sĩ, thành phố, đồng ruộng, ngày/đêm). Hình vẽ bằng code [I]; riêng tàu dùng ảnh N700 (assets/NGUON.md).
 (function (root) {
   const K = 4.5, SV = 2.0, D0 = 25;                       // px/m ở gần, kéo giãn dọc; quãng đường tuyến tính
@@ -29,15 +29,6 @@
     ctx.fillStyle = vest || '#3b4a5e'; ctx.fillRect(-h * 0.14, -h * 0.72, h * 0.28, h * 0.4);
     ctx.fillStyle = '#d9b99b'; ctx.beginPath(); ctx.arc(0, -h * 0.82, h * 0.11, 0, 7); ctx.fill();
     if (vest === '#ff8c1a') { ctx.fillStyle = '#ffd23a'; ctx.fillRect(-h * 0.13, -h * 0.95, h * 0.26, h * 0.07); }
-    ctx.restore();
-  }
-  function deer(ctx, x, y, h) {
-    ctx.save(); ctx.translate(x, y); ctx.fillStyle = '#6b4a2b'; ctx.strokeStyle = '#4a321c'; ctx.lineWidth = Math.max(1, h * 0.07);
-    ctx.beginPath(); ctx.ellipse(0, -h * 0.45, h * 0.42, h * 0.2, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); for (const dx of [-0.3, -0.15, 0.2, 0.34]) { ctx.moveTo(h * dx, -h * 0.3); ctx.lineTo(h * dx, 0); } ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(h * 0.32, -h * 0.55); ctx.lineTo(h * 0.5, -h * 0.85); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(h * 0.55, -h * 0.9, h * 0.12, h * 0.08, 0.3, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(h * 0.52, -h * 0.96); ctx.lineTo(h * 0.44, -h * 1.15); ctx.lineTo(h * 0.58, -h * 1.1); ctx.moveTo(h * 0.5, -h * 1.0); ctx.lineTo(h * 0.62, -h * 1.2); ctx.stroke();
     ctx.restore();
   }
   function sign(ctx, x, base, s, text, col) {
@@ -165,6 +156,9 @@
     const sp = 50 * K, off = (T.x * K) % sp; const sup = root.Sim.supportAt(W.line, W.lineId, root.Sim.kmOfS(T.x, W.dir, W.line.kmEnd), { single: !!(W.line.single && W.line.single.length) && root.Sim.singleEff(W, T.x) > 0.6 }), pcol = sup.pole === 'conc' ? '#7b8794' : sup.pole === 'pipe' ? '#4d6178' : '#3a4c60', pwid = sup.pole === 'conc' ? 6 : sup.pole === 'pipe' ? 3 : 4;      // chất liệu cột theo đoạn (thép / bê tông / ống thép), kiểu tay đòn theo kết cấu
     ctx.strokeStyle = pcol; ctx.lineWidth = pwid;
     for (let sx = px - sp; sx < px + pw + sp; sx += sp) { const x = sx - off + sp; ctx.beginPath(); ctx.moveTo(x, base - 70); ctx.lineTo(x, base); ctx.stroke(); ctx.lineWidth = sup.kind === 'pipe' ? 2 : 3; ctx.beginPath(); if (sup.kind === 'bracket') { ctx.moveTo(x, base - 66); ctx.lineTo(x + 16, base - 66); ctx.moveTo(x, base - 52); ctx.lineTo(x + 9, base - 66); } else { ctx.moveTo(x - 10, base - 66); ctx.lineTo(x + 10, base - 66); } ctx.stroke(); ctx.lineWidth = pwid; if (inSnow) { ctx.fillStyle = '#f2f6fb'; ctx.fillRect(x - 10, base - 70, 20, 4); } }
+    // hàng rào thép trên nền đất (cao 3,6 m ≈ 32 px, cọc mỗi 5 m), mờ, phía sau tàu; không vẽ trong hầm, trên cầu, quanh ga và chỗ hở ở đường ngang (Sim.fenceAt)
+    if (!tun && kindNow === 'g' && !T.M.some(m => m.stop && Math.abs(m.s - T.x) < 700) && root.Sim.fenceAt(W.line, kmOf(W, T.x), false) && !(W.xings || []).some(g => Math.abs(g.s - T.x) < 60)) { const fh = root.Sim.FENCE_H * K * SV, fsp = 5 * K, fo = (T.x * K) % fsp; ctx.strokeStyle = inSnow ? 'rgba(120,134,146,.55)' : 'rgba(150,166,176,.42)'; ctx.lineWidth = 1.2; ctx.beginPath();
+      for (let sx = px - fsp; sx < px + pw + fsp; sx += fsp) { const x = sx - fo + fsp; ctx.moveTo(x, base); ctx.lineTo(x, base - fh); } for (const y of [fh, fh * 0.5]) { ctx.moveTo(px, base - y); ctx.lineTo(px + pw, base - y); } ctx.stroke(); }
     ctx.strokeStyle = '#2f3f50'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(px, base - 60); ctx.lineTo(px + pw, base - 60); ctx.stroke();
     ctx.strokeStyle = '#6b7f95'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, base); ctx.lineTo(px + pw, base); ctx.stroke();
     ctx.strokeStyle = '#2a3a4c'; ctx.lineWidth = 2; const dens = 28, o2 = (T.x * K) % dens; for (let sx = px - dens; sx < px + pw + dens; sx += dens) { ctx.beginPath(); ctx.moveTo(sx - o2 + dens, base + 4); ctx.lineTo(sx - o2 + dens, base + 12); ctx.stroke(); }
@@ -227,14 +221,6 @@
     for (const w of W.wires || []) { const ds = w.s - T.x; if (W.t > w.tB || ds < -60 || ds > 1800) continue; const x = map(Math.max(ds, -30)), q = sc(Math.max(ds, 0));
       ctx.strokeStyle = '#8a98a8'; ctx.lineWidth = 2 * Math.max(0.6, q); ctx.beginPath(); ctx.moveTo(x - 60 * q, base - 60 * q); ctx.quadraticCurveTo(x, base - 6 * q, x + 60 * q, base - 60 * q); ctx.stroke();
       if (Math.floor(now / 120) % 3) { ctx.fillStyle = '#ffd24a'; for (let i = 0; i < 5; i++) ctx.fillRect(x + (Math.random() - 0.5) * 30 * q, base - 14 * q - Math.random() * 20 * q, 2, 2); } }
-    // hươu / lợn rừng
-    for (const an of W.animals) {
-      if (!an.active) continue; let ds = an.s - T.x; if (ds < -60 || ds > 1800) continue;
-      const fl = an.fleeT0 !== undefined ? W.t - an.fleeT0 : -1; let x = map(Math.max(ds, -20)), s = Math.max(sc(Math.max(ds, 0)), 0.3), y = base - 2;
-      if (fl >= 0) { x -= fl * 60; y -= Math.min(1, fl / 1.4) * 70 * s; if (fl > 2.2) continue; }
-      deer(ctx, x, y, 30 * s + 6);
-      if (an.resolved && !an.hornOK && W.shakeAt !== undefined && W.t - W.shakeAt < 2) { ctx.fillStyle = 'rgba(255,255,255,' + (0.6 * (1 - (W.t - W.shakeAt) / 2)) + ')'; ctx.fillRect(px, py, pw, ph); }
-    }
     // tàu phía trước (nén theo khoảng cách)
     const Ld = W.lead;
     if (Ld && Ld.phase !== 'end') { const lenL = Ld.veh.len, dl = Ld.x - T.x; if (dl > 0 && dl - lenL < 1800) { const xf = map(dl), xr = map(Math.max(dl - lenL, 0)), q = sc(Math.max(dl - lenL, 0)); if (xf - xr > 2) fleet(ctx, R, Ld.veh.key, xf, base, xf - xr, hOf(R, Ld.veh.key, K) * SV * q, 0.95); } }

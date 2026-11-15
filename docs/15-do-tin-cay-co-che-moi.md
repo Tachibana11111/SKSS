@@ -26,7 +26,6 @@ Tất cả là **[I]**: loại sự kiện lấy từ docs/05, 06, 09 (mô tả 
 | Thông qua ga | Đoàn không dừng ở ga kế, hai đoạn nối liền | **[I]** |
 | Chạy chậm theo lệnh | ≤ 170 km/h trong 10–20 phút | **[I]** |
 | Nhân viên làm việc | ≤ 230 km/h trong ~90 s (còi do tự lái) | **[I]** |
-| Thú va chạm | 30% số lần: dừng 6–10 phút | **[I]** |
 | Xe kẹt ở đường ngang | Dừng 2–5 phút | **[I]** |
 | Đứt dây điện / cháy | Dừng 10–25 phút (hiếm, theo độ khó) | **[I]** |
 | Số sự kiện mỗi tàu | Theo độ khó: dễ 1; thường 2–3; khó 4–5; chuyên gia 6–7; nhân theo thời gian chạy (tối đa ở chuyến ≥ 2,5 giờ) | **[I]** |

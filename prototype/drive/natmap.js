@@ -49,7 +49,7 @@
     const d = NC().delayOf(Wh, F.c.key); if (d && d.hold > 0) { T.mapCap = 0; T.mapWhy = d.why === 'eqk' || d.why === 'rain' || d.why === 'wind' || d.why === 'snow' ? d.why : 'stop'; } else { T.mapCap = undefined; T.mapWhy = undefined; }
   }
   // lý do giữ/làm chậm đoàn (d.why) → chữ hiện trên tooltip
-  const whyTxt = w => ({ eqk: _t('động đất'), rain: _t('mưa'), snow: _t('tuyết'), wind: _t('gió'), hold: _t('lệnh điều độ'), addstop: _t('dừng thêm theo lệnh điều độ'), sick: _t('hành khách bệnh'), doorfault: _t('cửa lỗi'), overtake: _t('nhường tàu vượt'), planned: _t('điều chỉnh lịch'), fault: _t('hỏng thiết bị'), animal: _t('va chạm động vật'), xingcar: _t('xe kẹt ở đường ngang'), wire: _t('đứt dây điện'), fire: _t('cháy/khói trên tàu'), single: _t('đường đơn'), slow: _t('chạy chậm theo lệnh'), workers: _t('nhân viên làm việc') })[w] || _t('thời tiết');
+  const whyTxt = w => ({ eqk: _t('động đất'), rain: _t('mưa'), snow: _t('tuyết'), wind: _t('gió'), hold: _t('lệnh điều độ'), addstop: _t('dừng thêm theo lệnh điều độ'), sick: _t('hành khách bệnh'), doorfault: _t('cửa lỗi'), overtake: _t('nhường tàu vượt'), planned: _t('điều chỉnh lịch'), fault: _t('hỏng thiết bị'), xingcar: _t('xe kẹt ở đường ngang'), wire: _t('đứt dây điện'), fire: _t('cháy/khói trên tàu'), single: _t('đường đơn'), slow: _t('chạy chậm theo lệnh'), workers: _t('nhân viên làm việc') })[w] || _t('thời tiết');
   function gather(W, T) {
     const LN = root.LINES, now = W.trip.t0 + W.t, out = [], me = W.trip.rec;
     for (const c of CAT) { if (c.rec === me || (W.mission && me && c.rec.v === me.v) || (c.line === W.lineId && me && c.rec.t === me.t && c.rec.n === me.n && c.rec.d === me.d)) continue;
