@@ -71,3 +71,14 @@ HOME.W.fgnW = thế giới tàu được chọn          // để bản đồ v�
 - Ước lượng thời gian câu PA khi phát ngầm theo độ dài chữ (150 ms/ký tự) **[I]**.
 - Chiều xuống (mini ở phía trước tách ở Morioka/Fukushima rồi chạy trước ra nhánh): chưa kiểm xem mini có chiếm đoạn ghi nối khi đoàn Tohoku còn đang tách hay không.
 - Tàu mini đã vào ga ghép mà Tohoku mới bị giữ (rất hiếm, sau điểm thả 45 s) vẫn chờ ở vạch lùi trong sân ga; đoàn Tohoku hiện ra phía trước nó chứ không đi xuyên qua.
+
+## 7. Soak test (2026-11-15)
+
+`node tests/soak.js [--lines=aki,yam] [--n=2] [--seeds=1] [--diff=hard] [--tag=Tên --seed=N] [--trace=giây] [--trace2=giây] [--json=file]`. Chạy tự lái cả chuyến (độ khó cao, `lead: true`, `events: true`, thời tiết luân phiên mưa/tuyết/bão/ngẫu nhiên, chèn thêm động đất và lệnh giữ tàu), lấy mẫu toàn mạng mỗi 5 s. Không nằm trong `run.js` vì chậm (một chuyến 5-90 s; 7 tuyến song song ~12 phút); kết quả xác định theo hạt giống nên chuyến lỗi tái hiện được bằng `--tag` và `--seed`.
+
+Bất biến được kiểm: không ngoại lệ/NaN; tàu ta không va chạm, không lùi, không đứng giữa đường > 40 phút hay đỗ ga > 60 phút; tàu danh mục không lùi > 100 m hay nhảy > 0,12 km/s; không hai tàu cùng chiều cùng đường đổi chỗ khi không ai đỗ ở ga có đường tránh; tàu ta không cùng đoạn đường đơn với tàu ngược chiều; tàu nhánh không vào đoạn ghi nối khi Tohoku chưa về ga; độ trễ danh mục hữu hạn, < 4 giờ.
+
+**Còn mở (chưa sửa):**
+- Hai bản sao danh mục của một đoàn ghép lệch độ trễ 1-2 phút (đoàn Tohoku luôn trễ hơn), tới vài km ở chỗ tách. Thử cho bản sao mini bám theo Tohoku trên đoạn chạy chung thì gây tắc dây chuyền (nhiều tàu trễ đúng 4 giờ) nên đã gỡ: cần thiết kế lại, không vá nhanh.
+- **Bản sao của tàu đi trước tuyến cha bị ép khớp (`alignLead`)** làm bản sao dịch chuyển đột ngột (tới hàng trăm km) khi tàu đi trước thật xuất hiện ở giây ~200 của chuyến chiều lên Joetsu/Hokuriku, kèm độ trễ âm hàng giờ, rồi nhảy ngược khi hết ép. Đây là hệ quả thiết kế chứ không phải lỗi tính toán: tàu đi trước tuyến cha được chọn theo khoảng cách ở ga ghép, còn bản sao là một chuyến thật trong danh mục có giờ khác. Thử chỉ ép khi giờ lịch lệch < 30 phút thì bản đồ không còn hiện tàu đi trước đúng chỗ (test mục 'tàu đi trước thật: vị trí bản đồ lệch tối đa' hỏng) nên đã gỡ. Hướng sửa thật: ẩn bản sao khi chưa ép, hoặc dựng tàu đi trước từ chuyến có giờ khớp.
+- Cảnh báo "hai tàu danh mục đi xuyên nhau" (~15 lần trên 112 chuyến, nhiều ở ga có đường tránh như Omiya km 30,3 và km 342 Tokaido) và "tàu ta đi xuyên tàu danh mục" (~5 lần, sau khi đã loại bản sao mini bị ẩn): chưa xác minh là lỗi hay tàu vượt nhau ở ga đa đường mà bộ kiểm tra chưa nhận ra; cần dò từng vụ nếu muốn khẳng định.

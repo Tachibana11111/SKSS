@@ -1089,6 +1089,19 @@ if (section('33c. Mặt đầu/đuôi tàu ướm theo hình dáng mũi tàu c�
     ok(Math.abs(CV.faceX(-4.3, 0, 1) - (-4.3 - 1.7)) < 1e-9 && Math.abs(CV.faceX(4.3, 0, 0.9) - (4.3 + 1.53)) < 1e-9 && Math.abs(CV.faceX(-12.9, 0, 1) - (-12.9 - 1.7)) < 1e-9, 'faceX: mép gần camera của mặt trước trùng mặt phẳng thân ở mọi làn, hai bên đường'); 
     if (prevDoc === undefined) delete global.document; else global.document = prevDoc; }
 }
+if (section('33d. Hồi quy từ soak test: chuyến từng bị ngoại lệ (kế hoạch ngừng chạy cắt hành trình), va chạm ở ga đa đường, tàu chạy thông qua vào đường đơn đang có tàu ngược chiều')) {
+  const runSoak = (ln, type, no, dir, seed, wx) => {
+    const L = Sim.lineOf(ln), rec = L.trains.find(t => t.t === type && String(t.n) === String(no) && t.d === dir); if (!rec) return null; const st = rec.s.filter(e => !e[3]).map(e => e[0]), trip = Sim.makeTrip(ln, rec, st[0], st[st.length - 1]);
+    const W = Sim.createWorld(ln, trip, { diff: 'hard', seed, weather: wx, lead: true, events: true }), T = W.player, planned = (trip.M[trip.M.length - 1].arr || 0) - (trip.M[0].dep || 0), limit = Math.max(3600, planned * 1.6 + 7200); let err = null;
+    try { while (!T.finished && W.t < limit) Sim.tick(W, 0.05, {}, true); } catch (e) { err = e; }
+    return { W, T, err };
+  };
+  { const r = runSoak('tsk', 'Tsubame', 302, 'up', 9, 'snow'); ok(r && !r.err && r.T.finished, 'Tsubame 302 chiều lên (hạt giống 9, tuyết): không ngoại lệ khi kế hoạch ngừng chạy cắt hành trình', r && r.err && String(r.err.stack).split('\n').slice(0, 2).join(' | ')); }
+  { const r = runSoak('jts', 'Toki', 302, 'up', 9, 'snow'); ok(r && !r.err && r.T.finished, 'Toki 302 chiều lên (hạt giống 9, tuyết): không ngoại lệ', r && r.err && String(r.err.stack).split('\n').slice(0, 2).join(' | ')); }
+  { const r = runSoak('jts', 'Tanigawa', 471, 'down', 8, 'snow'); ok(r && !r.err && !r.T.collision && r.T.finished, 'Tanigawa 471 sau Hayabusa 3 ở Omiya: tàu đi trước vừa rời đường sân ga bên cạnh không bị tính là va chạm', r && (r.err ? String(r.err.stack).split('\n')[0] : 'collision=' + r.T.collision)); }
+  { const r = runSoak('yam', 'Tsubasa', 150, 'up', 7, undefined); ok(r && !r.err && r.T.finished, 'Tsubasa 150 chiều lên (Yamagata): chạy hết hành trình', r && r.err && String(r.err.stack).split('\n')[0]);
+    ok(r && r.W.msgs.some(m => /đoạn đường đơn phía sau/.test(m.text)), 'đường đơn: ga thông qua mà đoạn sau có tàu ngược chiều thì điều độ ra lệnh dừng tránh (trước đây không bao giờ ra lệnh vì nextTarget chỉ trả về ga dừng)'); }
+}
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);
   const T = Sim.lineOf('tsk'), H = Sim.lineOf('hok'), N = Sim.lineOf('nks');

@@ -70,3 +70,7 @@ Không có nguồn nào nói các sự cố này xảy ra với tần suất đ�
 | Chờ ở ga liền trước ga ghép (Shizukuishi, Yonezawa) | **[I]** | Chính sách của game theo yêu cầu thiết kế; hệ số 0,92 (thời gian chạy thực ≈ 90–98% kế hoạch) đo trong mô phỏng |
 | Nối 100–300 s, đoàn Tohoku vào ga 34 s, hãm từ 90 km/h trong 420 m | **[I]** | Giá trị của game |
 | Tàu bị giữ do đường đơn đứng đúng ga | **[I]** | Cách mô hình hoá giữ tàu; giữa hai ga chỉ một chiều được chiếm |
+
+## Ghi chú soak test (2026-11-15)
+
+Soak test là công cụ kiểm tra bất biến, không phải nguồn dữ liệu: ngưỡng của nó (đứng > 40 phút, đỗ ga > 60 phút, trễ > 4 giờ, nhảy vị trí) là **[I]**, chọn để lọc lỗi rõ ràng chứ không phải quy định vận hành thật.

@@ -128,6 +128,9 @@
   const partnerOf = (W, c) => { const cp = root.Sim.coupleOf && root.Sim.coupleOf(c.rec); if (!cp) return null; const P = W._cpl || (W._cpl = new Map()); if (!P.has(c.key)) P.set(c.key, build(root.LINES).find(x => x.rec === cp.partner) || null); return P.get(c.key); };
   function applyEv(W, LN, H, c, d, s, ev, tNow) {      // một sự kiện của danh mục: dừng giữ (d.hold), chạy chậm một lúc (d.slowT), hoặc cho thông qua ga kế (d.skip); đoàn ghép: đoàn kia nhận cùng lúc
     const dd = [d], c2 = partnerOf(W, c); if (c2) { let d2 = H.delay.get(c2.key); if (!d2) { d2 = { delay: 0, hold: 0, hit: {}, why: '', shake: -1e9, rate: 0 }; H.delay.set(c2.key, d2); } dd.push(d2); }
+    if (ev.kind === 'skip' && c2) {      // lược ga cho đoàn ghép: đoàn kia đã rời ga liền trước ga bị lược (đang chạy giữa hai ga) thì đổi đoạn đi làm vị trí của nó nhảy vài km (soak 2026-11-15): bỏ sự kiện, cả hai đoàn giữ nguyên lịch
+      const kn = s.k + 1, S = c.stops; if (kn < S.length - 1) { const kk = c2.stops.findIndex(e => e.i === S[kn].i), d2 = dd[1]; if (kk > 0 && kk < c2.stops.length - 1) { const sx = stateOf(LN, c2, tNow - d2.delay, d2.skip); if (!sx || (sx.dwell ? sx.k >= kk : sx.k >= kk - 1)) return; } }
+    }
     for (const x of dd) {
       if (ev.kind === 'slow' || ev.kind === 'workers') { x.slowT = tNow + ev.dur; x.slowV = (ev.kind === 'slow' ? 170 : 230) / 3.6; x.slowK = ev.kind; }
       else if (ev.kind === 'skip') { const kn = s.k + 1, S = c.stops; if (kn < S.length - 1) { const st = (x === d ? c : c2).stops, kk = x === d ? kn : st.findIndex(e => e.i === S[kn].i); if (kk > 0 && kk < st.length - 1) (x.skip || (x.skip = new Set())).add(kk); } }

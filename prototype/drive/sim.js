@@ -890,8 +890,9 @@
   // Đường đơn: ga sắp tới là ga chạy thông qua mà đoạn phía sau nó đang có tàu ngược chiều (theo lịch thật) thì điều độ ra lệnh dừng tránh ở ga đó (運転停車); tàu đã ở ga thì Sim.departBlock giữ cho tới khi đoạn trống
   function singleDispatch(W, T) {
     const NC = root.NatCat; if (!NC || !NC.singleBusy || T.isLead || W.mission || T.phase !== 'run' || (W.lineId !== 'aki' && W.lineId !== 'yam')) return;
-    const j = nextTarget(T), m = T.M[j]; if (!m || m.stop || m.sdisp || j >= T.M.length - 1 || m.pt == null) return; const d = m.s - T.x; if (d < 1200 || d > 7000) return;
-    const sb = NC.singleBusy(W, T, j); if (!sb) return;
+    const jt = nextTarget(T); let j = -1, m = null, sb = null;      // duyệt các ga thông qua nằm giữa ta và ga dừng kế tiếp (nextTarget luôn trả về ga dừng, nên trước đây hàm này không bao giờ ra lệnh: soak 2026-11-15, tàu chạy thông qua vào đoạn đường đơn đang có tàu ngược chiều)
+    for (let q = T.k + 1; q < jt && q < T.M.length - 1; q++) { const mq = T.M[q]; if (!mq || mq.stop || mq.sdisp || mq.pt == null) continue; const d = mq.s - T.x; if (d < 1200) continue; if (d > 7000) break; const s = NC.singleBusy(W, T, q); if (s) { j = q; m = mq; sb = s; break; } }
+    if (!m) return;
     m.sdisp = true; m.stop = true; m.arr = m.pt; m.dep = m.pt + 90; fillPlan(T.M); T.orderAt = W.t;
     W.say('warn', _t('Điều độ: đoạn đường đơn phía sau {0} đang có {1} (ngược chiều), DỪNG TRÁNH tại {0}. Dừng đúng vạch, chờ tàu ngược chiều qua rồi mới chạy tiếp.', m.name, sb));
   }
@@ -1201,7 +1202,9 @@
   function leadWatch(W, T) {
     const L = W.lead; if (!L || !W.running || !T.started || T.finished || T.phase === 'end' || T.phase === 'dwell') return;
     if (L.phase === 'end' || leadDiverged(W, L) || (L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L)) || offMain(L)) return;
-    const gap = L.x - L.veh.len - T.x, still = L.v < 2 && L.phase === 'run'; W.leadWarn = W.leadWarn || { a: false, b: false, c: 0 };
+    const gap = L.x - L.veh.len - T.x;
+    { const ls = L.M[L.k], ts = T.M[T.k]; if (gap <= 0 && ls && ts && ls.i === ts.i && Math.abs(T.x - ts.s) < 400 && Math.abs(L.x - ts.s) < 600 && sharesPlatformLane(W, L)) return; }      // tàu đi trước vừa rời đúng ga đa đường mà ta đang đứng: hai tàu ở hai đường sân ga song song, đuôi nó chưa qua mũi tàu ta thì chưa thể va chạm (soak: Omiya, Tanigawa 471 sau Hayabusa 3)
+    const still = L.v < 2 && L.phase === 'run'; W.leadWarn = W.leadWarn || { a: false, b: false, c: 0 };
     if (!still) { W.leadWarn.a = W.leadWarn.b = false; }
     if (L.x > T.x) {
       if (still && gap < 3500 && !W.leadWarn.a) { W.leadWarn.a = true; W.say('warn', _t('Tàu phía trước ({0}) đang ĐỨNG trên đường chính, cách {1} m. Giảm tốc, chuẩn bị dừng.', W.leadLabel || _t('tàu khác'), Math.round(gap))); }
@@ -1392,14 +1395,14 @@
       } else if (kind === 'hold' && stopsIdx.length) {
         const j = pickJ(stopsIdx); if (j < 0) continue;
         const extra = 60 + Math.floor(rnd() * 5) * 30, tNotice = Math.max(0, (M[j].arr || 0) - 600 - rnd() * 300);
-        ev(tNotice, w => { const T = w.player; if (T.k >= j || !M[j].stop) return; const rel = (M[j].dep != null ? M[j].dep : M[j].arr) + extra; T.holds[j] = rel; w.say('warn', _t('Điều độ: giữ tàu tại {0} thêm {1} s (chờ tàu nhanh vượt / nối chuyến). Không khởi hành trước {2}. Nhấn Y để nhắc lại lệnh.', M[j].name, extra, fmtT(rel)), { ack: true }); });
+        ev(tNotice, w => { const T = w.player; if (T.k >= j || !M[j] || !M[j].stop) return; const rel = (M[j].dep != null ? M[j].dep : M[j].arr) + extra; T.holds[j] = rel; w.say('warn', _t('Điều độ: giữ tàu tại {0} thêm {1} s (chờ tàu nhanh vượt / nối chuyến). Không khởi hành trước {2}. Nhấn Y để nhắc lại lệnh.', M[j].name, extra, fmtT(rel)), { ack: true }); });
       } else if (kind === 'skip' && stopsIdx.length > 1) {
         const j = pickJ(stopsIdx.slice(1).filter(k => !(W.player.cc && M[k].i === W.player.cc.i))); if (j < 0) continue; const tNotice = Math.max(0, (M[j].arr || 0) - 700);
-        ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || !M[j].stop) return; M[j].stop = false; T.orderAt = w.t; fillPlan(M); w.say('warn', _t('Điều độ: THÔNG QUA ga {0} (không dừng). Chạy tiếp tới {1}. Nhấn Y để nhắc lại lệnh.', M[j].name, M[nextTarget(T)].name), { ack: true }); });
+        ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || !M[j] || !M[j].stop) return; M[j].stop = false; T.orderAt = w.t; fillPlan(M); w.say('warn', _t('Điều độ: THÔNG QUA ga {0} (không dừng). Chạy tiếp tới {1}. Nhấn Y để nhắc lại lệnh.', M[j].name, M[nextTarget(T)].name), { ack: true }); });
       } else if (kind === 'addstop' || kind === 'sick') {
         const passIdx = M.map((m, k) => !m.stop && k > 0 && k < M.length - 1 ? k : -1).filter(k => k >= 0); if (!passIdx.length) continue;
         const j = pickJ(passIdx); if (j < 0) continue; const tNotice = Math.max(0, (M[j].pt || 0) - 700), dwell = kind === 'sick' ? 180 : 60;
-        ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || M[j].stop || M[j].pt == null) return; M[j].stop = true; M[j].arr = M[j].pt; M[j].dep = M[j].pt + dwell; T.orderAt = w.t; fillPlan(M);
+        ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || !M[j] || M[j].stop || M[j].pt == null) return; M[j].stop = true; M[j].arr = M[j].pt; M[j].dep = M[j].pt + dwell; T.orderAt = w.t; fillPlan(M);
           const car = 1 + Math.floor(rnd() * Math.max(1, T.veh.cars));
           w.say('warn', kind === 'sick' ? _t('Trưởng tàu: hành khách toa {0} bệnh đột ngột. Điều độ cho DỪNG THÊM tại {1} ({2} s) để đưa cấp cứu. Phanh đúng vạch. Nhấn Y để nhắc lại lệnh.', car, M[j].name, dwell) : _t('Điều độ: DỪNG THÊM tại {0} (60 s) vì tàu phía sau cần vượt. Phanh đúng vạch. Nhấn Y để nhắc lại lệnh.', M[j].name), { ack: true }); });
       } else if (kind === 'slow') {
@@ -1434,7 +1437,7 @@
       } else if (kind === 'overtake') {
         const cands = stopsIdx.filter(j => W.passers[j] && W.passers[j].length && !usedJ.has(j)); if (!cands.length) continue; const j = pickJ(cands), p = W.passers[j][0];
         const tNotice = Math.max(0, (M[j].arr || 0) - 500);
-        ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || !M[j].stop) return;
+        ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || !M[j] || !M[j].stop) return;
           w.decision = { t0: w.t, timeout: 40, text: _t('Điều độ đề nghị: cho {0} (tàu nhanh phía sau) vượt tại {1}. Chấp nhận giữ tàu thêm 90 s?', p.label, M[j].name),
             a: { label: _t('Chấp nhận (Y)'), fn: w2 => { const dep = (M[j].dep != null ? M[j].dep : M[j].arr) + 90; T.holds[j] = Math.max(T.holds[j] || 0, dep); w2.netScore += 3; w2.say('stop', _t('Đã chấp nhận: giữ tại {0} tới {1}. +3 điểm phối hợp.', M[j].name, fmtT(dep))); } },
             b: { label: _t('Từ chối (N)'), fn: w2 => { w2.netScore -= 3; w2.say('warn', _t('Đã từ chối: {0} có thể bị trễ phía sau. −3 điểm phối hợp.', p.label)); } } };
@@ -1451,7 +1454,7 @@
       const singleKm = L.single.reduce((a, [x, y]) => a + Math.max(0, Math.min(y, L.kmEnd) - x), 0), n = cand.length ? clamp(Math.round(span / 1000 / 45 * (0.7 + rnd() * 0.6)), 1, 4) : 0;
       for (let q = 0; q < n && cand.length; q++) {
         const j = cand.splice(Math.floor(rnd() * cand.length), 1)[0], dwell = 70 + Math.floor(rnd() * 5) * 25, tNotice = Math.max(0, (M[j].arr != null ? M[j].arr : (M[j].pt || 0)) - 700 - rnd() * 300);
-        ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || M[j].xwait) return; M[j].xwait = dwell;
+        ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || !M[j] || M[j].xwait) return; M[j].xwait = dwell;
           if (!M[j].stop && M[j].pt != null) { M[j].stop = true; M[j].arr = M[j].pt; M[j].dep = M[j].pt + dwell; fillPlan(M); }
           else T.holds[j] = Math.max(T.holds[j] || 0, (M[j].dep != null ? M[j].dep : (M[j].arr || 0)) + dwell);
           T.orderAt = w.t; w.say('warn', _t('Điều độ: tuyến đường đơn, DỪNG TRÁNH tàu ngược chiều tại {0} (~{1} s). Dừng đúng vạch, chờ tàu ngược chiều vào ga rồi mới chạy tiếp.', M[j].name, dwell)); });
