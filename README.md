@@ -34,9 +34,8 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 ## Ảnh chụp
 | | |
 |---|---|
-| ![Màn hình chủ](docs/screenshots/menu.jpg)<br>Màn hình chủ, trình phát nhạc ở góc dưới trái | ![Bản đồ toàn quốc](docs/screenshots/natmap.jpg)<br>Bản đồ toàn quốc: mọi tàu theo lịch thật |
-| ![Góc nhìn ngang 2D](docs/screenshots/side2d.jpg)<br>Góc nhìn ngang 2D | ![Camera cuối đoàn](docs/screenshots/rear.jpg)<br>Camera cuối đoàn |
-| ![Tổng kết chuyến](docs/screenshots/score.jpg)<br>Tổng kết chuyến: điểm, thành tích, lời khuyên | |
+| ![Bản đồ toàn quốc](docs/screenshots/natmap.jpg)<br>Bản đồ toàn quốc: mọi tàu theo lịch thật | ![Góc nhìn ngang 2D](docs/screenshots/side2d.jpg)<br>Góc nhìn ngang 2D |
+| ![Camera cuối đoàn](docs/screenshots/rear.jpg)<br>Camera cuối đoàn | ![Tổng kết chuyến](docs/screenshots/score.jpg)<br>Tổng kết chuyến: điểm, thành tích, lời khuyên |
 
 ## Menu
 - **Màn hình chủ:** Lái tàu · Học lái · Hồ sơ · Cài đặt · Ghi công tài nguyên (và logo 5 công ty JR, bấm vào mở trang chính thức).

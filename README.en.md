@@ -34,9 +34,8 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 ## Screenshots
 | | |
 |---|---|
-| ![Home screen](docs/screenshots/menu.jpg)<br>Home screen with the music player at the bottom left | ![Nationwide map](docs/screenshots/natmap.jpg)<br>Nationwide map: every train on the real timetable |
-| ![2D side view](docs/screenshots/side2d.jpg)<br>2D side view | ![Rear camera](docs/screenshots/rear.jpg)<br>Rear-of-train camera |
-| ![Trip summary](docs/screenshots/score.jpg)<br>Trip summary: score, achievements, advice | |
+| ![Nationwide map](docs/screenshots/natmap.jpg)<br>Nationwide map: every train on the real timetable | ![2D side view](docs/screenshots/side2d.jpg)<br>2D side view |
+| ![Rear camera](docs/screenshots/rear.jpg)<br>Rear-of-train camera | ![Trip summary](docs/screenshots/score.jpg)<br>Trip summary: score, achievements, advice |
 
 ## Menus
 - **Home screen:** Drive · Learn to drive · Profile · Settings · Asset credits (plus the logos of the five JR companies, each linking to its official site).
