@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/screenshots/logo.gif" alt="SHINKANSEN animated logo" width="560">
+<img src="docs/screenshots/logo_en.gif" alt="SHINKANSEN animated logo" width="560">
 
 # Drive Shinkansen · 新幹線を運転 · Lái Shinkansen
 
@@ -36,7 +36,7 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 |---|---|
 | ![Home screen](docs/screenshots/menu.jpg)<br>Home screen with the music player at the bottom left | ![Nationwide map](docs/screenshots/natmap.jpg)<br>Nationwide map: every train on the real timetable |
 | ![2D side view](docs/screenshots/side2d.jpg)<br>2D side view | ![Rear camera](docs/screenshots/rear.jpg)<br>Rear-of-train camera |
-| ![Trip summary](docs/screenshots/score.jpg)<br>Trip summary: score, achievements, advice | ![Home screen](docs/screenshots/menu_train.gif)<br>Home screen: a train pulls in, stops with the five JR logos centred, then leaves (sped up) |
+| ![Trip summary](docs/screenshots/score.jpg)<br>Trip summary: score, achievements, advice | |
 
 ## Menus
 - **Home screen:** Drive · Learn to drive · Profile · Settings · Asset credits (plus the logos of the five JR companies, each linking to its official site).

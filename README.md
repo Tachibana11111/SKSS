@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/screenshots/logo.gif" alt="Logo SHINKANSEN động" width="560">
+<img src="docs/screenshots/logo_vi.gif" alt="Logo Tân Cán Tuyến động" width="560">
 
 # Lái Shinkansen · Drive Shinkansen · 新幹線を運転
 
@@ -36,7 +36,7 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 |---|---|
 | ![Màn hình chủ](docs/screenshots/menu.jpg)<br>Màn hình chủ, trình phát nhạc ở góc dưới trái | ![Bản đồ toàn quốc](docs/screenshots/natmap.jpg)<br>Bản đồ toàn quốc: mọi tàu theo lịch thật |
 | ![Góc nhìn ngang 2D](docs/screenshots/side2d.jpg)<br>Góc nhìn ngang 2D | ![Camera cuối đoàn](docs/screenshots/rear.jpg)<br>Camera cuối đoàn |
-| ![Tổng kết chuyến](docs/screenshots/score.jpg)<br>Tổng kết chuyến: điểm, thành tích, lời khuyên | ![Màn hình chủ](docs/screenshots/menu_train.gif)<br>Màn hình chủ: đoàn tàu vào ga, đỗ đúng chỗ 5 logo JR rồi rời ga (tua nhanh) |
+| ![Tổng kết chuyến](docs/screenshots/score.jpg)<br>Tổng kết chuyến: điểm, thành tích, lời khuyên | |
 
 ## Menu
 - **Màn hình chủ:** Lái tàu · Học lái · Hồ sơ · Cài đặt · Ghi công tài nguyên (và logo 5 công ty JR, bấm vào mở trang chính thức).

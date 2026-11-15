@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/screenshots/logo.gif" alt="SHINKANSEN アニメーションロゴ" width="560">
+<img src="docs/screenshots/logo_ja.gif" alt="新幹線 アニメーションロゴ" width="560">
 
 # 新幹線を運転 · Drive Shinkansen · Lái Shinkansen
 
@@ -36,7 +36,7 @@ JR 5社が運行する新幹線を運転するゲームです。ブラウザだ�
 |---|---|
 | ![ホーム画面](docs/screenshots/menu.jpg)<br>ホーム画面(左下にミュージックプレーヤー) | ![全国マップ](docs/screenshots/natmap.jpg)<br>全国マップ: 実ダイヤで走るすべての列車 |
 | ![2D横視点](docs/screenshots/side2d.jpg)<br>2D横視点 | ![最後尾カメラ](docs/screenshots/rear.jpg)<br>最後尾カメラ |
-| ![運行結果](docs/screenshots/score.jpg)<br>運行結果: 得点、実績、アドバイス | ![ホーム画面](docs/screenshots/menu_train.gif)<br>ホーム画面: 列車が入線し、5つのJRロゴの位置にぴったり停車して出発(早送り) |
+| ![運行結果](docs/screenshots/score.jpg)<br>運行結果: 得点、実績、アドバイス | |
 
 ## メニュー
 - **ホーム画面:** 運転 · 運転を学ぶ · プロフィール · 設定 · 素材のクレジット(JR 5社のロゴも表示。クリックで各社の公式サイトを開きます)。
