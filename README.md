@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/screenshots/logo.gif" alt="Logo SHINKANSEN động" width="560">
+
 # Lái Shinkansen · Drive Shinkansen · 新幹線を運転
 
 **Tiếng Việt** · [English](README.en.md) · [日本語](README.ja.md)
@@ -16,27 +18,31 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 
 ## Có gì
 - **7 tuyến, 5 công ty JR:** Tokaido–Sanyo–Kyushu, Tohoku–Hokkaido, Joetsu, Hokuriku, Nishi-Kyushu và hai tuyến Mini-Shinkansen Yamagata, Akita (kể cả đoàn ghép/tách tại Tokyo, Fukushima, Morioka). **Lịch tàu thật tháng 10/2026**, đủ mẫu tàu từ N700/N700S, E5, E6, E7/W7, E8, H5, 800, N700S-8000 tới tàu kiểm tra 923 Doctor Yellow, E926 East i.
-- **Lái thật:** 13 nấc kéo, 8 nấc phanh, ATC, tốc độ không đổi, cần vẹt, gạt mưa, đèn pha, đoạn cách điện đổi tần số, đường tránh và đường thông qua ở ga, ghi ra/vào sân ga, tàu chạy trước và tàu thông qua theo lịch thật.
-- **Thời tiết và sự cố ngẫu nhiên (theo seed):** mưa, tuyết, bão, động đất, cháy trong hầm, hành khách bệnh, động vật, xe kẹt ở đường ngang, lệnh điều độ phải nhắc lại, dừng nhường tàu nhanh. 4 độ khó.
+- **Lái thật:** 13 nấc kéo, 8 nấc phanh, ATC, tốc độ không đổi, cần vẹt, gạt mưa, đèn pha, đoạn cách điện đổi tần số, đường tránh và đường thông qua ở ga, ghi ra/vào sân ga, tàu chạy trước và tàu thông qua theo lịch thật. Trên đường đơn Akita/Yamagata, tàu ta dừng tránh tàu ngược chiều (kể cả ở ga không có lịch dừng); tàu mini chờ đoàn Tohoku về ga rồi mới nối, không chạy vào đoạn ghi nối khi Tohoku chưa tới.
+- **Thế giới chạy theo lịch thật:** tàu ngược chiều, tàu đỗ ở ga, tàu thông qua và tàu đi trước đều là tàu thật trong danh mục lịch, hiện đúng vị trí như bản đồ toàn quốc; tàu bị giữ (động đất, mưa gió, sự cố) đứng yên hẳn. Sự cố ngẫu nhiên xảy ra với **mọi tàu**, không riêng tàu bạn lái.
+- **Thời tiết và sự cố ngẫu nhiên (theo seed):** mưa (hạt mưa đọng trên kính trước và sau, gạt mưa lau đi), tuyết, bão, động đất, cháy trong hầm, hành khách bệnh, động vật, xe kẹt ở đường ngang (chỉ có ở Yamagata và Akita, hai tuyến duy nhất có đường ngang), lệnh điều độ phải nhắc lại, dừng nhường tàu nhanh. 4 độ khó.
+- **Chế độ tự do:** có nút tự lái, chuyến không tính điểm; trên bản đồ toàn quốc bấm một tàu rồi chọn "Vào buồng lái" để ngó buồng lái tàu đó (kể cả tàu kiểm tra Doctor Yellow, East i).
 - **Nhiều góc nhìn:** buồng lái 3D giả, nhìn ngang 2D, bản đồ nhỏ nhìn từ trên (bắc ở trên), cửa sổ hành khách trái/phải, camera cuối đoàn.
+- **Cảnh vật:** dựng từ dữ liệu OpenStreetMap; mặt đầu và đuôi tàu nghiêng theo hình dáng mũi tàu thật; giá đỡ dây điện nhiều kiểu (cổng thép, xà ống thép, xà かご, cột bên có tay đòn xoay, giá treo trần hầm), không đặt cột giữa hai đường.
 - **Bản đồ toàn quốc** ([ảnh](#ảnh-chụp)): 47 tỉnh với **mọi đảo có trong dữ liệu** (kể cả các đảo Lãnh thổ phương Bắc vẽ nét đứt), 10 đoạn tuyến theo màu Wikipedia, **mọi tàu chạy theo lịch thật** cùng thời tiết và động đất; bấm ga hoặc tàu để xem chi tiết, kể cả tàu phía trước/sau và khoảng cách.
-- **Phát thanh trên tàu bằng giọng tiếng Nhật**, kèm phụ đề (giao diện tiếng Nhật chỉ có một dòng phụ đề), báo ga kế tiếp, tuyến đổi tàu, cửa mở bên nào, trễ giờ, sự cố.
+- **Phát thanh trên tàu bằng giọng tiếng Nhật**, kèm phụ đề (giao diện tiếng Nhật chỉ có một dòng phụ đề), báo ga kế tiếp, tuyến đổi tàu, cửa mở bên nào, trễ giờ, sự cố. Cửa mở đúng phía theo đường sân ga tàu được xếp vào, kể cả ga có nhiều đường.
 - **Học lái:** 4 bài từng bước (lái và dừng ga, thiết bị, sự cố, cần vẹt và ATC). **Hồ sơ:** 14 thành tích, kết quả tốt nhất, lịch sử, xem lại chuyến đã chơi.
 - **Âm thanh:** tiếng chạy, gió, mưa, còi, tiếng nền ga; ù cabin máy bay (J); **trình phát nhạc** ở menu với 21 giai điệu ga Shinkansen.
 - **Đa ngôn ngữ:** English, 日本語 (tên ga bằng chữ Hán, tên chuyến dạng のぞみ1号), Tiếng Việt.
-- Cảnh vật dựng từ dữ liệu OpenStreetMap; tài liệu nghiệp vụ ở [`docs/`](docs/00-progress.md), thiết kế ở [`docs/10-thiet-ke-game.md`](docs/10-thiet-ke-game.md).
+- Tài liệu nghiệp vụ ở [`docs/`](docs/00-progress.md), kiến trúc mô phỏng ở [`docs/14-kien-truc-mo-phong.md`](docs/14-kien-truc-mo-phong.md), thiết kế game ở [`docs/10-thiet-ke-game.md`](docs/10-thiet-ke-game.md).
 
 ## Ảnh chụp
 | | |
 |---|---|
 | ![Màn hình chủ](docs/screenshots/menu.jpg)<br>Màn hình chủ, trình phát nhạc ở góc dưới trái | ![Bản đồ toàn quốc](docs/screenshots/natmap.jpg)<br>Bản đồ toàn quốc: mọi tàu theo lịch thật |
 | ![Góc nhìn ngang 2D](docs/screenshots/side2d.jpg)<br>Góc nhìn ngang 2D | ![Camera cuối đoàn](docs/screenshots/rear.jpg)<br>Camera cuối đoàn |
-| ![Tổng kết chuyến](docs/screenshots/score.jpg)<br>Tổng kết chuyến: điểm, thành tích, lời khuyên | |
+| ![Tổng kết chuyến](docs/screenshots/score.jpg)<br>Tổng kết chuyến: điểm, thành tích, lời khuyên | ![Màn hình chủ](docs/screenshots/menu_train.gif)<br>Màn hình chủ: đoàn tàu vào ga, đỗ đúng chỗ 5 logo JR rồi rời ga (tua nhanh) |
 
 ## Menu
 - **Màn hình chủ:** Lái tàu · Học lái · Hồ sơ · Cài đặt · Ghi công tài nguyên (và logo 5 công ty JR, bấm vào mở trang chính thức).
 - **Thiết lập chuyến đi:** hình đầu đoàn 2D của tàu đang chọn; tuyến, chiều, tàu, ga đi/đến, độ khó, thời tiết, seed; cùng một seed cho cùng một chuyến. Các chuyến Tohoku có cặp mini cùng số hiệu, cùng giờ, cùng ga dừng (56 chuyến: Hayabusa+Komachi, Yamabiko+Tsubasa) **luôn nối đoàn** từ Tokyo tới Morioka/Fukushima, kể cả khi sự cố ngẫu nhiên làm lịch linh hoạt.
 - **Chế độ thực tế** (ô đánh dấu đầu cột bên phải): lấy **giờ Nhật Bản** (chỉ còn các chuyến chưa rời ga; hết chuyến thì chỉ còn tàu kiểm tra Doctor Yellow, East i), **thời tiết thật** (mưa, tuyết, gió giật theo giờ dọc tuyến, từ Open-Meteo) và **động đất thật** (P2PQuake: vài giờ qua thì chạy kiểm tra chậm quanh tâm chấn; trận xảy ra **trong lúc đang chơi** thì cắt điện nếu rung đủ mạnh tại tàu). Độ khó cố định Thường. Cần mạng khi bấm Bắt đầu và (cho động đất) trong lúc chơi; mất mạng thì dùng thời tiết ngẫu nhiên. Dữ liệu được chụp lại lúc bắt đầu và các trận động đất mới được ghi như thao tác, nên xem lại chuyến vẫn đúng.
+- **Chế độ tự do** (ô đánh dấu cạnh Chế độ thực tế): có nút tự lái; chuyến không tính điểm, không ghi thành tựu và không lưu vào lịch sử/kỷ lục. Trên bản đồ toàn quốc bấm một tàu rồi chọn "Vào buồng lái" để ngó buồng lái tàu đó (tàu đó chạy tự lái, các bộ điều khiển bị khóa); nút "Quay về tàu của bạn" đưa bạn về. Không chọn thì không có tự lái và chuyến được tính điểm.
 - **Tạm dừng (P hoặc Esc):** Tiếp tục · Cài đặt · Hồ sơ · Chụp cảnh (F9) · Chơi lại · Về menu chính.
 - **Cài đặt:** ngôn ngữ, cảnh vật (đầy đủ/nhẹ) và **bảng phím tắt đầy đủ**. Khi có điện đàm, tua tự về ×1.
 - **Trình phát nhạc** (góc dưới trái, chỉ ở menu): phát/tạm dừng, bài trước/sau, đổi chế độ lặp danh sách/lặp một bài/ngẫu nhiên, danh sách bài, tắt tiếng và âm lượng, thanh tiến trình, thu gọn; phát qua trình nhúng YouTube (cần mạng), tự phát từ lần bấm đầu tiên.
@@ -71,11 +77,14 @@ Mở thẳng `index.html` cũng chạy, nhưng âm thanh nền ga không tua đ�
 
 ## Kiểm thử và triển khai
 ```
-node tests/run.js                # kiểm thử mô phỏng, bản đồ, đa ngôn ngữ... (~5 phút)
+node tests/run.js                # kiểm thử tuần tự như CI: mô phỏng, bản đồ, đa ngôn ngữ... (~15 phút)
 node tests/run.js --time         # in thời gian từng phần
+node tests/run.js --only=k       # chỉ chạy phần thứ k
 node tests/run.js --shard=1/4    # chỉ chạy lô 1 trong 4 (chia để chạy song song)
+node tests/run-parallel.js       # mỗi phần một tiến trình (~12 phút); nhanh hơn nhưng không bắt được lỗi phụ thuộc thứ tự
+node tests/soak.js --lines=aki   # kiểm tra bền: tự lái cả chuyến với sự kiện và thời tiết xấu, rà xuyên tàu, đứng mãi, ngoại lệ...
 ```
-GitHub Actions: `ci.yml` chạy kiểm thử mỗi lần đẩy mã; `pages.yml` chạy kiểm thử rồi đưa thư mục `prototype/drive` lên GitHub Pages. Ghi chú kỹ thuật (tệp, đa ngôn ngữ, bản đồ, nhạc) ở [`prototype/README.md`](prototype/README.md).
+Trước khi đẩy mã nên chạy lượt tuần tự (`tests/run.js`) vì CI chạy như vậy. `tests/soak.js` không nằm trong CI; chuyến báo lỗi tái hiện được bằng `--tag` và `--seed`. GitHub Actions: `ci.yml` chạy kiểm thử mỗi lần đẩy mã; `pages.yml` chạy kiểm thử rồi đưa thư mục `prototype/drive` lên GitHub Pages. Ghi chú kỹ thuật (tệp, đa ngôn ngữ, bản đồ, nhạc) ở [`prototype/README.md`](prototype/README.md); kiến trúc mô phỏng và độ tin cậy các cơ chế ở [`docs/14-kien-truc-mo-phong.md`](docs/14-kien-truc-mo-phong.md) và [`docs/15-do-tin-cay-co-che-moi.md`](docs/15-do-tin-cay-co-che-moi.md).
 
 ## Ghi công và giấy phép tài nguyên
 | Thành phần | Tác giả / nguồn | Giấy phép |
