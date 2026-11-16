@@ -82,3 +82,11 @@ Bất biến được kiểm: không ngoại lệ/NaN; tàu ta không va chạm,
 - Hai bản sao danh mục của một đoàn ghép lệch độ trễ 1-2 phút (đoàn Tohoku luôn trễ hơn), tới vài km ở chỗ tách. Thử cho bản sao mini bám theo Tohoku trên đoạn chạy chung thì gây tắc dây chuyền (nhiều tàu trễ đúng 4 giờ) nên đã gỡ: cần thiết kế lại, không vá nhanh.
 - **Bản sao của tàu đi trước tuyến cha bị ép khớp (`alignLead`)** làm bản sao dịch chuyển đột ngột (tới hàng trăm km) khi tàu đi trước thật xuất hiện ở giây ~200 của chuyến chiều lên Joetsu/Hokuriku, kèm độ trễ âm hàng giờ, rồi nhảy ngược khi hết ép. Đây là hệ quả thiết kế chứ không phải lỗi tính toán: tàu đi trước tuyến cha được chọn theo khoảng cách ở ga ghép, còn bản sao là một chuyến thật trong danh mục có giờ khác. Thử chỉ ép khi giờ lịch lệch < 30 phút thì bản đồ không còn hiện tàu đi trước đúng chỗ (test mục 'tàu đi trước thật: vị trí bản đồ lệch tối đa' hỏng) nên đã gỡ. Hướng sửa thật: ẩn bản sao khi chưa ép, hoặc dựng tàu đi trước từ chuyến có giờ khớp.
 - Cảnh báo "hai tàu danh mục đi xuyên nhau" (~15 lần trên 112 chuyến, nhiều ở ga có đường tránh như Omiya km 30,3 và km 342 Tokaido) và "tàu ta đi xuyên tàu danh mục" (~5 lần, sau khi đã loại bản sao mini bị ẩn): chưa xác minh là lỗi hay tàu vượt nhau ở ga đa đường mà bộ kiểm tra chưa nhận ra; cần dò từng vụ nếu muốn khẳng định.
+
+## 8. Ghi chéo giữa hai đường chính quanh ga (`xo`) [D/I]
+
+- **Trước:** `cabview.js`, `topview.js` và `Sim.switchPoints` vẽ/tính chữ X kép cố định ở 1300 m trước và 720 m sau vạch dừng của MỌI ga.
+- **Nay:** `Layout.xovers(ls, dir, rear)` (`layout.js`) trả danh sách ghi chéo của ga từ trường `ls.xo = [[side, kind]]` (viết theo chiều XUỐNG; `side` 'b' trước / 'a' sau vạch; `kind` 'd' X kép / 's' một đường chéo từ đường ngược chiều sang đường ta). Chiều lên đảo trước/sau; camera sau đảo dấu (đường chéo đơn đặt ở 1150 = 1300 − 150 để trùng vị trí vật lý). Ga KHÔNG có `xo` giữ mặc định cũ (X kép hai đầu), nên tuyến chưa dựng lại không đổi.
+- **Dữ liệu:** `tools/build_lines.py` (bảng `XO`) → `data-lines.js`. Hiện chỉ `nks`. Nguồn: đồ thị trích từ sơ đồ (`docs/data/haisen/nks_graph.json`).
+- **Không đổi hành vi tàu**: ghi chéo chỉ là hình vẽ và điểm âm thanh; ga cuối vẫn dùng `laneOf` với hằng 1300/720 (khớp vì ghi chéo của hai ga đầu mút nằm đúng phía có tuyến).
+- Test: mục 33f (`tests/run.js`).

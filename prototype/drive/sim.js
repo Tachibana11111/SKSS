@@ -274,7 +274,7 @@
   function turnoutZones(T) { const out = []; for (let j = 0; j < T.M.length; j++) if (divertsAt(T, j)) out.push({ s0: geoS(T.M[j]) - G.turnoutIn, s1: geoS(T.M[j]) + G.turnoutOut, v: G.turnoutV, j }); return out; }
   // vị trí các ghi và ghi chéo (chữ X) mà đoàn tàu đi qua quanh một ga: dùng cho âm thanh
   function switchPoints(T) { const pts = []; for (let j = 0; j < T.M.length; j++) { const m = T.M[j], sM = geoS(m), dv = divertsAt(T, j);
-    pts.push(sM - 1300 + 35, sM - 1300 + 115, sM + 720 + 35, sM + 720 + 115); if (dv) pts.push(sM - G.turnoutIn, sM + G.turnoutOut); } return pts.sort((a, b) => a - b); }
+    const Ly = root.Layout; for (const xv of Ly && Ly.xovers ? Ly.xovers(T.W.line.stations[m.i], T.W.dir, false) : [{ z: -1300 }, { z: 720 }]) pts.push(sM + xv.z + 35, sM + xv.z + 115); if (dv) pts.push(sM - G.turnoutIn, sM + G.turnoutOut); } return pts.sort((a, b) => a - b); }
   // ga có từ 2 đường dừng cùng chiều: hai tàu có thể đỗ cùng lúc (mỗi tàu một đường); chỉ 1 đường: tàu sau phải chờ phía sau
   function sharesPlatformLane(W, Ld) { const Ly = root.Layout, m = Ld.M[Ld.k], st = m && W.line.stations[m.i]; return !!(Ly && st && st.lay && Ly.stopCount(st.lay, W.dir) >= 2); }
   function allowedSpeed(T) {

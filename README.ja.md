@@ -96,6 +96,7 @@ node tests/soak.js --lines=aki   # 耐久テスト:ランダムな事象と悪�
 | 駅の環境音と通過列車の音 | Flavien Gillié, "Odawara Station, Préfecture de Kanagawa, Japon – Shinkansen train leaving for Tokyo"、Internet Archive `aporee_70029_81567` | Public Domain Mark 1.0 |
 | 新幹線の駅メロディ(ミュージックプレーヤー) | YouTube動画 [`bddFo2Vzi4A`](https://www.youtube.com/watch?v=bddFo2Vzi4A)。公式の埋め込みプレーヤーで再生し、ファイルは保存しません | 動画の権利者とJRに帰属。YouTubeの利用規約に従います |
 | 各駅の線路・ホーム配置 | 日本語版Wikipedia(各駅の記事) | CC BY-SA 4.0 |
+| 駅の配線略図(`docs/data/haisen/`:SVG原本76点と、そこから生成した閲覧ページ・グラフ) | 配線略図.net — [haisenryakuzu.net](https://www.haisenryakuzu.net/documents/jr/shinkansen/)。図は並べ直しただけで、閲覧ページはスクリプトとリンクを除去し、図の内容は編集していません | CC BY 4.0 |
 | 実況の天気(リアルタイムモード) | [Open-Meteo.com](https://open-meteo.com/)、1時間ごとの予報。開始時にブラウザから取得し、運行のスナップショットとしてのみ保持 | CC BY 4.0(データ)、非商用利用 |
 | 実際の地震(リアルタイムモード) | [P2P地震情報](https://www.p2pquake.net/)(気象庁のデータ)。開始時にブラウザから取得 | P2P地震情報と気象庁の利用条件に従います |
 | 2026年10月の実ダイヤ(`docs/data/`、`data-lines.js`) | JR東日本(デジタル時刻表)、JR西日本 / JRおでかけネット(実際の1日分) | データはJR東日本、JR西日本、交通新聞社に帰属。公開ページから取得(robots.txtで許可)。シミュレーション用データであり非公式 |
@@ -106,4 +107,4 @@ node tests/soak.js --lines=aki   # 耐久テスト:ランダムな事象と悪�
 ## ライセンス
 **ソースコード**(作者が書いた `.js`、`.html`、`.py` ファイル)は [MIT](LICENSE) ライセンス、© 2026 Tachibana11111。
 
-MITライセンスは次のものには**適用されません**: 車両画像と車両ストリップ(CC BY-NC-ND 4.0、K.Y. Chung)、コンパイル済みのOpenStreetMapとgeoBoundariesのデータ(ODbL)、ロゴ、音声と音楽、ダイヤ、調査ノート、スクリーンショット。それぞれ上の表に記したライセンスまたは条件に従います。「新幹線」「JR」および車両形式名は各権利者に帰属し、本ライセンスはその使用権を与えるものではありません。
+MITライセンスは次のものには**適用されません**: 車両画像と車両ストリップ(CC BY-NC-ND 4.0、K.Y. Chung)、コンパイル済みのOpenStreetMapとgeoBoundariesのデータ(ODbL)、ロゴ、音声と音楽、ダイヤ、配線略図とそこから生成した閲覧ページ(CC BY 4.0、配線略図.net、`docs/data/haisen/`)、調査ノート、スクリーンショット。それぞれ上の表に記したライセンスまたは条件に従います。「新幹線」「JR」および車両形式名は各権利者に帰属し、本ライセンスはその使用権を与えるものではありません。

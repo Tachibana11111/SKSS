@@ -73,3 +73,10 @@ Không có nguồn nào nói các sự cố này xảy ra với tần suất đ�
 ## Ghi chú soak test (2026-11-15)
 
 Soak test là công cụ kiểm tra bất biến, không phải nguồn dữ liệu: ngưỡng của nó (đứng > 40 phút, đỗ ga > 60 phút, trễ > 4 giờ, nhảy vị trí) là **[I]**, chọn để lọc lỗi rõ ràng chứ không phải quy định vận hành thật.
+
+## 7. Hạ tầng ga dựng lại từ sơ đồ 配線略図.net: Nishi-Kyushu (16/11/2026)
+
+- **[D]** Đường chính, ghi, giao cắt, sân ga, chắn cuối đường đọc từ hình học SVG (xanh #0070c0 = Shinkansen, xám = Sasebo Line, hình chữ U đen = sân ga). Mã sân ga trích được (`PduP` ×4, `dPduPu` Nagasaki) khớp mã `2-2-0`/`2-4-0` đang dùng.
+- **[I]** Hai hình khớp nhau bằng hai đường chính tại x=419.8 (nguồn không ghi chỗ nối); đường trên là đường xuống (Nhật chạy bên trái); vị trí ghi chéo trong game dùng hằng 1300/720 m vì sơ đồ không theo tỉ lệ.
+- **[?]** Ký hiệu tín hiệu (hướng, loại) và các nét navy: chú giải của nguồn không giải thích; mockup bỏ chúng. Ý nghĩa ký hiệu A/B nối hình chỉ suy từ hình.
+- **Giản lược có chủ ý:** bỏ Sasebo Line, bỏ cụm depot và cả ghi vào depot (đã thử làm một nhánh tượng trưng rồi bỏ để giữ gọn), bỏ tín hiệu.

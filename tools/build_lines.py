@@ -50,6 +50,12 @@ LINES = {'tsk': dict(id='tsk', name='Tokaido – Sanyo – Kyushu', stations=tsk
          'aki': dict(id='aki', name='Akita mini-Shinkansen (Tokyo – Akita)', stations=aki, kmEnd=aki[-1]['km'])}
 import build_struct
 build_struct.apply(LINES)
+# Ghi chéo giữa hai đường chính (xo), viết theo chiều XUỐNG: 'b' trước vạch dừng / 'a' sau vạch; 'd' chữ X kép, 's' một đường chéo (từ đường ngược chiều sang đường ta).
+# Tuyến nào chưa có ở đây thì giữ mặc định cũ: chữ X kép ở cả hai đầu mọi ga. Nguồn: sơ đồ 配線略図.net (xem docs/data/haisen/nks_graph.json) [D], vị trí cách vạch dùng hằng số chung 1300/720 m [I].
+XO = {'nks': {'Takeo-Onsen': [['a', 'd']], 'Ureshino-Onsen': [], 'Shin-Omura': [['b', 's']], 'Isahaya': [], 'Nagasaki': [['b', 'd']]}}
+for _lid, _d in XO.items():
+    for _s in LINES[_lid]['stations']:
+        if _s['en'] in _d: _s['xo'] = _d[_s['en']]
 IDX = {k: {s['jp']: i for i, s in enumerate(v['stations'])} for k, v in LINES.items()}
 TYPE = {'のぞみ': 'Nozomi', 'ひかり': 'Hikari', 'こだま': 'Kodama', 'みずほ': 'Mizuho', 'さくら': 'Sakura', 'つばめ': 'Tsubame', 'かもめ': 'Kamome',
         'はやぶさ': 'Hayabusa', 'はやて': 'Hayate', 'やまびこ': 'Yamabiko', 'なすの': 'Nasuno', 'こまち': 'Komachi', 'つばさ': 'Tsubasa',

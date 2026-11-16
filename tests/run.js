@@ -1124,6 +1124,31 @@ if (section('33e. Nền đất: tấm bê tông dưới ray và hàng rào thép
     ok(withG > noG + 40, 'cabview vẽ hàng rào ở đoạn nền đất (tsk km 45,2: ' + withG + ' nét so với ' + noG + ' khi tắt)', [withG, noG]);
     ok(withV === noV, 'cabview không vẽ hàng rào ở cầu cạn (tsk km 51, cầu cạn tới km 56: ' + withV + ' nét, bằng khi tắt luật)', [withV, noV]); }
 }
+if (section('33f. Ghi chéo giữa hai đường chính (xo): dựng lại từ sơ đồ Nishi-Kyushu; ga không khai báo giữ chữ X kép hai đầu')) {
+  const LNS = window.LINES, Ly = require(path.join(DRIVE, 'layout.js')), N = LNS.nks.stations;
+  const byEn = en => N.find(s => s.en === en);
+  ok(JSON.stringify(byEn('Takeo-Onsen').xo) === '[["a","d"]]' && JSON.stringify(byEn('Shin-Omura').xo) === '[["b","s"]]' && JSON.stringify(byEn('Nagasaki').xo) === '[["b","d"]]' && byEn('Ureshino-Onsen').xo.length === 0 && byEn('Isahaya').xo.length === 0, 'dữ liệu nks: X kép sau Takeo-Onsen, một đường chéo trước Shin-Omura, X kép trước Nagasaki, Ureshino-Onsen và Isahaya không có');
+  ok(Object.keys(LNS).filter(id => id !== 'nks').every(id => LNS[id].stations.every(s => s.xo === undefined)), 'các tuyến khác chưa khai báo xo: giữ mặc định cũ');
+  { const d = Ly.xovers({}, 'down', false), u = Ly.xovers({}, 'up', false); ok(d.length === 2 && d.every(x => x.kind === 'd') && d.map(x => x.z).sort((a, b) => a - b).join() === '-1300,720' && u.map(x => x.z).sort((a, b) => a - b).join() === '-1300,720', 'mặc định: X kép ở 1300 m trước và 720 m sau vạch, cả hai chiều', [d, u]); }
+  { const st = { xo: [['a', 'd']] }, dn = Ly.xovers(st, 'down', false), up = Ly.xovers(st, 'up', false), rr = Ly.xovers(st, 'down', true);
+    ok(dn.length === 1 && dn[0].z === 720 && up[0].z === -1300 && rr[0].z === -720 && rr[0].flip, 'xo viết theo chiều xuống: chiều lên đảo trước/sau; camera sau đảo dấu', [dn, up, rr]);
+    const sg = { xo: [['b', 's']] }; const a = Ly.xovers(sg, 'down', false)[0], b = Ly.xovers(sg, 'up', false)[0], c = Ly.xovers(sg, 'down', true)[0];
+    ok(a.z === -1300 && b.z === 720 && c.z === 1150 && c.kind === 's', 'đường chéo đơn: camera sau đặt ở 1150 (= 1300 − 150) để trùng đúng vị trí vật lý', [a, b, c]); }
+  // điểm ghi cho âm thanh: ga không có X thì không có điểm ghi X quanh nó
+  { const L = LNS.nks, rec = L.trains.find(t => t.d === 'down' && t.s.filter(e => !e[3]).length >= 4), st = rec.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld('nks', Sim.makeTrip('nks', rec, st[0], st[st.length - 1]), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+    const pts = Sim.switchPoints(T), near = (s, z) => pts.some(p => p > s + z && p < s + z + 150), sOf = en => T.M.find(m => L.stations[m.i].en === en);
+    const m1 = sOf('Ureshino-Onsen'), m2 = sOf('Shin-Omura'), m0 = sOf('Takeo-Onsen');
+    ok(m1 && !near(m1.s, -1300) && !near(m1.s, 720), 'Ureshino-Onsen: không có điểm ghi chéo quanh ga', [pts.length]);
+    ok(m2 && near(m2.s, -1300) && !near(m2.s, 720), 'Shin-Omura: chỉ có ghi chéo trước ga (chiều xuống)'); ok(!m0 || (!near(m0.s, -1300) && near(m0.s, 720)), 'Takeo-Onsen: chỉ có ghi chéo sau ga (chiều xuống)'); }
+  // cabview vẽ ghi chéo đúng chỗ: số lệnh vẽ giảm khi tắt xovers ở ga có ghi chéo, không đổi ở ga không có
+  { global.hhmm = global.hhmm || (x => String(x)); global.CanvasRenderingContext2D = global.CanvasRenderingContext2D || function () { }; global.CanvasRenderingContext2D.prototype.roundRect = global.CanvasRenderingContext2D.prototype.roundRect || function () { };
+    require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js'));
+    const noop = () => { }; let n = 0; const ctx = new Proxy({}, { get: (t, k) => { if (k === 'stroke' || k === 'fill') return () => { n++; }; return k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop); }, set: (t, k, v) => { t[k] = v; return true; } });
+    const L = LNS.nks, rec = L.trains.find(t => t.d === 'down' && t.s.filter(e => !e[3]).length >= 5), st = rec.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld('nks', Sim.makeTrip('nks', rec, st[0], st[st.length - 1]), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+    const draw = (en, off) => { const m = T.M.find(q => L.stations[q.i].en === en); T.x = m.s + off; T.v = 60; n = 0; global.CabView.draw(ctx, 0, 0, 1920, 620, W, T, { sprites: {}, aud: null, imgs: {} }); return n; };
+    const orig = Ly.xovers, cnt = (en, off) => { const a = draw(en, off); Ly.xovers = () => []; const b = draw(en, off); Ly.xovers = orig; return [a, b]; };
+    for (const [en, off, has] of [['Shin-Omura', -1250, true], ['Nagasaki', -1250, true], ['Takeo-Onsen', 650, true], ['Ureshino-Onsen', -1250, false], ['Isahaya', -1250, false]]) { const [a, b] = cnt(en, off); ok(has ? a > b : a === b, 'cabview ' + en + ' (' + off + ' m): ' + (has ? 'vẽ ghi chéo' : 'không vẽ ghi chéo') + ' (' + a + ' lệnh vẽ so với ' + b + ' khi tắt)', [a, b]); } }
+}
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);
   const T = Sim.lineOf('tsk'), H = Sim.lineOf('hok'), N = Sim.lineOf('nks');

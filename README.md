@@ -96,6 +96,7 @@ Trước khi đẩy mã nên chạy lượt tuần tự (`tests/run.js`) vì CI 
 | Tiếng nền ga và tàu qua ga | Flavien Gillié, "Odawara Station, Préfecture de Kanagawa, Japon – Shinkansen train leaving for Tokyo", Internet Archive `aporee_70029_81567` | Public Domain Mark 1.0 |
 | Giai điệu ga Shinkansen (trình phát nhạc) | Video YouTube [`bddFo2Vzi4A`](https://www.youtube.com/watch?v=bddFo2Vzi4A), phát qua trình nhúng chính thức, không lưu tệp | Thuộc chủ sở hữu video và JR; theo điều khoản YouTube |
 | Bố trí đường và sân ga từng ga | Wikipedia tiếng Nhật (các bài về từng ga) | CC BY-SA 4.0 |
+| Sơ đồ bố trí đường ga (`docs/data/haisen/`: 76 tệp SVG gốc, cùng trang xem và đồ thị do chương trình sinh ra từ chúng) | 配線略図.net — [haisenryakuzu.net](https://www.haisenryakuzu.net/documents/jr/shinkansen/); các hình chỉ được xếp lại, bộ xem lọc bỏ script/liên kết, không sửa nội dung hình | CC BY 4.0 |
 | Thời tiết thật (chế độ thực tế) | [Open-Meteo.com](https://open-meteo.com/), dự báo theo giờ; gọi từ trình duyệt khi bấm Bắt đầu, không lưu lại ngoài snapshot của chuyến | CC BY 4.0 (dữ liệu), dùng phi thương mại |
 | Động đất thật (chế độ thực tế) | [P2P地震情報](https://www.p2pquake.net/) (dữ liệu Cục Khí tượng Nhật Bản, JMA); gọi từ trình duyệt khi bấm Bắt đầu | Theo điều khoản của P2P地震情報 và JMA |
 | Lịch tàu thật tháng 10/2026 (`docs/data/`, `data-lines.js`) | JR East (lịch tàu số), JR West / JRおでかけネット (một ngày thật) | Dữ liệu thuộc về JR East, JR West và Kotsu Shimbunsha; đọc từ trang công khai (robots.txt cho phép). Dùng làm dữ liệu mô phỏng, không chính thức. |

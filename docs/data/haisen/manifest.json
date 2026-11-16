@@ -1,0 +1,610 @@
+[
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_01.svg",
+  "alt": "東海道新幹線配線略図01_東京駅 品川駅 新横浜駅",
+  "bytes": 14643,
+  "sha256": "774a74519b789ae4"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_02.svg",
+  "alt": "東海道新幹線配線略図02_小田原駅 熱海駅",
+  "bytes": 15033,
+  "sha256": "27d9172a6e062e6c"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_03.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_03.svg",
+  "alt": "東海道新幹線配線略図03_三島駅 三島車両所 新富士駅",
+  "bytes": 15133,
+  "sha256": "0129d4d421d630f1"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_04.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_04.svg",
+  "alt": "東海道新幹線配線略図04_静岡駅 掛川駅",
+  "bytes": 16344,
+  "sha256": "6e1449c824dd60dc"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_05.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_05.svg",
+  "alt": "東海道新幹線配線略図05_浜松駅 豊橋駅 三河安城駅",
+  "bytes": 14243,
+  "sha256": "6d081defe7238bf5"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_06.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_06.svg",
+  "alt": "東海道新幹線配線略図06_名古屋駅 岐阜羽島駅 米原駅",
+  "bytes": 15757,
+  "sha256": "36235a1f6d8387cf"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_07.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_07.svg",
+  "alt": "東海道新幹線配線略図07_栗東信号場 京都駅 鳥飼車両基地 大阪第一車両所",
+  "bytes": 24551,
+  "sha256": "70e59bf1ebbf58a0"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_08.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_08.svg",
+  "alt": "東海道新幹線配線略図08_新大阪駅",
+  "bytes": 13918,
+  "sha256": "5c5bfb16228dbe69"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_09.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_09.svg",
+  "alt": "東海道新幹線配線略図09_東京第一車両所 大井車両基地",
+  "bytes": 25503,
+  "sha256": "40e16f33062905d5"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_10.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_10.svg",
+  "alt": "東海道新幹線配線略図10_浜松工場",
+  "bytes": 19184,
+  "sha256": "1b42e91f8e0dc4db"
+ },
+ {
+  "line": "tokaido",
+  "file": "tokaido/020_11.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tokaido/figures/020_11.svg",
+  "alt": "東海道新幹線配線略図11_名古屋車両所 米原保線所",
+  "bytes": 15414,
+  "sha256": "1d4e9236039b1b4e"
+ },
+ {
+  "line": "sanyo",
+  "file": "sanyo/010_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/sanyo/figures/010_01.svg",
+  "alt": "山陽新幹線配線略図01_新大阪駅 新神戸駅",
+  "bytes": 16454,
+  "sha256": "83f52a9d2be2493b"
+ },
+ {
+  "line": "sanyo",
+  "file": "sanyo/010_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/sanyo/figures/010_02.svg",
+  "alt": "山陽新幹線配線略図02_西明石駅 姫路駅",
+  "bytes": 17156,
+  "sha256": "6497f9357771711a"
+ },
+ {
+  "line": "sanyo",
+  "file": "sanyo/010_03.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/sanyo/figures/010_03.svg",
+  "alt": "山陽新幹線配線略図03_相生駅 岡山駅 博多総合車両所岡山支所",
+  "bytes": 18694,
+  "sha256": "a0cc087a9d577af2"
+ },
+ {
+  "line": "sanyo",
+  "file": "sanyo/010_04.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/sanyo/figures/010_04.svg",
+  "alt": "山陽新幹線配線略図04_新倉敷駅 福山駅 新尾道駅",
+  "bytes": 16404,
+  "sha256": "948a15a4dd7f6a42"
+ },
+ {
+  "line": "sanyo",
+  "file": "sanyo/010_05.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/sanyo/figures/010_05.svg",
+  "alt": "山陽新幹線配線略図05_三原駅 東広島駅 広島駅",
+  "bytes": 13321,
+  "sha256": "dcbd77414ae0db5d"
+ },
+ {
+  "line": "sanyo",
+  "file": "sanyo/010_06.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/sanyo/figures/010_06.svg",
+  "alt": "山陽新幹線配線略図06_新岩国駅 徳山駅 新山口駅 厚狭駅",
+  "bytes": 18035,
+  "sha256": "a72d569007671c1f"
+ },
+ {
+  "line": "sanyo",
+  "file": "sanyo/010_07.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/sanyo/figures/010_07.svg",
+  "alt": "山陽新幹線配線略図07_新下関駅 小倉駅 鞍手信号場",
+  "bytes": 14974,
+  "sha256": "8fc23687e2b49521"
+ },
+ {
+  "line": "sanyo",
+  "file": "sanyo/010_08.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/sanyo/figures/010_08.svg",
+  "alt": "山陽新幹線配線略図08_博多駅",
+  "bytes": 13245,
+  "sha256": "43b2b82dc05f6a10"
+ },
+ {
+  "line": "sanyo",
+  "file": "sanyo/010_09.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/sanyo/figures/010_09.svg",
+  "alt": "山陽新幹線配線略図09_広島駅 博多総合車両所広島支所 新下関駅",
+  "bytes": 21325,
+  "sha256": "9e269b17e80f75c2"
+ },
+ {
+  "line": "kyushu",
+  "file": "kyushu/010_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/kyushu/figures/010_01.svg",
+  "alt": "九州新幹線配線略図01_博多駅 博多南駅 博多総合車両所",
+  "bytes": 26094,
+  "sha256": "d3cbb3ea16398784"
+ },
+ {
+  "line": "kyushu",
+  "file": "kyushu/010_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/kyushu/figures/010_02.svg",
+  "alt": "九州新幹線配線略図02_新鳥栖駅 久留米駅 筑後船小屋駅 新大牟田駅",
+  "bytes": 14512,
+  "sha256": "785c9331d051956f"
+ },
+ {
+  "line": "kyushu",
+  "file": "kyushu/010_03.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/kyushu/figures/010_03.svg",
+  "alt": "九州新幹線配線略図03_新玉名駅 熊本駅 熊本総合車両所",
+  "bytes": 18128,
+  "sha256": "d03236add951b6ec"
+ },
+ {
+  "line": "kyushu",
+  "file": "kyushu/010_04.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/kyushu/figures/010_04.svg",
+  "alt": "九州新幹線配線略図04_新八代駅 新水俣駅 出水駅",
+  "bytes": 22146,
+  "sha256": "4d99c08c3407343c"
+ },
+ {
+  "line": "kyushu",
+  "file": "kyushu/010_05.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/kyushu/figures/010_05.svg",
+  "alt": "九州新幹線配線略図05_川内駅 鹿児島中央駅",
+  "bytes": 12189,
+  "sha256": "f0b009148e8316b8"
+ },
+ {
+  "line": "nishi_kyushu",
+  "file": "nishi_kyushu/010_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/nishi_kyushu/figures/010_01.svg",
+  "alt": "西九州新幹線配線略図01_武雄温泉駅 嬉野温泉駅",
+  "bytes": 15399,
+  "sha256": "737c541a19c7e232"
+ },
+ {
+  "line": "nishi_kyushu",
+  "file": "nishi_kyushu/010_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/nishi_kyushu/figures/010_02.svg",
+  "alt": "西九州新幹線配線略図02_熊本総合車両所大村車両管理室 新大村駅 諫早駅 長崎駅",
+  "bytes": 15846,
+  "sha256": "38439bd3260372fe"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/010_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/010_01.svg",
+  "alt": "東北新幹線配線略図01_東京駅 上野駅 上野新幹線第一運転所 東京新幹線車両センター 東京新幹線保線技術センター",
+  "bytes": 21161,
+  "sha256": "6bcb048815424eac"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/010_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/010_02.svg",
+  "alt": "東北新幹線配線略図02_大宮駅 鷲宮信号場",
+  "bytes": 19108,
+  "sha256": "8200f544b4f832d3"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/010_03.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/010_03.svg",
+  "alt": "東北新幹線配線略図03_小山駅 小山新幹線車両センター 宇都宮新幹線保線技術センター 宇都宮駅",
+  "bytes": 15296,
+  "sha256": "546062ee33b0dada"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/010_04.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/010_04.svg",
+  "alt": "東北新幹線配線略図04_那須塩原駅 新白河駅",
+  "bytes": 15720,
+  "sha256": "2b9d48046d52b121"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/010_05.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/010_05.svg",
+  "alt": "東北新幹線配線略図05_郡山駅 郡山新幹線保線技術センター 福島駅",
+  "bytes": 24369,
+  "sha256": "866b3a5ddb70cb99"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/010_06.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/010_06.svg",
+  "alt": "東北新幹線配線略図06_白石蔵王駅",
+  "bytes": 10277,
+  "sha256": "38135aab4e2e31ef"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/010_07.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/010_07.svg",
+  "alt": "東北新幹線配線略図07_仙台駅 仙台総合車両所 仙台新幹線保線技術センター 新幹線総合車両センター",
+  "bytes": 29854,
+  "sha256": "44122199adfe21dc"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/010_08.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/010_08.svg",
+  "alt": "東北新幹線配線略図08_古川駅 くりこま高原駅 一ノ関駅",
+  "bytes": 16222,
+  "sha256": "3fa4bb8a64be0124"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/010_09.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/010_09.svg",
+  "alt": "東北新幹線配線略図09_水沢江刺駅 北上駅 新花巻駅",
+  "bytes": 17104,
+  "sha256": "5f93272db78fad8a"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/020_10.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/020_10.svg",
+  "alt": "東北新幹線配線略図10_盛岡駅 盛岡新幹線運転所 盛岡新幹線車両センター いわて沼宮内駅 二戸駅",
+  "bytes": 25202,
+  "sha256": "7b738552ca50abaa"
+ },
+ {
+  "line": "tohoku",
+  "file": "tohoku/020_11.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/tohoku/figures/020_11.svg",
+  "alt": "東北新幹線配線略図11_八戸駅 七戸十和田駅 新青森駅 盛岡新幹線車両センター青森派出所",
+  "bytes": 17618,
+  "sha256": "60fd55f59028ec95"
+ },
+ {
+  "line": "joetsu",
+  "file": "joetsu/010_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/joetsu/figures/010_01.svg",
+  "alt": "上越新幹線配線略図01_大宮駅 熊谷駅",
+  "bytes": 18104,
+  "sha256": "b645d16d7a94d325"
+ },
+ {
+  "line": "joetsu",
+  "file": "joetsu/010_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/joetsu/figures/010_02.svg",
+  "alt": "上越新幹線配線略図02_本庄早稲田駅 高崎駅 上毛高原駅",
+  "bytes": 17668,
+  "sha256": "9a64844b3ff6f04a"
+ },
+ {
+  "line": "joetsu",
+  "file": "joetsu/010_03.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/joetsu/figures/010_03.svg",
+  "alt": "上越新幹線配線略図03_越後湯沢駅 浦佐駅",
+  "bytes": 17872,
+  "sha256": "bd88e7dec9c25416"
+ },
+ {
+  "line": "joetsu",
+  "file": "joetsu/020_04.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/joetsu/figures/020_04.svg",
+  "alt": "上越新幹線配線略図04_長岡駅 燕三条駅",
+  "bytes": 13429,
+  "sha256": "ef08eebe14ad84a7"
+ },
+ {
+  "line": "joetsu",
+  "file": "joetsu/020_05.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/joetsu/figures/020_05.svg",
+  "alt": "上越新幹線配線略図05_新潟駅",
+  "bytes": 16165,
+  "sha256": "ef4d7e0fbe6a3d97"
+ },
+ {
+  "line": "joetsu",
+  "file": "joetsu/020_06.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/joetsu/figures/020_06.svg",
+  "alt": "上越新幹線配線略図06_新潟新幹線第一運転所 新潟新幹線車両センター",
+  "bytes": 18800,
+  "sha256": "4726cd695b40ad00"
+ },
+ {
+  "line": "hokuriku",
+  "file": "hokuriku/030_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokuriku/figures/030_01.svg",
+  "alt": "北陸新幹線配線略図01_高崎駅",
+  "bytes": 14961,
+  "sha256": "33ec25e24fc07950"
+ },
+ {
+  "line": "hokuriku",
+  "file": "hokuriku/021_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokuriku/figures/021_02.svg",
+  "alt": "北陸新幹線配線略図02_安中榛名駅 軽井沢駅 佐久平駅 上田駅",
+  "bytes": 12137,
+  "sha256": "88edd9b270ebefbb"
+ },
+ {
+  "line": "hokuriku",
+  "file": "hokuriku/030_03.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokuriku/figures/030_03.svg",
+  "alt": "北陸新幹線配線略図03_長野駅 長野新幹線運転所 長野新幹線総合車両センター 飯山駅",
+  "bytes": 15573,
+  "sha256": "52e7fc74e93af88a"
+ },
+ {
+  "line": "hokuriku",
+  "file": "hokuriku/030_04.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokuriku/figures/030_04.svg",
+  "alt": "北陸新幹線配線略図04_上越妙高駅 糸魚川駅",
+  "bytes": 11892,
+  "sha256": "217eb8d3f267c850"
+ },
+ {
+  "line": "hokuriku",
+  "file": "hokuriku/030_05.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokuriku/figures/030_05.svg",
+  "alt": "北陸新幹線配線略図05_黒部宇奈月温泉駅 富山駅 新高岡駅",
+  "bytes": 16475,
+  "sha256": "60307e8d1ffc7ba2"
+ },
+ {
+  "line": "hokuriku",
+  "file": "hokuriku/030_06.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokuriku/figures/030_06.svg",
+  "alt": "北陸新幹線配線略図06_金沢駅 白山総合車両所 小松駅",
+  "bytes": 20030,
+  "sha256": "59a612b5f61a908c"
+ },
+ {
+  "line": "hokuriku",
+  "file": "hokuriku/030_07.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokuriku/figures/030_07.svg",
+  "alt": "北陸新幹線配線略図07_加賀温泉駅 芦原温泉駅 福井駅 越前たけふ駅",
+  "bytes": 14525,
+  "sha256": "ba6e5a2ae20afa6d"
+ },
+ {
+  "line": "hokuriku",
+  "file": "hokuriku/030_08.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokuriku/figures/030_08.svg",
+  "alt": "北陸新幹線配線略図08_敦賀駅 白山総合車両所敦賀支所",
+  "bytes": 11220,
+  "sha256": "b8337d3b9ed260b9"
+ },
+ {
+  "line": "hokkaido",
+  "file": "hokkaido/010_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokkaido/figures/010_01.svg",
+  "alt": "北海道新幹線配線略図01_新青森駅 盛岡新幹線車両センター青森派出所",
+  "bytes": 14231,
+  "sha256": "5128c74b1d817ec1"
+ },
+ {
+  "line": "hokkaido",
+  "file": "hokkaido/010_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokkaido/figures/010_02.svg",
+  "alt": "北海道新幹線配線略図02_新中小国信号場 奥津軽いまべつ駅",
+  "bytes": 28755,
+  "sha256": "cde68d1106bd3813"
+ },
+ {
+  "line": "hokkaido",
+  "file": "hokkaido/010_03.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokkaido/figures/010_03.svg",
+  "alt": "北海道新幹線配線略図03_竜飛定点 吉岡定点 湯の里知内信号場",
+  "bytes": 13074,
+  "sha256": "fe12087b62b2558c"
+ },
+ {
+  "line": "hokkaido",
+  "file": "hokkaido/010_04.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokkaido/figures/010_04.svg",
+  "alt": "北海道新幹線配線略図04_木古内駅",
+  "bytes": 15935,
+  "sha256": "3cf8c57b572660f8"
+ },
+ {
+  "line": "hokkaido",
+  "file": "hokkaido/010_05.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/shinkansen/hokkaido/figures/010_05.svg",
+  "alt": "北海道新幹線配線略図05_函館新幹線総合車両所 新函館北斗駅",
+  "bytes": 14006,
+  "sha256": "b964dc1a277b8979"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_01.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図01_福島駅",
+  "bytes": 37803,
+  "sha256": "831ca223ff42a2e2"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_02.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図02_笹木野駅 庭坂駅 駅 板谷駅 峠駅 大沢駅 関根駅",
+  "bytes": 12790,
+  "sha256": "66200944b872689a"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_03.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_03.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図03_米沢駅 置賜駅 高畠駅 赤湯駅 北赤湯信号場",
+  "bytes": 20054,
+  "sha256": "08a5d137f81c9fc8"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_04.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_04.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図04_中川駅 羽前中山駅 かみのやま温泉駅 茂吉記念館前駅 蔵王駅",
+  "bytes": 13185,
+  "sha256": "8a4db5e2aff46ed3"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_05.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_05.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図05_山形新幹線車両センター 山形駅 北山形駅 羽前千歳駅",
+  "bytes": 21088,
+  "sha256": "867d0855f0a98cb9"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_06.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_06.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図06_南出羽駅 漆山駅 高擶駅 天童駅 乱川駅 神町駅",
+  "bytes": 12998,
+  "sha256": "c2c540873dd37502"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_07.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_07.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図07_さくらんぼ東根駅 東根駅 村山駅 袖崎駅 大石田駅 北大石田駅 芦沢駅",
+  "bytes": 14508,
+  "sha256": "ef0919666cdf3b0c"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_08.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_08.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図08_舟形駅 新庄駅 新庄統括センター 泉田駅 羽前豊里駅",
+  "bytes": 22940,
+  "sha256": "54e3a94d78f9de92"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_09.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_09.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図09_真室川駅 釜淵駅 大滝駅 及位駅 院内駅 横堀駅",
+  "bytes": 15701,
+  "sha256": "da084137ef1bf680"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_10.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_10.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図10_上湯沢駅 湯沢駅 下湯沢駅 十文字駅 醍醐駅",
+  "bytes": 14125,
+  "sha256": "d7a72dc48a043dd3"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_11.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_11.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図11_柳田駅 横手駅 横手・大曲統括センター 後三年駅 飯詰駅",
+  "bytes": 20092,
+  "sha256": "a499c8820a4d7c4b"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_12.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_12.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図12_大曲駅 神宮寺駅 刈和野駅 峰吉川駅",
+  "bytes": 16520,
+  "sha256": "131025ebe8861290"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_13.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_13.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図13_羽後境駅 大張野駅 和田駅 四ツ小屋駅",
+  "bytes": 16099,
+  "sha256": "950e7b17f9ba00a1"
+ },
+ {
+  "line": "ou_1",
+  "file": "ou_1/030_14.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/ou_1/figures/030_14.svg",
+  "alt": "奥羽本線（福島～秋田）配線略図14_秋田新幹線車両センター・秋田総合車両センター南秋田センター 秋田駅",
+  "bytes": 28722,
+  "sha256": "87856c0786107a5f"
+ },
+ {
+  "line": "tazawako",
+  "file": "tazawako/010_01.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/tazawako/figures/010_01.svg",
+  "alt": "田沢湖線配線略図01_大曲駅 北大曲駅 羽後四ツ屋駅 鑓見内駅 羽後長野駅",
+  "bytes": 24034,
+  "sha256": "c36daf0ce97d1076"
+ },
+ {
+  "line": "tazawako",
+  "file": "tazawako/010_02.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/tazawako/figures/010_02.svg",
+  "alt": "田沢湖線配線略図02_鶯野駅 角館駅 生田駅 神代駅 刺巻駅 田沢湖駅",
+  "bytes": 15756,
+  "sha256": "99cbb567410d02dd"
+ },
+ {
+  "line": "tazawako",
+  "file": "tazawako/010_03.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/tazawako/figures/010_03.svg",
+  "alt": "田沢湖線配線略図03_志度内信号場 大地沢信号場 赤渕駅 春木場駅 雫石駅 小岩井駅",
+  "bytes": 12744,
+  "sha256": "0bbca6b6197aa04c"
+ },
+ {
+  "line": "tazawako",
+  "file": "tazawako/010_04.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/tazawako/figures/010_04.svg",
+  "alt": "田沢湖線配線略図04_大釜駅 前潟駅",
+  "bytes": 7528,
+  "sha256": "763b127afa9d3bd2"
+ },
+ {
+  "line": "tazawako",
+  "file": "tazawako/010_05.svg",
+  "url": "https://www.haisenryakuzu.net/documents/jr/east/tazawako/figures/010_05.svg",
+  "alt": "田沢湖線配線略図05_盛岡駅",
+  "bytes": 34385,
+  "sha256": "6c27a5ca62231c9e"
+ }
+]

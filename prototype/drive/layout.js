@@ -109,6 +109,15 @@
   function diverts(code, dir, pick) { const k = code + dir + (pick && typeof pick === 'object' ? 'o' + pick.i : pick); if (_div[k] === undefined) _div[k] = station(code, dir, pick).ours.x !== 0; return _div[k]; }
   const _sc = {};
   function stopCount(code, dir) { const k = code + dir; if (_sc[k] === undefined) _sc[k] = station(code, dir, 0).stops.length; return _sc[k]; }
+  // ghi chéo (渡り線) giữa hai đường chính quanh ga. ls.xo = [[side, kind]] viết theo chiều XUỐNG: side 'b' trước vạch dừng / 'a' sau vạch; kind 'd' = chữ X kép, 's' = một đường chéo đi từ đường ngược chiều sang đường ta
+  // (theo chiều tàu chạy; đúng cả hai chiều vì sơ đồ đối xứng quay 180°). Ga không khai báo xo (tuyến chưa dựng lại từ sơ đồ ghi) = chữ X kép ở cả hai đầu như trước.
+  // Trả về [{z, kind, flip}]: z = điểm bắt đầu so với vạch dừng trong khung ĐANG NHÌN (camera sau: đảo dấu, flip=true); mỗi ghi chéo dài XLEN.
+  const XA_M = 1300, XB_M = 720, XLEN = 150;
+  function xovers(ls, dir, rear) {
+    const xo = ls && ls.xo ? ls.xo : [['b', 'd'], ['a', 'd']], out = [];
+    for (const [side, kind] of xo) { const sd = dir === 'up' ? (side === 'b' ? 'a' : 'b') : side, z = sd === 'b' ? -XA_M : XB_M; out.push(rear ? { z: kind === 'd' ? -z : -z - XLEN, kind, flip: true } : { z, kind, flip: false }); }
+    return out;
+  }
   // ---- Hướng địa lý của tuyến (độ, theo chiều kim đồng hồ từ hướng Bắc) tại vị trí s theo chiều chạy: lấy từ toạ độ các ga (nội suy giữa trung điểm các đoạn)
   // cộng độ lệch cục bộ khi vào đường cong (đường cong là dữ liệu sinh [I], nên độ lệch chỉ là hiệu ứng, tắt dần trong ~2,5 km sau khi ra cong)
   const _bc = {};
@@ -126,6 +135,6 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   // số cầu bộ hành trên cao của một ga theo mã bố trí: ≥ 3 sân ga → 3 lối; 2 sân ga và ≥ 4 đường → 2 lối; 2 sân ga ít đường → 1 lối; 1 sân ga → không có (ga ngầm do nơi gọi loại thêm)
   const _bn = {}; function bridgeCountOf(code) { if (_bn[code] === undefined) { const s = station(code, 'down', 0), np = s.plats.length; _bn[code] = np < 2 ? 0 : np >= 3 ? 3 : s.tracks.filter(t => !t.thr).length >= 4 ? 2 : 1; } return _bn[code]; }
-  root.Layout = { bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { xovers, XLEN, bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);
