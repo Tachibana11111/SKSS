@@ -1,0 +1,2 @@
+# SVG gốc của 配線略図.net: giữ nguyên từng byte (không đổi LF/CRLF) để khớp sha256 trong docs/data/haisen/manifest.json
+docs/data/haisen/**/*.svg -text
