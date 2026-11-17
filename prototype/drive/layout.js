@@ -3,7 +3,7 @@
 // Chuỗi bố trí viết theo chiều chạy XUỐNG (km tăng), trái -> phải khi nhìn từ buồng lái; Nhật chạy bên trái nên đường xuống nằm bên trái đường lên.
 //   d/u = đường dừng chiều xuống/lên, D/U = đường thông qua chiều xuống/lên, P = sân ga.
 (function (root) {
-  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-1': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '3-4-0': 'PdPduPu', '2-4-0t': 'dPddPu' };      // 2-4-0t: Tokyo (Tohoku/Joetsu/Hokuriku) theo sơ đồ ray HaisenNet: 3 đường nhập đường chính xuống, 1 đường nhập đường chính lên [D sơ đồ, I hướng]
+  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-1': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '3-4-0': 'PdPduPu', '2-4-0t': 'dPddPu', '2-3-0a': 'PdduP', '2-3-0b': 'PduuP' };      // 2-3-0a / 2-3-0b: Okutsugaru-Imabetsu / Kikonai theo hình 010_02 / 010_04 (hai đường chính cạnh hai sân ga ngoài + một đường 1435 mm mảnh sát một sân ga; chiều xuống: ga a dừng ở đường mảnh phía trên, ga b dừng ngay trên đường chính xuống) [D sơ đồ, I vai trò đường mảnh; vẫn tính là ga tránh được như mã cũ 2-2-1]. 2-4-0t: Tokyo (Tohoku/Joetsu/Hokuriku) theo sơ đồ ray HaisenNet: 3 đường nhập đường chính xuống, 1 đường nhập đường chính lên [D sơ đồ, I hướng]
   const ADJ = -4.3, TRK_GAP = 4.3, EDGE = 1.75, ISLAND = 7.2, SIDE = 9.0;       // toạ độ mô hình: X dương = phía "sân ga của đường ta"; đường ngược chiều gần nhất ở X = ADJ
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -109,20 +109,30 @@
   function diverts(code, dir, pick) { const k = code + dir + (pick && typeof pick === 'object' ? 'o' + pick.i : pick); if (_div[k] === undefined) _div[k] = station(code, dir, pick).ours.x !== 0; return _div[k]; }
   const _sc = {};
   function stopCount(code, dir) { const k = code + dir; if (_sc[k] === undefined) _sc[k] = station(code, dir, 0).stops.length; return _sc[k]; }
-  // ghi chéo (渡り線) giữa hai đường chính quanh ga. ls.xo = [[side, kind]] viết theo chiều XUỐNG: side 'b' trước vạch dừng / 'a' sau vạch; kind 'd' = chữ X kép, 's' = một đường chéo đi từ đường ngược chiều sang đường ta
+  // ghi chéo (渡り線) giữa hai đường chính quanh ga. ls.xo = [[side, kind, gap?]] (gap: mét từ mép sân ga tới ghi chéo; không có = vị trí cố định cũ 1300 m trước / 720 m sau vạch) viết theo chiều XUỐNG: side 'b' trước vạch dừng / 'a' sau vạch; kind 'd' = chữ X kép, 's' = một đường chéo đi từ đường ngược chiều sang đường ta, 'r' = ngược lại (từ đường ta sang đường ngược chiều)
   // (theo chiều tàu chạy; đúng cả hai chiều vì sơ đồ đối xứng quay 180°). Ga không khai báo xo (tuyến chưa dựng lại từ sơ đồ ghi) = chữ X kép ở cả hai đầu như trước.
   // Trả về [{z, kind, flip}]: z = điểm bắt đầu so với vạch dừng trong khung ĐANG NHÌN (camera sau: đảo dấu, flip=true); mỗi ghi chéo dài XLEN.
-  const XA_M = 1300, XB_M = 720, XLEN = 150;
+  const XA_M = 1300, XB_M = 720, XLEN = 150, PL_BACK = 420, PL_FRONT = 20;      // sân ga vẽ từ 420 m trước tới 20 m sau vạch dừng (cabview/topview)
   function xovers(ls, dir, rear) {
     const xo = ls && ls.xo ? ls.xo : [['b', 'd'], ['a', 'd']], out = [];
-    for (const [side, kind] of xo) { const sd = dir === 'up' ? (side === 'b' ? 'a' : 'b') : side, z = sd === 'b' ? -XA_M : XB_M; out.push(rear ? { z: kind === 'd' ? -z : -z - XLEN, kind, flip: true } : { z, kind, flip: false }); }
+    for (const [side, kind, gap] of xo) { const sd = dir === 'up' ? (side === 'b' ? 'a' : 'b') : side;
+      if (gap !== undefined) { const z = sd === 'b' ? -(PL_BACK + gap) - XLEN : PL_FRONT + gap; out.push(rear ? { z: -z - XLEN, kind, flip: true } : { z, kind, flip: false }); continue; }      // gap: khoảng cách (m) từ đầu/cuối sân ga tới ghi chéo, theo sơ đồ
+      const z = sd === 'b' ? -XA_M : XB_M; out.push(rear ? { z: kind === 'd' ? -z : -z - XLEN, kind, flip: true } : { z, kind, flip: false }); }
     return out;
   }
+  // Những đường cong nào của một ghi chéo cần vẽ: 0 = từ đường ta sang đường ngược chiều (lerp(0, oppAt)), 1 = từ đường ngược chiều sang đường ta (lerp(oppAt, 0)); "từ → sang" tính theo chiều tiến của khung đang nhìn.
+  // kind 'd' = cả hai; 's' = opp → ours theo chiều tàu chạy (Shin-Omura); 'r' = ours → opp theo chiều tàu chạy (Okutsugaru-Imabetsu, Kikonai). Camera sau (flip) là thế giới gương nên đảo chiều tiến.
+  const xoLines = xv => xv.kind === 'd' ? [0, 1] : (xv.kind === 's') === !xv.flip ? [1] : [0];
   // ---- Hướng địa lý của tuyến (độ, theo chiều kim đồng hồ từ hướng Bắc) tại vị trí s theo chiều chạy: lấy từ toạ độ các ga (nội suy giữa trung điểm các đoạn)
   // cộng độ lệch cục bộ khi vào đường cong (đường cong là dữ liệu sinh [I], nên độ lệch chỉ là hiệu ứng, tắt dần trong ~2,5 km sau khi ra cong)
+  // các điểm địa lý của tuyến theo km: ga + điểm cứu hộ trong hầm (chỉ để uốn đường trên bản đồ/hướng la bàn theo đúng lộ trình thật, ví dụ hầm Seikan đi qua mũi Tappi và mũi Yoshioka chứ không phải đường thẳng Imabetsu–Kikonai)
+  // tên điểm cứu hộ theo ngôn ngữ giao diện: ja = tên Nhật + furigana; en/vi = tên đã dịch ("Tappi Emergency Point" / "Điểm cứu hộ Tappi"); jp luôn là tên Nhật (biển trong hầm)
+  const refugeName = rf => { const ja = !!(root.I18N && root.I18N.lang === 'ja'); return { jp: rf.jp, name: ja ? rf.jp : (typeof _t === 'function' ? _t('Điểm cứu hộ {0}', rf.en) : 'Điểm cứu hộ ' + rf.en), kana: ja ? rf.kana || '' : '', sub: ja ? rf.kana || '' : (typeof _t === 'function' ? _t('Điểm cứu hộ {0}', rf.en) : 'Điểm cứu hộ ' + rf.en) }; };
+  const _geo = new WeakMap();
+  function geoPoints(L) { let g = _geo.get(L); if (!g) { g = L.stations.map(s => ({ km: s.km, lat: s.lat, lon: s.lon })); for (const w of (L.meta && L.meta.refugeInfo) || []) g.push({ km: w.km, lat: w.lat, lon: w.lon, wp: true }); g.sort((a, b) => a.km - b.km); _geo.set(L, g); } return g; }
   const _bc = {};
   function brg(a, b) { const r = Math.PI / 180, f1 = a.lat * r, f2 = b.lat * r, dl = (b.lon - a.lon) * r, y = Math.sin(dl) * Math.cos(f2), x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl); return (Math.atan2(y, x) / r + 360) % 360; }
-  function baseBearings(L) { if (_bc[L.id]) return _bc[L.id]; const st = L.stations, mids = []; for (let i = 0; i + 1 < st.length; i++) mids.push({ km: (st[i].km + st[i + 1].km) / 2, b: brg(st[i], st[i + 1]) });
+  function baseBearings(L) { if (_bc[L.id]) return _bc[L.id]; const st = geoPoints(L), mids = []; for (let i = 0; i + 1 < st.length; i++) mids.push({ km: (st[i].km + st[i + 1].km) / 2, b: brg(st[i], st[i + 1]) });
     for (let i = 1; i < mids.length; i++) { while (mids[i].b - mids[i - 1].b > 180) mids[i].b -= 360; while (mids[i].b - mids[i - 1].b < -180) mids[i].b += 360; } return (_bc[L.id] = mids); }
   function bearingAt(L, Sim, dir, s) {
     const km = Sim.kmOfS(s, dir, L.kmEnd), mids = baseBearings(L); let b;
@@ -135,6 +145,6 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   // số cầu bộ hành trên cao của một ga theo mã bố trí: ≥ 3 sân ga → 3 lối; 2 sân ga và ≥ 4 đường → 2 lối; 2 sân ga ít đường → 1 lối; 1 sân ga → không có (ga ngầm do nơi gọi loại thêm)
   const _bn = {}; function bridgeCountOf(code) { if (_bn[code] === undefined) { const s = station(code, 'down', 0), np = s.plats.length; _bn[code] = np < 2 ? 0 : np >= 3 ? 3 : s.tracks.filter(t => !t.thr).length >= 4 ? 2 : 1; } return _bn[code]; }
-  root.Layout = { xovers, XLEN, bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { refugeName, geoPoints, xovers, xoLines, XLEN, bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);

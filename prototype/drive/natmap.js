@@ -115,7 +115,7 @@
       const col = cl.kind === 'rain' ? '59,130,246' : cl.kind === 'snow' ? '226,238,255' : '170,180,190'; ctx.fillStyle = 'rgba(' + col + ',.2)'; ctx.beginPath(); ctx.arc(q[0], q[1], rad, 0, 7); ctx.fill();
       ctx.strokeStyle = 'rgba(' + col + ',.6)'; ctx.lineWidth = 1; ctx.setLineDash(cl.kind === 'wind' ? [5, 4] : []); ctx.stroke(); ctx.setLineDash([]); txt(cl.kind === 'rain' ? _t('mưa lớn') : cl.kind === 'snow' ? _t('tuyết') : _t('gió mạnh'), q[0], q[1] + 4, dk ? 'rgba(220,235,255,.9)' : 'rgba(20,40,80,.9)', '11px system-ui', 'center'); }
     const z = Math.min(1.8, Math.max(0.8, Math.sqrt(V.s / 44)));
-    for (const sg of SEGS) { const L = root.LINES[sg.line]; if (!L) continue; ctx.beginPath(); for (let i = sg.a; i <= sg.b && i < L.stations.length; i++) { const q = P(L.stations[i].lon, L.stations[i].lat, r); i === sg.a ? ctx.moveTo(q[0], q[1]) : ctx.lineTo(q[0], q[1]); }
+    for (const sg of SEGS) { const L = root.LINES[sg.line]; if (!L) continue; ctx.beginPath(); for (let i = sg.a; i <= sg.b && i < L.stations.length; i++) { if (i > sg.a && root.Layout && L.meta && L.meta.refugeInfo) for (const w of L.meta.refugeInfo) if (w.km > L.stations[i - 1].km && w.km < L.stations[i].km) { const qw = P(w.lon, w.lat, r); ctx.lineTo(qw[0], qw[1]); } const q = P(L.stations[i].lon, L.stations[i].lat, r); i === sg.a ? ctx.moveTo(q[0], q[1]) : ctx.lineTo(q[0], q[1]); }
       ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = dk ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.4)'; ctx.lineWidth = 5.4 * z * (U > 1 ? 1.2 : 1); ctx.stroke(); ctx.strokeStyle = sg.col; ctx.lineWidth = 3.2 * z * (U > 1 ? 1.2 : 1); ctx.stroke(); }
     // ga: Tokyo to (pha màu cả 10 tuyến), ga rẽ nhánh/đổi tuyến vừa, còn lại nhỏ
     const names = Object.keys(ST), lab = V.s > 120;
@@ -128,6 +128,11 @@
         const col = dk ? '#e8eef5' : '#1b2633', kana = I18N.lang === 'ja' && root.STATION_KANA && root.STATION_KANA[s.jp];
         if (kana) txt(kana, q[0] + rad + 4, q[1] + 3 - (s.big ? 13 : 11) * U, col, '7px system-ui');      // furigana phía trên chữ kanji
         txt(_s(s), q[0] + rad + 4, q[1] + 4, col, (s.big ? 'bold 13px' : '11px') + ' system-ui'); } }
+    // điểm cứu hộ (定点) trong hầm Seikan (cực bắc Honshu: mũi Tappi, cực nam Hokkaido: mũi Yoshioka): hình thoi xanh, nhãn khi phóng to
+    { const seen = new Set(); for (const sg of SEGS) { const L = root.LINES[sg.line]; if (!L || !L.meta || !L.meta.refugeInfo || seen.has(sg.line)) continue; seen.add(sg.line);
+      for (const rf of L.meta.refugeInfo) { const q = P(rf.lon, rf.lat, r); if (q[0] < x - 20 || q[0] > x + w + 20 || q[1] < y - 20 || q[1] > y + h + 20) continue; const rad = 3.6 * z * (U > 1 ? 1.3 : 1);
+        ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(Math.PI / 4); ctx.fillStyle = '#4cd68a'; ctx.strokeStyle = dk ? '#fff' : '#223'; ctx.lineWidth = 1.2; ctx.fillRect(-rad, -rad, rad * 2, rad * 2); ctx.strokeRect(-rad, -rad, rad * 2, rad * 2); ctx.restore();
+        if (lab) { const nm = root.Layout.refugeName(rf), cl = dk ? '#9ff0c0' : '#145a35'; if (nm.kana) txt(nm.kana, q[0] + rad + 6, q[1] - 7 * U, cl, '7px system-ui'); txt(nm.name, q[0] + rad + 6, q[1] + 4, cl, '11px system-ui'); } } } }
     // tàu: tam giác chỉ hướng
     const tr = gather(W, T), hits = []; V.trains = hits; V.all = tr;      // V.all: mọi đoàn đang có trên bản đồ (kể cả ngoài khung nhìn) cho ô tìm tàu
     for (const t of tr) { const q = P(t.s.lon, t.s.lat, r); if (q[0] < x - 20 || q[0] > x + w + 20 || q[1] < y - 20 || q[1] > y + h + 20) continue; const ang = Math.atan2(t.s.dy, t.s.dx), sz = (t.me ? 8.5 : 5.2) * z * (U > 1 ? 1.3 : 1);

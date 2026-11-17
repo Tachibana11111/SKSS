@@ -48,9 +48,15 @@
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [520, 565, 'mountain'], [636, 674.9, 'mountain'], [674.9, 715, 'mountain'], [769.8, 823.7, 'field']],
       grade: [[0, 36, 15, 25], [36, 674.9, 7, 15], [674.9, 823.7, 8, 20.8]],
       refuges: [732.9, 755.9],     // 竜飛定点 (km 58.0 từ Shin-Aomori) và 吉岡定点 (81.0) trong hầm Seikan [N]
+      // điểm cứu hộ trong hầm Seikan (cũ: 竜飛海底駅/吉岡海底駅; 2 sân ga bên, 2 đường; sân ga đã dỡ/rút ngắn khi đóng ga 3/2014). Toạ độ: Wikipedia JA (bài 竜飛定点, 吉岡定点), là điểm trên mặt đất gần nhất [N, hai nguồn lệch ≤ 80 m]; độ sâu [N]; km thực = km các ga + 営業キロ giữa các ga (19,5 / 23,0 / 32,3) [N, khớp refuges]
+      refugeInfo: [{ km: 732.9, jp: '竜飛定点', kana: 'たっぴていてん', en: 'Tappi', lat: 41.25722, lon: 140.34806, depth: 135.0 }, { km: 755.9, jp: '吉岡定点', kana: 'よしおかていてん', en: 'Yoshioka', lat: 41.44222, lon: 140.23917, depth: 149.5 }],      // kana [K]: điền theo kiến thức nền, chưa đối chiếu nguồn
       notes: [{ km: 703.8, dir: 'down', text: _t('Vào đoạn dùng chung ray ba với tàu hàng (Shin-Nakaoguni–Kikonai, ~82 km): ≤ 140 km/h ngoài hầm, ≤ 160 km/h trong hầm Seikan (53,85 km).') },
               { km: 786.3, dir: 'up', text: _t('Vào đoạn dùng chung ray ba với tàu hàng (Kikonai–Shin-Nakaoguni): ≤ 140 km/h ngoài hầm, ≤ 160 km/h trong hầm Seikan.') },
-              { km: 732.9, dir: 'down', text: _t('Dưới đáy biển eo Tsugaru (≈ 23 km). Nếu có cháy: không dừng giữa hầm, chạy tới điểm cứu hộ 吉岡 hoặc ra khỏi hầm.') }]
+              { km: 732.9, dir: 'down', text: _t('Dưới đáy biển eo Tsugaru (≈ 23 km). Nếu có cháy: không dừng giữa hầm, chạy tới điểm cứu hộ 吉岡 hoặc ra khỏi hầm.') },
+              { km: 731.7, dir: 'down', text: _t('Sắp qua điểm cứu hộ 竜飛定点 (Tappi, sâu 135 m dưới mực nước biển, cũ là ga ngầm): sân ga hẹp hai bên, đèn thoát hiểm xanh.') },
+              { km: 754.7, dir: 'down', text: _t('Sắp qua điểm cứu hộ 吉岡定点 (Yoshioka, sâu 149,5 m dưới mực nước biển, cũ là ga ngầm sâu nhất thế giới): sân ga hẹp hai bên, đèn thoát hiểm xanh.') },
+              { km: 757.1, dir: 'up', text: _t('Sắp qua điểm cứu hộ 吉岡定点 (Yoshioka, sâu 149,5 m dưới mực nước biển, cũ là ga ngầm sâu nhất thế giới): sân ga hẹp hai bên, đèn thoát hiểm xanh.') },
+              { km: 734.1, dir: 'up', text: _t('Sắp qua điểm cứu hộ 竜飛定点 (Tappi, sâu 135 m dưới mực nước biển, cũ là ga ngầm): sân ga hẹp hai bên, đèn thoát hiểm xanh.') }]
     },
     yam: {
       pa: '山形', atc: 'DS', defVeh: 'E8', flipDown: false,

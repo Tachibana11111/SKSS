@@ -25,6 +25,9 @@
   function atKm(L, km) {
     const S = L.stations; let j = 0; while (j < S.length - 2 && S[j + 1].km < km) j++;
     const a = S[j], b = S[j + 1], f = Math.max(0, Math.min(1, (km - a.km) / ((b.km - a.km) || 1)));
+    const Ly = root.Layout, Gp = Ly && Ly.geoPoints ? Ly.geoPoints(L) : null;
+    if (Gp && Gp.length > S.length) { let k = 0; while (k < Gp.length - 2 && Gp[k + 1].km < km) k++; const p = Gp[k], q = Gp[k + 1], g = Math.max(0, Math.min(1, (km - p.km) / ((q.km - p.km) || 1)));      // có điểm cứu hộ trong hầm: nội suy qua các điểm đó
+      return { lon: p.lon + (q.lon - p.lon) * g, lat: p.lat + (q.lat - p.lat) * g, dx: (q.lon - p.lon) * KX, dy: -(q.lat - p.lat), idx: f < 0.5 ? j : j + 1 }; }
     return { lon: a.lon + (b.lon - a.lon) * f, lat: a.lat + (b.lat - a.lat) * f, dx: (b.lon - a.lon) * KX, dy: -(b.lat - a.lat), idx: f < 0.5 ? j : j + 1 };
   }
   // trạng thái một đoàn theo lịch tại giờ `now` (đã trừ độ trễ): null nếu chưa hiện / đã biến mất (hiện sớm và biến mất muộn 10 s)

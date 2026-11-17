@@ -8,6 +8,6 @@
 
 **Cảnh báo:** tệp SVG là dữ liệu tải từ ngoài, không tin cậy: **không mở bằng trình duyệt hay công cụ chạy mã**; chỉ phân tích văn bản bằng script (Python `-I`). Chưa đưa vào git; quyết định sau.
 
-**Tệp sinh ra (không phải bản gốc):** `mini_shinkansen_layout.html` (xếp các hình Tohoku/Yamagata/Akita cạnh nhau, không sửa nội dung SVG), `nks_graph.json` (đồ thị Nishi-Kyushu trích bằng `tools/haisen_nks_graph.py`), `nks_layout.html` (nguyên bản ghép + mockup giản lược). Hai trang HTML nhúng SVG dạng ảnh đã lọc script/liên kết.
+**Tệp sinh ra (không phải bản gốc):** `mini_shinkansen_layout.html` (xếp các hình Tohoku/Yamagata/Akita cạnh nhau, không sửa nội dung SVG), `nks_graph.json` (đồ thị Nishi-Kyushu trích bằng `tools/haisen_graph.py`), `nks_layout.html` (nguyên bản ghép + mockup giản lược), và tương tự cho Hokkaido: `hok_graph.json` + `hok_layout.html` (5 hình 010_01–010_05 Shin-Aomori – Shin-Hakodate-Hokuto). Hai trang HTML nhúng SVG dạng ảnh đã lọc script/liên kết.
 
 **Kiểm tra nguyên vẹn:** `manifest.json` ghi số byte và 16 ký tự đầu của SHA-256 của từng tệp SVG tải về; `.gitattributes` đặt `-text` cho các SVG này để git không đổi LF thành CRLF khi checkout trên Windows (đổi thì mã băm lệch).

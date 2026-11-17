@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
-# Chạy: python -X utf8 tools/haisen_nks_graph.py (đọc docs/data/haisen/nishi_kyushu/*.svg, ghi docs/data/haisen/nks_graph.json). Nguồn gốc/giấy phép: docs/data/haisen/README.md
-# Trích đồ thị đường ray Nishi-Kyushu từ hai SVG gốc (配線略図.net, CC BY 4.0) rồi ghi nks_graph.json.
-# Toạ độ "ghép": 010_01 ở (0,0); 010_02 đặt tại (419.8, -6.8) để hai đường chính Takeo-Onsen–Ureshino khớp hai đường chính Shin-Omura–Nagasaki.
+# Trích đồ thị đường ray từ các SVG 配線略図.net (CC BY 4.0) đã ghép thành một hệ toạ độ, ghi docs/data/haisen/<tên>_graph.json.
+# Chạy: python -X utf8 tools/haisen_graph.py [nks|hok]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
+# CẤU HÌNH: mỗi hình đặt tại (x, y) trong hệ ghép; các hình nối nhau tại các đầu mút của hai đường chính (độ chênh dọc = trung bình các cặp đường khớp).
+#  nks: 010_01 ở (0,0); 010_02 ở (419.8, -6.8) (Takeo-Onsen – Ureshino-Onsen + Shin-Omura – Isahaya – Nagasaki).
+#  hok: 5 hình Hokkaido Shin-Aomori – Shin-Hakodate-Hokuto; đầu mút phải/trái các hình khớp tới 0,1 (hai đường Shinkansen, và hai đường 1067 mm trong đoạn ba ray).
 import sys, os, re, json, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from haisen_dump import load, sty, NS
-SRC = r'D:\Shinkansen\docs\data\haisen\nishi_kyushu'
-OFF = {'010_01.svg': (0.0, 0.0), '010_02.svg': (419.8, -6.8)}
+CONFIG = {
+    'nks': {'dir': 'nishi_kyushu', 'out': 'nks_graph.json', 'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (419.8, -6.8)}, 'seams': [{'x': 419.8, 'dy': -6.8}]},
+    'hok': {'dir': 'hokkaido', 'out': 'hok_graph.json', 'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (521.3, -168.55), '010_03.svg': (1033.0, -31.55), '010_04.svg': (1441.3, -4.4), '010_05.svg': (2100.6, 4.75)},
+            'seams': [{'x': 521.3, 'dy': -168.55}, {'x': 1033.0, 'dy': 137.0}, {'x': 1441.3, 'dy': 27.15}, {'x': 2100.6, 'dy': 9.15}]}}
+LINE = (sys.argv[1] if len(sys.argv) > 1 else 'nks'); CFG = CONFIG[LINE]
+SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['dir']); OFF = CFG['off']
 SHK, CONV, NAVY, BLK = '#0070c0', '#404040', '#002060', '#000'
+def norm_stroke(c):      # một số hình viết '#0070C0'/'#000000'
+    c = (c or '').lower(); return '#000' if c == '#000000' else (c or None)
 
 def fw(s):
     v = s.get('stroke-width'); return float(v.replace('px', '')) if v else None
@@ -22,13 +30,13 @@ def read():
                 f = lambda k: float(el.get(k) or 0)
                 a, b, c, d = f('x1') + ox, f('y1') + oy, f('x2') + ox, f('y2') + oy
                 if a > c or (a == c and b > d): a, b, c, d = c, d, a, b
-                L.append({'x1': a, 'y1': b, 'x2': c, 'y2': d, 'stroke': s.get('stroke'), 'w': fw(s), 'fig': name})
+                L.append({'x1': a, 'y1': b, 'x2': c, 'y2': d, 'stroke': norm_stroke(s.get('stroke')), 'w': fw(s), 'fig': name})
             elif tag == 'rect':
                 w, h = float(el.get('width')), float(el.get('height'))
                 if h <= 1.2 or w <= 1.2: continue
-                R.append({'x': float(el.get('x')) + ox, 'y': float(el.get('y')) + oy, 'w': w, 'h': h, 'stroke': s.get('stroke'), 'sw': fw(s), 'fill': s.get('fill'), 'fig': name})
+                R.append({'x': float(el.get('x')) + ox, 'y': float(el.get('y')) + oy, 'w': w, 'h': h, 'stroke': norm_stroke(s.get('stroke')), 'sw': fw(s), 'fill': s.get('fill'), 'fig': name})
             elif tag == 'text':
-                m = re.search(r'translate\(\s*([-\d.]+)[ ,]+([-\d.]+)', el.get('transform', ''))
+                tr = el.get('transform', ''); m = re.search(r'translate\(\s*([-\d.]+)[ ,]+([-\d.]+)', tr) or re.search(r'matrix\(\s*[-\d.]+[ ,]+[-\d.]+[ ,]+[-\d.]+[ ,]+[-\d.]+[ ,]+([-\d.]+)[ ,]+([-\d.]+)\s*\)', tr)
                 if m: T.append({'s': ''.join(el.itertext()).strip(), 'x': float(m.group(1)) + ox, 'y': float(m.group(2)) + oy, 'size': float((s.get('font-size') or '11px').replace('px', '')), 'fig': name})
     return L, R, T
 
@@ -129,9 +137,10 @@ for e in edges:
     if e['kind'] == 'rail':
         e['role'] = ('main_d' if abs(a['y'] - MAIN_D) < 0.6 else 'main_u' if abs(a['y'] - MAIN_U) < 0.6 else 'other')
     else:
-        ys = {round(a['y'], 1), round(b['y'], 1)}
-        on_main = lambda n: abs(n['y'] - MAIN_D) < 0.6 or abs(n['y'] - MAIN_U) < 0.6
-        e['role'] = 'crossover' if (on_main(a) or a['kind'] == 'diamond') and (on_main(b) or b['kind'] == 'diamond') and abs(a['y'] - b['y']) > 5 and (abs(a['y'] - MAIN_D) < 0.6 or a['kind'] == 'diamond') and (abs(b['y'] - MAIN_U) < 0.6 or b['kind'] == 'diamond' or abs(b['y'] - MAIN_D) < 0.6) else 'other'
+        # đường chéo nối đường chính xuống – đường chính lên (trực tiếp hoặc qua một giao cắt) là ghi chéo; thứ tự hai nút trong cạnh không quan trọng
+        kd = lambda n: 'd' if abs(n['y'] - MAIN_D) < 0.6 else 'u' if abs(n['y'] - MAIN_U) < 0.6 else 'x' if n['kind'] == 'diamond' else None
+        ka, kb = kd(a), kd(b)
+        e['role'] = 'crossover' if ka and kb and ka != kb and abs(a['y'] - b['y']) > 5 else 'other'
 # thành phần liên thông của các cạnh 'other' => ga phụ (Nagasaki) hoặc depot
 adj = {}
 for e in edges:
@@ -151,7 +160,8 @@ for e in edges:
 for ci, comp in enumerate(comps):
     xs = [v for c in comp for v in (c['x1'], c['x2'])]; ys = [v for c in comp for v in (c['y1'], c['y2'])]
     big = len(comp)
-    kind = 'depot' if big > 8 else 'station_loop'
+    far = any(v > MAIN_U + 20.5 or v < MAIN_D - 20.5 for v in ys)      # đường ga (ngoài cùng) cách đường chính ≤ ~19; xa hơn là depot/đường phụ
+    kind = 'depot' if big > 8 or far else 'station_loop'
     for c in comp: c['group'] = kind
 
 # ---- sân ga
@@ -174,7 +184,8 @@ for p in plats:
     p['cy'] = (p['y1'] + p['y2']) / 2; p['cx'] = (p['x1'] + p['x2']) / 2
 shk_p = sorted([p for p in plats if p['shk']], key=lambda p: (p['cx'], p['cy']))
 # tên ga: nhãn kanji cỡ 16 gần tâm sân ga nhất
-labels = [t for t in T if t['size'] >= 15]
+CJK = re.compile(r'[぀-ヿ一-鿿]'); BADLBL = ('電化', '軌間', '凡例', '線', '方', '軌条', '非電', '点', '不明')
+labels = [t for t in T if t['size'] >= 10 and CJK.search(t['s']) and len(t['s']) >= 2 and not any(b in t['s'] for b in BADLBL) and '（信）' not in t['s']]      # nhãn tên ga (cỡ 11 hoặc 16 tuỳ hình)
 stations = []
 for p in shk_p:
     st = next((s for s in stations if abs(s['cx'] - p['cx']) < 25), None)
@@ -182,7 +193,8 @@ for p in shk_p:
     else: stations.append({'cx': p['cx'], 'plats': [p]})
 for s in stations:
     s['x1'] = min(p['x1'] for p in s['plats']); s['x2'] = max(p['x2'] for p in s['plats']); s['cx'] = (s['x1'] + s['x2']) / 2
-    lb = min(labels, key=lambda t: abs(t['x'] + 8 * len(t['s']) - s['cx']))
+    y2 = max(p['y2'] for p in s['plats'])
+    lb = min([t for t in labels if 5 < t['y'] - y2 < 150] or labels, key=lambda t: abs(t['x'] + t['size'] / 2 * len(t['s']) - s['cx']))
     s['jp'] = lb['s']
     en = [t for t in T if 9 < t['size'] < 15 and re.match(r'^[A-Za-z-]+$', t['s']) and 12 < t['y'] - lb['y'] < 20 and abs((t['x'] + 3 * len(t['s'])) - s['cx']) < 40]
     s['en'] = en[0]['s'] if en else ''
@@ -242,10 +254,10 @@ for n in nodes:
 texts = [{'s': t['s'], 'x': round(t['x'], 1), 'y': round(t['y'], 1), 'size': t['size']} for t in T if t['size'] >= 8]
 out = {
     'note': 'Trích từ 配線略図.net (CC BY 4.0). Toạ độ hệ ghép, không theo tỉ lệ thực. Màu: xanh #0070c0 = đường Shinkansen, xám #404040 = đường thường, navy = tín hiệu/ranh giới.',
-    'seam': {'x': 419.8, 'dy': -6.8}, 'main': {'down_y': MAIN_D, 'up_y': MAIN_U},
+    'seam': CFG['seams'][0], 'seams': CFG['seams'], 'main': {'down_y': MAIN_D, 'up_y': MAIN_U},
     'nodes': nodes, 'edges': edges, 'switches': switches, 'platforms': [p for p in plats if p['shk']], 'stations': [{k: v for k, v in s.items()} for s in stations],
     'signals': signals, 'bumpers': bumpers, 'buildings': bld, 'aux': aux, 'conv': convl, 'conv_platforms': convp, 'texts': texts, 'rails': [{'y': r['y'], 'x1': r['x1'], 'x2': r['x2']} for r in rails]}
-json.dump(out, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', 'nks_graph.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+json.dump(out, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['out']), 'w', encoding='utf-8'), ensure_ascii=False)
 print('ray', len(rails), '| chéo', len(diags), '| nút', len(nodes), '| cạnh', len(edges), '| ghi', len(switches), '| diamond', sum(1 for n in nodes if n['kind'] == 'diamond'), '| tín hiệu', len(signals), '| chắn cuối', len(bumpers))
 print('đường chính: xuống y=%s, lên y=%s' % (MAIN_D, MAIN_U))
 for s in stations: print(' ga', s['jp'], s['en'], 'token', s['token'], 'x %.0f-%.0f' % (s['x1'], s['x2']), 'đường', [t['y'] for t in s['tracks']])

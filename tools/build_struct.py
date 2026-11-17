@@ -1,4 +1,5 @@
 # Bố trí ga, kết cấu tuyến (nền đất/cầu cạn/cầu/hầm) và đường cong cho game. Được build_lines.py nạp (exec) sau khi có LINES.
+import re
 # Nguồn [N]: Wikipedia tiếng Nhật 東海道/山陽/東北/九州新幹線 (tra 21/10/2026): 配線 từng ga, 構造種別延長割合, 曲線半径. Vị trí từng đoạn kết cấu/đường cong là [I] (không có nguồn công khai theo km), sinh ngẫu nhiên cố định.
 import random
 
@@ -12,7 +13,7 @@ LAY = {
     '東京:toh': '2-4-0t', '東京:jts': '2-4-0t', '東京:hok': '2-4-0t', '上野': '2-4-0', '大宮': '3-6-0', '小山': '2-3-1', '宇都宮': '2-2-1', '那須塩原': '2-3-1', '新白河': '2-2-1', '郡山': '2-3-1', '福島': '2-4-1', '白石蔵王': '2-3-1', '仙台': '2-4-0', '古川': '2-2-1',
     'くりこま高原': '2-2-0', '一ノ関': '2-2-1', '水沢江刺': '2-2-0', '北上': '2-3-1', '新花巻': '2-2-0', '盛岡': '2-4-0', 'いわて沼宮内': '2-2-0', '二戸': '2-2-0', '八戸': '2-4-0', '七戸十和田': '2-2-0', '新青森': '2-4-0',
     # Hokkaido (nối dài tuyến toh): 2面2線 + 通過線 một bên ở Okutsugaru-Imabetsu và Kikonai [N, trang Wikipedia JP; gán ga theo thứ tự trong bài nên có thể lệch [?]]
-    '奥津軽いまべつ': '2-2-1', '木古内': '2-2-1', '新函館北斗': '2-2-0',
+    '奥津軽いまべつ': '2-3-0a', '木古内': '2-3-0b', '新函館北斗': '2-2-0',
     # Joetsu [N: 配線 từng ga theo Wikipedia JP 上越新幹線]
     '熊谷': '2-3-1', '本庄早稲田': '2-2-1', '高崎': '2-4-1', '上毛高原': '2-2-1', '越後湯沢': '2-4-1', '浦佐': '2-2-1', '長岡': '2-2-1', '燕三条': '2-3-1', '新潟': '3-4-0',
     # Hokuriku [N: Wikipedia JP 北陸新幹線; Fukui là ga duy nhất 1面2線]
@@ -168,7 +169,7 @@ def apply(LINES):
     for lid, ln in LINES.items():
         for st in ln['stations']:
             code = LAY.get(st['jp'] + ':' + lid) or LAY.get(st['jp']) or LAY[st['jp'] + ':toh']
-            st['lay'] = code; st['loop'] = int(code.endswith('-1'))     # có đường thông qua => ga tránh được
+            st['lay'] = code; st['loop'] = int(bool(re.match(r'^\d+-\d+-1', code)))     # có đường thông qua => ga tránh được (mã có thể có hậu tố chữ: 2-3-0a)
             if st['jp'] in ('盛岡', '福島'): st['side'] = 1                  # ga ghép/tách đoàn: tàu dừng ở đường TRÁNH (không phải đường thông qua)
             st['lat'], st['lon'] = COORD[st['jp']]
         ln['struct'] = gen_struct(lid, ln); ln['curves'] = gen_curves(lid, ln); DONE[lid] = ln
