@@ -189,7 +189,7 @@
        // đá dăm trước: đường nhánh không còn đè lên ray đường chính; đường ray dừng ở chắn cuối đường
       for (const [xf, z0, z1] of parts) railStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), true);
       // ghi chữ X (hai ghi bắt chéo) nối đường ta và đường ngược chiều ở hai đầu mỗi ga
-      for (const q of sts) for (const xv of LAY.xovers(L.stations[q.m.i], W.dir, rr)) { const zc = q.d + xv.z; if (zc + 150 < zf || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); }, a = [z => lerp(0, oppAt(z), sm((z - zc) / 150)), z => lerp(oppAt(z), 0, sm((z - zc) / 150))];
+      for (const q of sts) for (const xv of LAY.xovers(L.stations[q.m.i], W.rearOf || W.dir, rr)) { const zc = q.d + xv.z; if (zc + 150 < zf || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); }, a = [z => lerp(0, oppAt(z), sm((z - zc) / 150)), z => lerp(oppAt(z), 0, sm((z - zc) / 150))];
         for (const f of xv.kind === 's' ? [xv.flip ? a[0] : a[1]] : a) railStrip(f, Math.max(zc, physLoZ), Math.min(zc + 150, physHiZ), false); }
       // chắn cuối đường (giảm chấn) và tường chắn ở hai đầu tuyến (ga cuối): mọi đường ray đều kết thúc ở đây
       if (zExit === null) for (const zb of [physLoZ, physHiZ]) if (zb > ZN + 2 && zb < ZF) {
