@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 # Trích đồ thị đường ray từ các SVG 配線略図.net (CC BY 4.0) đã ghép thành một hệ toạ độ, ghi docs/data/haisen/<tên>_graph.json.
-# Chạy: python -X utf8 tools/haisen_graph.py [nks|hok]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
+# Chạy: python -X utf8 tools/haisen_graph.py [nks|hok|kyu]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
 # CẤU HÌNH: mỗi hình đặt tại (x, y) trong hệ ghép; các hình nối nhau tại các đầu mút của hai đường chính (độ chênh dọc = trung bình các cặp đường khớp).
 #  nks: 010_01 ở (0,0); 010_02 ở (419.8, -6.8) (Takeo-Onsen – Ureshino-Onsen + Shin-Omura – Isahaya – Nagasaki).
+#  kyu: 5 hình Kyushu Shinkansen Hakata – Kagoshima-Chuo; hai đường chính khớp tới ≤ 0,6 ở cả bốn chỗ nối (xem CONFIG).
 #  hok: 5 hình Hokkaido Shin-Aomori – Shin-Hakodate-Hokuto; đầu mút phải/trái các hình khớp tới 0,1 (hai đường Shinkansen, và hai đường 1067 mm trong đoạn ba ray).
 import sys, os, re, json, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from haisen_dump import load, sty, NS
 CONFIG = {
     'nks': {'dir': 'nishi_kyushu', 'out': 'nks_graph.json', 'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (419.8, -6.8)}, 'seams': [{'x': 419.8, 'dy': -6.8}]},
+    'kyu': {'dir': 'kyushu', 'out': 'kyu_graph.json', 'drop_boxes': [[1950, 140, 2075, 217.5]],   # Shin-Yatsushiro: bỏ đường cụt (có chắn cuối) sát sân ga trên cùng ghi vào nó và đường dẫn lên phía bắc (theo yêu cầu giản lược; game chưa có đường cụt)
+            'far_skip_x': [[130, 340], [2560, 2900]],   # Hakata và Kagoshima-Chuo: đường chính đổi cao độ y trong hình nên bỏ luật 'xa đường chính = depot' ở hai khoảng x này
+             'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (723.2, 143.1), '010_03.svg': (1412.0, 61.25), '010_04.svg': (1928.6, 42.65), '010_05.svg': (2504.2, 126.8)},
+            'seams': [{'x': 723.2, 'dy': 143.1}, {'x': 1412.0, 'dy': -81.85}, {'x': 1928.6, 'dy': -18.6}, {'x': 2504.2, 'dy': 84.15}]},
     'hok': {'dir': 'hokkaido', 'out': 'hok_graph.json', 'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (521.3, -168.55), '010_03.svg': (1033.0, -31.55), '010_04.svg': (1441.3, -4.4), '010_05.svg': (2100.6, 4.75)},
             'seams': [{'x': 521.3, 'dy': -168.55}, {'x': 1033.0, 'dy': 137.0}, {'x': 1441.3, 'dy': 27.15}, {'x': 2100.6, 'dy': 9.15}]}}
 LINE = (sys.argv[1] if len(sys.argv) > 1 else 'nks'); CFG = CONFIG[LINE]
@@ -43,6 +48,8 @@ def read():
 L, R, T = read()
 horiz = lambda l: abs(l['y1'] - l['y2']) < 0.3
 shk = [l for l in L if l['stroke'] == SHK]
+DROPPED = [l for l in shk if any(a <= min(l['x1'], l['x2']) and max(l['x1'], l['x2']) <= c and b <= min(l['y1'], l['y2']) and max(l['y1'], l['y2']) <= d for a, b, c, d in CFG.get('drop_boxes', []))]
+shk = [l for l in shk if l not in DROPPED]      # giản lược theo yêu cầu: các đoạn nằm hoàn toàn trong hộp bị bỏ khỏi đồ thị
 conv = [l for l in L if l['stroke'] == CONV]
 navy = [l for l in L if l['stroke'] == NAVY]
 blk15 = [l for l in L if l['stroke'] == BLK and l['w'] == 1.5]
@@ -160,7 +167,8 @@ for e in edges:
 for ci, comp in enumerate(comps):
     xs = [v for c in comp for v in (c['x1'], c['x2'])]; ys = [v for c in comp for v in (c['y1'], c['y2'])]
     big = len(comp)
-    far = any(v > MAIN_U + 20.5 or v < MAIN_D - 20.5 for v in ys)      # đường ga (ngoài cùng) cách đường chính ≤ ~19; xa hơn là depot/đường phụ
+    xs_ = [v for c in comp for v in (c['x1'], c['x2'])]; skip = any(min(xs_) < b and max(xs_) > a for a, b in CFG.get('far_skip_x', []))
+    far = (not skip) and any(v > MAIN_U + 20.5 or v < MAIN_D - 20.5 for v in ys)      # đường ga (ngoài cùng) cách đường chính ≤ ~19; xa hơn là depot/đường phụ      # đường ga (ngoài cùng) cách đường chính ≤ ~19; xa hơn là depot/đường phụ
     kind = 'depot' if big > 8 or far else 'station_loop'
     for c in comp: c['group'] = kind
 
@@ -205,6 +213,11 @@ for s in stations:
     for p in s['plats']:
         near = [r['y'] for r in trk if min(abs(r['y'] - p['y1']), abs(r['y'] - p['y2'])) < 7.5]
         p['adj'] = sorted(near)
+# đường phụ cách xa mọi ga (> 60 đơn vị) nhưng bị xếp 'đường ga' vì thành phần nhỏ: là mảnh vụn của depot/đường nhánh => depot
+for e in edges:
+    if e.get('group') == 'station_loop':
+        x0, x1 = min(e['x1'], e['x2']), max(e['x1'], e['x2'])
+        if min(max(st_['x1'] - x1, x0 - st_['x2'], 0) for st_ in stations) > 60: e['group'] = 'depot'
 # ---- tín hiệu, chắn cuối đường
 lamps = [l for l in thin if abs(l['x1'] - l['x2']) < 0.3 and 8.3 <= l['y2'] - l['y1'] <= 9.6]
 arms = [l for l in navy if horiz(l) and l['x2'] - l['x1'] > 12]
@@ -256,7 +269,7 @@ out = {
     'note': 'Trích từ 配線略図.net (CC BY 4.0). Toạ độ hệ ghép, không theo tỉ lệ thực. Màu: xanh #0070c0 = đường Shinkansen, xám #404040 = đường thường, navy = tín hiệu/ranh giới.',
     'seam': CFG['seams'][0], 'seams': CFG['seams'], 'main': {'down_y': MAIN_D, 'up_y': MAIN_U},
     'nodes': nodes, 'edges': edges, 'switches': switches, 'platforms': [p for p in plats if p['shk']], 'stations': [{k: v for k, v in s.items()} for s in stations],
-    'signals': signals, 'bumpers': bumpers, 'buildings': bld, 'aux': aux, 'conv': convl, 'conv_platforms': convp, 'texts': texts, 'rails': [{'y': r['y'], 'x1': r['x1'], 'x2': r['x2']} for r in rails]}
+    'dropped': [[round(l['x1'], 1), round(l['y1'], 1), round(l['x2'], 1), round(l['y2'], 1)] for l in DROPPED], 'signals': signals, 'bumpers': bumpers, 'buildings': bld, 'aux': aux, 'conv': convl, 'conv_platforms': convp, 'texts': texts, 'rails': [{'y': r['y'], 'x1': r['x1'], 'x2': r['x2']} for r in rails]}
 json.dump(out, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['out']), 'w', encoding='utf-8'), ensure_ascii=False)
 print('ray', len(rails), '| chéo', len(diags), '| nút', len(nodes), '| cạnh', len(edges), '| ghi', len(switches), '| diamond', sum(1 for n in nodes if n['kind'] == 'diamond'), '| tín hiệu', len(signals), '| chắn cuối', len(bumpers))
 print('đường chính: xuống y=%s, lên y=%s' % (MAIN_D, MAIN_U))

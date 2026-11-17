@@ -53,9 +53,12 @@ build_struct.apply(LINES)
 # Ghi chéo giữa hai đường chính (xo), viết theo chiều XUỐNG: 'b' trước vạch dừng / 'a' sau vạch; 'd' chữ X kép, 's' một đường chéo (từ đường ngược chiều sang đường ta).
 # Tuyến nào chưa có ở đây thì giữ mặc định cũ: chữ X kép ở cả hai đầu mọi ga. Nguồn: sơ đồ 配線略図.net (xem docs/data/haisen/nks_graph.json) [D], vị trí cách vạch dùng hằng số chung 1300/720 m [I].
 # 's' = một đường chéo từ đường ngược chiều sang đường ta (theo chiều tàu chạy), 'r' = ngược lại. Hokkaido (toh) theo hình 010_01–010_05 [D]: Shin-Aomori X kép hai đầu; Okutsugaru-Imabetsu đơn 's' trước ga + đơn 'r' sau ga; Kikonai đơn 'r' trước ga + đơn 's' sau ga (hai ga là ảnh gương của nhau); Shin-Hakodate-Hokuto X kép trước ga.
+# QUY TẮC: ga CÓ đường tránh (mã có đường thứ ba trở lên: 2-3-0, 2-3-0a/b/c, 2-4-0) giữ ghi chéo ở vị trí cũ của chữ X (1300 m trước / 720 m sau vạch), tức NGOÀI chỗ đường tránh rẽ ra (1130 m trước) như thứ tự trên sơ đồ; chỉ ga 2 đường (không đường tránh) mới đặt gap sát sân ga.
 # Phần tử thứ ba = khoảng cách (m) từ mép sân ga tới ghi chéo, đổi từ sơ đồ theo tỉ lệ sân ga 54 đơn vị = 440 m (sân ga vẽ trong game): Shin-Aomori 19,7 đơn vị ≈ 160 m (cả hai đầu); Okutsugaru-Imabetsu 14,9 / 29,5 ≈ 120 / 240 m; Kikonai 14,7 / 24,8 ≈ 120 / 200 m; Shin-Omura 5 ≈ 40 m [I]. Ga cuối và X kép giữ vị trí cố định cũ vì đường ga cuối (laneOf) cắt qua X ở 1300/720 m.
 XO = {'nks': {'Takeo-Onsen': [['a', 'd']], 'Ureshino-Onsen': [], 'Shin-Omura': [['b', 's', 40]], 'Isahaya': [], 'Nagasaki': [['b', 'd']]},
-      'toh': {'Shin-Aomori': [['b', 'd', 160], ['a', 'd', 160]], 'Okutsugaru-Imabetsu': [['b', 's', 120], ['a', 'r', 240]], 'Kikonai': [['b', 'r', 120], ['a', 's', 200]], 'Shin-Hakodate-Hokuto': [['b', 'd']]}}
+      'tsk': {'Shin-Tosu': [['b', 'd'], ['a', 'd']], 'Kurume': [], 'Chikugo-Funagoya': [['b', 's'], ['a', 'r']], 'Shin-Omuta': [], 'Shin-Tamana': [], 'Kumamoto': [['b', 'd'], ['a', 'd']],
+              'Shin-Yatsushiro': [['b', 'r', 160]], 'Shin-Minamata': [['b', 'r'], ['a', 's']], 'Izumi': [], 'Sendai': [['a', 'r', 80]], 'Kagoshima-Chuo': [['b', 'd']]},   # Kyushu Shinkansen (hình kyushu/010_01–010_05; Hakata chưa làm: ga chung với Sanyo)
+      'toh': {'Shin-Aomori': [['b', 'd'], ['a', 'd']], 'Okutsugaru-Imabetsu': [['b', 's'], ['a', 'r']], 'Kikonai': [['b', 'r'], ['a', 's']], 'Shin-Hakodate-Hokuto': [['b', 'd']]}}
 for _lid, _d in XO.items():
     for _s in LINES[_lid]['stations']:
         if _s['en'] in _d: _s['xo'] = _d[_s['en']]
