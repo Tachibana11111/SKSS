@@ -1203,6 +1203,19 @@ if (section('33f. Ghi chéo giữa hai đường chính (xo): dựng lại từ 
       for (const [rear, km, has, nm] of [[false, 732.7, true, 'trước Tappi 200 m'], [false, 732.9, true, 'đúng Tappi'], [false, 755.7, true, 'trước Yoshioka 200 m'], [true, 733.1, true, 'camera sau, vừa qua Tappi'], [false, 745.0, false, 'giữa eo biển, xa cả hai'], [false, 700.0, false, 'ngoài hầm']]) { const [a, b] = cnt(rear, km); ok(has ? a > b : a === b, 'cabview ' + nm + ' (km ' + km + '): ' + (has ? 'vẽ sân ga và biển 定点' : 'không vẽ điểm cứu hộ') + ' (' + a + ' so với ' + b + ' khi tắt)', [a, b]); } }
     else ok(false, 'không tìm được chuyến toh Shin-Aomori → Shin-Hakodate-Hokuto để thử vẽ'); }
 }
+if (section('33g. Mưa không rơi trong hầm: cửa sổ hành khách (winview.js), như buồng lái và hình nhìn ngang')) {
+  global.hhmm = global.hhmm || (x => String(x)); global.CanvasRenderingContext2D = global.CanvasRenderingContext2D || function () { }; global.CanvasRenderingContext2D.prototype.roundRect = global.CanvasRenderingContext2D.prototype.roundRect || function () { };
+  require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'winlit.js')); require(path.join(DRIVE, 'winview.js'));
+  const L = window.LINES.toh, ix = en => L.stations.findIndex(x => x.en === en), rec = L.trains.find(t => t.d === 'down' && t.s.some(e => e[0] === ix('Shin-Hakodate-Hokuto')) && t.s.some(e => e[0] === ix('Shin-Aomori')));
+  const W = Sim.createWorld('toh', Sim.makeTrip('toh', rec, ix('Shin-Aomori'), ix('Shin-Hakodate-Hokuto')), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
+  const noop = () => { }; let mv = 0; const ctx = new Proxy({}, { get: (t, k) => { if (k === 'moveTo') return () => { mv++; }; return k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop); }, set: (t, k, v) => { t[k] = v; return true; } });
+  const count = (km, rainOn) => { T.x = Sim.sOfKm(km, 'down', L.kmEnd); T.v = 60; W.rainHere = rainOn; mv = 0; global.WinView.draw(ctx, 0, 0, 1920, 618, W, T, { sprites: {}, aud: null, imgs: {} }, 1); return mv; };
+  const inT = Sim.inTunnel(W, Sim.sOfKm(745, 'down', L.kmEnd)), outT = !Sim.inTunnel(W, Sim.sOfKm(700, 'down', L.kmEnd));
+  ok(inT && outT, 'km 745 (hầm Seikan) ở trong hầm, km 700 ở ngoài hầm');
+  { const a = count(745, true), b = count(745, false), c = count(700, true), d = count(700, false);
+    ok(a === b, 'cửa sổ hành khách trong hầm: bật mưa không thêm nét mưa (' + a + ' so với ' + b + ')', [a, b]);
+    ok(c >= d + 80, 'cửa sổ hành khách ngoài hầm: bật mưa thêm nét mưa (' + c + ' so với ' + d + ')', [c, d]); }
+}
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);
   const T = Sim.lineOf('tsk'), H = Sim.lineOf('hok'), N = Sim.lineOf('nks');
