@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # Trích đồ thị đường ray từ các SVG 配線略図.net (CC BY 4.0) đã ghép thành một hệ toạ độ, ghi docs/data/haisen/<tên>_graph.json.
-# Chạy: python -X utf8 tools/haisen_graph.py [nks|hok|kyu]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
+# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
 # CẤU HÌNH: mỗi hình đặt tại (x, y) trong hệ ghép; các hình nối nhau tại các đầu mút của hai đường chính (độ chênh dọc = trung bình các cặp đường khớp).
 #  nks: 010_01 ở (0,0); 010_02 ở (419.8, -6.8) (Takeo-Onsen – Ureshino-Onsen + Shin-Omura – Isahaya – Nagasaki).
 #  kyu: 5 hình Kyushu Shinkansen Hakata – Kagoshima-Chuo; hai đường chính khớp tới ≤ 0,6 ở cả bốn chỗ nối (xem CONFIG).
-#  hok: 5 hình Hokkaido Shin-Aomori – Shin-Hakodate-Hokuto; đầu mút phải/trái các hình khớp tới 0,1 (hai đường Shinkansen, và hai đường 1067 mm trong đoạn ba ray).
+#  hkd: 5 hình Hokkaido Shin-Aomori – Shin-Hakodate-Hokuto; đầu mút phải/trái các hình khớp tới 0,1 (hai đường Shinkansen, và hai đường 1067 mm trong đoạn ba ray).
 import sys, os, re, json, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from haisen_dump import load, sty, NS
@@ -14,7 +14,7 @@ CONFIG = {
             'far_skip_x': [[130, 340], [2560, 2900]],   # Hakata và Kagoshima-Chuo: đường chính đổi cao độ y trong hình nên bỏ luật 'xa đường chính = depot' ở hai khoảng x này
              'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (723.2, 143.1), '010_03.svg': (1412.0, 61.25), '010_04.svg': (1928.6, 42.65), '010_05.svg': (2504.2, 126.8)},
             'seams': [{'x': 723.2, 'dy': 143.1}, {'x': 1412.0, 'dy': -81.85}, {'x': 1928.6, 'dy': -18.6}, {'x': 2504.2, 'dy': 84.15}]},
-    'hok': {'dir': 'hokkaido', 'out': 'hok_graph.json', 'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (521.3, -168.55), '010_03.svg': (1033.0, -31.55), '010_04.svg': (1441.3, -4.4), '010_05.svg': (2100.6, 4.75)},
+    'hkd': {'dir': 'hokkaido', 'out': 'hkd_graph.json', 'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (521.3, -168.55), '010_03.svg': (1033.0, -31.55), '010_04.svg': (1441.3, -4.4), '010_05.svg': (2100.6, 4.75)},
             'seams': [{'x': 521.3, 'dy': -168.55}, {'x': 1033.0, 'dy': 137.0}, {'x': 1441.3, 'dy': 27.15}, {'x': 2100.6, 'dy': 9.15}]}}
 LINE = (sys.argv[1] if len(sys.argv) > 1 else 'nks'); CFG = CONFIG[LINE]
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['dir']); OFF = CFG['off']
