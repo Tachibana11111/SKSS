@@ -271,7 +271,7 @@
   }
   function leaderOf(T) {
     const W = T.W; if (!W.net) return T.isLead ? null : (W.lead && W.lead.x > T.x ? W.lead : null);
-    let best = null; for (const O of W.net.trains) { if (O === T || O.phase === 'end' || O.phase === 'dwell' || offMain(O)) continue; if (O.x > T.x && (!best || O.x < best.x)) best = O; } return best;
+    let best = null; for (const O of W.net.trains) { if (O === T || O.phase === 'end' || O.x <= T.x || (best && O.x >= best.x)) continue; if (O.phase === 'dwell' ? !(stopsWhereFull(W, T, O)) : offMain(O)) continue; best = O; } return best;
   }
   // ---- Ghi (đường rẽ vào đường sân ga): giới hạn 80 km/h [I] từ 1.300 m trước vạch tới 870 m sau vạch (bao cả ghi chéo ở 1300/720 m), chỉ với ga có đường dừng khác đường chính
   function stationDiverts(L, i, dir, W) { const Ly = root.Layout; if (!Ly || !L.stations[i] || !L.stations[i].lay) return false; return Ly.diverts(L.stations[i].lay, dir, Ly.pickOf(L.stations[i], i, W)); }
@@ -281,6 +281,15 @@
   // vị trí các ghi và ghi chéo (chữ X) mà đoàn tàu đi qua quanh một ga: dùng cho âm thanh
   function switchPoints(T) { const pts = []; for (let j = 0; j < T.M.length; j++) { const m = T.M[j], sM = geoS(m), dv = divertsAt(T, j);
     const Ly = root.Layout; for (const xv of Ly && Ly.xovers ? Ly.xovers(T.W.line.stations[m.i], T.W.dir, false) : [{ z: -1300 }, { z: 720 }]) pts.push(sM + xv.z + 35, sM + xv.z + 115); if (dv) pts.push(sM - G.turnoutIn, sM + G.turnoutOut); } return pts.sort((a, b) => a - b); }
+  // sức chứa ga: số đường dừng cùng chiều (ít nhất 1) so với số tàu đang đỗ ở vạch; ga ĐẦY thì tàu cũng định dừng ở ga đó phải chờ phía sau, ATC giữ khoảng cách như với tàu đi trước (ga 2 đường dừng đã có 2 tàu thì tàu thứ ba không được đi xuyên qua)
+  function dwellersAt(W, O) { const m = O.M[O.k]; if (!m) return 0; let n = 0; for (const X of allTrains(W)) if (X.phase === 'dwell' && X.atMark && X.M[X.k] && X.M[X.k].i === m.i) n++; return n; }
+  function stopCap(W, i) { const Ly = root.Layout, st = W.line.stations[i]; return Math.max(1, Ly && st && st.lay ? Ly.stopCount(st.lay, W.dir) : 1); }
+  function stationFull(W, O) { const m = O.M[O.k]; return !!m && dwellersAt(W, O) >= stopCap(W, m.i); }
+  function stationHasThrough(W, i) { const Ly = root.Layout, st = W.line.stations[i]; return !!(st && (st.loop || (Ly && Ly.hasThrough && st.lay && Ly.hasThrough(st.lay, W.dir)))); }
+  function stopsWhereFull(W, T, O) {      // tàu T gặp ga đầy phía trước: tàu định dừng ở đó phải chờ; tàu chạy suốt cũng phải chờ nếu ga không có đường thông riêng (không phải ga loại ...-1: ở đó tàu đỗ nằm ở đường dừng, đường thông còn trống)
+    if (O.phase !== 'dwell' || !O.atMark) return false; const mo = O.M[O.k]; if (!mo) return false; const full = stationFull(W, O), onMain = !!mo.mainStop;      // onMain: dừng khẩn ở ĐƯỜNG CHÍNH (quá gần để rẽ ghi): tàu đỗ chắn cả đường thông, kể cả ga có đường thông riêng
+    if (!full && !onMain) return false;
+    for (let j = T.k; j < T.M.length; j++) { const mt = T.M[j]; if (mt.i === mo.i) return mt.stop ? full : (onMain || !stationHasThrough(W, mo.i)); } return false; }
   // ga có từ 2 đường dừng cùng chiều: hai tàu có thể đỗ cùng lúc (mỗi tàu một đường); chỉ 1 đường: tàu sau phải chờ phía sau
   function sharesPlatformLane(W, Ld) { const Ly = root.Layout, m = Ld.M[Ld.k], st = m && W.line.stations[m.i]; return !!(Ly && st && st.lay && Ly.stopCount(st.lay, W.dir) >= 2); }
   function allowedSpeed(T) {
@@ -303,7 +312,7 @@
     if (W.line.meta.atc === 'KS' && !T.M[j].thru && q >= 60 / 3.6 && q < 170 / 3.6) q = (q >= 160 / 3.6 ? 160 : q >= 110 / 3.6 ? 110 : 60) / 3.6;      // KS-ATC: dừng ga phanh BA giai đoạn (160 → 110 → 60 km/h, dưới 60 theo mẫu liên tục) [N: ba giai đoạn; các mức km/h là I]
     if (q < a && !T.M[j].thru) { a = q; why = 'stop'; }
     const L = leaderOf(T);
-    if (L && L.phase !== 'end' && !leadDiverged(W, L) && !(L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L)) && !offMain(L)) {
+    if (L && L.phase !== 'end' && !leadDiverged(W, L) && !(L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L) && !stationFull(W, L)) && !offMain(L)) {
       const gap = L.x - L.veh.len - x - G.atcBuf;
       if (gap < 15000) { const qq = gap > 0 ? Math.sqrt(2 * G.aATC * gap) : 0; if (qq < a) { a = qq; why = 'lead'; } }
     }
@@ -1204,9 +1213,9 @@
   }
   function leadWatch(W, T) {
     const L = W.lead; if (!L || !W.running || !T.started || T.finished || T.phase === 'end' || T.phase === 'dwell') return;
-    if (L.phase === 'end' || leadDiverged(W, L) || (L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L)) || offMain(L)) return;
+    if (L.phase === 'end' || leadDiverged(W, L) || (L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L) && !stationFull(W, L)) || offMain(L)) return;
     const gap = L.x - L.veh.len - T.x;
-    { const ls = L.M[L.k], ts = T.M[T.k]; if (gap <= 0 && ls && ts && ls.i === ts.i && Math.abs(T.x - ts.s) < 400 && Math.abs(L.x - ts.s) < 600 && sharesPlatformLane(W, L)) return; }      // tàu đi trước vừa rời đúng ga đa đường mà ta đang đứng: hai tàu ở hai đường sân ga song song, đuôi nó chưa qua mũi tàu ta thì chưa thể va chạm (soak: Omiya, Tanigawa 471 sau Hayabusa 3)
+    { const ls = L.M[L.k], ts = T.M[T.k]; if (gap <= 0 && ls && ts && ls.i === ts.i && Math.abs(T.x - ts.s) < 400 && Math.abs(L.x - ts.s) < 600 && sharesPlatformLane(W, L) && !stationFull(W, L)) return; }      // tàu đi trước vừa rời đúng ga đa đường mà ta đang đứng: hai tàu ở hai đường sân ga song song, đuôi nó chưa qua mũi tàu ta thì chưa thể va chạm (soak: Omiya, Tanigawa 471 sau Hayabusa 3)
     const still = L.v < 2 && L.phase === 'run'; W.leadWarn = W.leadWarn || { a: false, b: false, c: 0 };
     if (!still) { W.leadWarn.a = W.leadWarn.b = false; }
     if (L.x > T.x) {
@@ -1403,7 +1412,8 @@
         const j = pickJ(stopsIdx.slice(1).filter(k => !(W.player.cc && M[k].i === W.player.cc.i))); if (j < 0) continue; const tNotice = Math.max(0, (M[j].arr || 0) - 700);
         ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || !M[j] || !M[j].stop) return; M[j].stop = false; T.orderAt = w.t; fillPlan(M); w.say('warn', _t('Điều độ: THÔNG QUA ga {0} (không dừng). Chạy tiếp tới {1}. Nhấn Y để nhắc lại lệnh.', M[j].name, M[nextTarget(T)].name), { ack: true }); });
       } else if (kind === 'addstop' || kind === 'sick') {
-        const passIdx = M.map((m, k) => !m.stop && k > 0 && k < M.length - 1 ? k : -1).filter(k => k >= 0); if (!passIdx.length) continue;
+        const canYield = i => { const st = W.line.stations[i], Ly = root.Layout; return !!(st && (stationHasThrough(W, i) || (Ly && Ly.stopCount && Ly.stopCount(st.lay || '2-2-0', W.dir) >= 2))); };      // 18/11: "dừng thêm vì tàu phía sau cần vượt" chỉ ở ga có chỗ cho tàu nhanh vượt (đường thông riêng hoặc từ 2 đường dừng cùng chiều); 'sick' (cấp cứu) thì ga nào cũng được
+        const passIdx = M.map((m, k) => !m.stop && k > 0 && k < M.length - 1 && (kind === 'sick' || canYield(m.i)) ? k : -1).filter(k => k >= 0); if (!passIdx.length) continue;
         const j = pickJ(passIdx); if (j < 0) continue; const tNotice = Math.max(0, (M[j].pt || 0) - 700), dwell = kind === 'sick' ? 180 : 60;
         ev(tNotice, w => { const T = w.player; if (T.k >= j - 1 || !M[j] || M[j].stop || M[j].pt == null) return; M[j].stop = true; M[j].arr = M[j].pt; M[j].dep = M[j].pt + dwell; T.orderAt = w.t; fillPlan(M);
           const car = 1 + Math.floor(rnd() * Math.max(1, T.veh.cars));

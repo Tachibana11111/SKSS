@@ -132,6 +132,38 @@ if (section('7. Chế độ điều độ (mạng nhiều tàu)')) {
   const W2 = mk(); W2.events = []; const slow = W2.net.trains.find(T => T.cls === 'Kodama' && T.phase === 'run'); const fast = W2.net.trains.find(T => (T.cls === 'Nozomi') && T.x < (slow ? slow.x : 0) && T.phase === 'run');
   if (slow && fast) { const jj = Sim.nextTarget(slow); const accepted = Sim.dispatch.overtake(W2, slow, fast, jj); ok(accepted === true || accepted === false, 'lệnh cho vượt trả lời hợp lệ'); }
   ok(Sim.dispatch.skip(W2, W2.net.trains[0], 99) === false, 'thông qua ga không tồn tại bị từ chối');
+  // sức chứa ga (18/11): ga có N đường dừng cùng chiều chỉ chứa N tàu đứng cùng lúc; tàu thứ N+1 định dừng ở ga đó chờ phía sau, ATC giữ khoảng cách (trước đây chế độ mạng bỏ qua mọi tàu đang đỗ nên tàu sau đi xuyên)
+  for (const [stn, holdN] of [['Kurume', 3], ['Shin-Tosu', 3]]) {
+    const Wc = Sim.createNetwork('tsk', 'down', { diff: 'normal', seed: 5, t0: 8 * 3600, span: 5400 }); Wc.events = []; const Lc = Wc.line, si = Lc.stations.findIndex(x => x.en === stn), cap = Math.max(1, Layout.stopCount(Lc.stations[si].lay, 'down'));
+    const cand = Wc.net.trains.filter(T => { const j = T.M.findIndex(m => m.i === si && m.stop); return j > 0 && j < T.M.length - 1; }).sort((a, b) => a.M.find(m => m.i === si).arr - b.M.find(m => m.i === si).arr);
+    cand.slice(0, holdN).forEach(T => { const j = T.M.findIndex(m => m.i === si && m.stop); T.holds[j] = T.M[j].arr + 1500; });
+    let sM = NaN; for (const T of Wc.net.trains) { const m = T.M.find(m => m.i === si); if (m) { sM = m.s; break; } }
+    let mx = 0, nn = 0; while (Wc.t < 5400 && nn++ < 1e5) { Sim.netTick(Wc, 0.2, true); const z = Wc.net.trains.filter(T => T.started && T.phase !== 'end' && Math.abs(T.x - sM) < 450 && (T.phase === 'dwell' || T.v < 1.5)).length; if (z > mx) mx = z; }
+    ok(cand.length > holdN && mx >= 1 && mx <= cap, `${stn} (${cap} đường dừng cùng chiều): giữ ${holdN} tàu đỗ → không quá ${cap} tàu đứng cùng lúc trong sân ga, tàu sau chờ phía sau`, [mx, cap]); }
+  // tàu chạy suốt gặp ga đầy (ga không có đường thông riêng): phải giữ khoảng cách, không đi vào sân ga; ga có đường thông riêng (Odawara...) thì tàu chạy suốt đi qua bình thường
+  { const Wt = Sim.createNetwork('tsk', 'down', { diff: 'normal', seed: 5, t0: 8 * 3600, span: 5400 }); Wt.events = []; const Lt = Wt.line, si = Lt.stations.findIndex(x => x.en === 'Atami');
+    const cand = Wt.net.trains.filter(T => { const j = T.M.findIndex(m => m.i === si); return j > 0 && j < T.M.length - 1 && T.M[j].stop; }).sort((a, b) => a.M.find(m => m.i === si).arr - b.M.find(m => m.i === si).arr);
+    const j0 = cand[0].M.findIndex(m => m.i === si); cand[0].holds[j0] = cand[0].M[j0].arr + 1800;
+    let sM = NaN; for (const T of Wt.net.trains) { const m = T.M.find(m => m.i === si); if (m) { sM = m.s; break; } }
+    let into = 0, nn = 0, nThru = Wt.net.trains.filter(T => { const m = T.M.find(m => m.i === si); return m && !m.stop && T.M.indexOf(m) > 0; }).length;
+    while (Wt.t < 5400 && nn++ < 1e5) { Sim.netTick(Wt, 0.2, true); const dw = Wt.net.trains.filter(T => T.phase === 'dwell' && T.atMark && T.M[T.k] && T.M[T.k].i === si).length; if (dw >= 1) for (const T of Wt.net.trains) { const m = T.M.find(m => m.i === si); if (T.started && T.phase === 'run' && T.v > 5 && m && !m.stop && Math.abs(T.x - sM) < 200) into++; } }
+    ok(nThru >= 3 && into === 0, 'Atami (ga 1 đường, không đường thông riêng): một tàu đỗ → tàu chạy suốt không đi vào sân ga, giữ khoảng cách ATC', [nThru, into]); }
+  // tàu dừng khẩn ở ĐƯỜNG CHÍNH (mainStop) tại ga có đường thông riêng (Shizuoka, loại ...-1): tàu đỗ chắn cả đường thông → tàu chạy suốt phía sau phải giữ khoảng cách
+  { const Wm = Sim.createNetwork('tsk', 'down', { diff: 'normal', seed: 5, t0: 8 * 3600, span: 5400 }); Wm.events = []; const Lm = Wm.line, si = Lm.stations.findIndex(x => x.en === 'Shizuoka');
+    const cand = Wm.net.trains.filter(T => { const j = T.M.findIndex(m => m.i === si); return j > 0 && j < T.M.length - 1 && T.M[j].stop; }).sort((a, b) => a.M.find(m => m.i === si).arr - b.M.find(m => m.i === si).arr);
+    const j0 = cand[0].M.findIndex(m => m.i === si); cand[0].holds[j0] = cand[0].M[j0].arr + 1800; cand[0].M[j0].mainStop = true;
+    let sM = NaN; for (const T of Wm.net.trains) { const m = T.M.find(m => m.i === si); if (m) { sM = m.s; break; } }
+    let into = 0, nn = 0, minG = 1e9; while (Wm.t < 5400 && nn++ < 1e5) { Sim.netTick(Wm, 0.2, true); const D = Wm.net.trains.find(T => T.phase === 'dwell' && T.atMark && T.M[T.k] && T.M[T.k].i === si); if (!D) continue; for (const T of Wm.net.trains) { if (T === D || !T.started || T.phase === 'end' || T.x >= D.x) continue; const m = T.M.find(m => m.i === si); if (m && !m.stop && Math.abs(T.x - sM) < 200 && T.v > 5) into++; const g = D.x - D.veh.len - T.x; if (g > -2000 && g < minG) minG = g; } }
+    ok(into === 0 && minG > 100, 'Shizuoka (có đường thông riêng): tàu dừng khẩn ở đường chính → tàu chạy suốt phía sau giữ khoảng cách, không xuyên', [into, Math.round(minG)]); }
+  // sự kiện "dừng thêm vì tàu phía sau cần vượt" chỉ chọn ga có chỗ vượt (đường thông riêng hoặc từ 2 đường dừng cùng chiều), không chọn ga 1 đường như Atami/Kurume
+  { const Lq = Sim.lineOf('tsk'), recq = Lq.trains.find(t => t.t === 'Nozomi' && t.d === 'down' && t.s.some(e => e[0] === 0 && !e[3]) && t.s.some(e => e[0] === 34 && !e[3])); let tot = 0, bad = []; 
+    for (let seed = 1; seed <= 60; seed++) { const tripq = Sim.makeTrip('tsk', recq, 0, 34), Wq = Sim.createWorld('tsk', tripq, { diff: 'hard', seed, lead: false, events: true }), Mq = Wq.player.M;
+      for (const evq of Wq.events) { const snap = Mq.map(m => m.stop), m0 = Wq.msgs.length; try { evq.fire(Wq); } catch (e) { } for (const mm of Wq.msgs.slice(m0)) { if (!/tàu phía sau cần vượt/.test(mm.text || '')) continue; const jq = Mq.findIndex((x, k) => x.stop && !snap[k]); if (jq < 0) continue; tot++; const stq = Wq.line.stations[Mq[jq].i]; if (!(stq.loop || Layout.stopCount(stq.lay || '2-2-0', Wq.dir) >= 2)) bad.push(stq.en + '#' + seed); } } }
+    ok(tot >= 10 && bad.length === 0, `sự kiện dừng thêm nhường tàu nhanh vượt: ${tot} lần, đều ở ga có chỗ vượt`, bad.slice(0, 5)); }
+  // làn thông suy từ bố cục các đường (không dựa cờ loop): Okutsugaru-Imabetsu chiều xuống và Kikonai chiều lên có đường chính không sân ga; ga 1 đường (Atami) và ga 2 đường không đường thông (Shinagawa) thì không
+  { const g = (ln, en) => Sim.lineOf(ln).stations.find(x => x.en === en).lay;
+    ok(Layout.hasThrough(g('toh', 'Okutsugaru-Imabetsu'), 'down') && !Layout.hasThrough(g('toh', 'Okutsugaru-Imabetsu'), 'up') && Layout.hasThrough(g('toh', 'Kikonai'), 'up') && !Layout.hasThrough(g('toh', 'Kikonai'), 'down'), 'Okutsugaru-Imabetsu ↓ và Kikonai ↑ có làn thông (cờ loop vẫn false)');
+    ok(!Layout.hasThrough(g('tsk', 'Atami'), 'down') && !Layout.hasThrough(g('tsk', 'Shinagawa'), 'down') && Layout.hasThrough(g('tsk', 'Odawara'), 'down'), 'Atami, Shinagawa không có làn thông; Odawara có'); }
 }
 
 if (section('8. Hồ sơ, thành tích và bản ghi')) {
