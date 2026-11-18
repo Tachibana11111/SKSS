@@ -164,6 +164,10 @@ if (section('7. Chế độ điều độ (mạng nhiều tàu)')) {
   { const g = (ln, en) => Sim.lineOf(ln).stations.find(x => x.en === en).lay;
     ok(Layout.hasThrough(g('toh', 'Okutsugaru-Imabetsu'), 'down') && !Layout.hasThrough(g('toh', 'Okutsugaru-Imabetsu'), 'up') && Layout.hasThrough(g('toh', 'Kikonai'), 'up') && !Layout.hasThrough(g('toh', 'Kikonai'), 'down'), 'Okutsugaru-Imabetsu ↓ và Kikonai ↑ có làn thông (cờ loop vẫn false)');
     ok(!Layout.hasThrough(g('tsk', 'Atami'), 'down') && !Layout.hasThrough(g('tsk', 'Shinagawa'), 'down') && Layout.hasThrough(g('tsk', 'Odawara'), 'down'), 'Atami, Shinagawa không có làn thông; Odawara có'); }
+  // cờ loop của từng ga trong chuyến (M[].loop) theo CHIỀU: Okutsugaru-Imabetsu chỉ chiều xuống, Kikonai chỉ chiều lên; ga loại ...-1 (Odawara) cả hai chiều; ga 2 đường (Atami) không
+  { const lp = (ln, d, a, b, en) => { const Lh = Sim.lineOf(ln), ixh = n => Lh.stations.findIndex(x => x.en === n), rec = Lh.trains.find(t => t.d === d && t.s.some(e => e[0] === ixh(a) && !e[3]) && t.s.some(e => e[0] === ixh(b) && !e[3]) && t.s.some(e => e[0] === ixh(en) && !e[3])); const tr = Sim.makeTrip(ln, rec, ixh(a), ixh(b)); return tr.M.find(m => m.rom === en).loop; };
+    ok(lp('toh', 'down', 'Shin-Aomori', 'Shin-Hakodate-Hokuto', 'Okutsugaru-Imabetsu') === true && lp('toh', 'up', 'Shin-Hakodate-Hokuto', 'Shin-Aomori', 'Okutsugaru-Imabetsu') === false && lp('toh', 'up', 'Shin-Hakodate-Hokuto', 'Shin-Aomori', 'Kikonai') === true && lp('toh', 'down', 'Shin-Aomori', 'Shin-Hakodate-Hokuto', 'Kikonai') === false, 'cờ loop trong chuyến theo chiều: Okutsugaru-Imabetsu ↓ có, ↑ không; Kikonai ↑ có, ↓ không');
+    ok(lp('tsk', 'down', 'Tokyo', 'Kyoto', 'Odawara') === true && lp('tsk', 'up', 'Kyoto', 'Tokyo', 'Odawara') === true && lp('tsk', 'down', 'Tokyo', 'Kyoto', 'Atami') === false, 'Odawara có cờ loop cả hai chiều, Atami không'); }
 }
 
 if (section('8. Hồ sơ, thành tích và bản ghi')) {

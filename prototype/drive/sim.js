@@ -192,7 +192,7 @@
     const a = seq.findIndex(e => e.i === fromI && e.stop), b = seq.findIndex(e => e.i === toI && e.stop);
     if (a < 0 || b < 0 || b <= a) return null;
     const t0 = seq[a].dep != null ? seq[a].dep : seq[a].arr;
-    const M = seq.slice(a, b + 1).map(e => ({ name: _s(L.stations[e.i]), rom: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, rec.d, L.kmEnd), stop: e.stop, loop: !!L.stations[e.i].loop, arr: e.arr != null ? e.arr - t0 : null, dep: e.dep != null ? e.dep - t0 : null }));
+    const M = seq.slice(a, b + 1).map(e => ({ name: _s(L.stations[e.i]), rom: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, rec.d, L.kmEnd), stop: e.stop, loop: stationLoop(L, e.i, rec.d), arr: e.arr != null ? e.arr - t0 : null, dep: e.dep != null ? e.dep - t0 : null }));
     M[0].arr = null; M[0].dep = 0; M[M.length - 1].dep = null;
     return { lineId, rec, dir: rec.d, M, t0, label: _tl(rec.t, rec.n), seq };
   }
@@ -285,7 +285,9 @@
   function dwellersAt(W, O) { const m = O.M[O.k]; if (!m) return 0; let n = 0; for (const X of allTrains(W)) if (X.phase === 'dwell' && X.atMark && X.M[X.k] && X.M[X.k].i === m.i) n++; return n; }
   function stopCap(W, i) { const Ly = root.Layout, st = W.line.stations[i]; return Math.max(1, Ly && st && st.lay ? Ly.stopCount(st.lay, W.dir) : 1); }
   function stationFull(W, O) { const m = O.M[O.k]; return !!m && dwellersAt(W, O) >= stopCap(W, m.i); }
-  function stationHasThrough(W, i) { const Ly = root.Layout, st = W.line.stations[i]; return !!(st && (st.loop || (Ly && Ly.hasThrough && st.lay && Ly.hasThrough(st.lay, W.dir)))); }
+  // ga có làn thông THEO CHIỀU dir: cờ loop của ga (chữ số thứ ba của mã, đúng cả hai chiều) hoặc bố cục các đường của chiều đó (Okutsugaru-Imabetsu chỉ chiều xuống, Kikonai chỉ chiều lên)
+  function stationLoop(L, i, dir) { const st = L.stations[i], Ly = root.Layout; return !!(st && (st.loop || (Ly && Ly.hasThrough && st.lay && Ly.hasThrough(st.lay, dir)))); }
+  function stationHasThrough(W, i) { return stationLoop(W.line, i, W.dir); }
   function stopsWhereFull(W, T, O) {      // tàu T gặp ga đầy phía trước: tàu định dừng ở đó phải chờ; tàu chạy suốt cũng phải chờ nếu ga không có đường thông riêng (không phải ga loại ...-1: ở đó tàu đỗ nằm ở đường dừng, đường thông còn trống)
     if (O.phase !== 'dwell' || !O.atMark) return false; const mo = O.M[O.k]; if (!mo) return false; const full = stationFull(W, O), onMain = !!mo.mainStop;      // onMain: dừng khẩn ở ĐƯỜNG CHÍNH (quá gần để rẽ ghi): tàu đỗ chắn cả đường thông, kể cả ga có đường thông riêng
     if (!full && !onMain) return false;
@@ -1496,7 +1498,7 @@
     const cat = catalogOf(L, dir).filter(r => { const f = r.s[0], l = r.s[r.s.length - 1], tf = f[2] != null ? f[2] : f[1], tl = l[1] != null ? l[1] : l[2]; return tl > t0 && tf < t0 + span && tf > t0 - 1800; });
     W.net = { trains: [], t0, span, recs: cat, catchUp: false, delayLog: [], conflicts: 0 }; W.isNet = true; W.running = true;
     for (const rec of cat) {
-      const seq = trainSeq(rec), M = fillPlan(seq.map(e => ({ name: _s(L.stations[e.i]), rom: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, dir, L.kmEnd), stop: e.stop, loop: !!L.stations[e.i].loop, arr: e.arr != null ? e.arr - t0 : null, dep: e.dep != null ? e.dep - t0 : null })));
+      const seq = trainSeq(rec), M = fillPlan(seq.map(e => ({ name: _s(L.stations[e.i]), rom: L.stations[e.i].en, jp: L.stations[e.i].jp, i: e.i, s: sOfKm(L.stations[e.i].km, dir, L.kmEnd), stop: e.stop, loop: stationLoop(L, e.i, dir), arr: e.arr != null ? e.arr - t0 : null, dep: e.dep != null ? e.dep - t0 : null })));
       M[0].arr = null; M[M.length - 1].dep = null;
       const T = newTrain(M, W, { lead: true, veh: rec.v, label: _tl(rec.t, rec.n), load: 0.4 + rnd() * 0.6, id: rec.t + rec.n, cp: rec.cp }); T.rec = rec; T.cls = rec.t; W.net.trains.push(T);
     }

@@ -177,7 +177,7 @@
     if (sg * (tg.km - s.km) <= 0.45) { d.hold = Math.max(1, best.cl.t1 - wt); d.why = best.cl.kind; }      // tới sát ga đích: dừng (đóng băng) ở đó tới khi ô hết hạn
   }
   // ga cho phép vượt tàu đang đỗ: có đường thông qua, hoặc có từ 2 đường dừng cùng chiều (tàu sau vào đường dừng còn trống)
-  function canPass(LN, line, idx, dir) { const st = LN[line] && LN[line].stations[idx]; if (!st) return false; if (st.loop) return true; const LY = root.Layout; return !!(LY && LY.stopCount && LY.stopCount(st.lay || '2-2-0', dir) >= 2); }
+  function canPass(LN, line, idx, dir) { const st = LN[line] && LN[line].stations[idx]; if (!st) return false; if (st.loop) return true; const LY = root.Layout; if (LY && LY.hasThrough && st.lay && LY.hasThrough(st.lay, dir)) return true; return !!(LY && LY.stopCount && LY.stopCount(st.lay || '2-2-0', dir) >= 2); }
   // khởi động trước: chạy cơ chế giãn cách từ WARM giây trước giờ xuất phát để các tàu đã sát nhau (lịch nội suy cho vượt nhau giữa hai ga) được giữ thứ tự và chỉ vượt ở ga có đường tránh; trong lúc đó chưa tính tàu của người chơi
   const WARM = 1800, WSLOW = { rain: 0.06, snow: 0.09, wind: 0.2 };
   // cập nhật độ trễ tới giờ hiện tại của game (bước 5 s; mở bản đồ muộn thì tự bù từ đầu chuyến)
