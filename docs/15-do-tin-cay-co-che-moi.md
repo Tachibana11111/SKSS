@@ -8,7 +8,7 @@ Theo quy ước của dự án: **[N]** có nguồn (link ở tài liệu gốc)
 |---|---|---|
 | Giờ rời và giờ đến mỗi ga dừng | **[D]** | Lịch công bố 2610 (JR East) và 20/10/2026 (JR West), docs/data/README.md |
 | Tăng tốc đều 0,6 m/s², phanh theo đường cong ATC 0,72 m/s² giữa hai ga | **[I]** | Hình dạng đường tốc độ do game chọn; chỉ đảm bảo đúng giờ đến/đi. 0,72 trùng `G.aATC` của tàu thật trong game |
-| Giới hạn 80 km/h trong 1.150 m trước và 630 m sau ga có ghi rẽ vào đường sân ga | **[I]** | Giá trị do game đặt (docs/10 mục "Ghi, đường sân ga"); không có nguồn công bố giá trị chính xác |
+| Giới hạn 80 km/h trong 1.300 m trước và 870 m sau ga (từ 18/11: bao cả đoạn cắt ghi chữ X ở ga cuối) có ghi rẽ vào đường sân ga | **[I]** | Giá trị do game đặt (docs/10 mục "Ghi, đường sân ga"); không có nguồn công bố giá trị chính xác |
 | Mưa ≥ 50 mm/h: chạy 70 km/h; mưa ≥ 60 mm/h và gió ≥ 30 m/s: dừng | **[N]** | Quy tắc Tokaido, docs/06 §5.3 (áp cho mọi tuyến ở đây là đơn giản hóa **[I]**) |
 | Ô mưa/gió/tuyết và vị trí động đất của chuyến | **[I]** (ngẫu nhiên theo seed) / **[N]** (chế độ thực tế: Open-Meteo, P2PQuake) | docs/10, `realmode.js` |
 | Tàu sau không vượt tàu trước giữa hai ga, chỉ vượt ở ga có đường tránh | **[I]** | Cách giữ giãn cách của game; thực tế do hệ thống điều khiển vận hành |

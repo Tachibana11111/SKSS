@@ -3,7 +3,7 @@
 (function (root) {
   // hệ ATC theo tuyến [N, docs/06 §2]: ATC-NS (Tokaido/Sanyo), DS-ATC (Tohoku/Joetsu/Hokuriku/Hokkaido), KS-ATC (Kyushu/Nishi-Kyushu)
   const ATCN = { NS: 'ATC-NS', DS: 'DS-ATC', KS: 'KS-ATC' };
-  const G = { aATC: 0.72, stopTol: 30, atcBuf: 400, turnoutV: 80 / 3.6, turnoutIn: 1150, turnoutOut: 630 };   // mẫu ATC [I]; ATC chặn ở vạch + 30 m; đệm khoảng cách 400 m [I]
+  const G = { aATC: 0.72, stopTol: 30, atcBuf: 400, turnoutV: 80 / 3.6, turnoutIn: 1300, turnoutOut: 870 };   // vùng 80 km/h bao cả đoạn cắt ghi chữ X (1300 m trước/720 m sau vạch + 150 m dài ghi) [I]; trước 18/11: 1150/630   // mẫu ATC [I]; ATC chặn ở vạch + 30 m; đệm khoảng cách 400 m [I]
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const NOTCH_MIN = -8, NOTCH_MAX = 13;
   const notchName = n => n > 0 ? 'P' + n : n === 0 ? 'N' : n === -8 ? 'EB' : 'B' + (-n);
@@ -273,7 +273,7 @@
     const W = T.W; if (!W.net) return T.isLead ? null : (W.lead && W.lead.x > T.x ? W.lead : null);
     let best = null; for (const O of W.net.trains) { if (O === T || O.phase === 'end' || O.phase === 'dwell' || offMain(O)) continue; if (O.x > T.x && (!best || O.x < best.x)) best = O; } return best;
   }
-  // ---- Ghi (đường rẽ vào đường sân ga): giới hạn 80 km/h [I] từ 1.150 m trước vạch tới 630 m sau vạch, chỉ với ga có đường dừng khác đường chính
+  // ---- Ghi (đường rẽ vào đường sân ga): giới hạn 80 km/h [I] từ 1.300 m trước vạch tới 870 m sau vạch (bao cả ghi chéo ở 1300/720 m), chỉ với ga có đường dừng khác đường chính
   function stationDiverts(L, i, dir, W) { const Ly = root.Layout; if (!Ly || !L.stations[i] || !L.stations[i].lay) return false; return Ly.diverts(L.stations[i].lay, dir, Ly.pickOf(L.stations[i], i, W)); }
   const divertsAt = (T, j) => { const m = T.M[j]; return !!(m && (m.stop || T.forced === j || (j === T.k && T.phase !== 'end')) && !m.mainStop && stationDiverts(T.W.line, m.i, T.W.dir, T.W)); };
   const geoS = m => m.sOrig !== undefined ? m.sOrig : m.s;      // vị trí gốc của ga (hình học sân ga/ghi); m.s có thể lùi lại khi chờ ghép
