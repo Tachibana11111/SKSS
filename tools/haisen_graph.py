@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # Trích đồ thị đường ray từ các SVG 配線略図.net (CC BY 4.0) đã ghép thành một hệ toạ độ, ghi docs/data/haisen/<tên>_graph.json.
-# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu|hok]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
+# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu|hok|jts]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
 # CẤU HÌNH: mỗi hình đặt tại (x, y) trong hệ ghép; các hình nối nhau tại các đầu mút của hai đường chính (độ chênh dọc = trung bình các cặp đường khớp).
 #  nks: 010_01 ở (0,0); 010_02 ở (419.8, -6.8) (Takeo-Onsen – Ureshino-Onsen + Shin-Omura – Isahaya – Nagasaki).
 #  kyu: 5 hình Kyushu Shinkansen Hakata – Kagoshima-Chuo; hai đường chính khớp tới ≤ 0,6 ở cả bốn chỗ nối (xem CONFIG).
+#  jts: 4 hình Joetsu Shinkansen Jomo-Kogen – Niigata (010_02–020_05); hai đường chính khớp tới ≤ 0,2 ở cả ba chỗ nối.
 #  hok: 7 hình Hokuriku Shinkansen Annaka-Haruna – Tsuruga; hai đường chính khớp tới ≤ 1,0 ở cả sáu chỗ nối (chỗ Nagano→Joetsu-Myoko lệch 1,0: khoảng cách hai đường khác nhau giữa hai hình).
 #  hkd: 5 hình Hokkaido Shin-Aomori – Shin-Hakodate-Hokuto; đầu mút phải/trái các hình khớp tới 0,1 (hai đường Shinkansen, và hai đường 1067 mm trong đoạn ba ray).
 import sys, os, re, json, math
@@ -22,6 +23,14 @@ CONFIG['hok'] = {'dir': 'hokuriku', 'out': 'hok_graph.json', 'edge_fallback': Tr
             'end_align': [{'x': 3630.0, 'ys': [4.3, 22.6, 40.8, 58.8]}],   # Hokuriku Shinkansen Annaka-Haruna – Tsuruga (7 hình; 030_01 Takasaki dùng chung với Joetsu nên để sau)
             'off': {'021_02.svg': (0.0, 0.0), '030_03.svg': (575.2, -85.35), '030_04.svg': (1136.1, -4.65), '030_05.svg': (1642.9, -4.9), '030_06.svg': (2287.3, -127.95), '030_07.svg': (2853.1, -4.65), '030_08.svg': (3522.2, -96.05)},
             'seams': [{'x': 575.2, 'dy': -85.35}, {'x': 1136.1, 'dy': 80.7}, {'x': 1642.9, 'dy': -0.25}, {'x': 2287.3, 'dy': -123.05}, {'x': 2853.1, 'dy': 123.3}, {'x': 3522.2, 'dy': -91.4}]}
+CONFIG['jts'] = {'dir': 'joetsu', 'out': 'jts_graph.json', 'edge_fallback': True,
+            # Niigata: bỏ các ghi chéo sau ga và đường chính nối về depot (theo yêu cầu: ga cuối là 4 đường kết thúc bằng chắn cuối).
+            # Echigo-Yuzawa: bỏ đuôi phía đông (nhánh sang Joetsu Line / Gala-Yuzawa, theo yêu cầu không vẽ) và dựng lại đuôi nhập lại đường chính theo đúng khuôn của Takasaki (cùng kiểu dPdduuPu): add_lines bên dưới
+            'drop_boxes': [[2277.5, 40, 2600, 110], [796.9, 30, 870, 56], [796.9, 89, 870, 112], [836, 54, 858, 92], [796.9, 30, 815, 66], [796.9, 80, 815, 112]],
+            'add_lines': [(802.0, 54.7, 811.5, 54.7), (797.0, 36.4, 806.8, 54.7), (811.5, 54.7, 816.4, 63.8), (802.0, 91.2, 811.5, 91.2), (797.0, 109.5, 806.8, 91.2), (811.5, 91.2, 816.4, 82.1)],
+            'end_align': [{'x': 2278.0, 'ys': [45.5, 63.8, 82.1, 100.3]}],   # Joetsu Shinkansen Jomo-Kogen – Niigata (4 hình: 010_02 có thêm Honjo-Waseda và Takasaki ở phía tây, không thuộc phạm vi)
+            'off': {'010_02.svg': (0.0, 0.0), '010_03.svg': (688.8, 27.4), '020_04.svg': (1338.3, 36.35), '020_05.svg': (1923.8, -36.55)},
+            'seams': [{'x': 688.8, 'dy': 27.4}, {'x': 1338.3, 'dy': 8.95}, {'x': 1923.8, 'dy': -72.9}]}
 LINE = (sys.argv[1] if len(sys.argv) > 1 else 'nks'); CFG = CONFIG[LINE]
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['dir']); OFF = CFG['off']
 SHK, CONV, NAVY, BLK = '#0070c0', '#404040', '#002060', '#000'
@@ -56,6 +65,8 @@ horiz = lambda l: abs(l['y1'] - l['y2']) < 0.3
 shk = [l for l in L if l['stroke'] == SHK]
 DROPPED = [l for l in shk if any(a <= min(l['x1'], l['x2']) and max(l['x1'], l['x2']) <= c and b <= min(l['y1'], l['y2']) and max(l['y1'], l['y2']) <= d for a, b, c, d in CFG.get('drop_boxes', []))]
 shk = [l for l in shk if l not in DROPPED]      # giản lược theo yêu cầu: các đoạn nằm hoàn toàn trong hộp bị bỏ khỏi đồ thị
+for al in CFG.get('add_lines', []):      # đường bổ sung (giản lược): ví dụ dựng đuôi nhập lại đường chính của ga có đường tránh khi đuôi trong hình là đường nhánh bị bỏ
+    x1, y1, x2, y2 = al; shk.append({'x1': min(x1, x2), 'y1': y1 if x1 <= x2 else y2, 'x2': max(x1, x2), 'y2': y2 if x1 <= x2 else y1, 'stroke': SHK, 'w': 1.5, 'fig': 'add'})
 for ea in CFG.get('end_align', []):      # ga cuối được giản lược thành các đường kết thúc đều bằng chắn cuối (Tsuruga: 4 đường): kéo đoạn cuối mỗi đường tới x chung
     for y in ea['ys']:
         for l in shk:      # đường chính vẽ liền một nét vượt quá x chung: cắt lại

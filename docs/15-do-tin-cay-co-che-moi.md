@@ -106,6 +106,14 @@ Soak test là công cụ kiểm tra bất biến, không phải nguồn dữ li�
 - **[I]** Tsuruga: mockup cắt bốn đường (2 xuống, 2 lên) tại một vị trí và đặt 4 chắn cuối, bỏ ghi đơn s sau ga và đường dẫn về depot theo yêu cầu người dùng. Khoảng cách ghi chéo → mét theo tỉ lệ 54 đơn vị = 440 m.
 - **Kiểm chứng:** test mục 33i (dữ liệu, vị trí hai chiều, thứ tự so với chỗ đường tránh, vẽ cabview trước/sau và minimap hai chiều); ảnh chụp 4 vị trí mỗi ga từ cổng 8765 (trong ga và từ ngoài vào ga, hai chiều) và camera sau cho Joetsu-Myoko, Toyama, Fukui.
 
+## 11. Joetsu Shinkansen (Jomo-Kogen – Niigata): đánh giá từ sơ đồ và đã đưa vào game (19/11/2026)
+
+- **[D]** Bốn hình 010_02–020_05 (joetsu/) ghép khớp ≤ 0,2 đơn vị ở ba chỗ nối (đồ thị `docs/data/haisen/jts_graph.json`, mockup `jts_layout.html`). Cả 6 ga có token khớp mã bố cục hiện có (không đổi mã); Niigata (`3-4-0`, `PdPduPu`) trùng hệt.
+- **[D]** `xo`: Jomo-Kogen đơn s trước + đơn r sau; Echigo-Yuzawa đơn s trước + X kép sau; Urasa hai ghi đơn mỗi bên (trước ga s xa ~240 m rồi r gần ~120 m; sau ga r gần ~120 m rồi s xa ~240 m, cùng thứ tự ở cả hai chiều); Nagaoka đơn s trước + đơn r sau; Tsubame-Sanjo đơn r trước + đơn s sau; Niigata chỉ X trước.
+- **[I]** Urasa: khoảng cách hai ghi đơn một bên = 190 m (150 m dài ghi trong game + 40 m theo hình; hình thật dài ghi ngắn hơn game), ghi gần giữ vị trí cũ 1300/720 m, ghi xa lệch thêm (phần tử thứ tư của `xo`).
+- **[I]** Theo yêu cầu người dùng: Echigo-Yuzawa dùng bố cục ga hiện có, không vẽ nhánh Joetsu Line / Gala-Yuzawa (đuôi phía đông dựng lại theo khuôn Takasaki); Niigata bịt bằng 4 chắn cuối trên mockup (game đã có sẵn chắn cuối ở ga cuối).
+- **Kiểm chứng:** test mục 33j (dữ liệu, vị trí hai chiều, thứ tự và khoảng cách Urasa, hướng vẽ từng ghi đơn, thứ tự so với chỗ đường tránh, vẽ cabview trước/sau và minimap); ảnh chụp từ cổng 8765, mỗi ghi chéo một ảnh tiến tới theo thứ tự chạy (hai chiều) và ảnh camera sau.
+
 ## Sức chứa ga ở chế độ mạng (2026-11-18)
 
 - **[D]** Thí nghiệm (giữ 2–3 tàu đỗ 1500 s bằng lệnh `hold`): trước sửa có tới 2–3 tàu đứng cùng lúc ở Kurume (1 đường dừng) và 3 tàu ở Shin-Tosu (2 đường dừng); sau sửa không vượt số đường dừng (khoảng cách tàu chờ phía sau ≈ 398 m, sát đệm ATC 400 m).

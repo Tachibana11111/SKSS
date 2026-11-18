@@ -95,6 +95,8 @@ Bất biến được kiểm: không ngoại lệ/NaN; tàu ta không va chạm,
 
 - **Hokuriku (18/11):** `xo` cho 18 ga Annaka-Haruna – Tsuruga từ `hok_graph.json` (`tools/haisen_xo.py` liệt kê ghi chéo theo ga). Ga 4 đường (Karuizawa, Nagano, Joetsu-Myoko, Toyama, Kanazawa, Tsuruga) giữ vị trí cũ 1300/720 m; Fukui (2 đường, `1-2-0`) dùng gap 160/40 m; 11 ga 2 đường còn lại `xo = []`. Không ga nào đổi mã bố cục. Tsuruga (ga cuối) chỉ có X trước ga, bốn đường kết thúc bằng bốn chắn cuối. Test: mục 33i.
 
+- **Joetsu và phần tử thứ tư `ext` của `xo` (19/11):** ga có đường tránh vẫn giữ vị trí cũ 1300/720 m, nhưng một bên có thể có hai ghi đơn liên tiếp (Urasa: trước ga s xa rồi r gần; sau ga r gần rồi s xa). Khi `gap` là `null`/bỏ trống, phần tử thứ tư `ext` (m) lệch THÊM ra xa ga: `['b','s',null,190]` = ghi s ở 1300 + 190 = 1490 m trước vạch (ghi gần `['b','r']` ở 1300 m). Khoảng 190 m = 150 m dài ghi (`XLEN`) + 40 m cách nhau theo hình (5 đơn vị sơ đồ). Cùng một ghi đơn là cùng loại (s/r theo chiều chạy) ở cả hai chiều, nên chiều lên chỉ đảo trước/sau. `xo` của Joetsu: Jomo-Kogen, Echigo-Yuzawa, Urasa, Nagaoka, Tsubame-Sanjo, Niigata (Tokyo – Takasaki chung với Hokuriku, chưa làm). Test: mục 33j.
+
 ## 9. Điểm cứu hộ trong hầm Seikan (竜飛定点, 吉岡定点) [N/I]
 
 - **Dữ liệu:** `LINE_META.toh.refugeInfo` (`sim.js`): km 732,9 và 755,9 (trùng `refuges`, dùng cho sự cố cháy trong hầm), toạ độ và độ sâu theo Wikipedia JA (Tappi 41,25722 N 140,34806 E, sâu 135 m; Yoshioka 41,44222 N 140,23917 E, sâu 149,5 m).

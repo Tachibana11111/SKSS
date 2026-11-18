@@ -117,9 +117,9 @@
   const XA_M = 1300, XB_M = 720, XLEN = 150, PL_BACK = 420, PL_FRONT = 20;      // sân ga vẽ từ 420 m trước tới 20 m sau vạch dừng (cabview/topview)
   function xovers(ls, dir, rear) {
     const xo = ls && ls.xo ? ls.xo : [['b', 'd'], ['a', 'd']], out = [];
-    for (const [side, kind, gap] of xo) { const sd = dir === 'up' ? (side === 'b' ? 'a' : 'b') : side;
-      if (gap !== undefined) { const z = sd === 'b' ? -(PL_BACK + gap) - XLEN : PL_FRONT + gap; out.push(rear ? { z: -z - XLEN, kind, flip: true } : { z, kind, flip: false }); continue; }      // gap: khoảng cách (m) từ đầu/cuối sân ga tới ghi chéo, theo sơ đồ
-      const z = sd === 'b' ? -XA_M : XB_M; out.push(rear ? { z: kind === 'd' ? -z : -z - XLEN, kind, flip: true } : { z, kind, flip: false }); }
+    for (const [side, kind, gap, ext] of xo) { const sd = dir === 'up' ? (side === 'b' ? 'a' : 'b') : side;      // phần tử thứ tư ext (m, chỉ khi gap null/bỏ trống = vị trí cũ 1300/720 m): lệch THÊM ra xa ga, để đặt hai ghi đơn liên tiếp một bên (Urasa: ghi gần ở vị trí cũ, ghi xa lệch ~190 m = 150 m dài ghi + 40 m cách nhau theo hình)
+      if (gap !== undefined && gap !== null) { const z = sd === 'b' ? -(PL_BACK + gap) - XLEN : PL_FRONT + gap; out.push(rear ? { z: -z - XLEN, kind, flip: true } : { z, kind, flip: false }); continue; }      // gap: khoảng cách (m) từ đầu/cuối sân ga tới ghi chéo, theo sơ đồ
+      const z = sd === 'b' ? -(XA_M + (ext || 0)) : XB_M + (ext || 0); out.push(rear ? { z: kind === 'd' ? -z : -z - XLEN, kind, flip: true } : { z, kind, flip: false }); }
     return out;
   }
   // Những đường cong nào của một ghi chéo cần vẽ: 0 = từ đường ta sang đường ngược chiều (lerp(0, oppAt)), 1 = từ đường ngược chiều sang đường ta (lerp(oppAt, 0)); "từ → sang" tính theo chiều tiến của khung đang nhìn.

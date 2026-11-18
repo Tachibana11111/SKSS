@@ -17,7 +17,11 @@ for e in E: par[find(e['a'])] = find(e['b'])
 comps = {}
 for e in E: comps.setdefault(find(e['a']), []).append(e)
 units = []
+mid = (dy + uy) / 2
+def on_mains(c):      # ghi chéo thật giữa hai đường chính: mọi đầu mút nằm trên đường chính xuống/lên hoặc điểm giữa (đường chéo nối đường nhánh với đường chính bị loại)
+    return all(abs(y - dy) < 0.6 or abs(y - uy) < 0.6 or abs(y - mid) < 0.6 for e in c for y in (e['y1'], e['y2']))
 for c in comps.values():
+    if not on_mains(c): continue
     xs = [v for e in c for v in (e['x1'], e['x2'])]; sl = set()
     for e in c:
         a = e if e['x1'] <= e['x2'] else {**e, 'x1': e['x2'], 'y1': e['y2'], 'x2': e['x1'], 'y2': e['y1']}
