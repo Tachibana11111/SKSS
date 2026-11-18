@@ -58,6 +58,9 @@ build_struct.apply(LINES)
 XO = {'nks': {'Takeo-Onsen': [['a', 'd']], 'Ureshino-Onsen': [], 'Shin-Omura': [['b', 's', 40]], 'Isahaya': [], 'Nagasaki': [['b', 'd']]},
       'tsk': {'Shin-Tosu': [['b', 'd'], ['a', 'd']], 'Kurume': [], 'Chikugo-Funagoya': [['b', 's'], ['a', 'r']], 'Shin-Omuta': [], 'Shin-Tamana': [], 'Kumamoto': [['b', 'd'], ['a', 'd']],
               'Shin-Yatsushiro': [['b', 'r', 160]], 'Shin-Minamata': [['b', 'r'], ['a', 's']], 'Izumi': [], 'Sendai': [['a', 'r', 80]], 'Kagoshima-Chuo': [['b', 'd']]},   # Kyushu Shinkansen (hình kyushu/010_01–010_05; Hakata chưa làm: ga chung với Sanyo)
+      'hok': {'Annaka-Haruna': [], 'Karuizawa': [['b', 'd'], ['a', 'd']], 'Sakudaira': [], 'Ueda': [], 'Nagano': [['b', 'd'], ['a', 'd']], 'Iiyama': [], 'Joetsu-Myoko': [['b', 'd'], ['a', 's']], 'Itoigawa': [],
+              'Kurobe-Unazuki-Onsen': [], 'Toyama': [['b', 's'], ['a', 'd']], 'Shin-Takaoka': [], 'Kanazawa': [['b', 'd'], ['a', 'd']], 'Komatsu': [], 'Kagaonsen': [], 'Awara-Onsen': [],
+              'Fukui': [['b', 'r', 160], ['a', 'r', 40]], 'Echizen-Takefu': [], 'Tsuruga': [['b', 'd']]},   # Hokuriku Shinkansen Annaka-Haruna – Tsuruga (hình hokuriku/021_02–030_08, docs/data/haisen/hok_graph.json); Tokyo..Takasaki (chung với Joetsu) chưa làm. Fukui: 2 đường nên gap 160/40 m (≈ 20/5 đơn vị); ga 4 đường giữ vị trí cũ; Tsuruga là ga cuối: chỉ X trước (4 đường kết thúc bằng chắn cuối)
       'toh': {'Shin-Aomori': [['b', 'd'], ['a', 'd']], 'Okutsugaru-Imabetsu': [['b', 's'], ['a', 'r']], 'Kikonai': [['b', 'r'], ['a', 's']], 'Shin-Hakodate-Hokuto': [['b', 'd']]}}
 for _lid, _d in XO.items():
     for _s in LINES[_lid]['stations']:

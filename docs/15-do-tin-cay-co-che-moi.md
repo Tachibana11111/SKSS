@@ -99,6 +99,13 @@ Soak test là công cụ kiểm tra bất biến, không phải nguồn dữ li�
 - **[I]** khoảng cách ghi chéo → mét theo 54 đơn vị = 440 m (đa số 160 m; Sendai 80 m); chưa áp vào `build_lines.py`.
 - **Đã áp vào game (17/11):** `xo` cho 11 ga theo bảng trên (Shin-Tosu, Kumamoto: X kép cách sân ga 160 m; Kurume, Shin-Omuta, Shin-Tamana, Izumi: không có ghi chéo; Chikugo-Funagoya: đơn `s` trước + đơn `r` sau; Shin-Yatsushiro: đơn `r` trước; Shin-Minamata: đơn `r` trước + đơn `s` sau; Sendai: đơn `r` sau 80 m; Kagoshima-Chuo: X kép trước, vị trí cũ vì ga cuối) và mã bố trí mới `2-3-0c` (`dPduP`) cho Chikugo-Funagoya. **Hakata chưa động** (ga chung với Sanyo, đợi mockup Sanyo). Đã kiểm bằng mắt cabview trước, cabview sau và minimap ở cả hai chiều.
 
+## 10. Hokuriku Shinkansen (Annaka-Haruna – Tsuruga): đánh giá từ sơ đồ và đã đưa vào game (18/11/2026)
+
+- **[D]** Bảy hình 021_02–030_08 (hokuriku/) ghép khớp ≤ 1,0 đơn vị ở sáu chỗ nối; hai đường chính cùng cao độ suốt tuyến (đồ thị `docs/data/haisen/hok_graph.json`, mockup `hok_layout.html`). Cả 18 ga có token khớp mã bố cục hiện có của game (không đổi mã); ghi chéo chỉ có ở 6 ga 4 đường, Fukui và Tsuruga.
+- **[D]** `xo`: Karuizawa, Nagano, Kanazawa X kép hai đầu; Joetsu-Myoko X kép trước + đơn s sau; Toyama đơn s trước + X kép sau; Fukui hai đơn r (gap 160/40 m); Tsuruga chỉ X trước; 11 ga 2 đường không có ghi chéo (Annaka-Haruna, Sakudaira, Ueda, Iiyama, Itoigawa, Kurobe-Unazuki-Onsen, Shin-Takaoka, Komatsu, Kagaonsen, Awara-Onsen, Echizen-Takefu).
+- **[I]** Tsuruga: mockup cắt bốn đường (2 xuống, 2 lên) tại một vị trí và đặt 4 chắn cuối, bỏ ghi đơn s sau ga và đường dẫn về depot theo yêu cầu người dùng. Khoảng cách ghi chéo → mét theo tỉ lệ 54 đơn vị = 440 m.
+- **Kiểm chứng:** test mục 33i (dữ liệu, vị trí hai chiều, thứ tự so với chỗ đường tránh, vẽ cabview trước/sau và minimap hai chiều); ảnh chụp 4 vị trí mỗi ga từ cổng 8765 (trong ga và từ ngoài vào ga, hai chiều) và camera sau cho Joetsu-Myoko, Toyama, Fukui.
+
 ## Sức chứa ga ở chế độ mạng (2026-11-18)
 
 - **[D]** Thí nghiệm (giữ 2–3 tàu đỗ 1500 s bằng lệnh `hold`): trước sửa có tới 2–3 tàu đứng cùng lúc ở Kurume (1 đường dừng) và 3 tàu ở Shin-Tosu (2 đường dừng); sau sửa không vượt số đường dừng (khoảng cách tàu chờ phía sau ≈ 398 m, sát đệm ATC 400 m).

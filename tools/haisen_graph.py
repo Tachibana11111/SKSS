@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # Trích đồ thị đường ray từ các SVG 配線略図.net (CC BY 4.0) đã ghép thành một hệ toạ độ, ghi docs/data/haisen/<tên>_graph.json.
-# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
+# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu|hok]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
 # CẤU HÌNH: mỗi hình đặt tại (x, y) trong hệ ghép; các hình nối nhau tại các đầu mút của hai đường chính (độ chênh dọc = trung bình các cặp đường khớp).
 #  nks: 010_01 ở (0,0); 010_02 ở (419.8, -6.8) (Takeo-Onsen – Ureshino-Onsen + Shin-Omura – Isahaya – Nagasaki).
 #  kyu: 5 hình Kyushu Shinkansen Hakata – Kagoshima-Chuo; hai đường chính khớp tới ≤ 0,6 ở cả bốn chỗ nối (xem CONFIG).
+#  hok: 7 hình Hokuriku Shinkansen Annaka-Haruna – Tsuruga; hai đường chính khớp tới ≤ 1,0 ở cả sáu chỗ nối (chỗ Nagano→Joetsu-Myoko lệch 1,0: khoảng cách hai đường khác nhau giữa hai hình).
 #  hkd: 5 hình Hokkaido Shin-Aomori – Shin-Hakodate-Hokuto; đầu mút phải/trái các hình khớp tới 0,1 (hai đường Shinkansen, và hai đường 1067 mm trong đoạn ba ray).
 import sys, os, re, json, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -16,6 +17,11 @@ CONFIG = {
             'seams': [{'x': 723.2, 'dy': 143.1}, {'x': 1412.0, 'dy': -81.85}, {'x': 1928.6, 'dy': -18.6}, {'x': 2504.2, 'dy': 84.15}]},
     'hkd': {'dir': 'hokkaido', 'out': 'hkd_graph.json', 'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (521.3, -168.55), '010_03.svg': (1033.0, -31.55), '010_04.svg': (1441.3, -4.4), '010_05.svg': (2100.6, 4.75)},
             'seams': [{'x': 521.3, 'dy': -168.55}, {'x': 1033.0, 'dy': 137.0}, {'x': 1441.3, 'dy': 27.15}, {'x': 2100.6, 'dy': 9.15}]}}
+CONFIG['hok'] = {'dir': 'hokuriku', 'out': 'hok_graph.json', 'edge_fallback': True,
+            'drop_boxes': [[3620.5, -100, 3900, 70]],   # Tsuruga: bỏ ghi chéo đơn sau ga và đường dẫn về depot (theo yêu cầu: ga cuối là 4 đường kết thúc bằng chắn cuối)
+            'end_align': [{'x': 3630.0, 'ys': [4.3, 22.6, 40.8, 58.8]}],   # Hokuriku Shinkansen Annaka-Haruna – Tsuruga (7 hình; 030_01 Takasaki dùng chung với Joetsu nên để sau)
+            'off': {'021_02.svg': (0.0, 0.0), '030_03.svg': (575.2, -85.35), '030_04.svg': (1136.1, -4.65), '030_05.svg': (1642.9, -4.9), '030_06.svg': (2287.3, -127.95), '030_07.svg': (2853.1, -4.65), '030_08.svg': (3522.2, -96.05)},
+            'seams': [{'x': 575.2, 'dy': -85.35}, {'x': 1136.1, 'dy': 80.7}, {'x': 1642.9, 'dy': -0.25}, {'x': 2287.3, 'dy': -123.05}, {'x': 2853.1, 'dy': 123.3}, {'x': 3522.2, 'dy': -91.4}]}
 LINE = (sys.argv[1] if len(sys.argv) > 1 else 'nks'); CFG = CONFIG[LINE]
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['dir']); OFF = CFG['off']
 SHK, CONV, NAVY, BLK = '#0070c0', '#404040', '#002060', '#000'
@@ -50,6 +56,12 @@ horiz = lambda l: abs(l['y1'] - l['y2']) < 0.3
 shk = [l for l in L if l['stroke'] == SHK]
 DROPPED = [l for l in shk if any(a <= min(l['x1'], l['x2']) and max(l['x1'], l['x2']) <= c and b <= min(l['y1'], l['y2']) and max(l['y1'], l['y2']) <= d for a, b, c, d in CFG.get('drop_boxes', []))]
 shk = [l for l in shk if l not in DROPPED]      # giản lược theo yêu cầu: các đoạn nằm hoàn toàn trong hộp bị bỏ khỏi đồ thị
+for ea in CFG.get('end_align', []):      # ga cuối được giản lược thành các đường kết thúc đều bằng chắn cuối (Tsuruga: 4 đường): kéo đoạn cuối mỗi đường tới x chung
+    for y in ea['ys']:
+        for l in shk:      # đường chính vẽ liền một nét vượt quá x chung: cắt lại
+            if abs(l['y1'] - l['y2']) < 0.01 and abs(l['y1'] - y) < 0.8 and l['x1'] < ea['x'] < l['x2']: l['x2'] = ea['x']
+        cand = [l for l in shk if abs(l['y1'] - l['y2']) < 0.01 and abs(l['y1'] - y) < 0.8 and l['x2'] < ea['x'] and l['x2'] > ea['x'] - 40]
+        if cand: max(cand, key=lambda l: l['x2'])['x2'] = ea['x']
 conv = [l for l in L if l['stroke'] == CONV]
 navy = [l for l in L if l['stroke'] == NAVY]
 blk15 = [l for l in L if l['stroke'] == BLK and l['w'] == 1.5]
@@ -189,6 +201,8 @@ plats = uniq
 edge_lines = [l for l in thin if horiz(l) and l['x2'] - l['x1'] > 20]
 for p in plats:
     p['shk'] = any(abs(l['x1'] - p['x1']) < 3 and abs(l['x2'] - p['x2']) < 3 and (abs(l['y1'] - p['y1']) < 4.5 or abs(l['y1'] - p['y2']) < 4.5) for l in edge_lines)
+    if not p['shk'] and CFG.get('edge_fallback'):      # dự phòng, bật riêng cho Hokuriku (Nagano) vì bật cho Kyushu làm lọt ga giả Hakata-Minami: hình không vẽ đường viền mảnh ở mép sân ga; sân ga nằm sát (≤ 6,5) đường màu Shinkansen phủ hết chiều dài sân ga thì vẫn là sân ga Shinkansen
+        p['shk'] = any(horiz(l) and l['x1'] <= p['x1'] + 3 and l['x2'] >= p['x2'] - 3 and (abs(l['y1'] - p['y1']) < 6.5 or abs(l['y1'] - p['y2']) < 6.5) for l in shk)
     p['cy'] = (p['y1'] + p['y2']) / 2; p['cx'] = (p['x1'] + p['x2']) / 2
 shk_p = sorted([p for p in plats if p['shk']], key=lambda p: (p['cx'], p['cy']))
 # tên ga: nhãn kanji cỡ 16 gần tâm sân ga nhất
@@ -246,6 +260,10 @@ for v in vthin:
         for x in (r['x1'], r['x2']):
             if abs(v['x1'] - x) < 0.5 and v['y1'] - 0.5 <= r['y'] <= v['y2'] + 0.5 and not any(abs(b['x'] - x) < 0.5 and abs(b['y'] - r['y']) < 0.5 for b in bumpers):
                 bumpers.append({'x': round(x, 1), 'y': r['y'], 'end': 'L' if x == r['x1'] else 'R'})
+for ea in CFG.get('end_align', []):      # chắn cuối tại x chung; bỏ chắn cuối cũ nằm trong đoạn vừa kéo dài
+    bumpers = [b for b in bumpers if not (any(abs(b['y'] - y) < 0.8 for y in ea['ys']) and ea['x'] - 40 < b['x'] < ea['x'] - 0.4)]
+    for y in ea['ys']:
+        if not any(abs(b['x'] - ea['x']) < 0.5 and abs(b['y'] - y) < 0.8 for b in bumpers): bumpers.append({'x': round(ea['x'], 1), 'y': y, 'end': 'R'})
 # ---- công trình (nhà) trong depot, đường phụ, nhãn
 bld = [{'x': r['x'], 'y': r['y'], 'w': r['w'], 'h': r['h'], 'fill': r['fill']} for r in R if (r['stroke'] == BLK and r['sw'] == 0.8) or (r['fill'] == '#bfbfbf')]
 bld = [b for b in bld if not (b['w'] > 20 and any(abs(b['x'] - p['x1']) < 1 for p in plats))]
