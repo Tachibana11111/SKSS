@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Trích đồ thị đường ray từ các SVG 配線略図.net (CC BY 4.0) đã ghép thành một hệ toạ độ, ghi docs/data/haisen/<tên>_graph.json.
-# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu|hok|jts|tks|kh]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
+# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu|hok|jts|tks|kh|omi]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
 # CẤU HÌNH: mỗi hình đặt tại (x, y) trong hệ ghép; các hình nối nhau tại các đầu mút của hai đường chính (độ chênh dọc = trung bình các cặp đường khớp).
 #  nks: 010_01 ở (0,0); 010_02 ở (419.8, -6.8) (Takeo-Onsen – Ureshino-Onsen + Shin-Omura – Isahaya – Nagasaki).
 #  kyu: 5 hình Kyushu Shinkansen Hakata – Kagoshima-Chuo; hai đường chính khớp tới ≤ 0,6 ở cả bốn chỗ nối (xem CONFIG).
@@ -35,6 +35,8 @@ CONFIG['tks'] = {'dir': 'hokuriku', 'out': 'tks_graph.json', 'edge_fallback': Tr
             'off': {'030_01.svg': (0.0, 0.0)}, 'seams': [], 'main_span': 250}
 CONFIG['kh'] = {'dir': 'joetsu', 'out': 'kh_graph.json', 'edge_fallback': True,   # Kumagaya (010_01, cùng hình với Omiya) và Honjo-Waseda (010_02, cùng hình với Takasaki và Jomo-Kogen); hai đường chính khớp ở chỗ nối; Omiya, Takasaki, Jomo-Kogen không thuộc phạm vi
             'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (723.2, -36.45)}, 'seams': [{'x': 723.2, 'dy': -36.45}], 'main_span': 250}
+CONFIG['omi'] = {'dir': 'tohoku', 'out': 'omi_graph.json', 'edge_fallback': True,   # Tokyo – Ueno – Omiya – Washinomiya Jct nền Tohoku Shinkansen (010_01 + 010_02; hai đường chính khớp ở chỗ nối); Omiya có thêm nhánh Joetsu/Hokuriku sang Kumagaya
+            'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (723.2, -1.95)}, 'seams': [{'x': 723.2, 'dy': -1.95}], 'main_span': 700}
 LINE = (sys.argv[1] if len(sys.argv) > 1 else 'nks'); CFG = CONFIG[LINE]
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['dir']); OFF = CFG['off']
 SHK, CONV, NAVY, BLK = '#0070c0', '#404040', '#002060', '#000'
