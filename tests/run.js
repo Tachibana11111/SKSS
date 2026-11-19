@@ -212,7 +212,7 @@ if (section('10. Bố trí ga, kết cấu tuyến, đường cong (layout.js)')
   for (const ln of ALL) {
     const L = Sim.lineOf(ln);
     ok(L.stations.every(s => LAY.TOK[s.lay]), `${ln}: mọi ga có mã bố trí hợp lệ`);
-    ok(L.stations.every(s => s.loop === (s.lay.endsWith('-1') ? 1 : 0)), `${ln}: cờ ga tránh khớp bố trí (có đường thông qua)`);
+    ok(L.stations.every(s => s.loop === (/-1k?$/.test(s.lay) ? 1 : 0)), `${ln}: cờ ga tránh khớp bố trí (có đường thông qua)`);
     ok(L.struct[0][0] === 0 && Math.abs(L.struct[L.struct.length - 1][1] - L.kmEnd) < 0.01, `${ln}: kết cấu phủ toàn tuyến`);
     for (let i = 1; i < L.struct.length; i++) ok(Math.abs(L.struct[i][0] - L.struct[i - 1][1]) < 0.01, `${ln}: kết cấu liên tục tại đoạn ${i}`);
     for (const s of L.stations) if (!(ln !== 'tsk' && s.km <= 3.6)) ok(Sim.structAt(L, s.km) !== 't', `${ln}: ga ${s.en} không nằm trong hầm (trừ ga ngầm Tokyo/Ueno Tohoku)`);
@@ -427,6 +427,7 @@ if (section('16. Joetsu/Hokuriku tách khỏi Tohoku ở Omiya, Hokuriku tách k
 if (section('17. Ga: ghi riêng từng đường, tường bao, hồ sơ hình học')) {
   const LAY = require(path.join(DRIVE, 'layout.js'));
   for (const code of Object.keys(LAY.TOK)) for (const dir of ['down', 'up']) {
+    if (code === LAY.TKS) continue;      // Takasaki: hình học riêng theo sơ đồ, kiểm ở mục 33k
     const st = LAY.station(code, dir, 0), outer = st.tracks.filter(t => !t.main);
     ok(outer.every(t => t.in0 !== undefined && t.len >= 40 && t.len <= 300), `${code} ${dir}: mọi đường ngoài có ghi riêng (in0/len)`);
     ok(outer.every(t => t.in0 - t.len >= 380), `${code} ${dir}: ghi cuối cùng xong trước khi vào sân ga (còn ≥ 380 m)`, outer.map(t => [t.in0, t.len]));
@@ -456,7 +457,7 @@ if (section('18. Ga cuối: chọn đường có sân ga của cả hai nhóm, �
 }
 
 if (section('20. Cầu bộ hành trên cao theo cỡ ga')) {
-  const LAY = require(path.join(DRIVE, 'layout.js')), want = { '3-6-0': 3, '5-8-0': 3, '3-4-0': 3, '2-4-0': 2, '2-4-1': 2, '2-4-0t': 2, '2-2-0': 1, '2-2-1': 1, '2-3-0': 1, '2-3-1': 1, '2-3-0a': 1, '2-3-0b': 1, '2-3-0c': 1, '1-2-0': 0, '1-2-1': 0 };
+  const LAY = require(path.join(DRIVE, 'layout.js')), want = { '3-6-0': 3, '5-8-0': 3, '3-4-0': 3, '2-4-0': 2, '2-4-1': 2, '2-4-1k': 2, '2-4-0t': 2, '2-2-0': 1, '2-2-1': 1, '2-3-0': 1, '2-3-1': 1, '2-3-0a': 1, '2-3-0b': 1, '2-3-0c': 1, '1-2-0': 0, '1-2-1': 0 };
   for (const [code, n] of Object.entries(want)) ok(LAY.bridgeCountOf(code) === n, `cầu bộ hành ga ${code}: ${n} lối`, LAY.bridgeCountOf(code));
   ok(Object.keys(LAY.TOK).every(c => want[c] !== undefined), 'mọi mã bố trí có quy tắc cầu bộ hành');
   const T = Sim.lineOf('toh'); for (const s of T.stations.filter(x => /^(東京|上野)$/.test(x.jp))) ok(Sim.inTunnel({ line: T, dir: 'down' }, Sim.sOfKm(s.km, 'down', T.kmEnd)), `${s.en} (Tohoku) là ga ngầm nên không có cầu bộ hành`);
@@ -1164,7 +1165,7 @@ if (section('33f. Ghi chéo giữa hai đường chính (xo): dựng lại từ 
   const LNS = window.LINES, Ly = require(path.join(DRIVE, 'layout.js')), N = LNS.nks.stations;
   const byEn = en => N.find(s => s.en === en);
   ok(JSON.stringify(byEn('Takeo-Onsen').xo) === '[["a","d"]]' && JSON.stringify(byEn('Shin-Omura').xo) === '[["b","s",40]]' && JSON.stringify(byEn('Nagasaki').xo) === '[["b","d"]]' && byEn('Ureshino-Onsen').xo.length === 0 && byEn('Isahaya').xo.length === 0, 'dữ liệu nks: X kép sau Takeo-Onsen, một đường chéo trước Shin-Omura, X kép trước Nagasaki, Ureshino-Onsen và Isahaya không có');
-  ok(Object.keys(LNS).filter(id => id !== 'nks' && id !== 'toh' && id !== 'tsk' && id !== 'hok' && id !== 'jts').every(id => LNS[id].stations.every(s => s.xo === undefined)) && LNS.tsk.stations.filter(s => s.xo !== undefined).length === 11 && LNS.hok.stations.filter(s => s.xo !== undefined).length === 18 && LNS.jts.stations.filter(s => s.xo !== undefined).length === 6, 'các tuyến khác chưa khai báo xo: giữ mặc định cũ (tsk chỉ có 11 ga Kyushu, mục 33h; hok chỉ có 18 ga Annaka-Haruna – Tsuruga, mục 33i; jts chỉ có 6 ga Jomo-Kogen – Niigata, mục 33j)');
+  ok(Object.keys(LNS).filter(id => id !== 'nks' && id !== 'toh' && id !== 'tsk' && id !== 'hok' && id !== 'jts').every(id => LNS[id].stations.every(s => s.xo === undefined)) && LNS.tsk.stations.filter(s => s.xo !== undefined).length === 11 && LNS.hok.stations.filter(s => s.xo !== undefined).length === 19 && LNS.jts.stations.filter(s => s.xo !== undefined).length === 7, 'các tuyến khác chưa khai báo xo: giữ mặc định cũ (tsk chỉ có 11 ga Kyushu, mục 33h; hok chỉ có Takasaki và 18 ga Annaka-Haruna – Tsuruga, mục 33i; jts chỉ có Takasaki và 6 ga Jomo-Kogen – Niigata, mục 33j)');
   ok(LNS.toh.stations.filter(s => s.xo !== undefined).map(s => s.en).join() === 'Shin-Aomori,Okutsugaru-Imabetsu,Kikonai,Shin-Hakodate-Hokuto', 'toh: chỉ bốn ga Hokkaido có xo (các ga Tohoku khác giữ mặc định)');
   { const d = Ly.xovers({}, 'down', false), u = Ly.xovers({}, 'up', false); ok(d.length === 2 && d.every(x => x.kind === 'd') && d.map(x => x.z).sort((a, b) => a - b).join() === '-1300,720' && u.map(x => x.z).sort((a, b) => a - b).join() === '-1300,720', 'mặc định: X kép ở 1300 m trước và 720 m sau vạch, cả hai chiều', [d, u]); }
   { const st = { xo: [['a', 'd']] }, dn = Ly.xovers(st, 'down', false), up = Ly.xovers(st, 'up', false), rr = Ly.xovers(st, 'down', true);
@@ -1296,21 +1297,25 @@ if (section('33i. Hokuriku Shinkansen dựng lại từ sơ đồ (Annaka-Haruna
   const Ly = require(path.join(DRIVE, 'layout.js')), L = window.LINES.hok, byEn = en => L.stations.find(x => x.en === en), ix = en => L.stations.findIndex(x => x.en === en), xo = en => JSON.stringify(byEn(en).xo);
   const DD = '[["b","d"],["a","d"]]', NONE = ['Annaka-Haruna', 'Sakudaira', 'Ueda', 'Iiyama', 'Itoigawa', 'Kurobe-Unazuki-Onsen', 'Shin-Takaoka', 'Komatsu', 'Kagaonsen', 'Awara-Onsen', 'Echizen-Takefu'];
   ok(xo('Karuizawa') === DD && xo('Nagano') === DD && xo('Kanazawa') === DD && xo('Joetsu-Myoko') === '[["b","d"],["a","s"]]' && xo('Toyama') === '[["b","s"],["a","d"]]' && xo('Fukui') === '[["b","r",160],["a","r",40]]' && xo('Tsuruga') === '[["b","d"]]' && NONE.every(e => xo(e) === '[]'), 'dữ liệu xo Hokuriku theo sơ đồ (11 ga 2 đường không có ghi chéo; Karuizawa, Nagano, Kanazawa X kép hai đầu; Tsuruga chỉ X trước)');
-  ok(L.stations.slice(0, ix('Takasaki') + 1).every(x => x.xo === undefined), 'các ga Tokyo – Takasaki (chung với Joetsu) chưa khai báo xo (mặc định cũ)');
+  ok(L.stations.slice(0, ix('Takasaki')).every(x => x.xo === undefined) && xo('Takasaki') === '[["b","s",245],["a","r",205]]', 'các ga Tokyo – Honjo-Waseda (chung với Joetsu) chưa khai báo xo (mặc định cũ); Takasaki có hai ghi đơn (s phía tây, r phía đông)');
   { const LAY = { 'Annaka-Haruna': '2-2-0', Karuizawa: '2-4-0', Sakudaira: '2-2-0', Ueda: '2-2-0', Nagano: '2-4-0', Iiyama: '2-2-0', 'Joetsu-Myoko': '2-4-0', Itoigawa: '2-2-0', 'Kurobe-Unazuki-Onsen': '2-2-0', Toyama: '2-4-0', 'Shin-Takaoka': '2-2-0', Kanazawa: '2-4-0', Komatsu: '2-2-0', Kagaonsen: '2-2-1', 'Awara-Onsen': '2-2-0', Fukui: '1-2-0', 'Echizen-Takefu': '2-2-1', Tsuruga: '2-4-0' };
     ok(Object.keys(LAY).every(e => byEn(e).lay === LAY[e]), 'mã bố trí Hokuriku khớp token trích từ sơ đồ ở cả 18 ga (không ga nào đổi mã)', Object.keys(LAY).filter(e => byEn(e).lay !== LAY[e])); }
   { const zs = (en, d, r) => Ly.xovers(byEn(en), d, r).map(x => x.kind + x.z).join();
     ok(['Karuizawa', 'Nagano', 'Kanazawa'].every(e => zs(e, 'down') === 'd-1300,d720' && zs(e, 'up') === 'd720,d-1300') && zs('Joetsu-Myoko', 'down') === 'd-1300,s720' && zs('Joetsu-Myoko', 'up') === 'd720,s-1300' && zs('Toyama', 'down') === 's-1300,d720' && zs('Toyama', 'up') === 's720,d-1300'
       && zs('Fukui', 'down') === 'r-730,r60' && zs('Fukui', 'up') === 'r180,r-610' && zs('Tsuruga', 'down') === 'd-1300' && zs('Tsuruga', 'up') === 'd720' && NONE.every(e => zs(e, 'down') === '' && zs(e, 'up') === ''), 'vị trí và loại ghi chéo Hokuriku theo hai chiều: ga 4 đường giữ vị trí cũ 1300/720 m, Fukui (2 đường) theo gap 160/40 m, ga 2 đường còn lại không có'); }
   // thứ tự theo sơ đồ: ở ga có đường tránh, ghi chéo nằm NGOÀI chỗ đường tránh rẽ ra / nhập lại
-  for (const x of L.stations) { if (!x.xo || !x.xo.length) continue; const st = Ly.station(x.lay, 'down', 0), loops = st.tracks.filter(t => t.in0 !== undefined); if (!loops.length) continue;
+  for (const x of L.stations) { if (!x.xo || !x.xo.length || x.lay === Ly.TKS) continue; const st = Ly.station(x.lay, 'down', 0), loops = st.tracks.filter(t => t.in0 !== undefined); if (!loops.length) continue;
     for (const d of ['down', 'up']) { const sd = Ly.station(x.lay, d, 0), lp = sd.tracks.filter(t => t.in0 !== undefined), xv = Ly.xovers(x, d, false), inMax = Math.max(...lp.map(t => t.in0)), outMax = Math.max(...lp.map(t => t.out0 + t.len));
       ok(xv.every(v => v.z < 0 ? -v.z - 150 >= inMax - 1 : v.z >= outMax - 1), 'hok ' + x.en + ' ' + d + ': ghi chéo nằm ngoài chỗ đường tránh rẽ ra / nhập lại (đúng thứ tự sơ đồ)', [xv.map(v => v.z), inMax, outMax]); } }
   // vẽ cabview (camera trước/sau) và minimap: bật/tắt xovers
+  { const zt = (d, r) => Ly.xovers(byEn('Takasaki'), d, r).map(x => x.kind + x.z).join();
+    ok(zt('down', false) === 's-815,r225' && zt('up', false) === 's265,r-775', 'Takasaki: s trước ga và r sau ga khi xuống (theo hình: 245 / 205 m từ mép sân ga); chiều lên đảo trước/sau, loại giữ nguyên theo chiều chạy');
+    ok(['down', 'up'].every(d => Ly.xovers(byEn('Takasaki'), d, false).every(v => JSON.stringify(Ly.xoLines(v)) === (v.kind === 's' ? '[1]' : '[0]')) && Ly.xovers(byEn('Takasaki'), d, true).every(v => JSON.stringify(Ly.xoLines(v)) === (v.kind === 's' ? '[0]' : '[1]'))), 'Takasaki: hướng vẽ ghi đơn (s: đối diện → mình, r: mình → đối diện; camera sau đảo chiều) ở cả hai chiều');
+    ok(['down', 'up'].every(d => Ly.xovers(byEn('Takasaki'), d, true).map(v => v.z).sort((a, b) => a - b).join() === Ly.xovers(byEn('Takasaki'), d, false).map(v => -v.z - 150).sort((a, b) => a - b).join()), 'Takasaki: camera sau là ảnh gương (z phía sau = -z - 150)'); }
   require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js'));
   const noop = () => { }; let n = 0; const ctx = new Proxy({}, { get: (t, k) => { if (k === 'stroke' || k === 'fill') return () => { n++; }; return k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop); }, set: (t, k, v) => { t[k] = v; return true; } });
   const mkW = d => { const rec = L.trains.find(t => t.t === 'Hakutaka' && t.d === d && t.s.some(e => e[0] === ix('Tsuruga') && !e[3]) && t.s.some(e => e[0] === 0 && !e[3])); const a = d === 'down' ? 0 : ix('Tsuruga'), b = d === 'down' ? ix('Tsuruga') : 0; return Sim.createWorld('hok', Sim.makeTrip('hok', rec, a, b), { diff: 'easy', seed: 1, lead: false, events: false }); };
-  const orig = Ly.xovers, WITH = ['Karuizawa', 'Nagano', 'Joetsu-Myoko', 'Toyama', 'Kanazawa', 'Fukui', 'Tsuruga'];
+  const orig = Ly.xovers, WITH = ['Takasaki', 'Karuizawa', 'Nagano', 'Joetsu-Myoko', 'Toyama', 'Kanazawa', 'Fukui', 'Tsuruga'];
   for (const d of ['down', 'up']) { const W = mkW(d), T = W.player, len = T.veh.len;
     const draw = (en, off, rear) => { const m = T.M.find(q => L.stations[q.i].en === en); T.x = m.s + off; T.v = 60; n = 0; global.CabView[rear ? 'drawRear' : 'draw'](ctx, 0, 0, 1920, 618, W, T, { sprites: {}, aud: null, imgs: {} }); return n; };
     const diff = (en, off, rear) => { const a = draw(en, off, rear); Ly.xovers = () => []; const c = draw(en, off, rear); Ly.xovers = orig; return [a, c]; };
@@ -1331,7 +1336,7 @@ if (section('33j. Joetsu Shinkansen dựng lại từ sơ đồ (Jomo-Kogen – 
   global.hhmm = global.hhmm || (x => String(x)); global.CanvasRenderingContext2D = global.CanvasRenderingContext2D || function () { }; global.CanvasRenderingContext2D.prototype.roundRect = global.CanvasRenderingContext2D.prototype.roundRect || function () { };
   const Ly = require(path.join(DRIVE, 'layout.js')), L = window.LINES.jts, byEn = en => L.stations.find(x => x.en === en), ix = en => L.stations.findIndex(x => x.en === en), xo = en => JSON.stringify(byEn(en).xo);
   ok(xo('Jomo-Kogen') === '[["b","s"],["a","r"]]' && xo('Echigo-Yuzawa') === '[["b","s"],["a","d"]]' && xo('Urasa') === '[["b","s",null,190],["b","r"],["a","r"],["a","s",null,190]]' && xo('Nagaoka') === '[["b","s"],["a","r"]]' && xo('Tsubame-Sanjo') === '[["b","r"],["a","s"]]' && xo('Niigata') === '[["b","d"]]', 'dữ liệu xo Joetsu theo sơ đồ (Urasa: mỗi bên hai ghi đơn, phần tử thứ tư = lệch thêm 190 m)');
-  ok(L.stations.slice(0, ix('Takasaki') + 1).every(x => x.xo === undefined), 'các ga Tokyo – Takasaki (chung với Hokuriku) chưa khai báo xo (mặc định cũ)');
+  ok(L.stations.slice(0, ix('Takasaki')).every(x => x.xo === undefined) && xo('Takasaki') === '[["b","s",245],["a","r",205]]', 'các ga Tokyo – Honjo-Waseda (chung với Hokuriku) chưa khai báo xo (mặc định cũ); Takasaki có hai ghi đơn (s phía tây, r phía đông)');
   { const LAY = { 'Jomo-Kogen': '2-2-1', 'Echigo-Yuzawa': '2-4-1', Urasa: '2-2-1', Nagaoka: '2-2-1', 'Tsubame-Sanjo': '2-3-1', Niigata: '3-4-0' };
     ok(Object.keys(LAY).every(e => byEn(e).lay === LAY[e]), 'mã bố trí Joetsu khớp token trích từ sơ đồ ở cả 6 ga (không ga nào đổi mã)', Object.keys(LAY).filter(e => byEn(e).lay !== LAY[e])); }
   { const zs = (en, d, r) => Ly.xovers(byEn(en), d, r).map(x => x.kind + x.z).join(), kinds = (en, d) => Ly.xovers(byEn(en), d, false).sort((a, b) => a.z - b.z).map(x => x.kind).join('');
@@ -1345,14 +1350,18 @@ if (section('33j. Joetsu Shinkansen dựng lại từ sơ đồ (Jomo-Kogen – 
     // camera sau (ảnh gương): cùng vật thể thấy từ phía sau: z' = -z - 150 (kind giữ nguyên, flip = true)
     ok(['down', 'up'].every(d => { const f = Ly.xovers(byEn('Urasa'), d, false), r = Ly.xovers(byEn('Urasa'), d, true); return f.every((v, i) => r[i].kind === v.kind && r[i].flip === true && r[i].z === -v.z - 150); }), 'Urasa: camera sau thấy đúng bốn ghi đơn ở vị trí gương (-z - 150), cùng loại'); }
   // thứ tự theo sơ đồ: ở ga có đường tránh, ghi chéo nằm NGOÀI chỗ đường tránh rẽ ra / nhập lại
-  for (const x of L.stations) { if (!x.xo || !x.xo.length) continue; const st = Ly.station(x.lay, 'down', 0), loops = st.tracks.filter(t => t.in0 !== undefined); if (!loops.length) continue;
+  for (const x of L.stations) { if (!x.xo || !x.xo.length || x.lay === Ly.TKS) continue; const st = Ly.station(x.lay, 'down', 0), loops = st.tracks.filter(t => t.in0 !== undefined); if (!loops.length) continue;
     for (const d of ['down', 'up']) { const sd = Ly.station(x.lay, d, 0), lp = sd.tracks.filter(t => t.in0 !== undefined), xv = Ly.xovers(x, d, false), inMax = Math.max(...lp.map(t => t.in0)), outMax = Math.max(...lp.map(t => t.out0 + t.len));
       ok(xv.every(v => v.z < 0 ? -v.z - 150 >= inMax - 1 : v.z >= outMax - 1), 'jts ' + x.en + ' ' + d + ': ghi chéo nằm ngoài chỗ đường tránh rẽ ra / nhập lại (đúng thứ tự sơ đồ)', [xv.map(v => v.z), inMax, outMax]); } }
   // vẽ cabview (camera trước/sau) và minimap: bật/tắt xovers
+  { const zt = (d, r) => Ly.xovers(byEn('Takasaki'), d, r).map(x => x.kind + x.z).join();
+    ok(zt('down', false) === 's-815,r225' && zt('up', false) === 's265,r-775', 'Takasaki: s trước ga và r sau ga khi xuống (theo hình: 245 / 205 m từ mép sân ga); chiều lên đảo trước/sau, loại giữ nguyên theo chiều chạy');
+    ok(['down', 'up'].every(d => Ly.xovers(byEn('Takasaki'), d, false).every(v => JSON.stringify(Ly.xoLines(v)) === (v.kind === 's' ? '[1]' : '[0]')) && Ly.xovers(byEn('Takasaki'), d, true).every(v => JSON.stringify(Ly.xoLines(v)) === (v.kind === 's' ? '[0]' : '[1]'))), 'Takasaki: hướng vẽ ghi đơn (s: đối diện → mình, r: mình → đối diện; camera sau đảo chiều) ở cả hai chiều');
+    ok(['down', 'up'].every(d => Ly.xovers(byEn('Takasaki'), d, true).map(v => v.z).sort((a, b) => a - b).join() === Ly.xovers(byEn('Takasaki'), d, false).map(v => -v.z - 150).sort((a, b) => a - b).join()), 'Takasaki: camera sau là ảnh gương (z phía sau = -z - 150)'); }
   require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js'));
   const noop = () => { }; let n = 0; const ctx = new Proxy({}, { get: (t, k) => { if (k === 'stroke' || k === 'fill') return () => { n++; }; return k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop); }, set: (t, k, v) => { t[k] = v; return true; } });
   const last = L.stations.length - 1, mkW = d => { const rec = L.trains.find(t => t.d === d && t.s.some(e => e[0] === last && !e[3]) && t.s.some(e => e[0] === 0 && !e[3])); const a = d === 'down' ? 0 : last, b = d === 'down' ? last : 0; return Sim.createWorld('jts', Sim.makeTrip('jts', rec, a, b), { diff: 'easy', seed: 1, lead: false, events: false }); };
-  const orig = Ly.xovers, WITH = ['Jomo-Kogen', 'Echigo-Yuzawa', 'Urasa', 'Nagaoka', 'Tsubame-Sanjo', 'Niigata'];
+  const orig = Ly.xovers, WITH = ['Takasaki', 'Jomo-Kogen', 'Echigo-Yuzawa', 'Urasa', 'Nagaoka', 'Tsubame-Sanjo', 'Niigata'];
   for (const d of ['down', 'up']) { const W = mkW(d), T = W.player, len = T.veh.len;
     const draw = (en, off, rear) => { const m = T.M.find(q => L.stations[q.i].en === en); T.x = m.s + off; T.v = 60; n = 0; global.CabView[rear ? 'drawRear' : 'draw'](ctx, 0, 0, 1920, 618, W, T, { sprites: {}, aud: null, imgs: {} }); return n; };
     const diff = (en, off, rear) => { const a = draw(en, off, rear); Ly.xovers = () => []; const c = draw(en, off, rear); Ly.xovers = orig; return [a, c]; };
@@ -1366,6 +1375,63 @@ if (section('33j. Joetsu Shinkansen dựng lại từ sơ đồ (Jomo-Kogen – 
       const tdiff = (en, off) => { const a = tv(en, off); Ly.xovers = () => []; const c = tv(en, off); Ly.xovers = orig; return [a, c]; };
       for (const en of WITH) for (const xv of Ly.xovers(byEn(en), d, false)) { const [a, b] = tdiff(en, xv.z - 120); ok(a > b, 'minimap ' + d + ' ' + en + ' (' + xv.kind + ' ở ' + xv.z + ' m): vẽ ghi chéo (' + a + ' so với ' + b + ')', [a, b]); }
       global.document = keepDoc; } }
+}
+if (section('33k. Nút giao Takasaki (Joetsu – Hokuriku): ga 6 đường có đường nhánh dưới kéo dài thành đường Hokuriku lên, ba ghi nối, hai ghi đơn; Hokuriku lên cắt đồng mức qua hai đường chính Joetsu; cabview trước/sau, minimap, cửa sổ')) {
+  global.hhmm = global.hhmm || (x => String(x)); global.CanvasRenderingContext2D = global.CanvasRenderingContext2D || function () { }; global.CanvasRenderingContext2D.prototype.roundRect = global.CanvasRenderingContext2D.prototype.roundRect || function () { };
+  const Ly = require(path.join(DRIVE, 'layout.js')), LJ = window.LINES.jts, LH = window.LINES.hok, TKS = Ly.TKS, byEn = (L, en) => L.stations.find(x => x.en === en), EXT = Ly.TKS_EXT;
+  // 1) dữ liệu và mã bố trí riêng
+  ok(TKS === '2-4-1k' && [LJ, LH].every(L => byEn(L, 'Takasaki').lay === TKS && JSON.stringify(byEn(L, 'Takasaki').xo) === '[["b","s",245],["a","r",205]]'), 'Takasaki dùng mã bố trí riêng 2-4-1k và hai ghi đơn theo khoảng cách trong hình (s 245 m phía tây, r 205 m phía đông) ở cả hai tuyến');
+  ok(Ly.tokens(TKS, 'down') === Ly.tokens('2-4-1', 'down') && Ly.bridgeCountOf(TKS) === Ly.bridgeCountOf('2-4-1') && Ly.stopCount(TKS, 'down') === Ly.stopCount('2-4-1', 'down') && Ly.stopCount(TKS, 'up') === Ly.stopCount('2-4-1', 'up') && Ly.hasThrough(TKS, 'down') === Ly.hasThrough('2-4-1', 'down') && Ly.diverts(TKS, 'down', 0) === Ly.diverts('2-4-1', 'down', 0), 'mã 2-4-1k cùng chuỗi token, số cầu bộ hành, số đường dừng, làn thông và rẽ ghi như 2-4-1 (chỉ khác hình học ghi)');
+  // 2) ghi chéo: vị trí và không chồng lên ba ghi nối
+  { const zs = (d, r) => Ly.xovers(byEn(LJ, 'Takasaki'), d, r).map(x => x.kind + x.z).join();
+    ok(zs('down', false) === 's-815,r225' && zs('up', false) === 's265,r-775' && zs('down', true) === 's665,r-375', 'Takasaki: s bắt đầu 815 m trước, r 225 m sau vạch dừng khi xuống (hai ghi đơn cách mép sân ga 245 / 205 m); chiều lên đảo trước/sau; camera sau là ảnh gương');
+    ok(['down', 'up'].every(d => Ly.xovers(byEn(LJ, 'Takasaki'), d, false).every(v => Ly.station(TKS, d, 0).links.every(l => { const a = v.z, b = v.z + 150; return b <= l.z0 || a >= l.z0 + l.len; }))), 'Takasaki: hai ghi đơn không chồng lên ba ghi nối nhánh dưới – đường chính lên (cả hai chiều)'); }
+  // 3) hình học đường ga theo hình: chiều xuống rồi chiều lên (quay 180°: z' = -400 - z)
+  { const phys = (st, n) => st.tracks.find(t => t.phys === n);
+    const D = Ly.station(TKS, 'down', 0), U = Ly.station(TKS, 'up', 0), Dr = Ly.station(TKS, 'down', 0, true), Ur = Ly.station(TKS, 'up', 0, true);
+    const ex = (t) => [t.in0, t.len, t.out0, t.len2];
+    ok(JSON.stringify(ex(phys(D, 2))) === '[661,120,178,50]' && JSON.stringify(ex(phys(D, 0))) === '[541,121,60,81]' && phys(D, 5).out0 === EXT && JSON.stringify(ex(phys(D, 7))) === '[541,121,60,81]', 'chiều xuống: N2 tách 661 m trước, nhập 178 m sau; N1 từ N2; đường nhánh dưới S1 không nhập lại (kéo dài); S2 từ S1 (số đo từ hình 030_01)');
+    ok(Math.abs(phys(D, 0).plain - phys(D, 2).x) < 1e-9 && Math.abs(phys(D, 7).plain - phys(D, 5).x) < 1e-9, 'đường ngoài cùng tách từ đường mẹ (N1 từ N2, S2 từ S1), không từ đường chính');
+    for (const t of D.tracks) { if (t.main) continue; const u = phys(U, t.phys), w = (st, tt, z) => Ly.trackW(tt, 1000 + z, 1000); let worst = 0;
+      for (let z = -900; z <= 700; z += 10) worst = Math.max(worst, Math.abs(w(D, t, z) - w(U, u, -400 - z)));
+      ok(worst < 1e-9, 'đường ' + t.phys + ': chiều lên là ảnh quay 180° của chiều xuống (trackW(z) = trackW(-400 - z))', worst); }
+    ok(Ur.tracks.every(t => t.main || t.phys !== undefined) && Dr.tracks.every(t => t.main || t.phys !== undefined) && Dr.tracks.map(t => t.phys + ':' + t.in0).sort().join() === D.tracks.map(t => t.phys + ':' + t.in0).sort().join(), 'camera sau (rev) giữ nguyên số đo theo đường vật lý');
+    // ba ghi nối
+    const L3 = d => Ly.station(TKS, d, 0).links.map(l => l.z0 + ',' + l.len).join(' ');
+    ok(L3('down') === '60,95 160,65 381,100' && L3('up') === '-555,95 -625,65 -881,100', 'ba ghi nối nhánh dưới – đường chính lên: z 60 / 160 / 381 m sau vạch (e28, e29, e33; dài 95 / 65 / 100 m), chiều lên quay 180°');
+    ok(['down', 'up'].every(d => { const st = Ly.station(TKS, d, 0); return st.links.every(l => phys(st, 5) === l.a && phys(st, 4) === l.b); }) && Ly.linksOf(Ly.station(TKS, 'down', 0), true).map(l => l.z).join() === '-155,-225,-481', 'ghi nối nối S1 với đường chính lên (vật lý); camera sau là ảnh gương (z = -z0 - dài)');
+    ok(Ly.linksOf(Ly.station('2-4-1', 'down', 0), false).length === 0 && Ly.station('2-4-1', 'down', 0).tracks.every(t => t.len2 === undefined), 'ga 2-4-1 khác không bị ảnh hưởng (không có ghi nối, không có len2)'); }
+  // 4) nút giao: các làn vật lý nhất quán giữa bốn khung nhìn, B chui dưới hai đường chính rồi hội tụ về đôi đường 4,3 m
+  { const mk = (L, lid, dir, rear) => ({ line: L, lineId: lid, dir: rear ? (dir === 'down' ? 'up' : 'down') : dir, rearOf: rear ? dir : undefined }), sj = (W, u) => { const s0 = Sim.sOfKm(107, W.dir, W.line.kmEnd); return W.dir === 'down' ? s0 + u : s0 - u; };
+    const frames = []; for (const [L, lid] of [[Sim.lineOf('jts'), 'jts'], [Sim.lineOf('hok'), 'hok']]) for (const dir of ['down', 'up']) for (const rear of [false, true]) frames.push(mk(L, lid, dir, rear));
+    ok(frames.every(W => Sim.xbOf(W) >= 0) && Sim.xbOf({ line: Sim.lineOf('toh'), lineId: 'toh', dir: 'down' }) < 0 && Sim.xbOf({ line: Sim.lineOf('tsk'), lineId: 'tsk', dir: 'down' }) < 0, 'chỉ jts và hok có nút giao xb (các tuyến khác không)');
+    let worstAB = 0, worstJ = 0, worstEnd = 0, worstFlat = 0;
+    for (const W of frames) for (const u of [-1500, -800, -200, 0, 50, 104, 160, 250, 360, 500, 1000, 2000]) { const l = Sim.xbLanes(W, sj(W, u)), ref = Sim.xbLanes(frames[0], sj(frames[0], u));
+      worstAB = Math.max(worstAB, Math.abs(Math.abs(l.B - l.A) - Math.abs(ref.B - ref.A))); worstJ = Math.max(worstJ, Math.abs(Math.abs(l.jU - l.jD) - 4.3)); if (u >= 360) worstEnd = Math.max(worstEnd, Math.abs(Math.abs(l.B - l.A) - 4.3)); if (u <= 0) worstFlat = Math.max(worstFlat, Math.abs(Math.abs(l.B - l.jD) - 8.6), Math.abs(Math.abs(l.A - l.jD))); }
+    ok(worstAB < 1e-6 && worstJ < 1e-9, 'khoảng cách A–B và hai đường chính Joetsu như nhau ở cả bốn khung nhìn (trước/sau, xuống/lên, jts/hok)', [worstAB, worstJ]);
+    ok(worstEnd < 1e-6 && worstFlat < 1e-6, 'sau 360 m A và B thành đôi đường chuẩn 4,3 m; trước ngã rẽ B phẳng cách đường chính xuống 8,6 m còn A trùng đường chính', [worstEnd, worstFlat]);
+    // B chui qua cả hai đường chính (đổi phía so với từng đường chính), đơn điệu
+    { const W = frames[0]; let prev = null, cross = [], mono = true, sepPrev = 9; for (let u = 0; u <= 400; u += 4) { const l = Sim.xbLanes(W, sj(W, u)); if (prev !== null) { for (const [k, ln] of [['jU', l.jU], ['jD', l.jD]]) if ((prev.B - prev[k]) * (l.B - ln) < 0) cross.push(k + '@' + u); if (l.B < prev.B - 1e-9) mono = false; } prev = l; }
+      ok(cross.length === 2 && cross[0].startsWith('jU') && cross[1].startsWith('jD') && mono, 'B vượt lần lượt đường chính lên rồi đường chính xuống Joetsu (một lần mỗi đường) và đi một chiều sang trái', cross.join()); }
+  }
+  // 6) vẽ: cabview trước/sau, minimap, cửa sổ ở cả bốn khung, không lỗi và có vẽ nút giao
+  require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js')); require(path.join(DRIVE, 'winview.js'));
+  const noop = () => { }; let n = 0; const ctx = new Proxy({}, { get: (t, k) => { if (k === 'stroke' || k === 'fill') return () => { n++; }; return k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop); }, set: (t, k, v) => { t[k] = v; return true; } });
+  const keepDoc = global.document; global.document = { createElement: () => ({ getContext: () => ctx, width: 0, height: 0 }) }; require(path.join(DRIVE, 'topview.js'));
+  const mkW = (lid, d) => { const L = window.LINES[lid], last = L.stations.length - 1, rec = lid === 'hok' ? L.trains.find(t => t.t === 'Hakutaka' && t.d === d && t.s.some(e => e[0] === last && !e[3]) && t.s.some(e => e[0] === 0 && !e[3])) : L.trains.find(t => t.d === d && t.s.some(e => e[0] === last && !e[3]) && t.s.some(e => e[0] === 0 && !e[3])), a = d === 'down' ? 0 : last, b = d === 'down' ? last : 0; return Sim.createWorld(lid, Sim.makeTrip(lid, rec, a, b), { diff: 'easy', seed: 1, lead: false, events: false }); };
+  const orig = Ly.linksOf, origX = Sim.xbOf;
+  for (const lid of ['jts', 'hok']) for (const d of ['down', 'up']) { const W = mkW(lid, d), T = W.player, L = W.line, len = T.veh.len, mT = T.M.find(q => L.stations[q.i].en === 'Takasaki');
+    const sJ = Sim.sOfKm(107, d, L.kmEnd), draw = (x, rear) => { T.x = x; T.v = 60; n = 0; try { global.CabView[rear ? 'drawRear' : 'draw'](ctx, 0, 0, 1920, 618, W, T, { sprites: {}, aud: null, imgs: {} }); } catch (e) { return -1; } return n; }, off = u => d === 'down' ? sJ + u : sJ - u;
+    // ghi nối: camera trước đứng cách ghi nối 60 m; camera sau đứng sau nó
+    for (const l of Ly.station(TKS, d, 0).links) { const zc = mT.s + l.z0; const a = draw(zc - 60, false); Ly.linksOf = () => []; const b = draw(zc - 60, false); Ly.linksOf = orig; ok(a > b, 'cabview ' + lid + ' ' + d + ': camera trước vẽ ghi nối ở ' + l.z0 + ' m (' + a + ' so với ' + b + ')', [a, b]);
+      const c = draw(zc + l.len + len + 60, true); Ly.linksOf = () => []; const e = draw(zc + l.len + len + 60, true); Ly.linksOf = orig; ok(c > e, 'cabview ' + lid + ' ' + d + ': camera sau vẽ ghi nối ở ' + l.z0 + ' m (' + c + ' so với ' + e + ')', [c, e]); }
+    // nút giao: nhiều vị trí quanh ngã rẽ, hai camera; không lỗi, có vẽ, và tắt cờ xb thì khác
+    for (const u of [-1600, -900, -300, -50, 60, 130, 220, 400, 800]) for (const rear of [false, true]) { const a = draw(off(u), rear); ok(a > 0, 'cabview ' + lid + ' ' + d + (rear ? ' (sau)' : '') + ' tại ngã rẽ' + (u >= 0 ? '+' : '') + u + ' m: vẽ không lỗi', a); }
+    { const a = draw(off(220), false); Sim.xbOf = () => -1; const b = draw(off(220), false); Sim.xbOf = origX; ok(a !== b, 'cabview ' + lid + ' ' + d + ': nút giao có vẽ đường Hokuriku lên (khác khi tắt cờ xb)', [a, b]); }
+    for (const u of [-900, -300, 60, 220, 800]) { T.x = off(u); T.v = 60; n = 0; let okd = true; try { global.TopView.draw(ctx, 0, 0, 700, 700, W, T, { sprites: {}, tops: {}, aud: null }); } catch (e) { okd = false; } ok(okd && n > 0, 'minimap ' + lid + ' ' + d + ' tại ngã rẽ' + (u >= 0 ? '+' : '') + u + ' m: vẽ không lỗi', n); }
+    { T.x = off(220); T.v = 60; n = 0; global.TopView.draw(ctx, 0, 0, 700, 700, W, T, { sprites: {}, tops: {}, aud: null }); const a = n; Sim.xbOf = () => -1; n = 0; global.TopView.draw(ctx, 0, 0, 700, 700, W, T, { sprites: {}, tops: {}, aud: null }); const b = n; Sim.xbOf = origX; ok(a > b, 'minimap ' + lid + ' ' + d + ': nút giao vẽ thêm đường Hokuriku lên (' + a + ' so với ' + b + ')', [a, b]); }
+    for (const u of [-300, 60, 220, 800]) for (const side of [1, -1]) { T.x = off(u); T.v = 60; let okw = true; try { global.WinView.draw(ctx, 0, 0, 1920, 620, W, T, { sprites: {}, aud: null }, side); } catch (e) { okw = false; } ok(okw, 'cửa sổ ' + lid + ' ' + d + ' (' + (side > 0 ? 'trái' : 'phải') + ') tại ngã rẽ' + (u >= 0 ? '+' : '') + u + ' m: vẽ không lỗi'); } }
+  global.document = keepDoc;
 }
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);

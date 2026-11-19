@@ -15,7 +15,7 @@ LAY = {
     # Hokkaido (nối dài tuyến toh): 2面2線 + 通過線 một bên ở Okutsugaru-Imabetsu và Kikonai [N, trang Wikipedia JP; gán ga theo thứ tự trong bài nên có thể lệch [?]]
     '奥津軽いまべつ': '2-3-0a', '木古内': '2-3-0b', '新函館北斗': '2-2-0',
     # Joetsu [N: 配線 từng ga theo Wikipedia JP 上越新幹線]
-    '熊谷': '2-3-1', '本庄早稲田': '2-2-1', '高崎': '2-4-1', '上毛高原': '2-2-1', '越後湯沢': '2-4-1', '浦佐': '2-2-1', '長岡': '2-2-1', '燕三条': '2-3-1', '新潟': '3-4-0',
+    '熊谷': '2-3-1', '本庄早稲田': '2-2-1', '高崎': '2-4-1k', '上毛高原': '2-2-1', '越後湯沢': '2-4-1', '浦佐': '2-2-1', '長岡': '2-2-1', '燕三条': '2-3-1', '新潟': '3-4-0',
     # Hokuriku [N: Wikipedia JP 北陸新幹線; Fukui là ga duy nhất 1面2線]
     '安中榛名': '2-2-0', '軽井沢': '2-4-0', '佐久平': '2-2-0', '上田': '2-2-0', '長野': '2-4-0', '飯山': '2-2-0', '上越妙高': '2-4-0', '糸魚川': '2-2-0', '黒部宇奈月温泉': '2-2-0', '富山': '2-4-0', '新高岡': '2-2-0',
     '金沢': '2-4-0', '小松': '2-2-0', '加賀温泉': '2-2-1', '芦原温泉': '2-2-0', '福井': '1-2-0', '越前たけふ': '2-2-1', '敦賀': '2-4-0',
@@ -117,7 +117,38 @@ def gen_struct(lid, ln):
     for s in segs:
         if out and out[-1][2] == s[2] and abs(out[-1][1] - s[0]) < 1e-3: out[-1][1] = s[1]
         else: out.append(s)
-    return out
+    return patch_takasaki(lid, out)
+
+
+# nút giao Takasaki (km 107,0): đường chính Joetsu đi trên cầu cạn vượt đường Hokuriku chui dưới (docs/16). Ghi đè sau khi sinh nên không đổi dãy số ngẫu nhiên của các đoạn khác.
+TKS_VIADUCT = (106.8, 107.5)      # cầu cạn Joetsu phủ chỗ Hokuriku chui qua (km), [I]
+TKS_HOK_V1 = 107.2
+TKS_HOK_OPEN = 107.9              # Hokuriku chưa vào hầm trước km này (để thấy cầu cạn Joetsu phía trên), [I]
+def overlay(segs, a, b, kind):
+    out = []
+    for x, y, k in segs:
+        if y <= a or x >= b: out.append([x, y, k]); continue
+        if x < a: out.append([x, a, k])
+        if y > b: out.append([b, y, k])
+    out.append([a, b, kind]); out.sort(key=lambda q: q[0])
+    m = []
+    for q in out:
+        if m and m[-1][2] == q[2] and abs(m[-1][1] - q[0]) < 1e-3: m[-1][1] = q[1]
+        else: m.append(q)
+    return m
+def patch_takasaki(lid, segs):
+    if lid == 'hok':      # Hokuriku bỏ hầm ngay sau ngã rẽ Takasaki (Joetsu không có hầm ở đó): đổi thành nền đất
+        for x, y, k in [list(q) for q in segs]:
+            if k == 't' and y > 107.0 and x < 110.1: segs = overlay(segs, x, y, 'g')
+    return segs
+    if lid == 'jts': return overlay(segs, TKS_VIADUCT[0], TKS_VIADUCT[1], 'v')
+    if lid == 'hok':
+        for a, b, k in DONE['jts']['struct']:        # km 105–107: cùng đường chính Joetsu nên cùng kết cấu
+            a2, b2 = max(a, 105.0), min(b, 107.0)
+            if b2 > a2: segs = overlay(segs, a2, b2, k)
+        segs = overlay(segs, 107.0, TKS_HOK_V1, 'v')       # Hokuriku xuống còn nằm trên cầu cạn tới khi ra khỏi mép cầu Joetsu (~150 m sau ngã rẽ), rồi hạ xuống nền đất
+        return overlay(segs, TKS_HOK_V1, TKS_HOK_OPEN, 'g')
+    return segs
 
 
 def gen_curves(lid, ln):

@@ -123,3 +123,11 @@ Soak test là công cụ kiểm tra bất biến, không phải nguồn dữ li�
 - **[I]** Làn thông (`Layout.hasThrough`) suy từ bố cục, không dựa cờ `loop`: Okutsugaru-Imabetsu chiều xuống và Kikonai chiều lên có làn thông dù `loop` = false. Tàu chạy suốt không bị tàu đỗ ở đường dừng chắn ở các ga có làn thông; tàu dừng khẩn ở đường chính (`mainStop`) thì vẫn chắn. Sự kiện "dừng thêm vì tàu phía sau cần vượt" chỉ ở ga có làn thông hoặc từ 2 đường dừng cùng chiều.
 - **[?]** Chưa gán làn cho từng tàu: làn dừng chọn theo số thứ tự ga (giới hạn 80 km/h và hình vẽ theo làn đó); trong mô hình ưu tiên "tàu dừng vào A trước, hết A mới vào B" thì quy tắc chắn tàu chạy suốt tương đương với đếm sức chứa như đang làm.
 - **[I]** Cờ `loop` trong từng chuyến (`M[].loop`) tính THEO CHIỀU qua `stationLoop` (`sim.js`): cờ của ga (chữ số thứ ba của mã) hoặc `Layout.hasThrough` của chiều đó. Okutsugaru-Imabetsu chỉ có cờ khi chạy xuống, Kikonai chỉ khi chạy lên. Dữ liệu lịch hiện không có tàu nào chạy thẳng qua hai ga này lúc ta đỗ, nên phần vẽ tàu vượt trên làn thông không sân ga chưa được kiểm chứng bằng mắt [?].
+
+## 12. Ga Takasaki và nút giao Joetsu – Hokuriku (19/11/2026)
+
+- **[D]** Hình học ga (6 đường, hai sân ga, vị trí các ghi tách/nhập, ba ghi nối, hai ghi đơn s/r) từ hai hình `hokuriku/030_01` và `joetsu/010_02` (cùng token `dPdduuPu`); đường nhánh dưới kéo dài về phía đông thành đường Hokuriku lên.
+- **[I]** Khoảng cách ngã rẽ: hình chỉ ~840 m kể từ sân ga, game giữ km 107 [K] (cách vạch dừng ~2 km); độ dài ghi trong ga (hình ngắn hơn, game kéo dài cho thuôn); đường cong S của ghi; đường Hokuriku lên cắt đồng mức hai đường chính Joetsu và hội tụ về đôi đường 4,3 m trên 360 m; Hokuriku chiều lên luôn qua đường nhánh dưới.
+- **Đã thử và bỏ:** bản hai tầng (Hokuriku lên chui dưới cầu cạn Joetsu, mockup `tks_3d.html`, `tks_nut_giao.html`) theo yêu cầu người dùng; hai mockup giữ lại làm tài liệu nghiên cứu, không phản ánh bản trong game.
+- **Hạn chế:** Hokuriku lên đi đường nhánh dưới cả khi không dừng nhưng chưa có giới hạn tốc độ rẽ ghi; cửa sổ hành khách vẽ làn B ở cùng mặt phẳng.
+

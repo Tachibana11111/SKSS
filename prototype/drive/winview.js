@@ -52,6 +52,8 @@
     // cao độ tuyến so với mặt đất (nền đắp / cầu cạn): el > 0 khi ray cao hơn đất
     const el0 = Math.max(0, sCam - 800), elT = LAY.elevTable(L, S, W.dir, el0, 1800, 10);
     const elAt = s => { const q = clamp((s - el0) / 10, 0, elT.length - 1.001), i = Math.floor(q); return elT[i] + (elT[i + 1] - elT[i]) * (q - i); };
+    // nút giao Takasaki (junction xb): cao độ ray của tuyến kia và của đường Hokuriku lên so với đường ta
+    const XBK0 = 105.9, xbQ = S.xbOf(W), xbOn = xbQ >= 0; let elAtO = null; if (xbOn) { const Lo = S.lineOf(W.lineId === 'jts' ? 'hok' : 'jts'), tO = LAY.elevTable(Lo, S, W.dir, S.sOfKm(S.kmOfS(el0, W.dir, L.kmEnd), W.dir, Lo.kmEnd), 1800, 10); elAtO = s => elAt(s); const unused = s => { const q = clamp((s - el0) / 10, 0, tO.length - 1.001), i = Math.floor(q); return tO[i] + (tO[i + 1] - tO[i]) * (q - i); }; }
 
     // ---- các ga gần
     const sts = [];
@@ -60,6 +62,10 @@
       const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, LAY.pickOf(L.stations[m.i], m.i, W)));
       sts.push({ m, i, gs, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')) }); });
     let lane = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) { const o = q.st.ours, w = LAY.trackW(o, sCam, q.gs); if (o.own ? w > 0 : true) lane += LAY.laneOf(o, sCam, q.gs, w, LAY.spread(sCam, q.gs), 1300, 720); }
+    if (xbOn && W.lineId === 'hok' && (W.rearOf || W.dir) === 'up') {
+      if (S.kmOfS(sCam, W.dir, L.kmEnd) >= XBK0) lane = S.xbLanes(W, sCam).B;
+      else { const qT = sts.find(q => q.st.code === LAY.TKS && !(q.stopHere && !q.m.mainStop)), o = qT && qT.st.tracks.find(t => t.tks === 5); if (o) lane += LAY.laneOf(o, sCam, qT.gs, LAY.trackW(o, sCam, qT.gs), LAY.spread(sCam, qT.gs), 1300, 720); }
+    }
     const out = Xm => side > 0 ? Xm - lane : lane - Xm;      // X mô hình (dương = trái) → khoảng cách ngang ra phía cửa sổ đang xem
 
     // ---- tường nội thất (vách toa, trụ giữa các ô cửa sổ)
@@ -228,8 +234,14 @@
     }
     // đường nhánh / đường chính tuyến cha ở gần ngã rẽ (độ lệch ngang theo S.trunkOff): ray và nền ray ở phía cửa sổ, kèm cột điện
     for (let jn = 0; jn < (L.meta.junctions || []).length; jn++) { const jc = L.meta.junctions[jn]; const sj = S.sOfKm(jc.km, W.dir, L.kmEnd); if (Math.abs(sj - sCam) > 3300) continue;
-      items.push({ d: 9, fn: () => { for (let x = ox0 - 6; x < ox1 + 6; x += 12) { const s = sAt(x + 6, 12), off = S.trunkOff(W, s, jn), eo = side > 0 ? off : -off; if (Math.abs(off) < 2.2 || eo < 2.2) continue; const dd = dep(eo);
-        ctx.fillStyle = mixc([20, 22, 24], [96, 98, 100], lit); ctx.fillRect(x, Y(0.3, dd), 12.6, Math.max(2, 0.3 * f / dd)); ctx.fillStyle = mixc([30, 32, 36], [160, 164, 168], lit); ctx.fillRect(x, Y(0.2, dd), 12.6, Math.max(1, 0.05 * f / dd)); if (Math.floor(s / 50) !== Math.floor((s - 12) / 50)) { const xm = X(Math.floor(s / 50) * 50, dd), kk = f / dd; ctx.fillStyle = mixc([30, 32, 36], [150, 156, 160], lit); ctx.fillRect(xm - 0.1 * kk, Y(7.5, dd), 0.2 * kk, Y(0, dd) - Y(7.5, dd)); } } } }); }
+      items.push({ d: 9, fn: () => { for (let x = ox0 - 6; x < ox1 + 6; x += 12) { const s = sAt(x + 6, 12);
+        // các làn của tuyến kia ở đoạn này: [lệch ngang, lệch cao so với mặt ray của ta]; nút giao Takasaki: Hokuriku xuống (A), đôi Joetsu, Hokuriku lên (B)
+        const lanes = []; if (!jc.xb) lanes.push([S.trunkOff(W, s, jn), 0]);
+        else { const xl = S.xbLanes(W, s), eo0 = elAt(s), eoO = elAtO(s), bp = S.xbBprof(W, s), bOk = S.kmOfS(s, W.dir, L.kmEnd) >= XBK0;
+          if (W.lineId === 'jts') { if (xl.u > 0) lanes.push([xl.A, eoO - eo0]); if (bOk) lanes.push([xl.B, Math.min(eoO, bp) - eo0]); }
+          else { if (xl.u > 0) lanes.push([S.trunkOff(W, s, jn), eoO - eo0]); if (bOk) lanes.push([xl.B, Math.min(eo0, bp) - eo0]); } }
+        for (const [off, dy] of lanes) { const eo = side > 0 ? off : -off; if (Math.abs(off) < 2.2 || eo < 2.2) continue; const dd = dep(eo);
+          ctx.fillStyle = mixc([20, 22, 24], [96, 98, 100], lit); ctx.fillRect(x, Y(0.3 + dy, dd), 12.6, Math.max(2, 0.3 * f / dd)); ctx.fillStyle = mixc([30, 32, 36], [160, 164, 168], lit); ctx.fillRect(x, Y(0.2 + dy, dd), 12.6, Math.max(1, 0.05 * f / dd)); if (Math.floor(s / 50) !== Math.floor((s - 12) / 50)) { const xm = X(Math.floor(s / 50) * 50, dd), kk = f / dd; ctx.fillStyle = mixc([30, 32, 36], [150, 156, 160], lit); ctx.fillRect(xm - 0.1 * kk, Y(7.5 + dy, dd), 0.2 * kk, Y(dy, dd) - Y(7.5 + dy, dd)); } } } } }); }
     // khoảng cách ngang tới đường ngược chiều tại s (nở ra quanh ga như cabview/topview, không cố định ADJ)
     const oppOut = s => out(sts.reduce((x, q) => x + (q.st.opp - LAY.ADJ) * LAY.spread(s, q.m.s), LAY.ADJ));
     if (side < 0) for (const h of W.heldOpp || []) { const hv = S.VEH[h.key] || S.VEH.N700, sn = h.sC - hv.len / 2; if (sn > sCam + 220 || sn + hv.len < sCam - 220) continue; const dd = dep(Math.max(1.8, oppOut(h.sC)) - 1.45);

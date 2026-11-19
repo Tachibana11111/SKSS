@@ -80,7 +80,7 @@
               { km: 572.1, dir: 'down', text: _t('Tại Omagari tàu đổi chiều chạy (switchback): từ đây tới Akita ghế quay ngược chiều. (Mô hình giữ nguyên hướng nhìn.)') }]
     },
     jts: {
-      pa: '上越', atc: 'DS', defVeh: 'E7', flipDown: false, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, branch: true, R: 4000, len: 1.5, to: 'Hokuriku' }], snow: [[151, 272, 200, _t('tuyết Jomo-Kogen–Nagaoka')]],
+      pa: '上越', atc: 'DS', defVeh: 'E7', flipDown: false, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, branch: true, R: 4000, len: 1.5, to: 'Hokuriku', xb: true }], snow: [[151, 272, 200, _t('tuyết Jomo-Kogen–Nagaoka')]],
       limits: [[0, 30.3, 110], [30.3, 113, 275], [113, 127.9, 260], [127.9, 333.9, 275]],       // hầm Nakayama có cong R=1.500 m: trang Wikipedia JP ghi 160 km/h (số cũ); lịch 2026 chạy nhanh hơn nhiều nên dùng 260 km/h [I]
       tunnels: [[113, 127.9, 'Nakayama'], [164, 186.2, 'Oshimizu']],
       biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [112, 262, 'mountain'], [262, 275, 'urban'], [318, 333.9, 'urban']],
@@ -94,7 +94,7 @@
       grade: [[0, 66.0, 12, 30]]
     },
     hok: {
-      pa: '北陸', atc: 'DS', defVeh: 'E7', flipDown: true, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, line: 'jts', shared: true }], snow: [[140, 300, 200, _t('tuyết Karuizawa–Joetsu-Myoko')], [300, 575.6, 180, _t('tuyết Itoigawa–Tsuruga')]],
+      pa: '北陸', atc: 'DS', defVeh: 'E7', flipDown: true, junctions: [{ km: 32.3, side: -1, line: 'toh', shared: true }, { km: 107.0, side: -1, line: 'jts', shared: true, xb: true }], snow: [[140, 300, 200, _t('tuyết Karuizawa–Joetsu-Myoko')], [300, 575.6, 180, _t('tuyết Itoigawa–Tsuruga')]],
       limits: [[0, 30.3, 110], [30.3, 105, 275], [105, 575.6, 260]],
       tunnels: [[254, 276.2, 'Iiyama'], [284, 295, 'Kubiki']],
       biomes: [[0, 36, 'urban'], [60, 70, 'urban'], [100, 112, 'urban'], [120, 160, 'mountain'], [218, 228, 'urban'], [240, 335, 'mountain'], [386, 398, 'urban'], [445, 458, 'urban'], [575.6 - 10, 575.6, 'urban']],
@@ -935,6 +935,19 @@
     }
     return 0;
   }
+  // ---- Nút giao Takasaki (junction có cờ xb, docs/16): Hokuriku chiều lên đi theo đường nhánh dưới của ga (kéo dài về phía đông, bên phải đôi đường Joetsu), rồi chui dưới hai đường chính Joetsu sang trái và hội tụ về đôi đường chuẩn (4,3 m) với Hokuriku chiều xuống;
+  // Hokuriku chiều xuống rẽ ra từ đường chính xuống (đường cong ngã rẽ cũ). Hình học theo tọa độ VẬT LÝ (m, dương = bên trái người đi xuống; 0 = đường chính xuống Joetsu, -4,3 = đường chính lên Joetsu) rồi đổi sang toạ độ khung nhìn (0 = đường chính của chiều thật).
+  const XB_ZB1 = 360, XB_X0 = -8.6, XB_PAIR = 4.3, ease01 = u => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
+  function xbOf(W) { const js = W.line.meta.junctions; if (!js) return -1; return js.findIndex(j => j.xb); }
+  function xbLanes(W, s) {      // null nếu tuyến không có nút giao kiểu này
+    const q = xbOf(W); if (q < 0) return null; const L = W.line, jq = L.meta.junctions[q], sj = sOfKm(jq.km, W.dir, L.kmEnd), down = W.dir === 'down', u = down ? s - sj : sj - s, sg = down ? 1 : -1, real = W.rearOf || W.dir;
+    const xa = uu => uu <= 0 ? 0 : Math.abs(trunkOff(W, down ? sj + uu : sj - uu, q));      // Hokuriku xuống rời đường chính xuống Joetsu theo cung ngã rẽ
+    const xb = uu => uu <= 0 ? XB_X0 : xa(uu) - (-XB_X0 + (XB_PAIR + XB_X0) * ease01(uu / XB_ZB1));      // đường lên bám theo đường xuống: khoảng cách giữa hai đường thu từ 8,6 m về 4,3 m (không bao giờ nhỏ hơn 4,3 m)
+    const M0 = (W.lineId === 'hok' ? xa(u) : 0) - (real === 'up' ? XB_PAIR : 0);      // đường chính của chiều thật trong hệ vật lý (tuyến Hokuriku đi theo đường xuống Hokuriku sau ngã rẽ)
+    return { q, u, sj, A: sg * (xa(u) - M0), B: sg * (xb(u) - M0), jD: sg * (0 - M0), jU: sg * (-XB_PAIR - M0) };
+  }
+  // cao độ TUYỆT ĐỐI (m so với mặt đất) của đường Hokuriku lên (B) tại s: từ cầu cạn ga (9 m) hạ dần trong 300 m, bắt đầu 200 m trước ngã rẽ, để chui dưới cầu cạn Joetsu; sau đó ở mặt đất (2 m)
+  function xbBprof(W, s) { const l = xbLanes(W, s), E = root.Layout.ELEV; return Infinity; }      // một mặt phẳng: không hạ độ cao
   // tàu chạy trước trên đường Tohoku có thể là đoàn ghép (Hayabusa + Komachi, Yamabiko + Tsubasa): thêm đơn vị mini và ga tách/ghép cho nó
   function withMini(L, rec, dir) {
     const cm = L.meta.coupleMini; if (!cm || rec.cp) return rec; const pr = miniPairOf(rec); if (!pr) return rec;
@@ -1562,7 +1575,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

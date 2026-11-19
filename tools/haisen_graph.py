@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Trích đồ thị đường ray từ các SVG 配線略図.net (CC BY 4.0) đã ghép thành một hệ toạ độ, ghi docs/data/haisen/<tên>_graph.json.
-# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu|hok|jts]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
+# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu|hok|jts|tks]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
 # CẤU HÌNH: mỗi hình đặt tại (x, y) trong hệ ghép; các hình nối nhau tại các đầu mút của hai đường chính (độ chênh dọc = trung bình các cặp đường khớp).
 #  nks: 010_01 ở (0,0); 010_02 ở (419.8, -6.8) (Takeo-Onsen – Ureshino-Onsen + Shin-Omura – Isahaya – Nagasaki).
 #  kyu: 5 hình Kyushu Shinkansen Hakata – Kagoshima-Chuo; hai đường chính khớp tới ≤ 0,6 ở cả bốn chỗ nối (xem CONFIG).
@@ -31,6 +31,8 @@ CONFIG['jts'] = {'dir': 'joetsu', 'out': 'jts_graph.json', 'edge_fallback': True
             'end_align': [{'x': 2278.0, 'ys': [45.5, 63.8, 82.1, 100.3]}],   # Joetsu Shinkansen Jomo-Kogen – Niigata (4 hình: 010_02 có thêm Honjo-Waseda và Takasaki ở phía tây, không thuộc phạm vi)
             'off': {'010_02.svg': (0.0, 0.0), '010_03.svg': (688.8, 27.4), '020_04.svg': (1338.3, 36.35), '020_05.svg': (1923.8, -36.55)},
             'seams': [{'x': 688.8, 'dy': 27.4}, {'x': 1338.3, 'dy': 8.95}, {'x': 1923.8, 'dy': -72.9}]}
+CONFIG['tks'] = {'dir': 'hokuriku', 'out': 'tks_graph.json', 'edge_fallback': True,   # Takasaki nhìn từ hình Hokuriku (030_01): ga nút giao Joetsu – Hokuriku; đối chiếu với hình Joetsu 010_02 (jts_graph.json)
+            'off': {'030_01.svg': (0.0, 0.0)}, 'seams': [], 'main_span': 250}
 LINE = (sys.argv[1] if len(sys.argv) > 1 else 'nks'); CFG = CONFIG[LINE]
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['dir']); OFF = CFG['off']
 SHK, CONV, NAVY, BLK = '#0070c0', '#404040', '#002060', '#000'
@@ -155,7 +157,7 @@ for n in nodes:
     elif n['kind'] == 'plain' and n['deg'] == 3: n['kind'] = 'switch'
 byid = {n['id']: n for n in nodes}
 # hai đường chính = hai ray dài nhất bao suốt chiều dài
-span = [r for r in rails if r['x2'] - r['x1'] > 700]
+span = [r for r in rails if r['x2'] - r['x1'] > CFG.get('main_span', 700)]      # main_span: ngưỡng chiều dài đường chính (hình ngắn như Takasaki đặt thấp hơn)
 mains = sorted(span, key=lambda r: r['y'])
 MAIN_D, MAIN_U = mains[0]['y'], mains[1]['y']
 midY = (MAIN_D + MAIN_U) / 2
@@ -296,7 +298,7 @@ for n in nodes:
 texts = [{'s': t['s'], 'x': round(t['x'], 1), 'y': round(t['y'], 1), 'size': t['size']} for t in T if t['size'] >= 8]
 out = {
     'note': 'Trích từ 配線略図.net (CC BY 4.0). Toạ độ hệ ghép, không theo tỉ lệ thực. Màu: xanh #0070c0 = đường Shinkansen, xám #404040 = đường thường, navy = tín hiệu/ranh giới.',
-    'seam': CFG['seams'][0], 'seams': CFG['seams'], 'main': {'down_y': MAIN_D, 'up_y': MAIN_U},
+    'seam': CFG['seams'][0] if CFG['seams'] else None, 'seams': CFG['seams'], 'main': {'down_y': MAIN_D, 'up_y': MAIN_U},
     'nodes': nodes, 'edges': edges, 'switches': switches, 'platforms': [p for p in plats if p['shk']], 'stations': [{k: v for k, v in s.items()} for s in stations],
     'dropped': [[round(l['x1'], 1), round(l['y1'], 1), round(l['x2'], 1), round(l['y2'], 1)] for l in DROPPED], 'signals': signals, 'bumpers': bumpers, 'buildings': bld, 'aux': aux, 'conv': convl, 'conv_platforms': convp, 'texts': texts, 'rails': [{'y': r['y'], 'x1': r['x1'], 'x2': r['x2']} for r in rails]}
 json.dump(out, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['out']), 'w', encoding='utf-8'), ensure_ascii=False)

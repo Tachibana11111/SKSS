@@ -68,16 +68,30 @@
     const latT = LAY.lateralTable(L, S, W.dir, T.x, ZF, STEP), elvT = LAY.elevTable(L, S, W.dir, T.x, ZF, STEP);
     const tab = (a, z) => { const f = Math.max(0, z) / STEP, i = Math.min(a.length - 2, Math.floor(f)); return a[i] + (a[i + 1] - a[i]) * (f - i); };
     c.off = z => tab(latT, z); const elAt = z => tab(elvT, z);
+    // nút giao Takasaki (junction xb, docs/16): đường Hokuriku lên đi theo đường nhánh dưới của ga rồi chui dưới cầu cạn Joetsu; đường của tuyến kia lệch cao độ so với đường ta theo dữ liệu cầu/nền của hai tuyến
+    const XBK0 = 105.9, xbQ = S.xbOf(W), xbOn = xbQ >= 0, xbL = z => S.xbLanes(W, T.x + z), xbReal = W.rearOf || W.dir;
+    const xbZJ = xbOn ? S.sOfKm(L.meta.junctions[xbQ].km, W.dir, L.kmEnd) - T.x : 0, xbZC = xbOn ? S.sOfKm(XBK0, W.dir, L.kmEnd) - T.x : 0, xbTail = z => xbOn && (W.dir === 'down' ? z > xbZC : z < xbZC);      // xbZJ: vị trí ngã rẽ; xbZC: từ đây ra phía đông đường nhánh dưới do nút giao vẽ (không phải đường ga)
+    let elvO = null; if (xbOn) { const Lo = S.lineOf(W.lineId === 'jts' ? 'hok' : 'jts'); elvO = LAY.elevTable(Lo, S, W.dir, S.sOfKm(S.kmOfS(T.x, W.dir, L.kmEnd), W.dir, Lo.kmEnd), ZF, STEP); }
+    // đường Hokuriku lên (B): từ cầu cạn ga (9 m) hạ dần (~23‰) trong 300 m để chui dưới cầu Joetsu, rồi giữ ở mặt đất (2 m) tới khi đường xuống hạ kịp; Hokuriku xuống (A) còn trên cầu cạn tới mép cầu (struct hok)
+    const elvT0 = elvT.slice(), xbBprof = z => LAY.ELEV.v - (LAY.ELEV.v - LAY.ELEV.g) * smooth(0, 1, (xbL(z).u + 200) / 300);
+    // một mặt phẳng: đường Hokuriku lên cắt đồng mức qua hai đường chính Joetsu (không cầu cạn, không hạ độ cao)      // ta chạy trên B nên cao độ của ta hạ sớm hơn A
+    let xbRedeck = null;      // vẽ lại mặt cầu cạn của ta đè lên các đường nằm dưới cầu (Hokuriku nhìn từ Joetsu)
+    const dEl = () => 0;      // cao độ ray đường của tuyến KIA so với đường ta cùng km (m; dương = cao hơn)
+    const elHok = z => W.lineId === 'jts' ? (elvO ? tab(elvO, z) : 0) : tab(elvT0, z), yB = () => 0;      // yB: ray đường B so với mặt ray của ta
     // lực ly tâm khi vào cong: camera dịch ngang nhẹ ra phía ngoài (độ cong làm mượt trên ±90 m nên vào/ra cong không bị giật). Không còn xoay cả khung hình (ctx.rotate khiến mọi nét vẽ ở đoạn cong chậm hẳn trên máy yếu)
     { const kapS = LAY.curvatureSmooth(L, S, W.dir, T.x, 90); c.camX -= clamp(kapS * v * v / 9.8 * 0.6, -0.35, 0.35); }
 
     // ---- các ga trong tầm nhìn: bố trí đường, vị trí đường dừng của ta
     const target = S.nextTarget(T), tIdx = T.phase === 'dwell' ? T.k : target;
     const sts = [];
-    M.forEach((m0, i) => { const gs = m0.sOrig !== undefined ? m0.sOrig : m0.s, m = gs === m0.s ? m0 : Object.assign({}, m0, { s: gs }), d = gs - T.x, dm = m0.s - T.x; if (d < -(rr && L.stations[m0.i].xo ? 2000 : 1000) || d > 3600) return;      // d: hình học ga (sân ga, toả đường) theo vị trí GỐC; dm: vạch dừng thật của tàu (có thể lùi lại khi chờ ghép)      // giữ ga tới 1 km phía sau để ghi chữ X lúc rời ga không biến mất sớm
+    M.forEach((m0, i) => { const gs = m0.sOrig !== undefined ? m0.sOrig : m0.s, m = gs === m0.s ? m0 : Object.assign({}, m0, { s: gs }), d = gs - T.x, dm = m0.s - T.x; if (d < -(xbOn && L.stations[m0.i].lay === LAY.TKS ? 3300 : rr && L.stations[m0.i].xo ? 2000 : 1000) || d > 3600) return;      // d: hình học ga (sân ga, toả đường) theo vị trí GỐC; dm: vạch dừng thật của tàu (có thể lùi lại khi chờ ghép)      // giữ ga tới 1 km phía sau để ghi chữ X lúc rời ga không biến mất sớm
        const key = W.lineId + ':' + m.i + ':' + W.dir + (W.rearPick ? ':r' : '') + (W.termPick && W.termPick[m.i] !== undefined ? ':t' + W.termPick[m.i] : ''); const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.rearOf || W.dir, W.rearPick ? W.rearPick(m.i) : LAY.pickOf(L.stations[m.i], m.i, W), !!W.rearOf)); sts.push({ m, i, d, dm, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')),   // ga vừa dừng (kể cả dừng khẩn không có lịch) vẫn giữ đường sân ga cho tới khi tàu rời hẳn
          isT: i === tIdx }); });
     for (const q of sts) if (q.stopHere && !q.m.mainStop) { const o = q.st.ours, w = trackWF(o, T.x, q.m.s); if (o.own ? w > 0 : true) c.lane += LAY.laneOf(o, T.x, q.m.s, w, spreadF(T.x, q.m.s), XA, XB); }      // đường của ta thuộc nhóm đường chính ngược chiều (ga cuối): đi qua ghi chữ X
+    if (xbOn && W.lineId === 'hok' && xbReal === 'up') {
+      if (S.kmOfS(T.x, W.dir, L.kmEnd) >= XBK0) c.lane = xbL(0).B;
+      else { const qT = sts.find(q => q.st.code === LAY.TKS && !(q.stopHere && !q.m.mainStop)), o = qT && qT.st.tracks.find(t => t.tks === 5); if (o) { const w = trackWF(o, T.x, qT.m.s); c.lane += LAY.laneOf(o, T.x, qT.m.s, w, spreadF(T.x, qT.m.s), XA, XB); } }
+    }
     const hasSingle = !!(L.single && L.single.length);
     const oppAt = z => { let x = ADJ; for (const q of sts) x += (q.st.opp - ADJ) * spreadF(T.x + z, q.m.s); return hasSingle ? x * (1 - S.singleEff(W, T.x + z)) : x; };   // đoạn đường đơn: đường ngược chiều nhập vào đường ta   // đường thông qua ngược chiều (nơi tàu ngược chiều chạy)
     const fxOpp = z => { const xo = oppAt(Math.max(0, z)); return xo + (c.lane > xo ? 1.85 : -1.85); };      // mép gần camera của tàu ngược chiều (thân vẽ nhìn ngang) theo vị trí đường ngược chiều thật tại z, không cố định ADJ nên không lệch khỏi đường ray gần ga
@@ -89,12 +103,13 @@
     const P = (X, Y, Z) => proj(c, X, Y, Z), PG = (X, Y, Z) => proj(c, X, Y - elAt(Z), Z);     // PG: vật nằm trên mặt đất (thấp hơn mặt ray khi tuyến đi trên cao)
     const quad = (a, b, d, e, fill) => { ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(d[0], d[1]); ctx.lineTo(e[0], e[1]); ctx.closePath(); ctx.fill(); };
     // lưới điểm lấy mẫu chung theo khoảng cách: mọi dải/tường dùng cùng điểm nên khớp nhau kể cả ở đường cong gấp (không lệch hàng mét như khi mỗi dải tự chia)
-    const zgrid = []; { let z = ZN; while (z < ZF) { zgrid.push(z); z += z < 100 ? 8 : z < 400 ? 20 : z < 1000 ? 40 : 80; } zgrid.push(ZF); }
+    // lưới mịn để đường cong của ghi (dịch ngang vài mét trên 60–150 m) không bị thành các đoạn thẳng nối nhau
+    const zgrid = []; { let z = ZN; while (z < ZF) { zgrid.push(z); z += z < 60 ? 4 : z < 200 ? 8 : z < 600 ? 14 : z < 1400 ? 30 : 80; } zgrid.push(ZF); }
     const zsteps = (z0, z1) => { if (z1 <= z0) return [z0]; const a = [z0]; for (const g of zgrid) if (g > z0 + 0.5 && g < z1 - 0.5) a.push(g); a.push(z1); return a; };
     // dải nằm ngang theo chiều dài (bám đường cong): xa(z), xb(z) là X hai mép tại khoảng cách z; Y cố định
-    const strip = (xa, xb, Y, z0, z1, fill) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xa(z), Y, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xb(zs[k]), Y, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
+    const strip = (xa, xb, Y0, z0, z1, fill) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; const Y = typeof Y0 === 'function' ? Y0 : () => Y0; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xa(z), Y(z), z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xb(zs[k]), Y(zs[k]), zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
     // tường đứng dọc theo chiều dài ở X(z), từ Y0 đến Y1
-    const wall = (xf, Y0, Y1, z0, z1, fill) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), Y1, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xf(zs[k]), Y0, zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
+    const wall = (xf, Y0f, Y1f, z0, z1, fill) => { const zs = zsteps(Math.max(z0, zMin), Math.min(z1, zLim)); if (zs.length < 2) return; const Y0 = typeof Y0f === 'function' ? Y0f : () => Y0f, Y1 = typeof Y1f === 'function' ? Y1f : () => Y1f; ctx.fillStyle = fill; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), Y1(z), z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); for (let k = zs.length - 1; k >= 0; k--) { const p = P(xf(zs[k]), Y0(zs[k]), zs[k]); ctx.lineTo(p[0], p[1]); } ctx.closePath(); ctx.fill(); };
     const fadeA = Z => clamp(1.15 - Z / fogZ, 0.12, 1);
     const km = z => S.kmOfS(T.x + z, W.dir, L.kmEnd), biomeAt = z => S.biomeAt(L, km(z));
     // cảnh thật OpenStreetMap (world.js) nếu đã có dữ liệu tại đây: toà nhà đúng vị trí, rừng/ruộng/nước theo lớp phủ đất; không thì phong cảnh sinh ngẫu nhiên theo vùng
@@ -140,8 +155,8 @@
     };
     // mặt cầu rộng thêm để chứa đường nhánh / đường chính của tuyến cha khi còn sát đường ta (< 28 m), thu lại êm khi chúng tách xa
     const jw = o => Math.max(0, Math.min(1, (28 - Math.abs(o)) / 6));
-    const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) { x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main) x = Math.max(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) + 2.9); } const o = S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
-    const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) { x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main) x = Math.min(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) - 2.9); } const o = S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
+    const xr = z => { const base = Math.max(0, oppAt(z)) + 2.9; let x = base; for (const q of sts) { x = Math.max(x, lerp(base, q.st.extent[1] + 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main && !(t.tks === 5 && xbTail(z))) x = Math.max(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) + 2.9); } if (xbOn && xbTail(z)) { const bb = xbL(z).B; if (bb > 0.3) x = Math.max(x, lerp(base, bb + 2.9, jw(bb))); } const o = xbOn ? 0 : S.trunkOff(W, T.x + z); if (o > 0.3) x = Math.max(x, lerp(base, o + 2.9, jw(o))); return x; };
+    const xl = z => { const base = Math.min(0, oppAt(z)) - 2.9; let x = base; for (const q of sts) { x = Math.min(x, lerp(base, q.st.extent[0] - 0.4, spreadF(T.x + z, q.m.s))); for (const t of q.st.tracks) if (!t.main && !(t.tks === 5 && xbTail(z))) x = Math.min(x, lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)) - 2.9); } if (xbOn && xbTail(z)) { const bb = xbL(z).B; if (bb < -0.3) x = Math.min(x, lerp(base, bb - 2.9, jw(bb))); } const o = xbOn ? 0 : S.trunkOff(W, T.x + z); if (o < -0.3) x = Math.min(x, lerp(base, o + ADJ - 2.9, jw(o))); return x; };
     if (zExit === null) backdrop();
     // ---- dải tranh phong cảnh OSM hai bên (strips.js): thay các khối nhà 3D rời rạc; chỉ vẽ khi đã có dữ liệu và không ở trong hầm
     const useStrips = wdOn && !!root.Strips;
@@ -159,8 +174,20 @@
           if (k === 'v' && urban) for (const xf of [xr, xl]) wall(xf, 1.0, 3.4, za, zb, day > 0.4 ? 'rgba(190,212,226,.20)' : 'rgba(80,110,140,.2)');      // tấm chắn ồn trong suốt trên cầu cạn khu dân cư
         }
       }
+      if (xbOn && W.lineId === 'jts') xbRedeck = () => { for (const [za, zb, k] of runs) if (k === 'v') { strip(xl, xr, -0.02, za, zb, colDeck); for (const xf of [xr, xl]) { wall(xf, 0, 1.0, za, zb, colTop); wall(xf, -1.4, 0, za, zb, colSide); } } };
     }
 
+    // ---- cầu cạn Joetsu phía trên đường Hokuriku (nhìn từ Hokuriku): một mặt cầu rộng phủ cả hai đường chính Joetsu (docs/16), cao hơn đường ta dEl(z) m; trụ cầu 30 m một cái, bỏ trụ nào nằm sát đường Hokuriku (không đụng cột dầm)
+    if (false) {
+      const Lj = S.lineOf('jts'), vOk = z => (W.dir === 'down' ? z > xbZJ : z < xbZJ) && S.structAt(Lj, S.kmOfS(T.x + z, W.dir, L.kmEnd)) === 'v', kk = day * (1 - wx * 0.35), cTop = mixc([22, 26, 32], [150, 156, 160], kk), cSide = mixc([14, 16, 20], [104, 110, 116], kk), cUnder = mixc([10, 12, 16], [74, 78, 82], kk), cPier = mixc([18, 20, 24], [128, 130, 128], kk);
+      const edge = sg => z => { const l = xbL(z); return sg > 0 ? Math.max(l.jD, l.jU) + 2.9 : Math.min(l.jD, l.jU) - 2.9; };
+      const runs = []; for (let z = ZN; z <= ZF; z += 20) { if (vOk(z)) { if (runs.length && runs[runs.length - 1][1] >= z - 0.1) runs[runs.length - 1][1] = z + 20; else runs.push([z, z + 20]); } }
+      for (const [za, zb] of runs) { const eL = edge(1), eR = edge(-1);
+        strip(eR, eL, z => dEl(z) - 1.4, za, zb, cUnder); strip(eR, eL, z => dEl(z) - 0.02, za, zb, cTop);
+        for (const ef of [eL, eR]) { wall(ef, z => dEl(z) - 1.4, z => dEl(z), za, zb, cSide); wall(ef, z => dEl(z), z => dEl(z) + 1.0, za, zb, cTop); } }
+      for (let k = Math.ceil((T.x + ZN) / 30), z = k * 30 - T.x; z < ZF; k++, z = k * 30 - T.x) { if (z < ZN || !vOk(z)) continue; const l = xbL(z), ya = -elAt(z), yt = dEl(z) - 1.4;
+        for (const x of [edge(1)(z) - 1.6, edge(-1)(z) + 1.6]) { if ([l.A, l.B].some(h => Math.abs(h - x) < 5.2)) continue; items.push({ z, fn: () => { quad(P(x - 0.9, ya, z), P(x + 0.9, ya, z), P(x + 0.9, yt, z), P(x - 0.9, yt, z), cPier); } }); } }
+    }
     // ---- đường ray và đá dăm (theo đường cong); các đường của ga toả ra từ đường chính
     const snowTr = inSnow && zExit === null, ballast = snowTr ? mixc([78, 84, 98], [238, 243, 250], day) : mixc([20, 24, 28], [88, 88, 84], day * (1 - wx * 0.3));      // trời tuyết: đá dăm phủ tuyết mỏng, chỉ còn thanh ray đen lộ ra
     // tấm bê tông nằm DƯỚI lớp đá dăm, rộng từ chân hàng rào trái tới chân hàng rào phải (S.slabAt: nền đất, ngoài vùng ga); lớp đá dăm có tà vẹt vẽ đè lên như ở ga và cầu, không đổi
@@ -172,25 +199,31 @@
         if (end || sl !== cur) { if (cur) strip(q => xl(q) - FOFF, q => xr(q) + FOFF, 0, a, zz, col); a = zz; cur = sl; }
         if (end) break; }
     };
-    const ballastStrip = (xf, z0, z1, alpha) => { z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return; strip(z => xf(z) - 2.1, z => xf(z) + 2.1, 0, z0, z1, ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')')); };
-    const railStrip = (xf, z0, z1, sleepers) => {
+    const ballastStrip = (xf, z0, z1, alpha, yf) => { z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return; strip(z => xf(z) - 2.1, z => xf(z) + 2.1, yf || 0, z0, z1, ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')')); };
+    const railStrip = (xf, z0, z1, sleepers, yf) => {
       z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return;
-      if (sleepers) for (let k = Math.ceil((T.x + z0) / 1.3), z = k * 1.3 - T.x; z < Math.min(z1, 110); k++, z = k * 1.3 - T.x) { const X = xf(z), p = P(X - 1.3, 0, z), q = P(X + 1.3, 0, z), d = P(X + 1.3, 0, z + 0.28), e = P(X - 1.3, 0, z + 0.28); if (d[1] - q[1] < 0.4 && z > 40) continue; quad(p, q, d, e, snowTr ? 'rgba(' + (day > 0.5 ? '226,232,240' : '92,100,116') + ',.9)' : 'rgba(34,36,40,.85)'); }
-      for (const sx of [-GAUGE / 2, GAUGE / 2]) strip(z => xf(z) + sx - 0.075, z => xf(z) + sx + 0.075, 0.15, z0, z1, snowTr ? 'rgba(14,16,20,.97)' : 'rgba(208,216,226,.9)');
+      if (sleepers) for (let k = Math.ceil((T.x + z0) / 1.3), z = k * 1.3 - T.x; z < Math.min(z1, 110); k++, z = k * 1.3 - T.x) { const X = xf(z), yo = yf ? yf(z) : 0, p = P(X - 1.3, yo, z), q = P(X + 1.3, yo, z), d = P(X + 1.3, yo, z + 0.28), e = P(X - 1.3, yo, z + 0.28); if (d[1] - q[1] < 0.4 && z > 40) continue; quad(p, q, d, e, snowTr ? 'rgba(' + (day > 0.5 ? '226,232,240' : '92,100,116') + ',.9)' : 'rgba(34,36,40,.85)'); }
+      for (const sx of [-GAUGE / 2, GAUGE / 2]) strip(z => xf(z) + sx - 0.075, z => xf(z) + sx + 0.075, yf ? z => yf(z) + 0.15 : 0.15, z0, z1, snowTr ? 'rgba(14,16,20,.97)' : 'rgba(208,216,226,.9)');
     };
     const drawTracks = (zFrom) => {
-      const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]];
+      const zf = zFrom || ZN, parts = [[() => 0, zf, ZF, 1], [oppAt, zf, ZF, zExit === null ? 0.95 : 1]], low = [], lowTo = (xbOn && W.lineId === 'jts' && zExit === null) ? low : parts;
+      if (xbOn && W.lineId === 'hok') { const p = parts[xbReal === 'up' ? 0 : 1]; if (W.dir === 'down') p[2] = Math.min(p[2], xbZJ); else p[1] = Math.max(p[1], xbZJ); }      // Hokuriku: sau ngã rẽ đường chính Joetsu (đường ngược chiều của đường chính xuống / đường chính của chiều lên) không còn là đường của ta; thay bằng đường Hokuriku lên (vẽ riêng)
       for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x; let a = W.dir === 'down' ? sj : sj - 3200, b = W.dir === 'down' ? sj + 3200 : sj;
         if (b > zf && a < ZF) { const cl = trunkClip(sj, a, b, zf); if (!cl) continue; [a, b] = cl; }      // trong hầm: đường của nhánh kia bị khối đá che cho tới chỗ hai vỏ hầm nhập
-        if (b > zf && a < ZF) parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95], [z => S.trunkOff(W, T.x + z) + ADJ, Math.max(zf, a), Math.min(ZF, b), 0.95]); }       // đường chính của tuyến cha (Tohoku / Joetsu)
-      for (const q of sts) for (const t of q.st.tracks) { if (t.main || t.in0 === undefined) continue; const za = rr ? q.d - t.out0 - t.len : q.d - t.in0, zb = rr ? q.d + t.in0 : q.d + t.out0 + t.len; if (zb < ZN || za > ZF) continue; parts.push([z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), Math.max(zf, za), zb, 0.95]); }      // mỗi đường ga chỉ tồn tại giữa điểm tách và điểm nhập (hình chữ Y)
+        if (b > zf && a < ZF) { if (jc.xb && W.lineId === 'jts') lowTo.push([z => xbL(z).A, Math.max(zf, a), Math.min(ZF, b), 0.95, dEl]); else parts.push([z => S.trunkOff(W, T.x + z), Math.max(zf, a), Math.min(ZF, b), 0.95, jc.xb ? dEl : null], [z => S.trunkOff(W, T.x + z) + ADJ, Math.max(zf, a), Math.min(ZF, b), 0.95, jc.xb ? dEl : null]); } }       // đường chính của tuyến cha (Tohoku / Joetsu); nút giao Takasaki: Hokuriku xuống (A) rời đường chính, Hokuriku lên (B) vẽ riêng bên dưới
+      if (xbOn) lowTo.push([z => xbL(z).B, W.dir === 'down' ? Math.max(zf, xbZC) : zf, W.dir === 'down' ? ZF : Math.min(ZF, xbZC), 0.95, yB]);      // đường nhánh dưới kéo dài = Hokuriku lên: phẳng bên phải đôi đường Joetsu rồi sang trái chui dưới cầu và hội tụ với Hokuriku xuống
+      for (const q of sts) for (const t of q.st.tracks) { if (t.main || t.in0 === undefined) continue; let za = rr ? q.d - t.out0 - (t.len2 || t.len) : q.d - t.in0, zb = rr ? q.d + t.in0 : q.d + t.out0 + (t.len2 || t.len); if (xbOn && t.tks === 5) { if (W.dir === 'down') zb = Math.min(zb, xbZC); else za = Math.max(za, xbZC); } if (zb < ZN || za > ZF) continue; parts.push([z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), Math.max(zf, za), zb, 0.95]); }      // mỗi đường ga chỉ tồn tại giữa điểm tách và điểm nhập (hình chữ Y)
       slabBase(Math.max(zf, physLoZ), Math.min(ZF, physHiZ));
-      for (const [xf, z0, z1, a] of parts) ballastStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), a); 
+      if (low.length) { for (const [xf, z0, z1, a, yf] of low) ballastStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), a, yf); for (const [xf, z0, z1, , yf] of low) railStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), true, yf); if (xbRedeck) xbRedeck(); }      // Joetsu: đường Hokuriku (thấp hơn) vẽ trước rồi mặt cầu cạn đè lên: đi dưới cầu thì bị che
+      for (const [xf, z0, z1, a, yf] of parts) ballastStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), a, yf); 
        // đá dăm trước: đường nhánh không còn đè lên ray đường chính; đường ray dừng ở chắn cuối đường
-      for (const [xf, z0, z1] of parts) railStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), true);
+      for (const [xf, z0, z1, , yf] of parts) railStrip(xf, Math.max(z0, physLoZ), Math.min(z1, physHiZ), true, yf);
       // ghi chữ X (hai ghi bắt chéo) nối đường ta và đường ngược chiều ở hai đầu mỗi ga
       for (const q of sts) for (const xv of LAY.xovers(L.stations[q.m.i], W.rearOf || W.dir, rr)) { const zc = q.d + xv.z; if (zc + 150 < zf || zc > ZF) continue; const sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); }, a = [z => lerp(0, oppAt(z), sm((z - zc) / 150)), z => lerp(oppAt(z), 0, sm((z - zc) / 150))];
         for (const k of LAY.xoLines(xv)) railStrip(a[k], Math.max(zc, physLoZ), Math.min(zc + 150, physHiZ), false); }
+      // ghi nối đường nhánh dưới với đường chính lên (Takasaki, 3 ghi trong hình): mỗi ghi là một đường chéo ngắn giữa hai làn
+      for (const q of sts) for (const lk of LAY.linksOf(q.st, rr)) { const zc = q.d + lk.z; if (zc + lk.len < zf || zc > ZF) continue; const lx = t => t.main ? (t === q.st.oppT ? oppAt : () => 0) : z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), fa = lx(lk.a), fb = lx(lk.b), sm = u => { const t = Math.max(0, Math.min(1, u)); return t * t * (3 - 2 * t); };
+        railStrip(z => lerp(fa(z), fb(z), sm((z - zc) / lk.len)), Math.max(zc, physLoZ), Math.min(zc + lk.len, physHiZ), false); }
       // chắn cuối đường (giảm chấn) và tường chắn ở hai đầu tuyến (ga cuối): mọi đường ray đều kết thúc ở đây
       if (zExit === null) for (const zb of [physLoZ, physHiZ]) if (zb > ZN + 2 && zb < ZF) {
         const near = sts.filter(q => Math.abs(q.d - zb) < 1600), xs = [0, oppAt(zb)]; for (const q of near) for (const t of q.st.tracks) if (!t.main) xs.push(lerp(t.plain, t.x, trackWF(t, T.x + zb, q.m.s)));
@@ -234,7 +267,7 @@
             strip(sd ? ex : xl, sd ? xr : ex, 1.0, za, ze, 'rgb(' + (gg + 34) + ',' + (gg + 38) + ',' + (gg + 42) + ')'); wall(ex, 0, 1.0, za, ze, 'rgb(' + (gg + 14) + ',' + (gg + 17) + ',' + (gg + 20) + ')');
             strip(sd ? (z => ex(z) - 0.12) : ex, sd ? ex : (z => ex(z) + 0.12), 1.001, za, ze, '#b89a2a'); }
           for (let k = Math.ceil((T.x + za) / 12), z = k * 12 - T.x; z < ze; k++, z = k * 12 - T.x) for (const sd of [0, 1]) items.push({ z, fn: () => { const X = sd ? xr(z) - 0.15 : xl(z) + 0.15, a = P(X, 2.7, z), r = Math.max(1.2, 0.15 * c.f / z), gl = ctx.createRadialGradient(a[0], a[1], 0, a[0], a[1], r * 5); gl.addColorStop(0, 'rgba(120,255,170,.95)'); gl.addColorStop(0.35, 'rgba(70,230,130,.35)'); gl.addColorStop(1, 'rgba(70,230,130,0)'); ctx.fillStyle = gl; ctx.fillRect(a[0] - r * 5, a[1] - r * 5, r * 10, r * 10); } });
-          for (const zb of [zc - 125, zc + 125]) if (zb > ZN + 2 && zb < zE) items.push({ z: zb, fn: () => { const xm = (xl(zb) + xr(zb)) / 2, a = P(xm - 2.5, 5.5, zb), b = P(xm + 2.5, 4.3, zb), w2 = Math.abs(b[0] - a[0]); if (w2 < 8) return; const hh = b[1] - a[1], x0 = Math.min(a[0], b[0]);
+          for (const zb of [zc - 125, zc + 125]) if (zb > ZN + 2 && zb < zE) items.push({ z: zb, fn: () => { const x1 = xl(zb) + 0.15, a = P(x1, 3.7, zb), b = P(x1 + 2.5, 2.5, zb), w2 = Math.abs(b[0] - a[0]); if (w2 < 8) return; const hh = b[1] - a[1], x0 = Math.min(a[0], b[0]);
             ctx.fillStyle = '#0b7a45'; ctx.fillRect(x0, a[1], w2, hh); ctx.strokeStyle = '#d9f5e4'; ctx.lineWidth = Math.max(1, hh * 0.05); ctx.strokeRect(x0 + hh * 0.06, a[1] + hh * 0.06, w2 - hh * 0.12, hh * 0.88); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = 'bold ' + hh * 0.5 + 'px system-ui'; ctx.fillText(rf.jp, x0 + w2 / 2, a[1] + hh * 0.52); ctx.font = hh * 0.22 + 'px system-ui'; ctx.fillText(LAY.refugeName(rf).sub, x0 + w2 / 2, a[1] + hh * 0.84); } }); } }
     }
     drawTracks();
@@ -426,14 +459,20 @@
         if (sup.kind !== 'pipe' && s > 3) { const lo = sup.kind === 'cage' ? top - 1.3 : top - 0.8, n = Math.max(3, Math.round(Math.abs(xb - xa) / 2.4)); ctx.lineWidth = Math.max(1, 0.07 * s); ctx.beginPath(); for (let q = 0; q <= n; q++) { const x = xa + (xb - xa) * q / n, p = P(x, q % 2 ? top : lo, zq); q ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke(); } }      // Vトラス / かご: giằng zích zắc giữa hai thanh chính
       if (s > 2.2) { ctx.lineWidth = Math.max(1, 0.07 * s); ctx.beginPath(); for (const x of hx) { const h0 = P(x, yb, zq), h1 = P(x, 5.3, zq); ctx.moveTo(h0[0], h0[1]); ctx.lineTo(h1[0], h1[1]); } ctx.stroke(); }
       if (inSnow && sup.kind !== 'bracket') { const a1 = P(xa, yb + 0.8, zq), b1 = P(xb, yb + 0.8, zq); ctx.fillStyle = '#f2f6fb'; ctx.fillRect(Math.min(a1[0], b1[0]), a1[1] - 1, Math.abs(b1[0] - a1[0]), 2); } } });
-    const wire = (xf, z0, z1) => { const zs = zsteps(Math.max(z0, zMin, physLoZ), Math.min(z1, zLim, physHiZ)); if (zs.length < 2) return; ctx.beginPath(); zs.forEach((z, k) => { const p = P(xf(z), 5.2, z); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke();
-      const lw = ctx.lineWidth; ctx.lineWidth = Math.max(0.6, lw * 0.7); ctx.beginPath(); let on = false; for (const z of zs) { if (z > 900) break; const p = P(xf(z), 6.6, z); on ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); on = true; } ctx.stroke();      // dây treo (messenger)
-      ctx.beginPath(); on = false; for (const z of zs) { if (z > 900) break; if (S.wireAt(L, W.lineId, km(z)) !== 'compound') { on = false; continue; } const p = P(xf(z), 5.9, z); on ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); on = true; } ctx.stroke(); ctx.lineWidth = lw; };      // dây phụ (compound nặng: Tokaido, Sanyo, Joetsu, Tohoku phía nam Morioka...)
-    ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; wire(() => 0, ZN, ZF); wire(oppAt, ZN, ZF);
-    for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, tx = z => S.trunkOff(W, T.x + z); let a = Math.max(ZN, W.dir === 'down' ? sj : sj - 3200), b = Math.min(ZF, W.dir === 'down' ? sj + 3200 : sj);
+    const lowHid = (xf, yo) => (xbOn && W.lineId === 'jts' && yo) ? z => yo(z) < -1.5 && S.structAt(L, km(z)) === 'v' && xf(z) > xl(z) - 0.3 && xf(z) < xr(z) + 0.3 : null;      // đường thấp hơn cầu và nằm dưới mặt cầu: bị che
+    const wire = (xf, z0, z1, yo) => { const zs = zsteps(Math.max(z0, zMin, physLoZ), Math.min(z1, zLim, physHiZ)); if (zs.length < 2) return; const yy = z => yo ? yo(z) : 0, hid = lowHid(xf, yo); ctx.beginPath(); { let on0 = false; for (const z of zs) { if (hid && hid(z)) { on0 = false; continue; } const p = P(xf(z), 5.2 + yy(z), z); on0 ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); on0 = true; } } ctx.stroke();
+      const lw = ctx.lineWidth; ctx.lineWidth = Math.max(0.6, lw * 0.7); ctx.beginPath(); let on = false; for (const z of zs) { if (z > 900) break; if (hid && hid(z)) { on = false; continue; } const p = P(xf(z), 6.6 + yy(z), z); on ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); on = true; } ctx.stroke();      // dây treo (messenger)
+      ctx.beginPath(); on = false; for (const z of zs) { if (z > 900) break; if ((hid && hid(z)) || S.wireAt(L, W.lineId, km(z)) !== 'compound') { on = false; continue; } const p = P(xf(z), 5.9 + yy(z), z); on ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); on = true; } ctx.stroke(); ctx.lineWidth = lw; };      // dây phụ (compound nặng: Tokaido, Sanyo, Joetsu, Tohoku phía nam Morioka...)
+    ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2;
+    { const clipU = (lo, hi) => W.dir === 'down' ? [lo, Math.min(hi, xbZJ)] : [Math.max(lo, xbZJ), hi], isH = xbOn && W.lineId === 'hok', w0 = isH && xbReal === 'up' ? clipU(ZN, ZF) : [ZN, ZF], w1 = isH && xbReal !== 'up' ? clipU(ZN, ZF) : [ZN, ZF];
+      wire(() => 0, w0[0], w0[1]); wire(oppAt, w1[0], w1[1]);
+      if (xbOn) { const bz = W.dir === 'down' ? [Math.max(ZN, xbZC), ZF] : [ZN, Math.min(ZF, xbZC)], yo = yB; wire(z => xbL(z).B, bz[0], bz[1], yB);
+        ctx.strokeStyle = 'rgba(214,222,232,.9)'; ctx.lineWidth = 1.5; for (const sx of [-0.72, 0.72]) { ctx.beginPath(); let brk = false; for (let z = Math.max(bz[0], ZN), f = true; z <= bz[1]; z += z < 400 ? 10 : 40, f = false) { const hd = lowHid(z2 => xbL(z2).B, yo); if (hd && hd(z)) { brk = true; continue; } const p = P(xbL(z).B + sx, 0.15 + (yo ? yo(z) : 0), z); (f || brk) ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); brk = false; } ctx.stroke(); }
+        ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; } }
+    for (const jc of L.meta.junctions || []) { const sj = S.sOfKm(jc.km, W.dir, L.kmEnd) - T.x, xbJ = !!jc.xb && W.lineId === 'jts', tx = xbJ ? z => xbL(z).A : z => S.trunkOff(W, T.x + z), yo = jc.xb ? dEl : null; let a = Math.max(ZN, W.dir === 'down' ? sj : sj - 3200), b = Math.min(ZF, W.dir === 'down' ? sj + 3200 : sj);
       if (b > a) { const cl = trunkClip(sj, a, b, ZN); if (!cl) continue; [a, b] = [Math.max(a, cl[0]), Math.min(b, cl[1])]; }
-      if (b > a) { wire(tx, a, b); wire(z => tx(z) + ADJ, a, b); ctx.strokeStyle = 'rgba(214,222,232,.9)'; ctx.lineWidth = 1.5; for (const sx of [-0.72, 0.72, ADJ - 0.72, ADJ + 0.72]) { ctx.beginPath(); for (let z = a, f = true; z <= b; z += z < 400 ? 10 : 40, f = false) { const p = P(tx(z) + sx, 0.15, z); f ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); } ctx.stroke(); }       // ray đường Tohoku luôn thấy được dù ở xa
-        for (let k = Math.ceil((T.x + a) / 50), z = k * 50 - T.x; z < b; k++, z = k * 50 - T.x) if (Math.abs(tx(z)) >= 20) gantry(z, tx(z) + 3.9, tx(z) + ADJ - 3.9, [tx(z), tx(z) + ADJ]); }       // cặp đường nhánh / đường chính đã tách xa: cổng riêng; còn sát nhau thì dùng chung cổng của hành lang
+      if (b > a) { wire(tx, a, b, yo); if (!xbJ) wire(z => tx(z) + ADJ, a, b, yo); ctx.strokeStyle = 'rgba(214,222,232,.9)'; ctx.lineWidth = 1.5; for (const sx of xbJ ? [-0.72, 0.72] : [-0.72, 0.72, ADJ - 0.72, ADJ + 0.72]) { ctx.beginPath(); let brk = false; for (let z = a, f = true; z <= b; z += z < 400 ? 10 : 40, f = false) { const hd = xbJ ? lowHid(tx, yo) : null; if (hd && hd(z)) { brk = true; continue; } const p = P(tx(z) + sx, 0.15 + (yo ? yo(z) : 0), z); (f || brk) ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]); brk = false; } ctx.stroke(); }       // ray đường Tohoku luôn thấy được dù ở xa
+        for (let k = Math.ceil((T.x + a) / 50), z = k * 50 - T.x; z < b; k++, z = k * 50 - T.x) if (!jc.xb && Math.abs(tx(z)) >= 20) gantry(z, tx(z) + 3.9, tx(z) + ADJ - 3.9, [tx(z), tx(z) + ADJ]); }       // cặp đường nhánh / đường chính đã tách xa: cổng riêng; còn sát nhau thì dùng chung cổng của hành lang
       ctx.strokeStyle = 'rgba(40,52,66,.9)'; ctx.lineWidth = 1.2; }
     for (const q of sts) for (const t of q.st.tracks) { if (t.main) continue; wire(z => lerp(t.plain, t.x, trackWF(t, T.x + z, q.m.s)), q.d - FA, q.d + FB); }
     for (let k = Math.ceil((T.x + ZN) / 50), z = k * 50 - T.x; z < Math.min(1600, zLim); k++, z = k * 50 - T.x) gantry(z, xr(z) + 1.0, xl(z) - 1.0, [0, oppAt(z)]);       // cổng đỡ dây điện dùng chung cho mọi tuyến: hai cột ở hai mép hành lang (đã gồm đường ga và nhánh còn sát) + xà ngang
