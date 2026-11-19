@@ -46,6 +46,7 @@
     this.hvacO = c.createOscillator(); this.hvacO.type = 'sine'; this.hvacO.frequency.value = 118; const hg = c.createGain(); hg.gain.value = 0; this.hvacO.connect(hg); hg.connect(this.master); this.hvac = { g: hg }; this.hvacO.start();
     // bản ghi thật: Odawara (Internet Archive, public domain): nền ga 10–118 s; tàu qua/rời ga ở các đoạn CLIPS
     try { const mk2 = () => { const e = new Audio('assets/audio/odawara_leaving.mp3'); e.preload = 'metadata'; e.volume = 0; return e; }; this.amb = mk2(); this.clipEl = mk2(); this.ambOn = false; this.clipT = 0; } catch (e) { this.amb = null; }
+    try { root.fetch('assets/audio/shinkansen_horn.mp3').then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).then(buf => { this.hornBuf = buf; }).catch(() => { this.hornBuf = null; }); } catch (e) { this.hornBuf = null; }      // còi: bản ghi do người dùng tải (chỉ dùng cá nhân); chưa tải xong/lỗi thì dùng bản tổng hợp bên dưới
     this.ready = true;
     this.rt = { comp: 20 + Math.random() * 30, oppose: 90 + Math.random() * 120, thunder: 40 + Math.random() * 50, last: performance.now() };
   };
@@ -98,7 +99,9 @@
   GameAudio.prototype.thunder = function () { this.lastThunder = performance.now(); this.burst(2.4, 0.5, 130, 0.7, 'lowpass'); this.burst(1.2, 0.35, 90, 0.7, 'lowpass', 0.8); };
   // còi hơi (空気笛) của Shinkansen, tổng hợp [I]: hai cao độ hơi lệch nhau (hai còi cùng kêu) có thành phần hơi gió, vào nhanh, ngắt gọn; KHÔNG dùng còi điện/nhạc của tàu thường. Cao độ là ước lượng, chưa có số liệu kiểm chứng [?]
   GameAudio.prototype.horn = function () {
-    if (!this.ready) return; const c = this.ctx, t = c.currentTime, dur = 1.1, g = c.createGain(), lp = c.createBiquadFilter();
+    if (!this.ready) return;
+    if (this.hornBuf) { const c = this.ctx, src = c.createBufferSource(), g = c.createGain(); src.buffer = this.hornBuf; g.gain.value = 0.8; src.connect(g); g.connect(this.master); src.start(); return; }      // bản ghi thật
+    const c = this.ctx, t = c.currentTime, dur = 1.1, g = c.createGain(), lp = c.createBiquadFilter();
     lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.linearRampToValueAtTime(2400, t + 0.08); lp.frequency.linearRampToValueAtTime(1500, t + dur); lp.Q.value = 1.2;
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.3, t + 0.05); g.gain.setValueAtTime(0.3, t + dur - 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     for (const f of [392, 415, 784, 830, 1176]) { const o = c.createOscillator(), og = c.createGain(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 0.97, t); o.frequency.linearRampToValueAtTime(f, t + 0.06); og.gain.value = f < 500 ? 0.5 : 0.18; o.connect(og); og.connect(lp); o.start(t); o.stop(t + dur + 0.05); }
