@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Trích đồ thị đường ray từ các SVG 配線略図.net (CC BY 4.0) đã ghép thành một hệ toạ độ, ghi docs/data/haisen/<tên>_graph.json.
-# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu|hok|jts|tks|kh|omi]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
+# Chạy: python -X utf8 tools/haisen_graph.py [nks|hkd|kyu|hok|jts|tks|kh|omi|toh]   (mặc định nks). Nguồn gốc/giấy phép: docs/data/haisen/README.md
 # CẤU HÌNH: mỗi hình đặt tại (x, y) trong hệ ghép; các hình nối nhau tại các đầu mút của hai đường chính (độ chênh dọc = trung bình các cặp đường khớp).
 #  nks: 010_01 ở (0,0); 010_02 ở (419.8, -6.8) (Takeo-Onsen – Ureshino-Onsen + Shin-Omura – Isahaya – Nagasaki).
 #  kyu: 5 hình Kyushu Shinkansen Hakata – Kagoshima-Chuo; hai đường chính khớp tới ≤ 0,6 ở cả bốn chỗ nối (xem CONFIG).
@@ -37,6 +37,9 @@ CONFIG['kh'] = {'dir': 'joetsu', 'out': 'kh_graph.json', 'edge_fallback': True, 
             'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (723.2, -36.45)}, 'seams': [{'x': 723.2, 'dy': -36.45}], 'main_span': 250}
 CONFIG['omi'] = {'dir': 'tohoku', 'out': 'omi_graph.json', 'edge_fallback': True,   # Tokyo – Ueno – Omiya – Washinomiya Jct nền Tohoku Shinkansen (010_01 + 010_02; hai đường chính khớp ở chỗ nối); Omiya có thêm nhánh Joetsu/Hokuriku sang Kumagaya
             'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (723.2, -1.95)}, 'seams': [{'x': 723.2, 'dy': -1.95}], 'main_span': 700}
+CONFIG['toh'] = {'dir': 'tohoku', 'out': 'toh_graph.json', 'edge_fallback': True,   # toàn tuyến Tohoku Shinkansen Tokyo – Shin-Aomori (11 hình 010_01–020_11); hai đường chính khớp ở mọi chỗ nối (chỗ 02→03 lệch khoảng cách hai đường 19,2/18,2)
+            'off': {'010_01.svg': (0.0, 0.0), '010_02.svg': (723.2, -1.95), '010_03.svg': (1289.0, 25.35), '010_04.svg': (1970.6, 34.75), '010_05.svg': (2421.8, 10.6), '010_06.svg': (3127.4, 87.35), '010_07.svg': (3501.8, 55.55), '010_08.svg': (4225.0, 48.95), '010_09.svg': (4873.0, 5.55), '020_10.svg': (5463.4, 8.3), '020_11.svg': (6152.2, 71.05)},
+            'seams': [{'x': 723.2, 'dy': -1.95}, {'x': 1289.0, 'dy': 27.3}, {'x': 1970.6, 'dy': 9.4}, {'x': 2421.8, 'dy': -24.15}, {'x': 3127.4, 'dy': 76.75}, {'x': 3501.8, 'dy': -31.8}, {'x': 4225.0, 'dy': -6.6}, {'x': 4873.0, 'dy': -43.4}, {'x': 5463.4, 'dy': 2.75}, {'x': 6152.2, 'dy': 62.75}]}
 LINE = (sys.argv[1] if len(sys.argv) > 1 else 'nks'); CFG = CONFIG[LINE]
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'data', 'haisen', CFG['dir']); OFF = CFG['off']
 SHK, CONV, NAVY, BLK = '#0070c0', '#404040', '#002060', '#000'
@@ -60,7 +63,7 @@ def read():
             elif tag == 'rect':
                 w, h = float(el.get('width')), float(el.get('height'))
                 if h <= 1.2 or w <= 1.2: continue
-                R.append({'x': float(el.get('x')) + ox, 'y': float(el.get('y')) + oy, 'w': w, 'h': h, 'stroke': norm_stroke(s.get('stroke')), 'sw': fw(s), 'fill': s.get('fill'), 'fig': name})
+                R.append({'x': float(el.get('x') or 0) + ox, 'y': float(el.get('y') or 0) + oy, 'w': w, 'h': h, 'stroke': norm_stroke(s.get('stroke')), 'sw': fw(s), 'fill': s.get('fill'), 'fig': name})
             elif tag == 'text':
                 tr = el.get('transform', ''); m = re.search(r'translate\(\s*([-\d.]+)[ ,]+([-\d.]+)', tr) or re.search(r'matrix\(\s*[-\d.]+[ ,]+[-\d.]+[ ,]+[-\d.]+[ ,]+[-\d.]+[ ,]+([-\d.]+)[ ,]+([-\d.]+)\s*\)', tr)
                 if m: T.append({'s': ''.join(el.itertext()).strip(), 'x': float(m.group(1)) + ox, 'y': float(m.group(2)) + oy, 'size': float((s.get('font-size') or '11px').replace('px', '')), 'fig': name})
@@ -163,7 +166,7 @@ byid = {n['id']: n for n in nodes}
 # hai đường chính = hai ray dài nhất bao suốt chiều dài
 span = [r for r in rails if r['x2'] - r['x1'] > CFG.get('main_span', 700)]      # main_span: ngưỡng chiều dài đường chính (hình ngắn như Takasaki đặt thấp hơn)
 mains = sorted(span, key=lambda r: r['y'])
-MAIN_D, MAIN_U = mains[0]['y'], mains[1]['y']
+MAIN_D = mains[0]['y']; MAIN_U = next(r['y'] for r in mains if r['y'] > MAIN_D + 10)      # hai đường chính khác độ cao (tuyến dài ghép nhiều hình có thể có nhiều ray chung độ cao)
 midY = (MAIN_D + MAIN_U) / 2
 def role_of_y(y): return 'd' if y < midY else 'u'
 # ---- vai trò cạnh

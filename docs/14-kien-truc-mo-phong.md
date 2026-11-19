@@ -105,6 +105,16 @@ Bất biến được kiểm: không ngoại lệ/NaN; tàu ta không va chạm,
 - **Dữ liệu kết cấu:** Hokuriku bỏ hầm km 105–110,07 (nền đất) cho khớp Joetsu (không có hầm ở đó) (`tools/build_struct.py`, `patch_takasaki`).
 - Test: mục 33k (dữ liệu, hình học ga hai chiều, ghi nối, làn vật lý nhất quán ở bốn khung nhìn, vẽ cabview/minimap/cửa sổ).
 
+## 8c. Sendai (Tohoku) — mã `2-4-0s`: đường chính đi vòng qua đường ngoài [D sơ đồ / I hình học] (19/11/2026)
+
+- **Sơ đồ** (`docs/data/haisen/toh_graph.json`, hình tohoku/020_xx): ở đầu đông ga, phía bắc, đường chính xuống rẽ lên nhập vào đường ngoài, đi tiếp trên hàng đường ngoài rồi rẽ xuống thành đường chính lại; đoạn đường chính thẳng ở giữa không có. Phía nam và chiều lên bình thường, nên ga KHÔNG đối xứng quay 180°.
+- **Mã `2-4-0s`** (`layout.js`: `SEN`, `DET`, `detourX`): cùng chuỗi đường `dPduPu` như `2-4-0`; chỉ chiều XUỐNG (cả camera sau) có `st.detour` = {t: đường ngoài phía bắc (vật lý 0), main: đường chính, z0, len, zEnd}. z tính từ vạch dừng: rẽ khỏi đường chính ở +60 m (dài 200 m), đi thẳng 80 m, trả về trong 200 m (kết thúc +540 m, trước ghi r ở +720 m). Mọi đoạn là S-curve làm trơn (`ease`), độ dốc tối đa ≈ 1:12.6 (ghi thật), KHÔNG theo góc vẽ trong sơ đồ [I].
+- **Cách dựng** tận dụng cơ chế sẵn có: (1) đường ngoài đổi `out0 = 340`, `len2 = 200` (nhập lại muộn); (2) một ghi nối `links` (`det: true`) đường chính → đường ngoài ở z0 (camera sau đảo a, b trong `linksOf`); (3) cabview/topview cắt ray đường chính trong [z0, zEnd]; (4) `Layout.detourX(st, s, sM)` = vị trí ngang của làn đường chính, dùng cho tàu ta chạy trên đường chính (thông qua hoặc đỗ ở đường chính; tàu đỗ ở đường ngoài đi theo `trackW` của đường ngoài như trước), dây điện/cổng đỡ, tàu cùng chiều phía trước (lead, vật cản ATC).
+- **Chiều LÊN (làn ngược chiều):** đường chính xuống thật (làn bên cạnh khi nhìn từ tàu chiều lên) cũng đi vòng qua đường ngoài. Khung chiều lên là ảnh quay 180° (z' = -400 - z) nên đoạn vòng nằm TRƯỚC ga (−940…−460 m so với vạch). `st.oppDet`, `Layout.oppDetourX`; đường ngoài của chiều ngược có cửa sổ tách đổi theo (`in0 = 940`, `len = 200`), cửa sổ nhập lại giữ mặc định của khung.
+- **Đá dăm và tà vẹt:** ghi nối của đoạn vòng được đưa vào `parts` của `drawTracks` (cabview) nên có đá dăm và tà vẹt như đường ga; ray đường chính trong đoạn bị cắt (cả đường chính của ta và làn ngược chiều).
+- **Tốc độ:** tàu thông qua Sendai (không dừng, ví dụ East-i) hoặc dừng ở đường chính bị giới hạn 80 km/h từ +60 m tới +540 m sau vạch (`Layout.detourSpan`, `Sim.turnoutZones`); tàu dừng ở đường ngoài đã có vùng 80 km/h bao cả đoạn. Hầu hết tàu dừng ở Sendai nên ít khi dùng đến [theo người dùng; lịch xem tại docs/data].
+- **Còn hạn chế:** đoàn tàu thông qua đỗ ở ga (`passersAt`) vẽ ở làn 0; cửa sổ hành khách (`winview.js`) chưa vẽ làn ngược chiều đi vòng. Test: mục 33l (5b).
+
 ## 9. Điểm cứu hộ trong hầm Seikan (竜飛定点, 吉岡定点) [N/I]
 
 - **Dữ liệu:** `LINE_META.toh.refugeInfo` (`sim.js`): km 732,9 và 755,9 (trùng `refuges`, dùng cho sự cố cháy trong hầm), toạ độ và độ sâu theo Wikipedia JA (Tappi 41,25722 N 140,34806 E, sâu 135 m; Yoshioka 41,44222 N 140,23917 E, sâu 149,5 m).

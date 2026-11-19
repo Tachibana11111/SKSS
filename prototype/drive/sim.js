@@ -277,7 +277,9 @@
   function stationDiverts(L, i, dir, W) { const Ly = root.Layout; if (!Ly || !L.stations[i] || !L.stations[i].lay) return false; return Ly.diverts(L.stations[i].lay, dir, Ly.pickOf(L.stations[i], i, W)); }
   const divertsAt = (T, j) => { const m = T.M[j]; return !!(m && (m.stop || T.forced === j || (j === T.k && T.phase !== 'end')) && !m.mainStop && stationDiverts(T.W.line, m.i, T.W.dir, T.W)); };
   const geoS = m => m.sOrig !== undefined ? m.sOrig : m.s;      // vị trí gốc của ga (hình học sân ga/ghi); m.s có thể lùi lại khi chờ ghép
-  function turnoutZones(T) { const out = []; for (let j = 0; j < T.M.length; j++) if (divertsAt(T, j)) out.push({ s0: geoS(T.M[j]) - G.turnoutIn, s1: geoS(T.M[j]) + G.turnoutOut, v: G.turnoutV, j }); return out; }
+  // đoạn vòng của đường chính qua ghi (Sendai chiều xuống): tàu chạy trên đường chính (thông qua, hoặc đã đỗ ở đường chính) bị giới hạn 80 km/h [I] suốt đoạn vòng; tàu rẽ vào đường sân ga đã có vùng 80 km/h bao cả đoạn này
+  function turnoutZones(T) { const out = [], Ly = root.Layout; for (let j = 0; j < T.M.length; j++) { const m = T.M[j]; if (divertsAt(T, j)) out.push({ s0: geoS(m) - G.turnoutIn, s1: geoS(m) + G.turnoutOut, v: G.turnoutV, j });
+      else if (Ly && Ly.detourSpan && T.W.line.stations[m.i] && T.W.line.stations[m.i].lay) { const ds = Ly.detourSpan(T.W.line.stations[m.i].lay, T.W.dir); if (ds) out.push({ s0: geoS(m) + ds.z0, s1: geoS(m) + ds.z1, v: G.turnoutV, j }); } } return out; }
   // vị trí các ghi và ghi chéo (chữ X) mà đoàn tàu đi qua quanh một ga: dùng cho âm thanh
   function switchPoints(T) { const pts = []; for (let j = 0; j < T.M.length; j++) { const m = T.M[j], sM = geoS(m), dv = divertsAt(T, j);
     const Ly = root.Layout; for (const xv of Ly && Ly.xovers ? Ly.xovers(T.W.line.stations[m.i], T.W.dir, false) : [{ z: -1300 }, { z: 720 }]) pts.push(sM + xv.z + 35, sM + xv.z + 115); if (dv) pts.push(sM - G.turnoutIn, sM + G.turnoutOut); } return pts.sort((a, b) => a - b); }

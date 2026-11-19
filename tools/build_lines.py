@@ -62,7 +62,14 @@ XO = {'nks': {'Takeo-Onsen': [['a', 'd']], 'Ureshino-Onsen': [], 'Shin-Omura': [
               'Kurobe-Unazuki-Onsen': [], 'Toyama': [['b', 's'], ['a', 'd']], 'Shin-Takaoka': [], 'Kanazawa': [['b', 'd'], ['a', 'd']], 'Komatsu': [], 'Kagaonsen': [], 'Awara-Onsen': [],
               'Fukui': [['b', 'r', 160], ['a', 'r', 40]], 'Echizen-Takefu': [], 'Tsuruga': [['b', 'd']]},   # Hokuriku Shinkansen Annaka-Haruna – Tsuruga (hình hokuriku/021_02–030_08, docs/data/haisen/hok_graph.json); Tokyo..Takasaki (chung với Joetsu) chưa làm. Fukui: 2 đường nên gap 160/40 m (≈ 20/5 đơn vị); ga 4 đường giữ vị trí cũ; Tsuruga là ga cuối: chỉ X trước (4 đường kết thúc bằng chắn cuối)
       'jts': {'Kumagaya': [['b', 's', None, 190], ['b', 'r'], ['a', 's']], 'Honjo-Waseda': [], 'Takasaki': [['b', 's', 245], ['a', 'r', 205]], 'Jomo-Kogen': [['b', 's'], ['a', 'r']], 'Echigo-Yuzawa': [['b', 's'], ['a', 'd']], 'Urasa': [['b', 's', None, 190], ['b', 'r'], ['a', 'r'], ['a', 's', None, 190]], 'Nagaoka': [['b', 's'], ['a', 'r']], 'Tsubame-Sanjo': [['b', 'r'], ['a', 's']], 'Niigata': [['b', 'd']]},   # Joetsu Shinkansen Jomo-Kogen – Niigata (hình joetsu/010_02–020_05, docs/data/haisen/jts_graph.json); Tokyo..Honjo-Waseda và Takasaki (chung với Hokuriku) chưa làm. Urasa: mỗi bên hai ghi đơn thay chữ X (trước ga: s xa rồi r gần; sau ga: r gần rồi s xa), phần tử thứ tư = lệch thêm 190 m ra xa; ga có đường tránh giữ vị trí cũ; Niigata là ga cuối: chỉ X trước (4 đường kết thúc bằng chắn cuối)
-      'toh': {'Shin-Aomori': [['b', 'd'], ['a', 'd']], 'Okutsugaru-Imabetsu': [['b', 's'], ['a', 'r']], 'Kikonai': [['b', 'r'], ['a', 's']], 'Shin-Hakodate-Hokuto': [['b', 'd']]}}
+      'toh': {'Oyama': [['b', 'r', None, 230], ['b', 's'], ['a', 's']], 'Utsunomiya': [], 'Nasushiobara': [['b', 's'], ['a', 'r']], 'Shin-Shirakawa': [['b', 's'], ['a', 'r']], 'Koriyama': [['b', 's'], ['a', 'r']], 'Shiroishi-Zao': [['b', 'r'], ['a', 's']],
+              'Sendai': [['b', 'd'], ['a', 'r'], ['a', 's', None, 190]], 'Furukawa': [['b', 'r'], ['a', 's']], 'Kurikoma-Kogen': [], 'Ichinoseki': [['b', 's'], ['a', 'r']], 'Mizusawa-Esashi': [], 'Kitakami': [['b', 's'], ['a', 'r']], 'Shin-Hanamaki': [],
+              'Iwate-Numakunai': [], 'Ninohe': [], 'Hachinohe': [['b', 'd'], ['a', 'r']], 'Shichinohe-Towada': [],
+              'Shin-Aomori': [['b', 'd'], ['a', 'd']], 'Okutsugaru-Imabetsu': [['b', 's'], ['a', 'r']], 'Kikonai': [['b', 'r'], ['a', 's']], 'Shin-Hakodate-Hokuto': [['b', 'd']]}}
+# Yamagata và Akita chạy chung trục Tohoku (Tokyo – Fukushima / Tokyo – Morioka): cùng ga vật lý nên dùng cùng xo với tuyến 'toh' (trừ Tokyo, Ueno, Omiya, Fukushima, Morioka chưa làm: giữ mặc định)
+for _lid in ('yam', 'aki'):
+    _names = {_s['en'] for _s in LINES[_lid]['stations']}
+    XO[_lid] = {_k: _v for _k, _v in XO['toh'].items() if _k in _names}
 for _lid, _d in XO.items():
     for _s in LINES[_lid]['stations']:
         if _s['en'] in _d: _s['xo'] = _d[_s['en']]

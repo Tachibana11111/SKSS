@@ -3,7 +3,7 @@
 // Chuỗi bố trí viết theo chiều chạy XUỐNG (km tăng), trái -> phải khi nhìn từ buồng lái; Nhật chạy bên trái nên đường xuống nằm bên trái đường lên.
 //   d/u = đường dừng chiều xuống/lên, D/U = đường thông qua chiều xuống/lên, P = sân ga.
 (function (root) {
-  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-1': 'dPdDUuPu', '2-4-1k': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '3-4-0': 'PdPduPu', '2-4-0t': 'dPddPu', '2-3-0a': 'PdduP', '2-3-0b': 'PduuP', '2-3-0c': 'dPduP' };      // 2-3-0c: Chikugo-Funagoya (Kyushu 010_02): đường tránh nằm ở phía đường xuống, sân ga đảo giữa đường tránh và đường chính xuống [D sơ đồ]; ảnh gương của 2-3-0 (PduPu). 2-3-0a / 2-3-0b: Okutsugaru-Imabetsu / Kikonai theo hình 010_02 / 010_04 (hai đường chính cạnh hai sân ga ngoài + một đường 1435 mm mảnh sát một sân ga; chiều xuống: ga a dừng ở đường mảnh phía trên, ga b dừng ngay trên đường chính xuống) [D sơ đồ, I vai trò đường mảnh; vẫn tính là ga tránh được như mã cũ 2-2-1]. 2-4-0t: Tokyo (Tohoku/Joetsu/Hokuriku) theo sơ đồ ray HaisenNet: 3 đường nhập đường chính xuống, 1 đường nhập đường chính lên [D sơ đồ, I hướng]
+  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-1c': 'dPdDUuP', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-0s': 'dPduPu', '2-4-1': 'dPdDUuPu', '2-4-1k': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '3-4-0': 'PdPduPu', '2-4-0t': 'dPddPu', '2-3-0a': 'PdduP', '2-3-0b': 'PduuP', '2-3-0c': 'dPduP' };      // 2-3-0c: Chikugo-Funagoya (Kyushu 010_02): đường tránh nằm ở phía đường xuống, sân ga đảo giữa đường tránh và đường chính xuống [D sơ đồ]; ảnh gương của 2-3-0 (PduPu). 2-3-0a / 2-3-0b: Okutsugaru-Imabetsu / Kikonai theo hình 010_02 / 010_04 (hai đường chính cạnh hai sân ga ngoài + một đường 1435 mm mảnh sát một sân ga; chiều xuống: ga a dừng ở đường mảnh phía trên, ga b dừng ngay trên đường chính xuống) [D sơ đồ, I vai trò đường mảnh; vẫn tính là ga tránh được như mã cũ 2-2-1]. 2-4-0t: Tokyo (Tohoku/Joetsu/Hokuriku) theo sơ đồ ray HaisenNet: 3 đường nhập đường chính xuống, 1 đường nhập đường chính lên [D sơ đồ, I hướng]
   const ADJ = -4.3, TRK_GAP = 4.3, EDGE = 1.75, ISLAND = 7.2, SIDE = 9.0;       // toạ độ mô hình: X dương = phía "sân ga của đường ta"; đường ngược chiều gần nhất ở X = ADJ
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -17,6 +17,9 @@
   // ---- Takasaki (hình hokuriku/030_01 và joetsu/010_02): sáu đường, hai sân ga; đường nhánh dưới (S1) KHÔNG nhập lại đường chính ngoài ga mà kéo dài về phía đông thành đường Hokuriku chiều lên (qua nút giao dưới cầu cạn Joetsu).
   // Toạ độ theo hình (1 đv ≈ 8,15 m, cuối sân ga ở x = 334,3 ↔ z = +20 m so với vạch dừng); chỉ số theo chuỗi token CHIỀU XUỐNG: 0 N1 (ngoài cùng phía bắc), 2 N2, 3 đường chính xuống, 4 đường chính lên, 5 S1 (nhánh dưới), 7 S2 (ngoài cùng phía nam).
   // [chỉ số, đường mẹ (đường ta tách ra từ đó), in0, len tách, out0, len nhập]: z tách = -in0 .. -in0+len, z nhập = out0 .. out0+len2 so với vạch dừng (khung chiều xuống). Mỗi ghi rẽ khỏi đường MẸ (chuỗi N2→N1, S1→S2) chứ không từ đường chính.
+// ---- Sendai (Tohoku, hình tohoku/020_xx): chiều XUỐNG, đầu phía đông, đường chính xuống rẽ lên NHẬP vào đường ngoài phía bắc, đi tiếp trên đường ngoài rồi rẽ xuống thành đường chính lại; đoạn đường chính thẳng ở giữa không có [D sơ đồ]. Chiều lên không có (sơ đồ KHÔNG đối xứng quay 180°).
+  // z tính từ vạch dừng (khung chiều xuống): rẽ khỏi đường chính ở +60 m (sân ga hết ở +20, sơ đồ cách 40 m), dài 200 m (S-curve làm trơn, độ dốc tối đa ≈ 1:12); đi thẳng 80 m (sơ đồ ≈ 80 m); trả về đường chính trong 200 m [I tỉ lệ: sơ đồ không theo tỉ lệ]
+  const SEN = '2-4-0s', DET = { z0: 60, len: 200, hold: 80, ret: 200 };
   const TKS = '2-4-1k', TKS_EXT = 60000, TKS_Z = d => 20 + (d - 334.3) * 8.15;
   const TKS_T = [[2, 3, 661, 120, 178, 50], [0, 2, 541, 121, 60, 81], [5, 4, 661, 120, TKS_EXT, 50], [7, 5, 541, 121, 60, 81]];      // kéo dài các ghi cho thuôn (độ dốc ≤ ~1:10 ở giữa đường cong S); đầu cuối giữ đúng vị trí trong hình
   const TKS_L = [[60, 95], [160, 65], [381, 100]];      // ghi nối đường nhánh dưới S1 với đường chính lên: [z bắt đầu, dài] (e28, e29, e33 trong hình) [D]
@@ -35,7 +38,7 @@
     return TKS_L.map(([z0, len]) => ({ z0: dir === 'up' ? -TKS_SHIFT - z0 - len : z0, len, a: s1, b: u }));
   }
   // ghi nối trong khung ĐANG NHÌN (camera sau: z' = -z - len); a, b = hai đường được nối
-  const linksOf = (st, rear) => (st.links || []).map(l => ({ z: rear ? -l.z0 - l.len : l.z0, len: l.len, a: l.a, b: l.b }));
+  const linksOf = (st, rear) => (st.links || []).map(l => ({ z: rear ? -l.z0 - l.len : l.z0, len: l.len, a: rear && l.det ? l.b : l.a, b: rear && l.det ? l.a : l.b, det: !!l.det }));      // ghi nối đi từ đường a sang đường b theo chiều tiến z; camera sau (thế giới gương) đảo a, b với ghi của Sendai (đường chính → đường ngoài theo chiều chạy)
   // pick: chọn đường dừng khi có nhiều đường (số nguyên). Trả về {tracks, plats, ref, opp, stops, ours}
   function station(code, dir, pick, rev) {      // rev: nhìn NGƯỢC chiều chạy (camera sau): đảo thứ tự trái-phải, giữ nguyên vai trò đường ta / đường ngược chiều
     const s = rev ? tokens(code, dir).split('').reverse().join('') : tokens(code, dir), n = s.length, isT = i => s[i] !== 'P', width = i => (i > 0 && i < n - 1 && isT(i - 1) && isT(i + 1)) ? ISLAND : (i === 0 || i === n - 1) ? SIDE : ISLAND;
@@ -53,6 +56,8 @@
     { const outer = tracks.filter(t => !t.main).sort((a, b) => Math.abs(a.x - a.plain) - Math.abs(b.x - b.plain));
       outer.forEach((t, k) => { const dx = Math.abs(t.x - t.plain); t.len = clamp(13 * dx + 25, 40, 300); t.in0 = 1130 - 85 * k; t.out0 = 40 + 70 * (outer.length - 1 - k); t.rank = k; }); }
     if (code === TKS) tksTracks(tracks, n, dir, rev, X);
+    let detour = null;      // Sendai chiều xuống: đường ngoài phía bắc (vật lý 0) kéo dài thành đường chính tạm thời; đường chính (own, main) rẽ vào nó
+    if (code === SEN && dir === 'down') { const tN = tracks.find(t => physIdx(t.i, n, dir, rev) === 0), mT = tracks.find(t => t.main && t.own); if (tN && mT) { tN.out0 = DET.z0 + DET.len + DET.hold; tN.len2 = DET.ret; tN.det = true; detour = { t: tN, main: mT, z0: DET.z0, len: DET.len, zEnd: tN.out0 + tN.len2 }; } }
     const oppT = tracks.find(t => t.i === opp);
     const plats = []; for (let i = 0; i < n; i++) if (!isT(i)) { const w = width(i); plats.push({ xa: X(i) - w / 2, xb: X(i) + w / 2, side: i === 0 || i === n - 1 }); }
     // đường dừng của ta: đường chiều ta (d) có sân ga kề bên
@@ -63,8 +68,12 @@
     const plat = plats.find(p => Math.abs(Math.min(Math.abs(p.xa - ours.x), Math.abs(p.xb - ours.x)) - EDGE) < 0.01) || null;
     const platSign = plat ? ((plat.xa + plat.xb) / 2 > ours.x ? 1 : -1) : 1;
     const platTracks = tracks.filter(t => !t.thr && plats.some(p => Math.abs(Math.min(Math.abs(p.xa - t.x), Math.abs(p.xb - t.x)) - EDGE) < 0.01));      // mọi đường có sân ga kề (cả hai nhóm d và u): ga cuối dùng cho cả tàu vào lẫn ra
-    const links = code === TKS ? tksLinks(tracks, n, dir, rev) : [];
-    return { code, dir, tracks, links, plats, stops, platTracks, ref, opp: X(opp), oppT, ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
+    // chiều LÊN: đường ngoài phía bắc (vật lý) là đường ngoài CỦA CHIỀU NGƯỢC; đường chính xuống thật (làn ngược chiều) đi vòng qua nó như ở chiều xuống. Khung chiều lên = quay 180° (z' = -400 - z) nên đoạn vòng nằm TRƯỚC ga (460–940 m trước vạch).
+    let oppDet = null;
+    if (code === SEN && dir === 'up') { const dn = station(code, 'down', 0, false), tD = dn.tracks.find(t => physIdx(t.i, 6, 'down', false) === 0), tU = tracks.find(t => physIdx(t.i, n, dir, rev) === 0), oM = tracks.find(t => t.i === opp);
+      if (tD && tU && oM) { tU.in0 = TKS_SHIFT + tD.out0 + tD.len2; tU.len = tD.len2; tU.det = true; oppDet = { t: tU, main: oM, link: { z0: -TKS_SHIFT - DET.z0 - DET.len, len: DET.len }, zA: -TKS_SHIFT - (DET.z0 + DET.len + DET.hold + DET.ret), zB: -TKS_SHIFT - DET.z0 }; } }
+    const links = code === TKS ? tksLinks(tracks, n, dir, rev) : detour ? [{ z0: detour.z0, len: detour.len, a: detour.main, b: detour.t, det: true }] : oppDet ? [{ z0: oppDet.link.z0, len: oppDet.link.len, a: oppDet.t, b: oppDet.main, det: true }] : [];
+    return { code, dir, tracks, links, detour, oppDet, plats, stops, platTracks, ref, opp: X(opp), oppT, ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
   }
   // trọng số "đã chia ra các đường của ga" tại vị trí s (m): 0 ở xa, 1 trong phạm vi sân ga; sM = vị trí vạch dừng
   // mức "đã toả hết" của cả ga (theo đường ngoài cùng): dùng cho bề rộng hành lang; từng đường có trackW riêng (ghi riêng)
@@ -80,6 +89,12 @@
   };
   // dịch ngang làm trơn (smoothstep): đường ga tách khỏi đường chính theo tiếp tuyến rồi song song với đường chính, không bẻ gấp ở chỗ nhập (như ghi chữ X)
   const ease = u => u * u * (3 - 2 * u);
+  // vị trí ngang (X mô hình) của ĐƯỜNG CHÍNH của ta tại s khi ga có đoạn vòng (Sendai chiều xuống): 0 trước ghi, rồi bám đường ngoài (t.x) rồi trả về 0; dùng cho tàu chạy trên đường chính (thông qua hoặc đỗ ở đường chính)
+  const detourX = (st, s, sM) => { const d = st && st.detour; if (!d) return 0; const t = d.t; return t.x * ease(ramp(sM + d.z0, sM + d.z0 + d.len, s)) * (1 - ease(ramp(sM + t.out0, sM + t.out0 + t.len2, s))); };
+  // chiều LÊN tại Sendai: độ lệch THÊM (X mô hình) của làn ngược chiều so với đường chính ngược chiều: 0 → (đường ngoài − đường chính) → 0 (đoạn vòng nằm trước ga, trong khung chiều lên)
+  const oppDetourX = (st, s, sM) => { const d = st && st.oppDet; if (!d) return 0; const t = d.t; return (t.x - d.main.x) * ease(ramp(sM - t.in0, sM - t.in0 + t.len, s)) * (1 - ease(ramp(sM + d.link.z0, sM + d.link.z0 + d.link.len, s))); };
+  // khoảng z (so với vạch dừng, khung chiều chạy) mà đường chính của tàu thông qua phải đi vòng qua ghi: dùng cho hạn chế tốc độ (null nếu ga không có)
+  const detourSpan = (code, dir) => code === SEN && dir === 'down' ? { z0: DET.z0, z1: DET.z0 + DET.len + DET.hold + DET.ret } : null;
   const trackW = (t, s, sM) => t.in0 === undefined ? 1 : ease(ramp(sM - t.in0, sM - t.in0 + t.len, s)) * (1 - ease(ramp(sM + t.out0, sM + t.out0 + (t.len2 || t.len), s)));
 
   // đường cong: bảng [km0, km1, R, sg] theo km; trả về độ cong (1/m, dương = rẽ phải theo chiều chạy) tại s (m dọc tuyến theo chiều chạy)
@@ -171,6 +186,6 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   // số cầu bộ hành trên cao của một ga theo mã bố trí: ≥ 3 sân ga → 3 lối; 2 sân ga và ≥ 4 đường → 2 lối; 2 sân ga ít đường → 1 lối; 1 sân ga → không có (ga ngầm do nơi gọi loại thêm)
   const _bn = {}; function bridgeCountOf(code) { if (_bn[code] === undefined) { const s = station(code, 'down', 0), np = s.plats.length; _bn[code] = np < 2 ? 0 : np >= 3 ? 3 : s.tracks.filter(t => !t.thr).length >= 4 ? 2 : 1; } return _bn[code]; }
-  root.Layout = { TKS, TKS_EXT, linksOf, hasThrough, refugeName, geoPoints, xovers, xoLines, XLEN, bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { TKS, TKS_EXT, SEN, DET, detourX, oppDetourX, detourSpan, linksOf, hasThrough, refugeName, geoPoints, xovers, xoLines, XLEN, bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);
