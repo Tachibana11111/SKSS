@@ -131,3 +131,7 @@ Soak test là công cụ kiểm tra bất biến, không phải nguồn dữ li�
 - **Đã thử và bỏ:** bản hai tầng (Hokuriku lên chui dưới cầu cạn Joetsu, mockup `tks_3d.html`, `tks_nut_giao.html`) theo yêu cầu người dùng; hai mockup giữ lại làm tài liệu nghiên cứu, không phản ánh bản trong game.
 - **Hạn chế:** Hokuriku lên đi đường nhánh dưới cả khi không dừng nhưng chưa có giới hạn tốc độ rẽ ghi; cửa sổ hành khách vẽ làn B ở cùng mặt phẳng.
 
+## 13. Kumagaya và Honjo-Waseda (19/11/2026)
+
+- **[D]** Hai hình `joetsu/010_01` (Kumagaya, cùng hình với Omiya) và `010_02` (Honjo-Waseda) ghép khớp ở chỗ nối hai đường chính (`kh_graph.json`, `kh_layout.html`). Token Kumagaya `PdduuPu` = `2-3-1`, Honjo-Waseda `PdduuP` = `2-2-1`: không đổi mã. Honjo-Waseda không có ghi chéo; Kumagaya có ghi `s` xa (~361 m) và `r` gần (~240 m) trước ga, một ghi `s` (~239 m) sau ga.
+- **[I]** Ga có đường tránh nên giữ vị trí cũ 1300/720 m, ghi `s` xa lệch thêm 190 m (như Urasa): khoảng cách theo hình khác nhau chút.
