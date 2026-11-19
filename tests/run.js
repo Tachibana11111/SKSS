@@ -794,7 +794,7 @@ if (section('29. Đa ngôn ngữ (i18n.js, lang-en.js, lang-ja.js): đủ bản 
   const VNX = /[ăâđêôơưĂÂĐÊÔƠƯàáảãạằắẳẵặầấẩẫậèẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]/;      // chữ đặc trưng tiếng Việt (không gồm é: có trong tên riêng)
   const VNK = /[À-ÃÈ-ÊÌÍÒ-ÕÙÚÝà-ãè-êìíò-õùúýĂăĐđĨĩŨũƠơƯưẠ-ỹ]/;
   // 1) thu khoá _t('...') trong mã nguồn
-  const files = ['sim.js', 'layout.js', 'tutorial.js', 'fullui.js', 'natmap.js', 'store.js', 'audio.js', 'winview.js', 'scene.js', 'topview.js', 'music.js', 'index.html'], keys = new Set(); let bad = 0;
+  const files = ['sim.js', 'layout.js', 'tutorial.js', 'fullui.js', 'natmap.js', 'store.js', 'audio.js', 'winview.js', 'topview.js', 'music.js', 'index.html'], keys = new Set(); let bad = 0;
   const reKey = /(?<![\w$.])_t\(\s*('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")/g;
   for (const f of files) { const src = fs.readFileSync(path.join(DRIVE, f), 'utf8'); let m; while ((m = reKey.exec(src))) { try { keys.add(new Function('return ' + m[1])()); } catch (e) { bad++; } } }
   { const src = fs.readFileSync(path.join(DRIVE, 'cabview.js'), 'latin1'); const m = src.match(/_t\('(V[^']{0,4}CH)'\)/); if (m) keys.add('VẠCH'); }
@@ -934,7 +934,7 @@ if (section('31. Đợt sửa tháng 11: Tsubame/S800, 8 toa, nhắc đóng cử
     ok(run.T.finished && !run.T.failed && run.T.veh.key === 'S800', 'chạy trọn một chuyến Tsubame chiều xuống bằng S800', [run.T.finished, run.T.failed]);
     const noSame = L.trains.filter(t => t.t === 'Tsubame'); const keys = new Set(noSame.map(t => t.t + t.n + t.d)); ok(keys.size === noSame.length, 'số hiệu Tsubame không trùng trong cùng chiều'); }
   // 8 toa: dải ảnh riêng cho N700-8 (Sakura, Mizuho)
-  { require(path.join(DRIVE, 'assets', 'sprites.js')); const sp = window.SPRITES && window.SPRITES.n700s8; ok(sp && sp.cars.length === 8 && sp.width > 2000, 'dải ảnh N700 8 toa (n700s8) có đúng 8 toa'); const sc = require('fs').readFileSync(path.join(DRIVE, 'scene.js'), 'utf8'); ok(/'N700-8': 'n700s8'/.test(sc), 'màn 2D dùng dải 8 toa cho N700-8'); ok(Sim.VEH['N700-8'].cars === 8, 'N700-8 có 8 toa'); }
+  { require(path.join(DRIVE, 'assets', 'sprites.js')); const sp = window.SPRITES && window.SPRITES.n700s8; ok(sp && sp.cars.length === 8 && sp.width > 2000, 'dải ảnh N700 8 toa (n700s8) có đúng 8 toa'); const ix = require('fs').readFileSync(path.join(DRIVE, 'index.html'), 'utf8'); ok(/'N700-8': 'n700s8'/.test(ix), 'ảnh xem trước dùng dải 8 toa cho N700-8'); ok(Sim.VEH['N700-8'].cars === 8, 'N700-8 có 8 toa'); }
   // nhắc trên điện đàm khi kéo cần mà chưa đóng cửa (không còn lớp phủ che màn hình)
   { const L = Sim.lineOf('tsk'), r = find('tsk', 'Nozomi', 'down', 0, 12), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', r, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, msgs = [], say0 = W.say; W.say = function (k, t) { msgs.push(t); return say0.apply(W, arguments); };
     T.pw = 6; for (let i = 0; i < 200; i++) Sim.tick(W, 0.05, {}, false); ok(msgs.some(m => /đóng cửa/.test(m) && /Enter/.test(m)), 'kéo cần khi chưa đóng cửa: có nhắc trên điện đàm', msgs.slice(-2).join('|'));
@@ -1086,13 +1086,13 @@ if (section('33b. Giá đỡ dây điện trên cao: kiểu theo kết cấu, ch
   // không bao giờ có cột đứng giữa hai đường
   { let bad = 0, n = 0; for (const kind of ['portal', 'pipe', 'cage', 'bracket', 'tunnel']) for (const [xa, xb, heads] of [[5, -9.5, [0, -4.3]], [1.2, -5.5, [0, -4.3]], [20, -30, [0, -4.3, -10, -15, -22]], [1.2, -1.2, [0]], [-2, 2, [0, -4.3]], [-4, 4, [0, -4.3]]]) { const cols = Sim.supportColumns(kind, xa, xb, heads), lo = Math.min(...heads), hi = Math.max(...heads); for (const x of cols) { n++; if (x > lo + 0.01 && x < hi - 0.01) bad++; } }
     ok(bad === 0 && n > 20, 'không có cột giữa hai đường ở mọi kiểu giá (' + n + ' cột kiểm, ' + bad + ' sai)'); }
-  // vẽ khung nhìn buồng lái và khung 2D ngang không lỗi trên mọi tuyến, cả hai chiều, mọi dạng đoạn (kể cả đường đơn của Akita/Yamagata)
+  // vẽ khung nhìn buồng lái không lỗi trên mọi tuyến, cả hai chiều, mọi dạng đoạn (kể cả đường đơn của Akita/Yamagata)
   { global.hhmm = global.hhmm || (s => String(s)); global.CanvasRenderingContext2D = global.CanvasRenderingContext2D || function () { }; global.CanvasRenderingContext2D.prototype.roundRect = global.CanvasRenderingContext2D.prototype.roundRect || function () { };
-    require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js')); require(path.join(DRIVE, 'scene.js'));
+    require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js'));
     const noop = () => { }, ctx = new Proxy({}, { get: (t, k) => k === 'createLinearGradient' || k === 'createRadialGradient' ? () => ({ addColorStop: noop }) : k === 'measureText' ? () => ({ width: 10 }) : (k in t ? t[k] : noop), set: (t, k, v) => { t[k] = v; return true; } });
     let nd = 0, err = '', single = 0; for (const id of Object.keys(LNS)) for (const dir of ['down', 'up']) { const L = LNS[id], rec = L.trains.find(t => t.d === dir && t.s.filter(e => !e[3]).length >= 3), st = rec.s.filter(e => !e[3]).map(e => e[0]), W = Sim.createWorld(id, Sim.makeTrip(id, rec, st[0], st[st.length - 1]), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
-      for (let km = 2; km < W.line.kmEnd; km += 11) { T.x = Sim.sOfKm(km, dir, W.line.kmEnd); T.v = 60; if (L.single && L.single.length && Sim.singleEff(W, T.x + 100) > 0.6) single++; try { global.CabView.draw(ctx, 0, 0, 1920, 620, W, T, { sprites: {}, aud: null, imgs: {} }); global.Scene.draw(ctx, 0, 0, 800, 300, W, T, Sim); nd++; } catch (e) { err = err || id + ' ' + dir + ' km' + km + ': ' + e.message; } } }
-    ok(err === '' && nd > 300 && single > 5, 'vẽ buồng lái và 2D ngang với giá đỡ mới không lỗi (' + nd + ' khung, ' + single + ' ở đường đơn)' + err, err); }
+      for (let km = 2; km < W.line.kmEnd; km += 11) { T.x = Sim.sOfKm(km, dir, W.line.kmEnd); T.v = 60; if (L.single && L.single.length && Sim.singleEff(W, T.x + 100) > 0.6) single++; try { global.CabView.draw(ctx, 0, 0, 1920, 620, W, T, { sprites: {}, aud: null, imgs: {} }); nd++; } catch (e) { err = err || id + ' ' + dir + ' km' + km + ': ' + e.message; } } }
+    ok(err === '' && nd > 300 && single > 5, 'vẽ buồng lái với giá đỡ mới không lỗi (' + nd + ' khung, ' + single + ' ở đường đơn)' + err, err); }
 }
 if (section('33c. Mặt đầu/đuôi tàu ướm theo hình dáng mũi tàu của ảnh nhìn ngang (cabview.js): tính hình dáng mũi, vẽ nhiều lớp')) {
   global.hhmm = global.hhmm || (s => String(s)); require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js'));

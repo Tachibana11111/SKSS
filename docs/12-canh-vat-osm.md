@@ -31,7 +31,7 @@ Dữ liệu © OpenStreetMap contributors, giấy phép ODbL 1.0 (nguồn: Geofa
 
 ## Giá đỡ dây điện trên cao (2026-11-14)
 
-Trước đây mọi nơi dùng một kiểu cổng thép. Nay `Sim.supportAt(L, tuyến, km, {single, wide})` chọn kiểu giá, chất liệu cột và kiểu treo dây; `cabview.js` (`gantry`, `wire`) và `scene.js` (cột ở khung 2D ngang) vẽ theo đó. **Ràng buộc thiết kế (người dùng): không bao giờ đặt cột giữa hai đường** (`Sim.supportColumns` lọc bỏ cột nằm giữa các dây): hai cột ở hai mép ngoài hoặc một cột bên (đường đơn).
+Trước đây mọi nơi dùng một kiểu cổng thép. Nay `Sim.supportAt(L, tuyến, km, {single, wide})` chọn kiểu giá, chất liệu cột và kiểu treo dây; `cabview.js` (`gantry`, `wire`) vẽ theo đó (khung 2D ngang cũ đã bỏ). **Ràng buộc thiết kế (người dùng): không bao giờ đặt cột giữa hai đường** (`Sim.supportColumns` lọc bỏ cột nằm giữa các dây): hai cột ở hai mép ngoài hoặc một cột bên (đường đơn).
 
 | Kiểu | Dùng ở | Nhãn |
 |---|---|---|
@@ -49,7 +49,7 @@ Nguồn đã đọc (chỉ dùng để chọn kiểu, không chép nguyên văn)
 - [電車線のビームたち (miiyarog.com)](https://miiyarog.com/train-line/): blog của người từng làm ở hãng phụ tùng; tên Vトラス, かご, 鋼管ビーム, 逆Vブラケット, 可動ブラケット. Là ý kiến cá nhân, tên do tác giả tự gọi.
 - [電車線設備の解説 (名泗架線工事)](https://meishikasen.co.jp/column/kasenkouji/1549): vai trò của ビーム/ブラケット, 可動ブラケット theo nhiệt độ.
 
-**Chưa có / hạn chế:** chưa có dữ liệu loại giá ở từng đoạn thật; chưa mô phỏng dây cứng trong hầm, cột đôi ở ga, cột đổi kiểu ở đoạn chuyển compound sang simple; `scene.js` chỉ đổi màu/độ dày cột và tay đòn theo kiểu, không vẽ đủ các kiểu; khung cửa sổ hành khách (`winview.js`) vẫn dùng cột OSM.
+**Chưa có / hạn chế:** chưa có dữ liệu loại giá ở từng đoạn thật; chưa mô phỏng dây cứng trong hầm, cột đôi ở ga, cột đổi kiểu ở đoạn chuyển compound sang simple; khung cửa sổ hành khách (`winview.js`) vẫn dùng cột OSM.
 
 ## Mặt đầu/đuôi tàu ướm theo mũi tàu (2026-11-14)
 
@@ -65,7 +65,7 @@ Trước đây tàu ngược chiều, tàu phía trước, tàu vượt và tàu
 
 ## Nền đất: tấm bê tông và hàng rào thép (2026-11-15)
 
-Đoạn đường trên **nền đất** (kết cấu `g`; không phải cầu cạn `v`, cầu `b`, hầm `t`, và không ở vùng ga) có hai thứ mới trong khung buồng lái (`cabview.js`), khung 2D ngang (`scene.js`) và cửa sổ hành khách (`winview.js`); luật nằm ở `Sim.slabAt` / `Sim.fenceAt` (`sim.js`):
+Đoạn đường trên **nền đất** (kết cấu `g`; không phải cầu cạn `v`, cầu `b`, hầm `t`, và không ở vùng ga) có hai thứ mới trong khung buồng lái (`cabview.js`) và cửa sổ hành khách (`winview.js`); luật nằm ở `Sim.slabAt` / `Sim.fenceAt` (`sim.js`):
 
 - **Tấm bê tông nằm dưới lớp đá dăm:** rộng từ chân hàng rào trái tới chân hàng rào phải (đường đôi 14,1 m, đường đơn 9,8 m), màu bê tông xám (RGB ≈ 142,142,136 ban ngày). **Lớp đá dăm có tà vẹt vẽ đè lên không đổi**: dải ±2,1 m quanh tim mỗi đường, màu nền sẫm của đường ray, dùng chung với ga, cầu cạn và cầu. Cầu, hầm và ga không có tấm bê tông.
 - **Hàng rào thép:** cao `FENCE_H` = 3,6 m (ngang tàu), mắt lưới mờ để vẫn thấy cảnh phía sau, cọc mỗi 5 m. **Nằm ngoài cột giá đỡ điện, cách cột `FENCE_OFF` = 1,0 m.** Cột giá đỡ nằm ở `xr + 1,0` = **3,9 m** cách tim đường ngoài cùng (2,9 m là mép hành lang) nên hàng rào ở 4,9 m: đường đôi rộng 14,1 m giữa hai hàng rào, đường đơn 9,8 m. (Bản mockup đầu ghi cột ở 2,9 m là nhầm mép hành lang với vị trí cột.)

@@ -194,7 +194,7 @@ Chi tiết cách vận hành các hệ thống điều hành sẽ ở tài liệ
 
 ## 8. Dữ liệu bố trí ga, kết cấu và đường cong dùng trong game (21/10/2026)
 
-Sinh bởi `tools/build_struct.py` vào `prototype/drive/data-lines.js`; vẽ bởi `layout.js`, `cabview.js`, `scene.js`.
+Sinh bởi `tools/build_struct.py` vào `prototype/drive/data-lines.js`; vẽ bởi `layout.js`, `cabview.js`.
 
 **Bố trí ga [N]** (Wikipedia JP [東海道](https://ja.wikipedia.org/wiki/東海道新幹線), [山陽](https://ja.wikipedia.org/wiki/山陽新幹線), [東北](https://ja.wikipedia.org/wiki/東北新幹線), [九州](https://ja.wikipedia.org/wiki/九州新幹線)): mỗi ga có mã `số sân-số đường-thông qua` (ví dụ Odawara 2-2-1, Gifu-Hashima 2-4-1, Shin-Osaka 5-8-0). Cờ ga tránh (`loop`) nay lấy từ đây (Tokaido–Sanyo–Kyushu 23 ga, Tohoku 10 ga). Kyushu: bài ghi danh sách ga theo nhóm, tôi ghép tên theo thứ tự nên có thể lệch [?].
 - **Kiểu sân ga:** chỉ có nguồn ở vài ga (2面4線 là sân đảo, Mishima 1面2線 sân đảo, Shin-Kobe 2面2線 sân hai bên, Fukui là ga đảo duy nhất ở Hokuriku). Cách xếp đường/sân cụ thể của các ga còn lại (ví dụ 2面3線, 3面6線, 5面8線, sân đảo nằm giữa hai đường cùng chiều hay giữa đường xuống và lên) là **suy luận [I]**, định nghĩa ở `layout.js` (`TOK`).

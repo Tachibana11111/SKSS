@@ -1,11 +1,10 @@
 // Bố cục TOÀN MÀN HÌNH 16:9 (canvas 1920×1080): buồng lái phủ kín làm khung chính; bảng điều khiển ở đáy (cần kéo, đồng hồ phụ, đồng hồ tốc độ, nút + TIMS, cần phanh);
-// điện đàm trên trái; hai khung phụ (bản đồ nhỏ, 2D) trên phải, bấm vào để hoán đổi làm khung chính (Tab xoay vòng); H = chế độ tập trung; O = ẩn/hiện điện đàm; F11 = toàn màn hình.
+// điện đàm trên trái; khung phụ trên phải là bản đồ toàn quốc; camera đuôi tàu và bản đồ nhỏ nằm trong bảng điều khiển, bấm vào để hoán đổi làm khung chính (Tab xoay vòng); H = chế độ tập trung; O = ẩn/hiện điện đàm; F11 = toàn màn hình.
 // File này dùng các hàm/biến toàn cục của index.html (ctx, txt, panel, button, lamp, btns, doAct, W, T, SPR, FR, TP, AUD, radio, wrapText, hhmm, fmt, Tutorial...).
 const ui = { main: 'cab', focus: false, radio: true, cur: 'classic', rear: false };
 const FW = 1920, FH = 1080, TOPH = 58, DASH_Y = 676;
 const MAIN_R = [0, TOPH, FW, DASH_Y - TOPH];
-const SLOT_PIP = [1566, 74, 336, 212];                  // khung phụ góc trên phải
-const SLOT_NAT = [1566, 302, 336, 212];                 // ô bản đồ toàn quốc bám theo tàu ta, ngay dưới khung phụ 2D (cùng kích cỡ)
+const SLOT_NAT = [1566, 74, 336, 212];                  // ô bản đồ toàn quốc bám theo tàu ta (khung phụ góc trên phải)
 const SLOT_DASH = [1160, DASH_Y + 22, 284, 284];          // khung phụ trong bảng điều khiển (trái đồng hồ tốc độ)
 
 // chọn kích thước canvas theo chế độ: lái tàu và hướng dẫn luôn dùng bố cục toàn màn hình 1920×1080 (bố cục cổ điển đã bỏ), chế độ điều độ dùng canvas nhỏ 1780×900
@@ -18,12 +17,12 @@ function syncLayout() {
 }
 function toggleFullscreen() { try { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); } catch (e) { } }
 document.addEventListener('fullscreenchange', () => document.body.classList.toggle('isfull', !!document.fullscreenElement));
-const VIEWS = ['cab', 'top', 'side', 'winL', 'winR'], VNAME = { front: _t('BUỒNG LÁI'), rearcam: _t('GÓC NHÌN ĐUÔI TÀU (B)'), cab: _t('BUỒNG LÁI'), top: _t('BẢN ĐỒ NHỎ'), side: _t('GÓC NHÌN NGANG 2D'), winL: _t('CỬA SỔ TRÁI'), winR: _t('CỬA SỔ PHẢI') };
+const VIEWS = ['cab', 'top', 'winL', 'winR'], VNAME = { front: _t('BUỒNG LÁI'), rearcam: _t('GÓC NHÌN ĐUÔI TÀU (B)'), cab: _t('BUỒNG LÁI'), top: _t('BẢN ĐỒ NHỎ'), winL: _t('CỬA SỔ TRÁI'), winR: _t('CỬA SỔ PHẢI') };
 function cycleMain() { ui.main = VIEWS[(VIEWS.indexOf(ui.main) + 1) % VIEWS.length]; }
 
 // vẽ một góc nhìn vào hình chữ nhật (x,y,w,h)
 function drawViewIn(kind, x, y, w, h, g) {
-  g = g || ctx;
+  g = g || ctx; if (kind === 'side') kind = 'cab';      // bản lưu cũ có thể còn khung 2D đã bỏ: dùng buồng lái
   g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
   if (kind === 'cab' || kind === 'front' || kind === 'rearcam') (kind === 'rearcam' || (kind === 'cab' && ui.rear) ? CabView.drawRear : CabView.draw)(g, x, y, w, h, W, T, { sprites: SPR, fronts: FR, aud: AUD, tile: g !== ctx });      // front / rearcam: ô cố định (không theo phím B)
   else if (kind === 'nat') NatMap.drawMini(g, x, y, w, h, mapW(), mapT(), { focus: foreignOn() ? { W, T } : null, txt: g === ctx ? txt : (t, tx, ty, col, f, al) => { g.fillStyle = col || '#e8eef5'; g.font = f || '14px system-ui'; g.textAlign = al || 'left'; g.fillText(t, tx, ty); }, button });
@@ -35,11 +34,10 @@ function drawViewIn(kind, x, y, w, h, g) {
       if (now - wc.t >= 30 || wc.k !== kind) { const g2 = wc.cv.getContext('2d'); g2.clearRect(0, 0, w, h); WinView.draw(g2, 0, 0, w, h, W, T, { sprites: SPR, aud: AUD }, kind === 'winL' ? 1 : -1); wc.t = now; wc.k = kind; }
       g.drawImage(wc.cv, x, y); }
     else WinView.draw(g, x, y, w, h, W, T, { sprites: SPR, aud: AUD }, kind === 'winL' ? 1 : -1); }
-  else { Scene.draw(g, x, y, w, h, W, T, { sprites: SPR, nextTarget: Sim.nextTarget, aud: AUD, rear: ui.rear }); if (Sim.inTunnel(W, T.x)) { g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x, y, w, h); } }
   g.restore();
 }
 
-// khung phụ (2D, bản đồ nhỏ, bản đồ toàn quốc): vẽ vào canvas đệm và chỉ làm mới ~11 lần/giây rồi dán lại mỗi khung; canvas chạy bằng CPU (không có tăng tốc phần cứng) nên mỗi lần vẽ lại đều tốn thật
+// khung phụ (camera sau, bản đồ nhỏ, bản đồ toàn quốc): vẽ vào canvas đệm và chỉ làm mới ~11 lần/giây rồi dán lại mỗi khung; canvas chạy bằng CPU (không có tăng tốc phần cứng) nên mỗi lần vẽ lại đều tốn thật
 const TILE = {}, WINC = {}; let tileSlots = 1;      // mỗi khung chỉ làm mới tối đa 1 ô phụ nặng (buồng lái, cửa sổ, bản đồ toàn quốc): các ô tới hạn cùng lúc thì lần lượt, không dồn một khung gây khựng
 function tileView(id, kind, x, y, w, h) {
   const now = performance.now(), pw_ = Math.max(1, Math.round(w * QS)), ph_ = Math.max(1, Math.round(h * QS)); let c = TILE[id];
@@ -235,11 +233,9 @@ function drawFull() {
   drawViewIn(ui.main, MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]);
   const others = VIEWS.filter(v => v !== ui.main), tileTag = (t, x, y, w) => { let fs = 14; ctx.font = fs + 'px system-ui'; while (fs > 10 && ctx.measureText(t).width > w - 20) { fs--; ctx.font = fs + 'px system-ui'; } const tw = Math.min(w, Math.ceil(ctx.measureText(t).width) + 20); ctx.fillStyle = 'rgba(0,0,0,.62)'; ctx.fillRect(x, y, tw, 26); txt(t, x + 10, y + 18, '#dcebf8', fs + 'px system-ui'); },      // nhãn hướng dẫn trên các ô phụ: chữ to hơn, rộng theo độ dài chữ của từng ngôn ngữ (thu nhỏ chữ nếu ô quá hẹp)
     slotLabel = (v, x, y, w) => { if (v === 'top' || v === 'winL' || v === 'winR') return; tileTag(VNAME[v] + _t(' · bấm để phóng to'), x, y, w); };
-  // khung phụ góc trên phải: camera đuôi tàu (khi nó đang là khung chính thì hiện lại buồng lái phía trước)
-  const drawPip = () => { const [x, y, w, h] = SLOT_PIP, rOn = ui.main === 'cab' && ui.rear, v = rOn ? 'front' : 'rearcam', pick = () => { if (rOn) ui.rear = false; else { ui.main = 'cab'; ui.rear = true; } }; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); tileView('pip', v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: pick }); };
-  // ô dưới khung 2D: bản đồ toàn quốc bám theo tàu ta; khi bản đồ toàn quốc đang là khung chính thì ô này hiện góc nhìn lái tàu hiện tại; bấm hoặc phím D để hoán đổi
+  // ô góc trên phải: bản đồ toàn quốc bám theo tàu ta; khi bản đồ toàn quốc đang là khung chính thì ô này hiện góc nhìn lái tàu hiện tại; bấm hoặc phím D để hoán đổi
   const drawNatTile = () => { const [x, y, w, h] = SLOT_NAT; panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); tileView('nat', ui.nat ? ui.main : 'nat', x, y, w, h); tileTag((ui.nat ? VNAME[ui.main] : _t('BẢN ĐỒ TOÀN QUỐC')) + _t(' · bấm hoặc D để hoán đổi'), x, y, w); btns.push({ x, y, w, h, fn: () => { ui.nat = !ui.nat; } }); };
-  if (!ui.nat) { drawPip(); drawNatTile(); }
+  if (!ui.nat) drawNatTile();
   // ---- điện đàm
   if (!ui.focus && ui.radio) drawRadioFull(16, 72, 496, 340);
   if (W.mission && !ui.focus && !ui.radio) drawMissionPanel(16, 72, 520, 450);
@@ -267,7 +263,7 @@ function drawFull() {
   const rearOn = ui.main === 'cab' && ui.rear, showView = id => id === 'rear' ? (rearOn ? 'front' : 'rearcam') : ui.main === id ? 'front' : id;      // ô cố định: ô nào đang là khung chính thì hiện lại buồng lái phía trước
   const pickView = id => { if (id === 'rear') { if (rearOn) ui.rear = false; else { ui.main = 'cab'; ui.rear = true; } } else ui.main = ui.main === id ? 'cab' : id; };
   if (!ui.focus) { panel(1152, PY, 300, PH); const [x, y, w, h] = SLOT_DASH, v = showView('top'); tileView('dash', v, x, y, w, h); slotLabel(v, x, y, w); btns.push({ x, y, w, h, fn: () => pickView('top') }); atcButton(1160, PY + 300, 140, 66, blink); panButton(1308, PY + 300, 136, 66);
-    panel(1460, PY, 448, PH); [['side', 1468, PY + 12, 432, 232], ['winL', 1468, PY + 252, 212, 112], ['winR', 1688, PY + 252, 212, 112]].forEach(([id, xx, yy, ww, hh], i) => { const v2 = showView(id); tileView('cam' + i, v2, xx, yy, ww, hh); slotLabel(v2, xx, yy, ww); btns.push({ x: xx, y: yy, w: ww, h: hh, fn: () => pickView(id) }); }); }
+    panel(1460, PY, 448, PH); [['rear', 1468, PY + 12, 432, 232], ['winL', 1468, PY + 252, 212, 112], ['winR', 1688, PY + 252, 212, 112]].forEach(([id, xx, yy, ww, hh], i) => { const v2 = showView(id); tileView('cam' + i, v2, xx, yy, ww, hh); slotLabel(v2, xx, yy, ww); btns.push({ x: xx, y: yy, w: ww, h: hh, fn: () => pickView(id) }); }); }
   // đồng hồ tốc độ (lệch trái), đèn báo xếp dọc bên phải, ba đồng hồ phụ nhỏ ngay dưới
   panel(139 + GX, PY, 410, PH); bigDial(283 + GX, PY + 150, 125, blink);
   { const lampsL = [[_t('ĐÓNG CỬA'), T.door === 'closed', '#4cd68a'], ['ATC', T.atc, '#ff5a5a'], [_t('Tốc độ đều').toUpperCase(), T.cs, '#3ad6e6'], [_t('GẠT MƯA'), T.wiper, '#4aa3ff'], [_t('ĐÈN PHA'), Sim.lampOn(W, T), '#fff2b0'], [_t('MƯA'), W.rainHere, '#2f6fd6']];
@@ -305,7 +301,7 @@ function drawFull() {
   else if (T.finished) { ctx.save(); ctx.translate(400, 60); curOX = 400; curOY = 60; drawEnd(); ctx.restore(); curOX = 0; curOY = 0; }
   if (T.atcOn === false && blink) { ctx.strokeStyle = 'rgba(255,60,60,.85)'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, FW - 8, FH - 8); } else if (T.cut) { ctx.strokeStyle = 'rgba(154,90,214,.8)'; ctx.lineWidth = 8; ctx.strokeRect(4, 4, FW - 8, FH - 8); }
   if (ui.nat) { btns = btns.filter(b => !(b.x + b.w / 2 > MAIN_R[0] && b.x + b.w / 2 < MAIN_R[0] + MAIN_R[2] && b.y + b.h / 2 > MAIN_R[1] && b.y + b.h / 2 < MAIN_R[1] + MAIN_R[3]));      // bản đồ toàn quốc phủ kín khung chính, che cả các lớp phủ và nút bên dưới
-   ctx.save(); ctx.beginPath(); ctx.rect(MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]); ctx.clip(); NatMap.draw(ctx, MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3], mapW(), mapT(), { txt, button, checkin: t => checkinTrain(t), pick: mapPick, enter: cabOK() ? t => enterCab(t) : null, back: foreignOn() ? backHome : null, close: () => { ui.nat = false; }, save: v => { try { Store.setting('natLight', v ? 1 : 0); } catch (e) { } } }); ctx.restore(); drawCabTip(); drawPip(); drawNatTile(); }
+   ctx.save(); ctx.beginPath(); ctx.rect(MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3]); ctx.clip(); NatMap.draw(ctx, MAIN_R[0], MAIN_R[1], MAIN_R[2], MAIN_R[3], mapW(), mapT(), { txt, button, checkin: t => checkinTrain(t), pick: mapPick, enter: cabOK() ? t => enterCab(t) : null, back: foreignOn() ? backHome : null, close: () => { ui.nat = false; }, save: v => { try { Store.setting('natLight', v ? 1 : 0); } catch (e) { } } }); ctx.restore(); drawCabTip(); drawNatTile(); }
   drawTopBar(blink);
 }
 // màn kết thúc rút gọn của hướng dẫn: chỉ kết quả và hai nút (chạy lại bài / bài kế)

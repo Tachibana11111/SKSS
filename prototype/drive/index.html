@@ -299,7 +299,6 @@
 <script src="stations-kana.js"></script>
 <script src="assets/tops.js"></script>
 <script src="winlit.js"></script>
-<script src="scene.js"></script>
 <script src="layout.js"></script>
 <script src="cabview.js"></script>
 <script src="winview.js"></script>
@@ -445,12 +444,13 @@ function boardUpd(key) {      // bảng giờ tàu kiểu ga trên đoàn tàu: 
     + '<div class="br"><span class="bt">' + (tm == null ? '--:--' : hhmm(tm)) + '</span><span class="by">' + parts.map(p => '<div style="color:' + col(p[0]) + '">' + esc(_tn(p[0].t)) + '</div>').join('') + '</span><span class="bn" style="color:' + col(parts[0][0]) + '">' + esc(nums) + '</span><span class="bd">' + dests.map(d => '<div>' + esc(d) + '</div>').join('') + '</span><span class="bm">' + (cars ? _t('{0} toa', cars) : '') + '</span></div>';
   bd.style.display = 'block';
 }
+const SMAP = { N700: 'n700', N700S: 'n700s', 'N700-8': 'n700s8', S800: 's800', E5: 'e5', E7: 'e7', H5: 'h5', E6: 'e6', E8: 'e8', T4: 't4', E926: 'e926', E2: 'e2', 'E5+E6': 'e5', 'E5+E8': 'e5', 'E6+E5': 'e6', 'E8+E5': 'e8', 'N700S-6': 'kamome' };      // mã tàu -> tên dải ảnh xem trước
 function tpUpd() {      // hoạt ảnh đoàn tàu của chuyến đang chọn (mũi quay theo hướng chạy như màn 2D); không có ảnh thì dùng ảnh tĩnh pv_*.png; không có gì thì ẩn
   const box = $('mTrainPrev'), im = $('mTpImg'), L = Lc(), rec = L && L.trains[+$('train').value]; if (!rec) { PV.reset(); $('mBoard').style.display = 'none'; im.style.display = 'none'; return; }
   let key = $('vehSel').value || rec.v; const down = $('dir').value === 'down', fd = !!Sim.lineOf($('line').value).meta.flipDown, hr = down ? !fd : fd, ci = !$('vehSel').value && Sim.coupleOf(rec);
   if (ci && ci.role === 'toh') key = down ? ci.mini + '+E5' : 'E5+' + ci.mini;      // chuyến Tohoku có Komachi/Tsubasa đi cùng: hiện cả đoàn ghép (mini ở phía bắc: đầu khi xuống, đuôi khi lên)
   box.className = hr ? 'hr' : 'hl'; boardUpd(key); PV.show(key, hr); if (box.querySelector('.ptr')) return;
-  const nm0 = Scene.SMAP[rec.v] || 'n700', nm = window.PREVIEW && !PREVIEW[nm0] ? nm0.replace(/8$/, '') : nm0, m = window.PREVIEW && PREVIEW[nm]; if (!m) { im.style.display = 'none'; return; }
+  const nm0 = SMAP[rec.v] || 'n700', nm = window.PREVIEW && !PREVIEW[nm0] ? nm0.replace(/8$/, '') : nm0, m = window.PREVIEW && PREVIEW[nm]; if (!m) { im.style.display = 'none'; return; }
   const k = 1.7 * 13.9 / m.ppm; im.style.height = Math.round(m.h * k) + 'px'; im.style.width = Math.round(m.w * k) + 'px'; im.onerror = () => { im.style.display = 'none'; }; im.src = 'assets/pv_' + nm + '.png' + (m.v ? '?v=' + m.v : ''); im.style.display = 'block';
 }
 function vehUpd() { $('vehBox').style.display = 'none'; $('vehSel').value = ''; }      // ô chọn 'Đoàn' (mặc định / E2-1000) không còn dùng nên luôn ẩn; giữ phần tử để mã khác không lỗi
@@ -515,7 +515,7 @@ function restoreScene(st) {
   if (!st || !st.recipe) return false; const r = Object.assign({}, st.recipe); if (st.carryT0) r.carryT0 = st.carryT0; if (!startDrive(r)) return false;
   W.trip.t0 = st.t0; W.t = st.wt; W.running = st.running; T.x = st.x; T.v = st.vel; T.phase = st.phase; T.k = st.k; T.door = st.door; T.dwellT = st.dwellT; T.started = st.started; T.pan = st.pan; T.atcOn = st.atcOn; T.lamp = st.lamp; T.wiper = st.wiper; T.pw = st.pw; T.bk = st.bk; T.cs = st.cs;
   if (st.termPick) W.termPick = st.termPick; if (st.lead && W.lead) { W.lead.x = st.lead.x; W.lead.v = st.lead.v; W.lead.phase = st.lead.phase; }
-  if (st.view) { ui.main = st.view.main; ui.rear = st.view.rear; ui.focus = st.view.focus; ui.radio = st.view.radio; }
+  if (st.view) { ui.main = VIEWS.includes(st.view.main) ? st.view.main : 'cab'; ui.rear = st.view.rear; ui.focus = st.view.focus; ui.radio = st.view.radio; }
   paused = true; return true;
 }
 window.Snap = { state: sceneState, restore: restoreScene };
@@ -896,12 +896,12 @@ window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({
   const box = document.createElement('div'); box.id = 'perf'; box.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99999;background:rgba(0,0,0,.75);color:#9fe3a8;font:12px/1.35 monospace;padding:6px 8px;border-radius:6px;display:none;white-space:pre;pointer-events:none';
   document.body.appendChild(box); const acc = {}; let on = false, last = performance.now(), frames = 0, worst = 0, tAcc = 0, tShow = performance.now();
   const wrap = (obj, fn, key) => { if (!obj || !obj[fn] || obj[fn].__w) return; const o = obj[fn]; const w = function (...a) { if (!on) return o.apply(this, a); const t0 = performance.now(); try { return o.apply(this, a); } finally { acc[key] = (acc[key] || 0) + performance.now() - t0; } }; w.__w = 1; obj[fn] = w; };
-  wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh')); wrap(window.Scene, 'draw', _t('cảnh 2D'));
+  wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh'));
   const f0 = window.frame; let rafPrev = performance.now();
   const tick = t => { if (on) { const dt = t - rafPrev; frames++; tAcc += dt; worst = Math.max(worst, dt); if (t - tShow > 700) { const fps = 1000 * frames / tAcc; let txt = _t('FPS {0}  (khung chậm nhất {1} ms)\n', fps.toFixed(0), worst.toFixed(0)); for (const k in acc) txt += `${k.padEnd(12)} ${(acc[k] / frames).toFixed(1)} ms
 `; box.textContent = txt; frames = 0; tAcc = 0; worst = 0; for (const k in acc) acc[k] = 0; tShow = t; } } rafPrev = t; requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
-  addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); on = !on; box.style.display = on ? 'block' : 'none'; wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh')); wrap(window.Scene, 'draw', _t('cảnh 2D')); } }, true);
+  addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); on = !on; box.style.display = on ? 'block' : 'none'; wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh')); } }, true);
 })();
 // ---- menu chính / tạm dừng: các ô chọn cũ (cùng ID) được chuyển vào đây; trạng thái game không đổi
 const M = (function () {

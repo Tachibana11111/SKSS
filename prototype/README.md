@@ -22,7 +22,7 @@ Ngôn ngữ chọn ở **Cài đặt** (ô thả xuống có cờ tròn); mặc 
 - Chưa dịch: README, `docs/`, chế độ Điều độ (`dispatch.js`, hiện không có nút vào).
 
 ## Tệp
-- `sim.js` lõi mô phỏng · `scene.js` khung cảnh nhìn ngang · `cabview.js` khung nhìn buồng lái phía trước (giả 3D) · `layout.js` bố trí ga, đường cong, cao độ · `audio.js` âm thanh và phát thanh · `dispatch.js` điều độ · `tutorial.js` · `store.js` hồ sơ · `i18n.js` + `lang-en.js` + `lang-ja.js` đa ngôn ngữ · `index.html` giao diện.
+- `sim.js` lõi mô phỏng · `cabview.js` khung nhìn buồng lái phía trước (giả 3D) · `layout.js` bố trí ga, đường cong, cao độ · `audio.js` âm thanh và phát thanh · `dispatch.js` điều độ · `tutorial.js` · `store.js` hồ sơ · `i18n.js` + `lang-en.js` + `lang-ja.js` đa ngôn ngữ · `index.html` giao diện.
 - `music.js` trình phát nhạc (YouTube IFrame API) · `transfers.js` + `transfers-en.js` tuyến đổi tàu tại ga (tên Nhật/Anh) · `japanmap.js` (47 tỉnh, `tools/build_japan.py`) + `japanmap_nt.js` (đảo Lãnh thổ phương Bắc, `tools/build_kurils.py`).
 - `data-lines.js` dữ liệu tuyến + lịch tàu thật (sinh bằng `tools/build_lines.py`; chỉ dùng cá nhân).
 - `assets/`: ảnh tàu N700 (CC BY-NC-ND, không chia sẻ; xem `assets/NGUON.md`, được `.gitignore` bỏ qua), sinh lại bằng `tools/build_n700_sprite.py`.

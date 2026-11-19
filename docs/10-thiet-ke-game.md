@@ -109,7 +109,7 @@ Số sự kiện mỗi chuyến: Dễ 1 · Thường 2–3 · Khó 4–5 · Chuy
 - Góc nhìn đã chọn D (xem đầu tài liệu). Chưa quyết định có chuyển sang engine 3D thật hay không.
 
 ## 12. Cấu trúc mã
-`sim.js` (lõi: vật lý, ATC, sự kiện, mạng, chấm điểm) · `scene.js` (khung cảnh) · `audio.js` (âm thanh, phát thanh) · `dispatch.js` (điều độ) · `tutorial.js` · `store.js` (hồ sơ) · `data-lines.js` (dữ liệu, sinh tự động) · `index.html` (giao diện, vòng lặp, kết thúc/tổng kết/hồ sơ) · `tests/run.js`.
+`sim.js` (lõi: vật lý, ATC, sự kiện, mạng, chấm điểm) · `audio.js` (âm thanh, phát thanh) · `dispatch.js` (điều độ) · `tutorial.js` · `store.js` (hồ sơ) · `data-lines.js` (dữ liệu, sinh tự động) · `index.html` (giao diện, vòng lặp, kết thúc/tổng kết/hồ sơ) · `tests/run.js`.
 
 ## Bố trí ga, kết cấu và đường cong (cập nhật 21/10/2026)
 - Mỗi ga có bố trí riêng (số đường, sân đảo/hai bên, đường thông qua) thay vì một kiểu cố định; tàu dừng chạy vào đường dừng có sân ga kề, tàu thông qua chạy đường thông qua; các đường toả ra từ đường chính trước ga ~1,1 km. Nguồn và phần suy luận: `docs/02-ha-tang.md` mục 8.
