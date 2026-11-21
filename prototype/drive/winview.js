@@ -64,7 +64,7 @@
     let lane = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) { const o = q.st.ours, w = LAY.trackW(o, sCam, q.gs); if (o.own ? w > 0 : true) lane += LAY.laneOf(o, sCam, q.gs, w, LAY.spread(sCam, q.gs), 1300, 720); }
     for (const q of sts) if (q.st.detour && !(q.stopHere && !q.m.mainStop && !q.st.ours.main)) lane += LAY.detourX(q.st, sCam, q.gs);
     lane += S.runLane(W, sCam);      // ngã rẽ Akita chiều lên: tàu mini chạy làn ngược chiều tới ghi chéo 's' của Morioka
-    if (xbOn && W.lineId === 'hok' && (W.rearOf || W.dir) === 'up') {
+    if (xbOn && W.lineId === 'hok' && W.dir === 'up') {
       if (S.kmOfS(sCam, W.dir, L.kmEnd) >= XBK0) lane = S.xbLanes(W, sCam).B;
       else { const qT = sts.find(q => q.st.code === LAY.TKS && !(q.stopHere && !q.m.mainStop)), o = qT && qT.st.tracks.find(t => t.tks === 5); if (o) lane += LAY.laneOf(o, sCam, qT.gs, LAY.trackW(o, sCam, qT.gs), LAY.spread(sCam, qT.gs), 1300, 720); }
     }

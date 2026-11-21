@@ -70,7 +70,7 @@ Trước đây chỉ có phía người chơi là mini (mục 3b). Từ 24/10/20
 - **Chiều xuống từ Tokyo:** vạch dừng của ta lùi về phía sau một đoạn = chiều dài mini + khe nối 2,5 m; mini ở phía trước lùi vào (46 m thu về 0 trong ~30 s), nối xong ~45 s mới đóng cửa được. Nối xong buồng lái chuyển (màn đen mờ dần) sang đầu đoàn mini, ta được kéo cùng (đoàn E6/E8 + E5, mini ở phía bắc).
 - **Tách ở Morioka/Fukushima (không phải ga cuối của chuyến):** trong thời gian dừng mini ở phía trước tách ra; buồng lái về đầu E5 (lùi một đoạn bằng chiều dài mini + khe nối), mini đứng ở chỗ cũ, sau 25 s tăng tốc 0,7 m/s² tới tối đa 34 m/s chạy trước vào tuyến nhánh (vẽ lệch ngang theo ngã rẽ). Ta bị chặn khởi hành tới khi đuôi mini cách đầu ta ≥ 450 m.
 - **Chiều lên, ở Morioka/Fukushima (kể cả xuất phát từ đó):** mini từ tuyến nhánh chạy vào nối vào ĐUÔI ta (quãng đường 900 m giảm theo bình phương trong ≤ 60 s). **Camera sau tự bật** khi bắt đầu nối và **tự tắt** khi nối xong; buồng lái vẫn ở đầu E5, không đổi.
-- **Chuyến mini:** camera sau (phím B) trong lúc ghép ở Tokyo hoặc tách ở Morioka/Fukushima đặt ở **đuôi của mini** thay vì đuôi cả đoàn, nên thấy đoàn Tohoku tiến vào nối (cách 46 m thu về 2,5 m) hoặc ở lại khi mini đi. Khi nối xong camera nhảy về đuôi cả đoàn (có màn đen ngắn).
+- **Chuyến mini:** cảnh ghép ở Tokyo hoặc tách ở Morioka/Fukushima chỉ xem trên minimap (camera sau đã bỏ ngày 21/11/2026); camera trước vẫn thấy đoàn Tohoku đỗ phía trước khi mini tiến vào nối.
 - **Chưa làm / hạn chế:** mini chỉ nối/tách ở một ga (không có cảnh nối hai tàu nhánh trong cùng chuyến); hình tàu nhánh vẽ bằng ảnh mặt trước (không có đuôi riêng); chưa có tiếng nối toa; số liệu thời gian và tỉ lệ là suy luận.
 
 ## 3c. Ngã rẽ của Joetsu / Hokuriku và tàu chạy chung đường

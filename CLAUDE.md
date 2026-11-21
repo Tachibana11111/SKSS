@@ -37,4 +37,4 @@
 - **Chế độ tự do:** không chọn thì không có tự lái, có điểm/thành tựu; chọn thì có tự lái và ngó buồng lái tàu khác, không ghi điểm.
 - Giao diện không dùng emoji: dùng `icons.js` (`Icons.draw` cho canvas, `data-ic` cho HTML). Tiếng Nhật: tên ga hiển thị kèm hiragana (`_sk`), tìm bằng romaji (`I18N.romKey`).
 - Test chuỗi dịch: mọi `_t('…')` mới phải có bản dịch Anh và Nhật (`lang-en.js`, `lang-ja.js`), không còn khoá thừa.
-- **Camera trước/sau (`cabview.js`):** camera sau dựng "thế giới gương" (`W.dir` bị đảo, `s' = Lm − s`, `rr = true`; hướng thật là `W.rearOf`). Mọi thứ vẽ theo ga/ghi/đường phải test CẢ HAI camera; chi tiết ở `docs/14` §6. Ghi chéo theo ga (`xo`) và cách thêm cho tuyến khác: `docs/14` §8.
+- **Camera sau đã bỏ (21/11/2026):** chỉ còn camera trước; cảnh ghép/tách ở đuôi chỉ xem trên minimap, bản đồ toàn quốc nằm ở ô cũ của camera sau. Các tham số `rev`/`rear` trong `layout.js` (`xovers`, `linksOf`, `station`) là di tích, chưa gỡ. Ghi chéo theo ga (`xo`) và cách thêm cho tuyến khác: `docs/14` §8.

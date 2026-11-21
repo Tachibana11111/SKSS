@@ -22,7 +22,7 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 - **A world that runs on the real timetable:** oncoming trains, trains standing at stations, trains passing through and the train ahead are all real trains from the timetable, shown exactly where the nationwide map puts them; held trains (earthquake, rain or wind, incident) stand completely still. Random incidents happen to **every train**, not just yours.
 - **Weather and random incidents (seeded):** rain (drops collect on the front and rear glass and the wipers clear them), snow, typhoon, earthquakes, fire in a tunnel, ill passengers, a vehicle stuck on a level crossing (only on Yamagata and Akita, the only lines with level crossings), dispatcher orders you must repeat back, extra stops to let a fast train overtake. 4 difficulty levels.
 - **Free mode:** adds an autopilot button and does not score the trip; on the nationwide map click a train and choose "Enter cab" to look into its cab (the Doctor Yellow and East i inspection trains too).
-- **Many viewpoints:** a pseudo-3D cab, a 2D side view, a top-down minimap (north up), left and right passenger windows, and a rear-of-train camera.
+- **Many viewpoints:** a pseudo-3D cab, a top-down minimap (north up), left and right passenger windows.
 - **Scenery:** built from OpenStreetMap data; train fronts and tails follow the real nose profile; many kinds of overhead-wire supports (steel portals, steel-pipe beams, かご beams, side poles with swing brackets, tunnel-ceiling hangers), never with a pole between two tracks; at-grade sections have a concrete slab under the rails and steel fences on both sides (open at the level crossings of Yamagata and Akita).
 - **Nationwide map** ([screenshot](#screenshots)): 47 prefectures with **every island in the data** (including the Northern Territories, drawn dashed), 10 line segments in Wikipedia colours, **every train running on the real timetable** plus weather and earthquakes; click a station or train for details, including the trains ahead and behind and their gaps.
 - **On-board announcements** spoken in Japanese, with subtitles (the Japanese interface shows a single subtitle line): next stop, connecting lines, which side the doors open, delays, incidents. The door side matches the platform track the train is routed to, even at stations with many tracks.
@@ -34,8 +34,7 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 ## Screenshots
 | | |
 |---|---|
-| ![Nationwide map](docs/screenshots/natmap.jpg)<br>Nationwide map: every train on the real timetable | ![2D side view](docs/screenshots/side2d.jpg)<br>2D side view |
-| ![Rear camera](docs/screenshots/rear.jpg)<br>Rear-of-train camera | ![Trip summary](docs/screenshots/score.jpg)<br>Trip summary: score, achievements, advice |
+| ![Nationwide map](docs/screenshots/natmap.jpg)<br>Nationwide map: every train on the real timetable | ![Trip summary](docs/screenshots/score.jpg)<br>Trip summary: score, achievements, advice |
 
 ## Menus
 - **Home screen:** Drive · Learn to drive · Profile · Settings · Asset credits (plus the logos of the five JR companies, each linking to its official site).
@@ -59,7 +58,7 @@ The full table is in **Settings → Shortcuts**.
 | A · G · V · L | ATC (press twice to cut out) · pantograph · wipers · headlights |
 | Y / N · M | repeat back an order, accept / decline · reassuring announcement |
 | K | (inspection train) mark a defect (measuring starts automatically when the train leaves) |
-| Tab · B · O | change view · rear-of-train camera · hide the radio |
+| Tab · O | change view · hide the radio |
 | , · . | left · right passenger window (press again to return to the cab) |
 | J | airliner cabin hum on/off (speaker button, top right: one click opens the volume slider, a second click mutes) |
 | D | swap the nationwide map and the current view (wheel to zoom, drag to pan, click a station or train for details; the locate button returns to your train) |

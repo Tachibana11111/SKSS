@@ -264,7 +264,7 @@
     <div id="mSetC" style="max-width:560px"></div>
     <p class="dim" style="font-size:12px;margin-top:14px">Âm lượng và ù cabin chỉnh bằng nút loa trên thanh biểu tượng khi đang lái.</p>
     <div class="grp" style="margin-top:26px">Phím tắt</div>
-    <div class="kl"><div><span class="kc"><kbd>W</kbd><kbd>S</kbd></span><span>tăng / giảm cần kéo</span></div><div><span class="kc"><kbd>↓</kbd><kbd>↑</kbd></span><span>tăng / giảm phanh</span></div><div><span class="kc"><kbd>Space</kbd></span><span>về N</span></div><div><span class="kc"><kbd>Q</kbd></span><span>phanh khẩn</span></div><div><span class="kc"><kbd>Enter</kbd></span><span>đóng cửa</span></div><div><span class="kc"><kbd>C</kbd></span><span>tốc độ không đổi</span></div><div><span class="kc"><kbd>[</kbd><kbd>]</kbd></span><span>chỉnh tốc độ không đổi ±5 km/h</span></div><div><span class="kc"><kbd>H</kbd></span><span>còi</span></div><div><span class="kc"><kbd>A</kbd><kbd>G</kbd></span><span>ATC / cần vẹt</span></div><div><span class="kc"><kbd>V</kbd><kbd>L</kbd></span><span>gạt mưa / đèn pha</span></div><div><span class="kc"><kbd>Y</kbd><kbd>N</kbd></span><span>nhắc lệnh / từ chối</span></div><div><span class="kc"><kbd>M</kbd></span><span>phát thanh</span></div><div><span class="kc"><kbd>T</kbd></span><span>tự lái</span></div><div><span class="kc"><kbd>Tab</kbd></span><span>đổi khung nhìn</span></div><div><span class="kc"><kbd>,</kbd><kbd>.</kbd></span><span>cửa sổ trái / phải</span></div><div><span class="kc"><kbd>B</kbd></span><span>camera phía sau</span></div><div><span class="kc"><kbd>O</kbd></span><span>ẩn / hiện điện đàm</span></div><div><span class="kc"><kbd>D</kbd></span><span>bản đồ toàn quốc</span></div><div><span class="kc"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></span><span>tốc độ ×1 / ×4 / ×16</span></div><div><span class="kc"><kbd>P</kbd><kbd>Esc</kbd></span><span>tạm dừng (Esc cũng được)</span></div><div><span class="kc"><kbd>R</kbd></span><span>chạy lại</span></div><div><span class="kc"><kbd>F9</kbd></span><span>chụp cảnh</span></div><div><span class="kc"><kbd>F11</kbd></span><span>Toàn màn hình</span></div><div><span class="kc"><kbd>J</kbd></span><span>ù cabin máy bay</span></div><div><span class="kc"><kbd>K</kbd></span><span>bỏ qua bước hướng dẫn</span></div></div>
+    <div class="kl"><div><span class="kc"><kbd>W</kbd><kbd>S</kbd></span><span>tăng / giảm cần kéo</span></div><div><span class="kc"><kbd>↓</kbd><kbd>↑</kbd></span><span>tăng / giảm phanh</span></div><div><span class="kc"><kbd>Space</kbd></span><span>về N</span></div><div><span class="kc"><kbd>Q</kbd></span><span>phanh khẩn</span></div><div><span class="kc"><kbd>Enter</kbd></span><span>đóng cửa</span></div><div><span class="kc"><kbd>C</kbd></span><span>tốc độ không đổi</span></div><div><span class="kc"><kbd>[</kbd><kbd>]</kbd></span><span>chỉnh tốc độ không đổi ±5 km/h</span></div><div><span class="kc"><kbd>H</kbd></span><span>còi</span></div><div><span class="kc"><kbd>A</kbd><kbd>G</kbd></span><span>ATC / cần vẹt</span></div><div><span class="kc"><kbd>V</kbd><kbd>L</kbd></span><span>gạt mưa / đèn pha</span></div><div><span class="kc"><kbd>Y</kbd><kbd>N</kbd></span><span>nhắc lệnh / từ chối</span></div><div><span class="kc"><kbd>M</kbd></span><span>phát thanh</span></div><div><span class="kc"><kbd>T</kbd></span><span>tự lái</span></div><div><span class="kc"><kbd>Tab</kbd></span><span>đổi khung nhìn</span></div><div><span class="kc"><kbd>,</kbd><kbd>.</kbd></span><span>cửa sổ trái / phải</span></div><div><span class="kc"><kbd>O</kbd></span><span>ẩn / hiện điện đàm</span></div><div><span class="kc"><kbd>D</kbd></span><span>bản đồ toàn quốc</span></div><div><span class="kc"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd></span><span>tốc độ ×1 / ×4 / ×16</span></div><div><span class="kc"><kbd>P</kbd><kbd>Esc</kbd></span><span>tạm dừng (Esc cũng được)</span></div><div><span class="kc"><kbd>R</kbd></span><span>chạy lại</span></div><div><span class="kc"><kbd>F9</kbd></span><span>chụp cảnh</span></div><div><span class="kc"><kbd>F11</kbd></span><span>Toàn màn hình</span></div><div><span class="kc"><kbd>J</kbd></span><span>ù cabin máy bay</span></div><div><span class="kc"><kbd>K</kbd></span><span>bỏ qua bước hướng dẫn</span></div></div>
   </div></div>
   <div class="scr" id="m-pause"><div class="box">
     <h2>Tạm dừng</h2>
@@ -508,14 +508,14 @@ function sceneState() {
   const r = Object.assign({}, recipe || {}); delete r.rec, delete r.carryT0; const L = W.lead, st = {
     v: 1, build: window.CAB_BUILD || '', at: new Date().toISOString(), recipe: r, carryT0: recipe && recipe.carryT0, t0: W.trip.t0, wt: +W.t.toFixed(2), x: +T.x.toFixed(2), vel: +T.v.toFixed(3), phase: T.phase, k: T.k, door: T.door, dwellT: +T.dwellT.toFixed(1),
     running: W.running, started: T.started, termPick: W.termPick || null, pan: T.pan, atcOn: T.atcOn, lamp: T.lamp, wiper: T.wiper, pw: T.pw, bk: T.bk, cs: T.cs, label: W.trip.label, dir: W.dir, station: (T.M[Math.min(T.k, T.M.length - 1)] || {}).name,
-    lead: L ? { x: +L.x.toFixed(2), v: +L.v.toFixed(3), phase: L.phase } : null, view: { main: ui.main, rear: ui.rear, focus: ui.focus, radio: ui.radio, scenery: window.SCENERY, mode }
+    lead: L ? { x: +L.x.toFixed(2), v: +L.v.toFixed(3), phase: L.phase } : null, view: { main: ui.main, focus: ui.focus, radio: ui.radio, scenery: window.SCENERY, mode }
   }; return st;
 }
 function restoreScene(st) {
   if (!st || !st.recipe) return false; const r = Object.assign({}, st.recipe); if (st.carryT0) r.carryT0 = st.carryT0; if (!startDrive(r)) return false;
   W.trip.t0 = st.t0; W.t = st.wt; W.running = st.running; T.x = st.x; T.v = st.vel; T.phase = st.phase; T.k = st.k; T.door = st.door; T.dwellT = st.dwellT; T.started = st.started; T.pan = st.pan; T.atcOn = st.atcOn; T.lamp = st.lamp; T.wiper = st.wiper; T.pw = st.pw; T.bk = st.bk; T.cs = st.cs;
   if (st.termPick) W.termPick = st.termPick; if (st.lead && W.lead) { W.lead.x = st.lead.x; W.lead.v = st.lead.v; W.lead.phase = st.lead.phase; }
-  if (st.view) { ui.main = VIEWS.includes(st.view.main) ? st.view.main : 'cab'; ui.rear = st.view.rear; ui.focus = st.view.focus; ui.radio = st.view.radio; }
+  if (st.view) { ui.main = VIEWS.includes(st.view.main) ? st.view.main : 'cab'; ui.focus = st.view.focus; ui.radio = st.view.radio; }
   paused = true; return true;
 }
 window.Snap = { state: sceneState, restore: restoreScene };
@@ -555,7 +555,7 @@ async function checkinTrain(t) {
     else kmShow = Sim.kmOfS(Tm.x, Wm.dir, Wm.line.kmEnd);
     const Ln = LINES[line], nearI = Ln.stations.reduce((b, s, i) => Math.abs(s.km - kmShow) < Math.abs(Ln.stations[b].km - kmShow) ? i : b, 0), nd = Math.abs(Ln.stations[nearI].km - kmShow);
     status = (t.held ? _t('đang dừng vì sự cố · ') : kmh < 1 ? _t('đang đứng · ') : Math.round(kmh) + ' km/h · ') + (nd < 0.1 ? _t('tại ga ') + _s(Ln.stations[nearI]) : _t('gần ga ') + _s(Ln.stations[nearI]) + _t(' (cách ') + nd.toFixed(1) + ' km)') + ' · ' + hhmm(now % 86400);
-    for (let k = 0; k < 7 && ckOpen; k++) { Wc.rear = false; g.clearRect(0, 0, 1920, 618); CabView.draw(g, 0, 0, 1920, 618, Wc, Tc, { sprites: SPR, fronts: FR, aud: AUD }); await new Promise(r => setTimeout(r, k < 2 ? 80 : 160)); }      // vài lần để các tấm cảnh vật tải xong
+    for (let k = 0; k < 7 && ckOpen; k++) { g.clearRect(0, 0, 1920, 618); CabView.draw(g, 0, 0, 1920, 618, Wc, Tc, { sprites: SPR, fronts: FR, aud: AUD }); await new Promise(r => setTimeout(r, k < 2 ? 80 : 160)); }      // vài lần để các tấm cảnh vật tải xong
     if (ckOpen) { $('ckTitle').innerHTML = Icons.svg('pin', 18) + ' ' + escHtml(_t('Check-in · {0} · {1}', t.label, _ln(Sim.lineOf(line)))); $('ckCap').textContent = status; }
   } catch (e) { $('ckTitle').textContent = _t('Không dựng được cảnh cho đoàn này'); $('ckCap').textContent = String(e.message || e); }
 }
@@ -653,7 +653,7 @@ function startLesson(i) {
   M.hide(); const c = Tutorial.cfg(i); if (!c) { alert(_t('Không tìm thấy chuyến phù hợp cho bài này.')); return; }
   tutorialRun = true; tutLessonActive = true; setMode('tutorial');
   startDrive({ lineId: c.lineId, rec: c.rec, from: c.from, to: c.to, diff: c.diff, weather: c.weather, seed: c.seed, lead: c.lead, events: false });
-  tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; $('driveOpts').style.display = 'none'; ui.radio = c.radio; ui.focus = false; ui.rear = false;
+  tutorialRun = true; tutLessonActive = true; $('rowDrive2').style.display = 'none'; $('driveOpts').style.display = 'none'; ui.radio = c.radio; ui.focus = false;
 }
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));
 $('start').onclick = async () => { if (PV.busy()) { PV.skip(); return; } tutorialRun = false; realNote = ''; if (realOn && !(await realPrepare())) return; if (startDrive()) { await PV.go(); M.hide(); paused = false; if (realNote) W.say('warn', realNote); } };
@@ -684,7 +684,6 @@ addEventListener('keydown', e => {
   if (k === 'Tab' && ui.cur === 'full') { cycleMain(); e.preventDefault(); return; }
   if ((k === ',' || k === '.') && ui.cur === 'full') { const v = k === ',' ? 'winL' : 'winR'; ui.main = ui.main === v ? 'cab' : v; e.preventDefault(); return; }
   if ((k === 'o' || k === 'O') && ui.cur === 'full') { ui.radio = !ui.radio; return; }
-  if (k === 'b' || k === 'B') { ui.rear = !ui.rear; return; }
   if (k === 'F11') { toggleFullscreen(); e.preventDefault(); return; }
   if (k === 'F9') { takeSnapshot(); e.preventDefault(); return; }
   if (k === 'r' || k === 'R') { if (replaying) { replaying = null; } if (tutLessonActive) { startLesson(Tutorial.S.lesson); } else startDrive(recipe); e.preventDefault(); return; }
@@ -745,7 +744,6 @@ function frame(now) {
       if (W.newMsg) { W.newMsg = false; if (scale > 1 && !replaying) { scale = 1; break; } }
       if (T.finished) break;
     }
-    if (W.camReq !== undefined && W.camSeen !== W.camReq) { W.camSeen = W.camReq; if (!replaying) ui.rear = W.camReq.rear; }      // cảnh nối ở đuôi: tự bật camera sau, nối xong tự tắt
     if (tutLessonActive) Tutorial.update(W, T, now);
     if (HOME && T.finished) { const lbl = W.trip.label; backHome(); W.say('info', _t('{0} đã tới ga cuối: quay về tàu của bạn.', lbl)); }
     if (T.finished && !finalized) finalize();
@@ -896,12 +894,12 @@ window.onDispatchEnd = D => { const r = D.result, o = D.scenario; Store.record({
   const box = document.createElement('div'); box.id = 'perf'; box.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99999;background:rgba(0,0,0,.75);color:#9fe3a8;font:12px/1.35 monospace;padding:6px 8px;border-radius:6px;display:none;white-space:pre;pointer-events:none';
   document.body.appendChild(box); const acc = {}; let on = false, last = performance.now(), frames = 0, worst = 0, tAcc = 0, tShow = performance.now();
   const wrap = (obj, fn, key) => { if (!obj || !obj[fn] || obj[fn].__w) return; const o = obj[fn]; const w = function (...a) { if (!on) return o.apply(this, a); const t0 = performance.now(); try { return o.apply(this, a); } finally { acc[key] = (acc[key] || 0) + performance.now() - t0; } }; w.__w = 1; obj[fn] = w; };
-  wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh'));
+  wrap(window.CabView, 'draw', 'cab'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh'));
   const f0 = window.frame; let rafPrev = performance.now();
   const tick = t => { if (on) { const dt = t - rafPrev; frames++; tAcc += dt; worst = Math.max(worst, dt); if (t - tShow > 700) { const fps = 1000 * frames / tAcc; let txt = _t('FPS {0}  (khung chậm nhất {1} ms)\n', fps.toFixed(0), worst.toFixed(0)); for (const k in acc) txt += `${k.padEnd(12)} ${(acc[k] / frames).toFixed(1)} ms
 `; box.textContent = txt; frames = 0; tAcc = 0; worst = 0; for (const k in acc) acc[k] = 0; tShow = t; } } rafPrev = t; requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
-  addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); on = !on; box.style.display = on ? 'block' : 'none'; wrap(window.CabView, 'draw', 'cab'); wrap(window.CabView, 'drawRear', 'cab-sau'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh')); } }, true);
+  addEventListener('keydown', e => { if (e.key === 'F3') { e.preventDefault(); on = !on; box.style.display = on ? 'block' : 'none'; wrap(window.CabView, 'draw', 'cab'); wrap(window.TopView, 'draw', _t('bản đồ nhỏ')); wrap(window.Strips, 'draw', _t('dải tranh')); } }, true);
 })();
 // ---- menu chính / tạm dừng: các ô chọn cũ (cùng ID) được chuyển vào đây; trạng thái game không đổi
 const M = (function () {

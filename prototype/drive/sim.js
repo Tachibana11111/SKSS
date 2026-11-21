@@ -402,7 +402,7 @@
     const c = T.coup; if (!c) return; const W = T.W;
     if (c.kind === 'join0') {              // ghép ở Tokyo: đoàn Tohoku ở phía sau chạy tới nối vào
       T.gapX = Math.max(0, 46 * (1 - T.dwellT / 30)); if (T.dwellT < c.dur) return;
-      T.gapX = 0; T.coup = null; if (!T.isLead) W.rearSwitchAt = W.t; if (!T.isLead) W.say('stop', _t('Ghép xong ở Tokyo: đoàn {0} ({1} toa, {2} m). Được khởi hành.', T.veh.name, T.veh.cars, Math.round(T.veh.len))); return;
+      T.gapX = 0; T.coup = null; if (!T.isLead) W.say('stop', _t('Ghép xong ở Tokyo: đoàn {0} ({1} toa, {2} m). Được khởi hành.', T.veh.name, T.veh.cars, Math.round(T.veh.len))); return;
     }
     if (c.kind === 'pjoin0') {            // ta (E5) ở sân ga Tokyo: tàu nhánh lùi từ phía trước vào nối vào đầu ta
       const mp = W.parked.find(p => p.cc); if (mp) mp.front = T.M[0].sOrig + 46 * Math.max(0, 1 - T.dwellT / 30);
@@ -413,7 +413,7 @@
     if (c.kind === 'pjoin') {             // chiều lên: tàu nhánh tiến vào nối vào đuôi ta (quãng đường giảm dần theo hàm bình phương)
       const el = c.byDwell ? T.dwellT : W.t - c.tA, mp = W.parked.find(p => p.cc), u = Math.min(1, el / c.aDur); if (mp) mp.front = T.x - T.veh.len - COUPLE_GAP - c.D0 * (1 - u) * (1 - u);
       if (c.byDwell ? T.dwellT < c.dur : W.t < c.end) return;
-      T.veh = c.to; T.coup = null; W.parked = W.parked.filter(p => !p.cc); W.camReq = { rear: false };
+      T.veh = c.to; T.coup = null; W.parked = W.parked.filter(p => !p.cc);
       if (!T.isLead) W.say('stop', _t('Ghép xong: {0} ({1} toa, {2} m). Được khởi hành.', T.veh.name, T.veh.cars, Math.round(T.veh.len))); return;
     }
     if (W.t < c.end) return;
@@ -495,18 +495,11 @@
       W.say('info', _t('Tách toa: {0} ở phía trước tách ra và chạy trước vào tuyến {1}. Chờ tách xong (~{2} s), rồi đợi nó rời ga mới được khởi hành.', mv.name, line, Math.round(dur)));
     } else {
       const D0 = 900, aDur = Math.min(60, dur - 15), st = !W.running && !T.started; T.coup = st ? { byDwell: true, dur, kind: 'pjoin', to: VEH[cc.comp], aDur, D0 } : { end: W.t + dur, kind: 'pjoin', to: VEH[cc.comp], tA: W.t, aDur, D0 };
-      W.parked.push({ key: cc.mini, front: T.x - T.veh.len - COUPLE_GAP - D0, kind: 'left', jn: cc.jn, cc: 1, own: true }); W.camReq = { rear: true };
-      W.say('info', _t('Ghép toa: {0} từ tuyến {1} chạy vào nối vào ĐUÔI đoàn của ta. Nhìn camera sau (đã tự bật). Chờ nối xong (~{2} s), đừng khởi hành.', mv.name, line, Math.round(dur)));
+      W.parked.push({ key: cc.mini, front: T.x - T.veh.len - COUPLE_GAP - D0, kind: 'left', jn: cc.jn, cc: 1, own: true });
+      W.say('info', _t('Ghép toa: {0} từ tuyến {1} chạy vào nối vào ĐUÔI đoàn của ta. Xem trên bản đồ nhỏ. Chờ nối xong (~{2} s), đừng khởi hành.', mv.name, line, Math.round(dur)));
     }
   }
   // chuyển động của tàu nhánh (AI): tàu tách chạy đi trước; tàu ghép tiến vào đuôi
-  // camera sau của chuyến mini đang ghép/tách: đặt ở đuôi phần của ta (đuôi mini) để thấy đoàn Tohoku tiến vào nối hoặc tách ra; trả về null nếu dùng đuôi cả đoàn
-  function rearVis(T) {
-    const c = T.coup; if (!c || !T.veh.parts || T.isLead) return null; const ps = T.veh.parts;
-    if (c.kind === 'join0') return { key: ps[ps.length - 1], gap: COUPLE_GAP + T.gapX, anchorLen: VEH[ps[0]].len };
-    if (c.kind === 'split') return { key: ps[ps.length - 1], gap: COUPLE_GAP, anchorLen: VEH[ps[0]].len };
-    return null;
-  }
   function moveParked(W, dt) {
     for (const p of W.parked) {
       if (!p.mv) continue; const m = p.mv; if (W.t < m.t0 + m.delay) continue; m.v = Math.max(0, Math.min(m.vmax, m.v + m.a * dt)); p.front += m.v * dt; if (p.stopAt !== undefined && p.front >= p.stopAt) { p.front = p.stopAt; m.v = 0; m.a = 0; }
@@ -939,13 +932,13 @@
   }
   // các làn của đường nhánh/tuyến kia ở một ngã rẽ, tính theo độ lệch so với trunkOff: mặc định CẶP đường (làn của ta và làn ngược chiều); ngã rẽ có cờ one (nhánh Akita, hình tohoku/020_10, tazawako/010_05)
   // chỉ MỘT đường nhánh gắn vào đường chính XUỐNG: chiều xuống nó là đường nối từ làn của ta, chiều lên (và camera sau của chiều xuống) nó nối từ làn ngược chiều (camera sau: làn ngược chiều nằm bên đối diện)
-  function branchDeltas(W, jc) { const ADJ = root.Layout.ADJ, rr = !!W.rearOf, rd = W.rearOf || W.dir; if (jc && jc.run && !jc.branch && rd === 'up') return [rr ? ADJ : -ADJ, 0]; if (!jc || !jc.one || !jc.branch) return [0, rr ? -ADJ : ADJ]; return rd === 'down' ? [0] : [rr ? -ADJ : ADJ]; }      // ngã rẽ cờ run, chiều LÊN: hai đường chính Tohoku lệch so với đường mini: đường chính xuống (làn ngược chiều của tàu mini) trùng đường mini ở ngã rẽ, đường chính lên nằm bên trái nó
+  function branchDeltas(W, jc) { const ADJ = root.Layout.ADJ, rd = W.dir; if (jc && jc.run && !jc.branch && rd === 'up') return [-ADJ, 0]; if (!jc || !jc.one || !jc.branch) return [0, ADJ]; return rd === 'down' ? [0] : [ADJ]; }      // ngã rẽ cờ run, chiều LÊN: hai đường chính Tohoku lệch so với đường mini: đường chính xuống (làn ngược chiều của tàu mini) trùng đường mini ở ngã rẽ, đường chính lên nằm bên trái nó
   // ---- Ngã rẽ Akita, chiều LÊN (cờ run, hình tohoku/020_10 và tazawako/010_05): tàu mini nhập vào đường chính XUỐNG (làn ngược chiều của nó), chạy làn đó tới ghi chéo đơn 's' của Morioka rồi sang đường chính lên (làn của nó) trước ga
   // Khung hình: đường chính Tohoku cố định (khung 'T': đường chính lên X = 0, đường chính xuống X = ADJ); camera ở làn runLane(s) (ADJ trước ghi chéo, về 0 sau ghi chéo); vật thể nằm TRƯỚC ngã rẽ (theo km) thuộc khung đường mini nên lệch thêm runStep (ADJ) vì ở ngã rẽ đường mini trùng đường chính xuống
   const runCache = new Map();
   function runCfg(W) {
-    const js = W.line.meta.junctions; if (!js) return null; const q = js.findIndex(j => j.run); if (q < 0) return null; const rr = !!W.rearOf, rd = W.rearOf || W.dir; if (rd !== 'up') return null;
-    const key = W.lineId + W.dir + (rr ? 'r' : ''); let c = runCache.get(key); if (!c) { const jq = js[q]; c = { q, rr, km: jq.km, k0: jq.run.km0, k1: jq.run.km1, sg: rr ? -1 : 1, sj: sOfKm(jq.km, W.dir, W.line.kmEnd) }; runCache.set(key, c); } return c;
+    const js = W.line.meta.junctions; if (!js) return null; const q = js.findIndex(j => j.run); if (q < 0) return null; if (W.dir !== 'up') return null;
+    const key = W.lineId + W.dir; let c = runCache.get(key); if (!c) { const jq = js[q]; c = { q, km: jq.km, k0: jq.run.km0, k1: jq.run.km1, sg: 1, sj: sOfKm(jq.km, W.dir, W.line.kmEnd) }; runCache.set(key, c); } return c;
   }
   const runW = (c, km) => { if (km >= c.k0) return 1; if (km <= c.k1) return 0; const t = (c.k0 - km) / (c.k0 - c.k1); return 1 - t * t * (3 - 2 * t); };
   function runLane(W, s) { const c = runCfg(W); return c ? c.sg * root.Layout.ADJ * runW(c, kmOfS(s, W.dir, W.line.kmEnd)) : 0; }
@@ -963,7 +956,7 @@
   const XB_ZB1 = 360, XB_X0 = -8.6, XB_PAIR = 4.3, ease01 = u => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
   function xbOf(W) { const js = W.line.meta.junctions; if (!js) return -1; return js.findIndex(j => j.xb); }
   function xbLanes(W, s) {      // null nếu tuyến không có nút giao kiểu này
-    const q = xbOf(W); if (q < 0) return null; const L = W.line, jq = L.meta.junctions[q], sj = sOfKm(jq.km, W.dir, L.kmEnd), down = W.dir === 'down', u = down ? s - sj : sj - s, sg = down ? 1 : -1, real = W.rearOf || W.dir;
+    const q = xbOf(W); if (q < 0) return null; const L = W.line, jq = L.meta.junctions[q], sj = sOfKm(jq.km, W.dir, L.kmEnd), down = W.dir === 'down', u = down ? s - sj : sj - s, sg = down ? 1 : -1, real = W.dir;
     const xa = uu => uu <= 0 ? 0 : Math.abs(trunkOff(W, down ? sj + uu : sj - uu, q));      // Hokuriku xuống rời đường chính xuống Joetsu theo cung ngã rẽ
     const xb = uu => uu <= 0 ? XB_X0 : xa(uu) - (-XB_X0 + (XB_PAIR + XB_X0) * ease01(uu / XB_ZB1));      // đường lên bám theo đường xuống: khoảng cách giữa hai đường thu từ 8,6 m về 4,3 m (không bao giờ nhỏ hơn 4,3 m)
     const M0 = (W.lineId === 'hok' ? xa(u) : 0) - (real === 'up' ? XB_PAIR : 0);      // đường chính của chiều thật trong hệ vật lý (tuyến Hokuriku đi theo đường xuống Hokuriku sau ngã rẽ)
@@ -1598,7 +1591,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { trunkLanes, runJn, runCfg, runLane, runStep, leadDelta, runBefore, branchDeltas, branchLane0, ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { trunkLanes, runJn, runCfg, runLane, runStep, leadDelta, runBefore, branchDeltas, branchLane0, ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

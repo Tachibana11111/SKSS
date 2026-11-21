@@ -22,7 +22,7 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 - **Thế giới chạy theo lịch thật:** tàu ngược chiều, tàu đỗ ở ga, tàu thông qua và tàu đi trước đều là tàu thật trong danh mục lịch, hiện đúng vị trí như bản đồ toàn quốc; tàu bị giữ (động đất, mưa gió, sự cố) đứng yên hẳn. Sự cố ngẫu nhiên xảy ra với **mọi tàu**, không riêng tàu bạn lái.
 - **Thời tiết và sự cố ngẫu nhiên (theo seed):** mưa (hạt mưa đọng trên kính trước và sau, gạt mưa lau đi), tuyết, bão, động đất, cháy trong hầm, hành khách bệnh, xe kẹt ở đường ngang (chỉ có ở Yamagata và Akita, hai tuyến duy nhất có đường ngang), lệnh điều độ phải nhắc lại, dừng nhường tàu nhanh. 4 độ khó.
 - **Chế độ tự do:** có nút tự lái, chuyến không tính điểm; trên bản đồ toàn quốc bấm một tàu rồi chọn "Vào buồng lái" để ngó buồng lái tàu đó (kể cả tàu kiểm tra Doctor Yellow, East i).
-- **Nhiều góc nhìn:** buồng lái 3D giả, nhìn ngang 2D, bản đồ nhỏ nhìn từ trên (bắc ở trên), cửa sổ hành khách trái/phải, camera cuối đoàn.
+- **Nhiều góc nhìn:** buồng lái 3D giả, bản đồ nhỏ nhìn từ trên (bắc ở trên), cửa sổ hành khách trái/phải.
 - **Cảnh vật:** dựng từ dữ liệu OpenStreetMap; mặt đầu và đuôi tàu nghiêng theo hình dáng mũi tàu thật; giá đỡ dây điện nhiều kiểu (cổng thép, xà ống thép, xà かご, cột bên có tay đòn xoay, giá treo trần hầm), không đặt cột giữa hai đường; đoạn nền đất có tấm bê tông dưới ray và hàng rào thép hai bên (hở ở đường ngang của Yamagata, Akita).
 - **Bản đồ toàn quốc** ([ảnh](#ảnh-chụp)): 47 tỉnh với **mọi đảo có trong dữ liệu** (kể cả các đảo Lãnh thổ phương Bắc vẽ nét đứt), 10 đoạn tuyến theo màu Wikipedia, **mọi tàu chạy theo lịch thật** cùng thời tiết và động đất; bấm ga hoặc tàu để xem chi tiết, kể cả tàu phía trước/sau và khoảng cách.
 - **Phát thanh trên tàu bằng giọng tiếng Nhật**, kèm phụ đề (giao diện tiếng Nhật chỉ có một dòng phụ đề), báo ga kế tiếp, tuyến đổi tàu, cửa mở bên nào, trễ giờ, sự cố. Cửa mở đúng phía theo đường sân ga tàu được xếp vào, kể cả ga có nhiều đường.
@@ -34,8 +34,7 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 ## Ảnh chụp
 | | |
 |---|---|
-| ![Bản đồ toàn quốc](docs/screenshots/natmap.jpg)<br>Bản đồ toàn quốc: mọi tàu theo lịch thật | ![Góc nhìn ngang 2D](docs/screenshots/side2d.jpg)<br>Góc nhìn ngang 2D |
-| ![Camera cuối đoàn](docs/screenshots/rear.jpg)<br>Camera cuối đoàn | ![Tổng kết chuyến](docs/screenshots/score.jpg)<br>Tổng kết chuyến: điểm, thành tích, lời khuyên |
+| ![Bản đồ toàn quốc](docs/screenshots/natmap.jpg)<br>Bản đồ toàn quốc: mọi tàu theo lịch thật | ![Tổng kết chuyến](docs/screenshots/score.jpg)<br>Tổng kết chuyến: điểm, thành tích, lời khuyên |
 
 ## Menu
 - **Màn hình chủ:** Lái tàu · Học lái · Hồ sơ · Cài đặt · Ghi công tài nguyên (và logo 5 công ty JR, bấm vào mở trang chính thức).
@@ -59,7 +58,7 @@ Bảng đầy đủ nằm trong **Cài đặt → Phím tắt**.
 | A · G · V · L | ATC (bấm 2 lần để cắt) · cần vẹt · gạt mưa · đèn pha |
 | Y / N · M | nhắc lại lệnh, chấp nhận / từ chối · phát thanh trấn an |
 | K | (tàu kiểm tra) đánh dấu lỗi (đo tự chạy từ lúc rời ga) |
-| Tab · B · O | đổi khung nhìn · camera cuối đoàn · ẩn điện đàm |
+| Tab · O | đổi khung nhìn · ẩn điện đàm |
 | , · . | cửa sổ hành khách bên trái · bên phải (bấm lại để về buồng lái) |
 | J | bật/tắt ù cabin máy bay (nút loa góc trên phải: bấm 1 lần xổ thanh âm lượng, bấm lần 2 tắt tiếng) |
 | D | hoán đổi nhanh giữa bản đồ toàn quốc và góc nhìn đang dùng (con lăn zoom, kéo di chuyển, bấm ga/tàu xem chi tiết; nút định vị về tàu ta) |

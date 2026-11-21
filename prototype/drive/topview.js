@@ -21,7 +21,7 @@
     const len = T.veh.len, zOff = -len / 2;      // tâm đoàn tàu (zOff so với đầu tàu) ở giữa khung
     const km = z => S.kmOfS(T.x + z, W.dir, L.kmEnd);
     const heading = LAY.bearingAt(L, S, W.dir, T.x);
-    const XBK0 = 105.9, xbQ = S.xbOf(W), xbOn = xbQ >= 0, xbL = z => S.xbLanes(W, T.x + z), xbReal = W.rearOf || W.dir;
+    const XBK0 = 105.9, xbQ = S.xbOf(W), xbOn = xbQ >= 0, xbL = z => S.xbLanes(W, T.x + z), xbReal = W.dir;
     const xbZJ = xbOn ? S.sOfKm(L.meta.junctions[xbQ].km, W.dir, L.kmEnd) - T.x : 0, xbZC = xbOn ? S.sOfKm(XBK0, W.dir, L.kmEnd) - T.x : 0;
     const sts = []; M.forEach((m0, i) => { const gs = m0.sOrig !== undefined ? m0.sOrig : m0.s, m = gs === m0.s ? m0 : Object.assign({}, m0, { s: gs }), d = gs - T.x, dm = m0.s - T.x; if (d < -(xbOn && L.stations[m0.i].lay === LAY.TKS ? 3300 : 1300) || d > 1900) return; const key = W.lineId + ':' + m.i + ':' + W.dir + (W.termPick && W.termPick[m.i] !== undefined ? ':t' + W.termPick[m.i] : ''); const st = cache[key] || (cache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, LAY.pickOf(L.stations[m.i], m.i, W))); sts.push({ m, i, d, dm, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')) }); });
     const xbHokUp = xbOn && W.lineId === 'hok' && xbReal === 'up';
@@ -63,7 +63,7 @@
     if (xbOn) low.push([z => xbL(z).B, W.dir === 'down' ? Math.max(zLo, xbZC) : zLo, W.dir === 'down' ? zHi : Math.min(zHi, xbZC)]);      // đường nhánh dưới kéo dài = Hokuriku lên
     { const cutsM = [], cutsO = []; for (const q of sts) { const dt = q.st.detour, od = q.st.oppDet; if (dt) cutsM.push([q.d + dt.z0, q.d + dt.zEnd]); if (od) cutsO.push([q.d + od.zA, q.d + od.zB]); }      // Sendai: đoạn đường chính giữa chỗ rẽ vào đường ngoài và chỗ trả về không có ray
       if (cutsM.length || cutsO.length) { const cutOf = (m0, cuts) => { let segs = [[m0[1], m0[2]]]; for (const [ca, cb] of cuts) segs = segs.flatMap(([x, y]) => (cb <= x || ca >= y) ? [[x, y]] : [[x, Math.min(y, ca)], [Math.max(x, cb), y]].filter(g => g[1] > g[0])); return segs.map(([x, y]) => [m0[0], x, y]); }; const m0 = tracks[0], o0 = tracks[1]; tracks.splice(0, 2, ...cutOf(m0, cutsM), ...cutOf(o0, cutsO)); } }
-    { const rc = S.runCfg(W); if (rc) { const zj = rc.sj - T.x, pre = (a, b) => rc.rr ? [Math.max(a, zj + 0.5), b] : [a, Math.min(b, zj - 0.5)], post = (a, b) => rc.rr ? [a, Math.min(b, zj)] : [Math.max(a, zj), b], np = [];      // ngã rẽ Akita chiều lên (như cabview)
+    { const rc = S.runCfg(W); if (rc) { const zj = rc.sj - T.x, pre = (a, b) => [a, Math.min(b, zj - 0.5)], post = (a, b) => [Math.max(a, zj), b], np = [];      // ngã rẽ Akita chiều lên (như cabview)
       for (const p of tracks) { if (p[0] === ours0) { for (const f of [pre, post]) { const [a, b] = f(p[1], p[2]); if (b > a) np.push([p[0], a, b]); } } else np.push(p); } tracks.length = 0; tracks.push(...np); } }
     { const rj = S.runJn(W); if (rj) { const zj = rj.sj - T.x, np = [];      // ngã rẽ Akita: làn ngược chiều của đường mini chỉ có tới ngã rẽ (như cabview)
       for (const p of tracks) { if (p[0] === oppAt) { const [a, b] = W.dir === 'down' ? [p[1], Math.min(p[2], zj)] : [Math.max(p[1], zj), p[2]]; if (b > a) np.push([p[0], a, b]); } else np.push(p); } tracks.length = 0; tracks.push(...np); } }
