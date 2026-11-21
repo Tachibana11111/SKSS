@@ -135,3 +135,10 @@ Soak test là công cụ kiểm tra bất biến, không phải nguồn dữ li�
 
 - **[D]** Hai hình `joetsu/010_01` (Kumagaya, cùng hình với Omiya) và `010_02` (Honjo-Waseda) ghép khớp ở chỗ nối hai đường chính (`kh_graph.json`, `kh_layout.html`). Token Kumagaya `PdduuPu` = `2-3-1`, Honjo-Waseda `PdduuP` = `2-2-1`: không đổi mã. Honjo-Waseda không có ghi chéo; Kumagaya có ghi `s` xa (~361 m) và `r` gần (~240 m) trước ga, một ghi `s` (~239 m) sau ga.
 - **[I]** Ga có đường tránh nên giữ vị trí cũ 1300/720 m, ghi `s` xa lệch thêm 190 m (như Urasa): khoảng cách theo hình khác nhau chút.
+
+## 14. Fukushima và ngã rẽ Yamagata (22/11/2026)
+
+- **[D]** Từ hình `ou_1/030_01` và `tohoku/010_05`: ga 6 đường, hai sân ga đảo (token `dPdDUuPu` = mã `2-4-1`); phía tây hai ghi đơn liền nhau giữa hai đường chính (s xa rồi r gần), phía đông một ghi đơn r; các đường ngoài tách theo thang (đường chính → đường nhánh → đường rìa); nhánh Yamagata có HAI đường mini rời đường ngoài phía nam ở phía đông ga rồi vượt qua hai đường chính sang phía bắc; một đường nữa đến từ ga tuyến thường Ou Line (không dựng).
+- **[theo yêu cầu người dùng]** Hai đường rìa (bắc, nam) kéo dài sang đông, cách ghi đơn r khoảng 100 m rẽ bắc thành đường đôi Yamagata (ngã rẽ cách ga ~1,0 km thay vì 2,0 km); không cầu vượt (cắt đồng mức); mã bố cục riêng `2-4-1f`; chiều lên Yamabiko chờ ở đường rìa nam để Tsubasa tới ghép; thêm hai ghi đơn trên đoạn đường đôi sau khi tách khỏi tuyến cha; không dựng Ou Line.
+- **[I]** Số đo theo 8,15 m/đơn vị sơ đồ (sơ đồ không theo tỉ lệ): vị trí các ghi tách/nhập (−700…−456 m và 60…305 m quanh vạch dừng), độ dài ghi nối rìa → nhánh (164 m); đường rìa nam hội tụ về đôi đường trên 600 m (độ dốc ngang ≤ ~1:6; mockup ban đầu 330 m cho độ dốc gấp 2 lần); khoảng cách 34,3 m giữa hai đường rìa tại ngã rẽ; vị trí hai ghi đơn trên đường đôi (z ≈ 1700 và 1900 m, không có trong sơ đồ).
+- **Hạn chế:** không có cao độ trong sơ đồ (cắt đồng mức); tàu mini cũng đi đường rìa khi không dừng (thực tế mọi chuyến Yamagata đều dừng ở Fukushima); tàu Tohoku khác dùng ghi nối rìa → nhánh → đường chính (đoạn này là [I]).

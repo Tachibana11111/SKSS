@@ -42,7 +42,7 @@
       grade: [[0, 515.4, 8, 20], [515.4, 1069.1, 9, 18], [1069.1, 1325.9, 13, 35]]   // [km0, km1, điển hình ‰, tối đa ‰]; hình dạng giả lập, tối đa theo docs/02
     },
     toh: {
-      pa: '東北・北海道', atc: 'DS', defVeh: 'E5', flipDown: false, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata' }, { km: 498.5, side: -1, branch: true, one: true, R: 1500, len: 1.2, to: 'Akita' }], coupleMini: { maxKm: 496.5, p: 0.4, mini: 'E6' }, snow: [[330, 400, 230, _t('tuyết Sendai–Morioka')], [520, 674, 200, _t('tuyết Morioka–Shin-Aomori')]],
+      pa: '東北・北海道', atc: 'DS', defVeh: 'E5', flipDown: false, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 256.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata', fk: { a0: 15, x0: -19.3, zb1: 600 } }, { km: 498.5, side: -1, branch: true, one: true, R: 1500, len: 1.2, to: 'Akita' }], coupleMini: { maxKm: 496.5, p: 0.4, mini: 'E6' }, snow: [[330, 400, 230, _t('tuyết Sendai–Morioka')], [520, 674, 200, _t('tuyết Morioka–Shin-Aomori')]],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 703.8, 260], [703.8, 715.9, 140], [715.9, 769.8, 160], [769.8, 786.3, 140], [786.3, 823.7, 260]],   // Hokkaido: đoạn dùng chung ray ba với tàu hàng (Shin-Nakaoguni–Kikonai) 140 km/h ngoài hầm, 160 km/h trong hầm Seikan [N]
       tunnels: [[533, 559, 'Iwate-Ichinohe'], [641, 667, 'Hakkoda'], [715.9, 769.8, 'Seikan']],
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [520, 565, 'mountain'], [636, 674.9, 'mountain'], [674.9, 715, 'mountain'], [769.8, 823.7, 'field']],
@@ -62,7 +62,7 @@
       pa: '山形', atc: 'DS', defVeh: 'E8', flipDown: false,
       snow: [[262, 300, 100, _t('tuyết đèo Itaya')], [300, 403.7, 110, _t('tuyết Yamagata–Shinjo')]],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 255.1, 300], [255.1, 403.7, 130]],        // Fukushima–Shinjo là đường sắt thường khổ chuẩn: tối đa 130 km/h [N]
-      curveA: 1.3, curveFrom: 255.1, tunnels: [], coupleMini: { maxKm: 255.1, p: 0.55, mini: 'E8' }, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, line: 'toh' }],
+      curveA: 1.3, curveFrom: 255.1, tunnels: [], coupleMini: { maxKm: 255.1, p: 0.55, mini: 'E8' }, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 256.1, side: -1, line: 'toh', fk: { a0: 15, x0: -19.3, zb1: 600 } }],
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [208, 220, 'urban'], [250, 262, 'urban'], [262, 292, 'mountain'], [292, 300, 'urban'], [336, 348, 'urban'], [348, 400, 'field'], [400, 403.7, 'urban']],
       grade: [[0, 36, 15, 25], [36, 255.1, 7, 15], [255.1, 296, 26, 37.5], [296, 403.7, 9, 20]],   // dốc tối đa 37,5‰ (đèo Itaya) [N]
       notes: [{ km: 255.1, dir: 'down', text: _t('Rời Shinkansen thật, vào đường sắt thường Ou (khổ chuẩn): ≤ 130 km/h, đường đơn gần hết chặng, nhiều đường ngang, cong gắt và dốc tới 37,5‰ ở đèo Itaya.') },
@@ -73,7 +73,7 @@
       pa: '秋田', atc: 'DS', defVeh: 'E6', flipDown: false,
       snow: [[330, 400, 230, _t('tuyết Sendai–Morioka')], [496.5, 545, 95, _t('tuyết Sengan-toge')], [545, 623.8, 110, _t('tuyết Akita')]],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 623.8, 130]],
-      curveA: 1.3, curveFrom: 496.5, tunnels: [], coupleMini: { maxKm: 496.5, p: 0.6, mini: 'E6' }, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata' }, { km: 498.5, side: -1, line: 'toh', run: { km0: 497.8, km1: 497.65 } }],
+      curveA: 1.3, curveFrom: 496.5, tunnels: [], coupleMini: { maxKm: 496.5, p: 0.6, mini: 'E6' }, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 256.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata', fk: { a0: 15, x0: -19.3, zb1: 600 } }, { km: 498.5, side: -1, line: 'toh', run: { km0: 497.8, km1: 497.65 } }],
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [515, 548, 'mountain'], [548, 616, 'field'], [616, 623.8, 'urban']],
       grade: [[0, 36, 15, 25], [36, 496.5, 7, 15], [496.5, 545, 22, 37], [545, 623.8, 8, 18]],
       notes: [{ km: 496.5, dir: 'down', text: _t('Rời Shinkansen thật tại Morioka, vào Tazawako Line (đường sắt thường khổ chuẩn): ≤ 130 km/h, đường đơn, đường ngang, đèo Sengan-toge cong và dốc.') },
@@ -132,7 +132,7 @@
   // ---- Giá đỡ dây điện trên cao (cabview.js, scene.js): kiểu giá theo kết cấu và bối cảnh, chất liệu cột đổi theo từng đoạn 6 km, kiểu treo dây theo tuyến. Nguồn và nhãn: docs/12 mục "Giá đỡ dây điện".
   // Không bao giờ có cột đứng giữa hai đường (supportColumns): hai cột ở hai mép ngoài hoặc một cột bên (đường đơn).
   const SUP_POLES = { tsk: ['steel', 'steel', 'conc'], toh: ['steel', 'conc', 'conc'], jts: ['conc', 'steel', 'pipe'], hok: ['conc', 'pipe', 'conc'], nks: ['conc', 'pipe', 'steel'], yam: ['steel', 'conc'], aki: ['steel', 'conc'] };
-  const SUP_SIMPLE_FROM = { toh: 496.5, yam: 257.1, aki: 498.5, hok: 107.0 };      // km từ đó dùng simple catenary (trước đó là compound nặng chung với tuyến cha); jts luôn compound, nks luôn simple
+  const SUP_SIMPLE_FROM = { toh: 496.5, yam: 256.1, aki: 498.5, hok: 107.0 };      // km từ đó dùng simple catenary (trước đó là compound nặng chung với tuyến cha); jts luôn compound, nks luôn simple
   function wireAt(L, id, km) {
     if (id === 'tsk') { if (L._hkKm === undefined) { const h = L.stations.find(x => x.en === 'Hakata'); L._hkKm = h ? h.km : null; } return L._hkKm !== null && km > L._hkKm + 0.3 ? 'simple' : 'compound'; }      // Tokaido/Sanyo: compound nặng; Kyushu (sau Hakata): simple
     if (id === 'jts') return 'compound'; if (id === 'nks') return 'simple';
@@ -926,7 +926,7 @@
       if (!tb) {       // nhánh rẽ ra từ tuyến cha: dùng đường cong ảo của tuyến con (R, dài) bắt đầu ở ngã rẽ
         const LL = jq.branch ? { curves: [[jq.km, jq.km + jq.len, jq.R, jq.side]], kmEnd: L.kmEnd } : L;
         tb = W.dir === 'down' ? Ly.lateralTable(LL, root.Sim || api, W.dir, sj, 3200, 10) : Ly.lateralTableBack(LL, root.Sim || api, W.dir, sj, 3200, 10); trunkCache.set(key, tb); }
-      const f = Math.min(d, 3190) / 10, i = Math.floor(f), v = tb[i] + (tb[i + 1] - tb[i]) * (f - i); return jq.branch ? (W.dir === 'down' ? -jq.side : jq.side) * Math.abs(v) : -v;      // nhánh rẽ trái (khi đi xuống) thì khi đi lên nằm bên PHẢI
+      const f = Math.min(d, 3190) / 10, i = Math.floor(f), v = tb[i] + (tb[i + 1] - tb[i]) * (f - i); return jq.branch ? (W.dir === 'down' ? -jq.side : jq.side) * Math.abs(v) : -v - (jq.fk ? jq.fk.a0 : 0);      // nhánh rẽ trái (khi đi xuống) thì khi đi lên nằm bên PHẢI
     }
     return 0;
   }
@@ -941,13 +941,25 @@
     const key = W.lineId + W.dir; let c = runCache.get(key); if (!c) { const jq = js[q]; c = { q, km: jq.km, k0: jq.run.km0, k1: jq.run.km1, sg: 1, sj: sOfKm(jq.km, W.dir, W.line.kmEnd) }; runCache.set(key, c); } return c;
   }
   const runW = (c, km) => { if (km >= c.k0) return 1; if (km <= c.k1) return 0; const t = (c.k0 - km) / (c.k0 - c.k1); return 1 - t * t * (3 - 2 * t); };
-  function runLane(W, s) { const c = runCfg(W); return c ? c.sg * root.Layout.ADJ * runW(c, kmOfS(s, W.dir, W.line.kmEnd)) : 0; }
-  function runStep(W, s) { const c = runCfg(W); return c && kmOfS(s, W.dir, W.line.kmEnd) > c.km ? c.sg * root.Layout.ADJ : 0; }
+  function runLane(W, s) { const c = runCfg(W); return (c ? c.sg * root.Layout.ADJ * runW(c, kmOfS(s, W.dir, W.line.kmEnd)) : 0) + fkLane(W, s); }
+  function runStep(W, s) { const c = runCfg(W); return (c && kmOfS(s, W.dir, W.line.kmEnd) > c.km ? c.sg * root.Layout.ADJ : 0) + fkStep(W, s); }
+  // ---- Tuyến Yamagata đi theo hai đường RÌA của Fukushima (junction fk, cả hai chiều): đường của ta KHÔNG phải đường chính Tohoku nên khung hình (gốc X = đường chính) đổi gốc tại ngã rẽ.
+  // Cùng cơ chế với ngã rẽ Akita (cờ run): làn camera bền vững (fkLane) cộng với bước khung (fkStep) của mọi vật nằm ở phía đường Yamagata (chiều xuống: sau ngã rẽ; chiều lên: trước ngã rẽ). Chiều xuống làn camera = đường rìa bắc (+15 m) giữ mãi; chiều lên = đường rìa nam (+15 m trong khung chiều lên) rồi nhập lại đường chính sau ga.
+  const fkFollows = W => W.lineId === 'yam' && fkOf(W) >= 0;
+  const _fkg = new WeakMap();
+  function fkGeo(W) {      // hình học ga Fukushima của thế giới W (đường dừng của ta = đường rìa) và vạch tham chiếu sM
+    let g = _fkg.get(W); if (g !== undefined) return g; const Ly = root.Layout, i = W.line.stations.findIndex(s => s.lay === Ly.FUK), m = i >= 0 ? W.player.M.find(mm => mm.i === i) : null;
+    g = m ? { o: Ly.station(Ly.FUK, W.dir, -1).ours, sM: m.sOrig !== undefined ? m.sOrig : m.s } : null; if (g) _fkg.set(W, g); return g || null;
+  }
+  function fkLane(W, s) { if (!fkFollows(W)) return 0; const g = fkGeo(W); if (!g) return 0; const o = g.o, w = root.Layout.laneW(o, s, g.sM, true); return o.plain + (o.x - o.plain) * w; }
+  function fkStep(W, s) { if (!fkFollows(W)) return 0; const jq = W.line.meta.junctions[fkOf(W)], sj = sOfKm(jq.km, W.dir, W.line.kmEnd); return (W.dir === 'down' ? s > sj : s < sj) ? jq.fk.a0 : 0; }
+  // làn ngược chiều của ta (trong khung đường của ta) trên đoạn đường Yamagata sát ngã rẽ: từ đường rìa kia (cách 34,3 m) hội tụ về đôi đường chuẩn 4,3 m trên zb1 m
+  function fkOwnOpp(W, s) { const jq = W.line.meta.junctions[fkOf(W)], fk = jq.fk, sj = sOfKm(jq.km, W.dir, W.line.kmEnd), u = W.dir === 'down' ? s - sj : sj - s, d0 = fk.a0 - fk.x0; return u <= 0 ? -d0 : -(d0 + (XB_PAIR - d0) * ease01(u / fk.zb1)); }
   function leadDelta(W) { const c = runCfg(W); return c ? -c.sg * root.Layout.ADJ : 0; }      // tàu Tohoku đi trước ở ngã rẽ (cờ run) chạy trên đường chính lên: lệch so với trunkOff
   // ngã rẽ cờ run (Akita): đường ngược chiều của tuyến mini (làn thứ hai của đường đơn) chỉ tồn tại tới ngã rẽ; sau đó chỉ còn MỘT đường mini rẽ khỏi đường chính xuống, đường chính lên Tohoku đi thẳng (hình tohoku/020_10)
   function runJn(W) { const js = W.line.meta.junctions; if (!js) return null; const q = js.findIndex(j => j.run); return q < 0 ? null : { q, km: js[q].km, sj: sOfKm(js[q].km, W.dir, W.line.kmEnd) }; }
   // vị trí ngang của TỪNG đường của tuyến kia ở ngã rẽ đang trong tầm (độ lệch trunkOff cộng độ lệch riêng của đường theo branchDeltas), cho bề rộng mặt cầu / hàng rào / cột điện; rỗng nếu không có ngã rẽ trong tầm
-  function trunkLanes(W, s) { const js = W.line.meta.junctions; if (!js) return []; const L = W.line; for (let q = 0; q < js.length; q++) { const sj = sOfKm(js[q].km, W.dir, L.kmEnd), d = W.dir === 'down' ? s - sj : sj - s; if (d <= 0 || d > 3200) continue; const o = trunkOff(W, s, q); return branchDeltas(W, js[q]).map(dl => o + dl); } return []; }
+  function trunkLanes(W, s) { const js = W.line.meta.junctions; if (!js) return []; const L = W.line; for (let q = 0; q < js.length; q++) { const sj = sOfKm(js[q].km, W.dir, L.kmEnd), d = W.dir === 'down' ? s - sj : sj - s; if (d <= 0 || d > 3200) continue; if (js[q].fk) { const l = fkLanes(W, s); return l ? [l.A, l.B] : []; } const o = trunkOff(W, s, q); return branchDeltas(W, js[q]).map(dl => o + dl); } return []; }
   const runBefore = (W, z, T) => { const c = runCfg(W); return !!c && kmOfS(T.x + z, W.dir, W.line.kmEnd) > c.km; };
   // ---- Nút giao Takasaki (junction có cờ xb, docs/16):
   const branchLane0 = (W, jn) => branchDeltas(W, (W.line.meta.junctions || [])[jn])[0];      // làn của đường nhánh gắn vào đường chính (lệch so với trunkOff) cho tàu nhánh đỗ / ghép ở ngã rẽ
@@ -963,6 +975,16 @@
     return { q, u, sj, A: sg * (xa(u) - M0), B: sg * (xb(u) - M0), jD: sg * (0 - M0), jU: sg * (-XB_PAIR - M0) };
   }
   // cao độ TUYỆT ĐỐI (m so với mặt đất) của đường Hokuriku lên (B) tại s: từ cầu cạn ga (9 m) hạ dần trong 300 m, bắt đầu 200 m trước ngã rẽ, để chui dưới cầu cạn Joetsu; sau đó ở mặt đất (2 m)
+  // ---- Ngã rẽ Yamagata ở Fukushima (junction có cờ fk, docs/14 §8e): hai đường rìa của ga (bắc x = a0 = +15 m, nam x = x0 = -19,3 m so với đường chính xuống) kéo dài sang đông tới ngã rẽ cách ga ~1,0 km;
+  // đường rìa bắc rẽ bắc theo cung ngã rẽ (A = đường Yamagata xuống); đường rìa nam (B = đường Yamagata lên) CẮT ĐỒNG MỨC hai đường chính (không cầu vượt) rồi hội tụ về đôi đường chuẩn 4,3 m với A trên zb1 m.
+  // Toạ độ vật lý (m, dương = bên trái người đi xuống; 0 = đường chính xuống Tohoku, -4,3 = đường chính lên) rồi đổi sang toạ độ khung nhìn (0 = đường chính của chiều thật).
+  function fkOf(W) { const js = W.line.meta.junctions; return js ? js.findIndex(j => j.fk) : -1; }
+  function fkLanes(W, s) {      // null nếu tuyến không có ngã rẽ kiểu này
+    const q = fkOf(W); if (q < 0) return null; const L = W.line, jq = L.meta.junctions[q], fk = jq.fk, sj = sOfKm(jq.km, W.dir, L.kmEnd), down = W.dir === 'down', u = down ? s - sj : sj - s, sg = down ? 1 : -1, PAIR = XB_PAIR;
+    const xa = uu => uu <= 0 ? 0 : Math.abs(trunkOff(W, down ? sj + uu : sj - uu, q)), Ap = fk.a0 + xa(u), d0 = fk.a0 - fk.x0;      // xa: độ lệch của cung ngã rẽ so với tiếp tuyến đường chính
+    const Bp = u <= 0 ? fk.x0 : Ap - (d0 + (PAIR - d0) * ease01(u / fk.zb1)), M0 = down ? 0 : -PAIR;
+    return { q, u, sj, A: sg * (Ap - M0), B: sg * (Bp - M0), jD: sg * (0 - M0), jU: sg * (-PAIR - M0) };
+  }
   function xbBprof(W, s) { const l = xbLanes(W, s), E = root.Layout.ELEV; return Infinity; }      // một mặt phẳng: không hạ độ cao
   // tàu chạy trước trên đường Tohoku có thể là đoàn ghép (Hayabusa + Komachi, Yamabiko + Tsubasa): thêm đơn vị mini và ga tách/ghép cho nó
   function withMini(L, rec, dir) {
@@ -1591,7 +1613,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { trunkLanes, runJn, runCfg, runLane, runStep, leadDelta, runBefore, branchDeltas, branchLane0, ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { fkOf, fkLanes, fkFollows, fkOwnOpp, trunkLanes, runJn, runCfg, runLane, runStep, leadDelta, runBefore, branchDeltas, branchLane0, ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

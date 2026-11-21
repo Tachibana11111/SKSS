@@ -38,3 +38,6 @@
 - Giao diện không dùng emoji: dùng `icons.js` (`Icons.draw` cho canvas, `data-ic` cho HTML). Tiếng Nhật: tên ga hiển thị kèm hiragana (`_sk`), tìm bằng romaji (`I18N.romKey`).
 - Test chuỗi dịch: mọi `_t('…')` mới phải có bản dịch Anh và Nhật (`lang-en.js`, `lang-ja.js`), không còn khoá thừa.
 - **Camera sau đã bỏ (21/11/2026):** chỉ còn camera trước; cảnh ghép/tách ở đuôi chỉ xem trên minimap, bản đồ toàn quốc nằm ở ô cũ của camera sau. Các tham số `rev`/`rear` trong `layout.js` (`xovers`, `linksOf`, `station`) là di tích, chưa gỡ. Ghi chéo theo ga (`xo`) và cách thêm cho tuyến khác: `docs/14` §8.
+
+## Cập nhật 2026-11-22
+- **Fukushima (mã `2-4-1f`) và ngã rẽ Yamagata** đã dựng lại từ sơ đồ: hai đường rìa không nhập lại đường chính mà kéo dài thành đường Yamagata, ngã rẽ cách ga 1,0 km. Tuyến `yam` đi theo đường rìa (đổi gốc khung hình tại ngã rẽ, cơ chế gộp trong `runLane`/`runStep`). Đọc `docs/14` §8e trước khi sửa. Test mục 33o. Ga Tohoku chưa dựng lại: chỉ còn Omiya (Tokyo, Ueno không cần sửa).

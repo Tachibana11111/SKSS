@@ -61,7 +61,7 @@
       const m = gs === m0.s ? m0 : Object.assign({}, m0, { s: gs }), key = W.lineId + ':' + m.i + ':' + W.dir + (W.termPick && W.termPick[m.i] !== undefined ? ':t' + W.termPick[m.i] : '');
       const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, LAY.pickOf(L.stations[m.i], m.i, W)));
       sts.push({ m, i, gs, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')) }); });
-    let lane = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop) { const o = q.st.ours, w = LAY.trackW(o, sCam, q.gs); if (o.own ? w > 0 : true) lane += LAY.laneOf(o, sCam, q.gs, w, LAY.spread(sCam, q.gs), 1300, 720); }
+    let lane = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop && !(W.lineId === 'yam' && q.st.code === LAY.FUK)) { const o = q.st.ours, w = LAY.laneW(o, sCam, q.gs, W.lineId === 'yam'); if (o.own ? w > 0 : true) lane += LAY.laneOf(o, sCam, q.gs, w, LAY.spread(sCam, q.gs), 1300, 720); }
     for (const q of sts) if (q.st.detour && !(q.stopHere && !q.m.mainStop && !q.st.ours.main)) lane += LAY.detourX(q.st, sCam, q.gs);
     lane += S.runLane(W, sCam);      // ngã rẽ Akita chiều lên: tàu mini chạy làn ngược chiều tới ghi chéo 's' của Morioka
     if (xbOn && W.lineId === 'hok' && W.dir === 'up') {
@@ -238,14 +238,16 @@
     for (let jn = 0; jn < (L.meta.junctions || []).length; jn++) { const jc = L.meta.junctions[jn]; const sj = S.sOfKm(jc.km, W.dir, L.kmEnd); if (Math.abs(sj - sCam) > 3300) continue;
       items.push({ d: 9, fn: () => { for (let x = ox0 - 6; x < ox1 + 6; x += 12) { const s = sAt(x + 6, 12);
         // các làn của tuyến kia ở đoạn này: [lệch ngang, lệch cao so với mặt ray của ta]; nút giao Takasaki: Hokuriku xuống (A), đôi Joetsu, Hokuriku lên (B)
-        const lanes = []; if (!jc.xb) lanes.push([S.trunkOff(W, s, jn) + S.branchDeltas(W, jc)[0], 0]);
+        const lanes = []; if (jc.fk && W.lineId !== 'yam') { const fl = S.fkLanes(W, s); if (fl && fl.u > 0) lanes.push([fl.A, 0], [fl.B, 0]); }      // ngã rẽ Yamagata (fk): hai đường rìa kéo dài A, B (tuyến Yamagata đi theo chúng nên thấy đường chính Tohoku như ngã rẽ thường)
+        else if (!jc.xb) lanes.push([S.trunkOff(W, s, jn) + S.branchDeltas(W, jc)[0], 0]);
         else { const xl = S.xbLanes(W, s), eo0 = elAt(s), eoO = elAtO(s), bp = S.xbBprof(W, s), bOk = S.kmOfS(s, W.dir, L.kmEnd) >= XBK0;
           if (W.lineId === 'jts') { if (xl.u > 0) lanes.push([xl.A, eoO - eo0]); if (bOk) lanes.push([xl.B, Math.min(eoO, bp) - eo0]); }
           else { if (xl.u > 0) lanes.push([S.trunkOff(W, s, jn), eoO - eo0]); if (bOk) lanes.push([xl.B, Math.min(eo0, bp) - eo0]); } }
         for (const [off, dy] of lanes) { const eo = side > 0 ? off : -off; if (Math.abs(off) < 2.2 || eo < 2.2) continue; const dd = dep(eo);
           ctx.fillStyle = mixc([20, 22, 24], [96, 98, 100], lit); ctx.fillRect(x, Y(0.3 + dy, dd), 12.6, Math.max(2, 0.3 * f / dd)); ctx.fillStyle = mixc([30, 32, 36], [160, 164, 168], lit); ctx.fillRect(x, Y(0.2 + dy, dd), 12.6, Math.max(1, 0.05 * f / dd)); if (Math.floor(s / 50) !== Math.floor((s - 12) / 50)) { const xm = X(Math.floor(s / 50) * 50, dd), kk = f / dd; ctx.fillStyle = mixc([30, 32, 36], [150, 156, 160], lit); ctx.fillRect(xm - 0.1 * kk, Y(7.5 + dy, dd), 0.2 * kk, Y(dy, dd) - Y(7.5 + dy, dd)); } } } } }); }
     // khoảng cách ngang tới đường ngược chiều tại s (nở ra quanh ga như cabview/topview, không cố định ADJ)
-    const oppOut = s => out(sts.reduce((x, q) => x + (q.st.opp - LAY.ADJ) * LAY.spread(s, q.m.s), LAY.ADJ));
+    const fkJ = S.fkFollows(W) ? S.sOfKm(L.meta.junctions[S.fkOf(W)].km, W.dir, L.kmEnd) : null, fkSideS = s => fkJ !== null && (W.dir === 'down' ? s > fkJ : s < fkJ);      // phía đường Yamagata của ngã rẽ Fukushima
+    const oppOut = s => out(sts.reduce((x, q) => x + (q.st.opp - LAY.ADJ) * LAY.spread(s, q.m.s), LAY.ADJ) + (fkSideS(s) ? S.fkOwnOpp(W, s) - LAY.ADJ : 0));
     if (side < 0) for (const h of W.heldOpp || []) { const hv = S.VEH[h.key] || S.VEH.N700, sn = h.sC - hv.len / 2; if (sn > sCam + 220 || sn + hv.len < sCam - 220) continue; const dd = dep(Math.max(1.8, oppOut(h.sC)) - 1.45);
       items.push({ d: dd, fn: () => { if (hv.parts) { let off = 0; for (const pk of hv.parts) { const pv = S.VEH[pk]; trainSide(pk, sn + off, pv.len, true, dd, 0); off += pv.len + (hv.gap || 2.5); } } else trainSide(h.key, sn, hv.len, true, dd, 0); } }); }      // tàu ngược chiều bị giữ dừng giữa hai ga
     // tàu trên đường nhánh / đường khác: tàu nhánh vừa tách, phần đoàn đã tách ở lại, tàu chạy trước ở đường khác

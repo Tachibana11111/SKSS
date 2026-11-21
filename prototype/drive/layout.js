@@ -3,7 +3,7 @@
 // Chuỗi bố trí viết theo chiều chạy XUỐNG (km tăng), trái -> phải khi nhìn từ buồng lái; Nhật chạy bên trái nên đường xuống nằm bên trái đường lên.
 //   d/u = đường dừng chiều xuống/lên, D/U = đường thông qua chiều xuống/lên, P = sân ga.
 (function (root) {
-  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-1c': 'dPdDUuP', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-0s': 'dPduPu', '2-4-1': 'dPdDUuPu', '2-4-1k': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '3-4-0': 'PdPduPu', '2-4-0t': 'dPddPu', '2-3-0a': 'PdduP', '2-3-0b': 'PduuP', '2-3-0c': 'dPduP' };      // 2-3-0c: Chikugo-Funagoya (Kyushu 010_02): đường tránh nằm ở phía đường xuống, sân ga đảo giữa đường tránh và đường chính xuống [D sơ đồ]; ảnh gương của 2-3-0 (PduPu). 2-3-0a / 2-3-0b: Okutsugaru-Imabetsu / Kikonai theo hình 010_02 / 010_04 (hai đường chính cạnh hai sân ga ngoài + một đường 1435 mm mảnh sát một sân ga; chiều xuống: ga a dừng ở đường mảnh phía trên, ga b dừng ngay trên đường chính xuống) [D sơ đồ, I vai trò đường mảnh; vẫn tính là ga tránh được như mã cũ 2-2-1]. 2-4-0t: Tokyo (Tohoku/Joetsu/Hokuriku) theo sơ đồ ray HaisenNet: 3 đường nhập đường chính xuống, 1 đường nhập đường chính lên [D sơ đồ, I hướng]
+  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-1c': 'dPdDUuP', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-0s': 'dPduPu', '2-4-1': 'dPdDUuPu', '2-4-1k': 'dPdDUuPu', '2-4-1f': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '3-4-0': 'PdPduPu', '2-4-0t': 'dPddPu', '2-3-0a': 'PdduP', '2-3-0b': 'PduuP', '2-3-0c': 'dPduP' };      // 2-3-0c: Chikugo-Funagoya (Kyushu 010_02): đường tránh nằm ở phía đường xuống, sân ga đảo giữa đường tránh và đường chính xuống [D sơ đồ]; ảnh gương của 2-3-0 (PduPu). 2-3-0a / 2-3-0b: Okutsugaru-Imabetsu / Kikonai theo hình 010_02 / 010_04 (hai đường chính cạnh hai sân ga ngoài + một đường 1435 mm mảnh sát một sân ga; chiều xuống: ga a dừng ở đường mảnh phía trên, ga b dừng ngay trên đường chính xuống) [D sơ đồ, I vai trò đường mảnh; vẫn tính là ga tránh được như mã cũ 2-2-1]. 2-4-0t: Tokyo (Tohoku/Joetsu/Hokuriku) theo sơ đồ ray HaisenNet: 3 đường nhập đường chính xuống, 1 đường nhập đường chính lên [D sơ đồ, I hướng]
   const ADJ = -4.3, TRK_GAP = 4.3, EDGE = 1.75, ISLAND = 7.2, SIDE = 9.0;       // toạ độ mô hình: X dương = phía "sân ga của đường ta"; đường ngược chiều gần nhất ở X = ADJ
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -23,6 +23,10 @@
   const TKS = '2-4-1k', TKS_EXT = 60000, TKS_Z = d => 20 + (d - 334.3) * 8.15;
   const TKS_T = [[2, 3, 661, 120, 178, 50], [0, 2, 541, 121, 60, 81], [5, 4, 661, 120, TKS_EXT, 50], [7, 5, 541, 121, 60, 81]];      // kéo dài các ghi cho thuôn (độ dốc ≤ ~1:10 ở giữa đường cong S); đầu cuối giữ đúng vị trí trong hình
   const TKS_L = [[60, 95], [160, 65], [381, 100]];      // ghi nối đường nhánh dưới S1 với đường chính lên: [z bắt đầu, dài] (e28, e29, e33 trong hình) [D]
+  // ---- Fukushima (Tohoku, hình ou_1/030_01, docs/data/haisen/fukushima_plan.html): sáu đường, hai sân ga đảo; hai đường RÌA (bắc và nam) tách từ đường nhánh sân ga (phân cấp: đường chính → đường nhánh → đường rìa) chứ không từ đường chính,
+  // phía đông đường nhánh nhập lại đường chính còn đường rìa KHÔNG nhập lại mà kéo dài thành hai đường Yamagata (ngã rẽ cách ga ~1,0 km, junction có cờ fk). Tàu không đi Yamagata (Tohoku, Akita) dừng ở đường rìa rồi đi qua ghi nối rìa → đường nhánh → đường chính.
+  // [chỉ số vật lý, đường mẹ, in0, len tách, out0, len nhập]: cùng quy ước TKS_T (khung chiều xuống; chỉ số theo chuỗi token CHIỀU XUỐNG: 0 rìa bắc, 2 nhánh bắc, 3 đường chính xuống, 4 đường chính lên, 5 nhánh nam, 7 rìa nam). [I] số đo theo hình (1 đv ≈ 8,15 m)
+  const FUK = '2-4-1f', FUK_T = [[2, 3, 700, 80, 224, 81], [0, 2, 620, 164, TKS_EXT, 50], [5, 4, 700, 80, 224, 81], [7, 5, 620, 164, TKS_EXT, 50]], FUK_LINK = { z0: 60, len: 164 };      // ghi nối đường rìa → đường nhánh (khung chiều xuống) ở z 60..224 m sau vạch; độ dài theo quy tắc ghi thật của game (1 m ngang ≈ 13 m dọc: rìa cách nhánh 10,7 m)
   const TKS_SHIFT = 400;                               // quay 180° (chiều lên): z' = -400 - z, vì sân ga chiếm -420..+20 ở cả hai chiều
   const physIdx = (j, n, dir, rev) => ((dir === 'up') !== !!rev) ? n - 1 - j : j;
   function tksTracks(tracks, n, dir, rev, X) {
@@ -32,6 +36,20 @@
       if (dir === 'up') { t.in0 = TKS_SHIFT + out0 + len2; t.len = len2; t.out0 = in0 - len1 - TKS_SHIFT; t.len2 = len1; } else { t.in0 = in0; t.out0 = out0; }
       t.tks = p; }
     for (const t of tracks) { t.phys = physIdx(t.i, n, dir, rev); }
+  }
+  function fukTracks(tracks, n, dir, rev) {
+    const byP = p => tracks.find(t => physIdx(t.i, n, dir, rev) === p);
+    for (const [p, par, in0, len1, out0, len2] of FUK_T) { const t = byP(p), tp = byP(par); if (!t) continue;
+      t.plain = tp.main ? t.plain : tp.x; t.len = len1; t.len2 = len2;
+      if (dir === 'up') { t.in0 = TKS_SHIFT + out0 + len2; t.len = len2; t.out0 = in0 - len1 - TKS_SHIFT; t.len2 = len1; } else { t.in0 = in0; t.out0 = out0; }
+      t.fkp = p; }
+    for (const t of tracks) t.phys = physIdx(t.i, n, dir, rev);
+    for (const [p, par] of [[0, 2], [7, 5]]) { const t = byP(p), tp = byP(par); if (t && tp) t.fkr = { par: tp, z0: dir === 'up' ? -TKS_SHIFT - FUK_LINK.z0 - FUK_LINK.len : FUK_LINK.z0, len: FUK_LINK.len, pre: dir === 'up' }; }      // fkr: đường rìa (kéo dài sang đông / từ đông tới) và ghi nối với đường nhánh; chiều lên khung quay 180° nên ghi nối nằm TRƯỚC ga và đi từ nhánh sang rìa
+  }
+  function fukLinks(tracks, n, dir, rev) {
+    const byP = p => tracks.find(t => physIdx(t.i, n, dir, rev) === p), out = [];
+    for (const [p, par] of [[0, 2], [7, 5]]) { const t = byP(p), tp = byP(par); if (t && tp) out.push({ z0: t.fkr.z0, len: t.fkr.len, a: dir === 'up' ? tp : t, b: dir === 'up' ? t : tp, det: true }); }      // chỉ đường rìa thuộc chiều ta (rìa bắc chiều xuống, rìa nam chiều lên) mới có ghi nối vẽ trong khung này; đường rìa ngược chiều vẽ ở khung kia
+    return out;
   }
   function tksLinks(tracks, n, dir, rev) {
     const s1 = tracks.find(t => physIdx(t.i, n, dir, rev) === 5), u = tracks.find(t => physIdx(t.i, n, dir, rev) === 4); if (!s1 || !u) return [];
@@ -56,6 +74,7 @@
     { const outer = tracks.filter(t => !t.main).sort((a, b) => Math.abs(a.x - a.plain) - Math.abs(b.x - b.plain));
       outer.forEach((t, k) => { const dx = Math.abs(t.x - t.plain); t.len = clamp(13 * dx + 25, 40, 300); t.in0 = 1130 - 85 * k; t.out0 = 40 + 70 * (outer.length - 1 - k); t.rank = k; }); }
     if (code === TKS) tksTracks(tracks, n, dir, rev, X);
+    if (code === FUK) fukTracks(tracks, n, dir, rev);
     let detour = null;      // Sendai chiều xuống: đường ngoài phía bắc (vật lý 0) kéo dài thành đường chính tạm thời; đường chính (own, main) rẽ vào nó
     if (code === SEN && dir === 'down') { const tN = tracks.find(t => physIdx(t.i, n, dir, rev) === 0), mT = tracks.find(t => t.main && t.own); if (tN && mT) { tN.out0 = DET.z0 + DET.len + DET.hold; tN.len2 = DET.ret; tN.det = true; detour = { t: tN, main: mT, z0: DET.z0, len: DET.len, zEnd: tN.out0 + tN.len2 }; } }
     const oppT = tracks.find(t => t.i === opp);
@@ -72,7 +91,7 @@
     let oppDet = null;
     if (code === SEN && dir === 'up') { const dn = station(code, 'down', 0, false), tD = dn.tracks.find(t => physIdx(t.i, 6, 'down', false) === 0), tU = tracks.find(t => physIdx(t.i, n, dir, rev) === 0), oM = tracks.find(t => t.i === opp);
       if (tD && tU && oM) { tU.in0 = TKS_SHIFT + tD.out0 + tD.len2; tU.len = tD.len2; tU.det = true; oppDet = { t: tU, main: oM, link: { z0: -TKS_SHIFT - DET.z0 - DET.len, len: DET.len }, zA: -TKS_SHIFT - (DET.z0 + DET.len + DET.hold + DET.ret), zB: -TKS_SHIFT - DET.z0 }; } }
-    const links = code === TKS ? tksLinks(tracks, n, dir, rev) : detour ? [{ z0: detour.z0, len: detour.len, a: detour.main, b: detour.t, det: true }] : oppDet ? [{ z0: oppDet.link.z0, len: oppDet.link.len, a: oppDet.t, b: oppDet.main, det: true }] : [];
+    const links = code === TKS ? tksLinks(tracks, n, dir, rev) : code === FUK ? fukLinks(tracks, n, dir, rev) : detour ? [{ z0: detour.z0, len: detour.len, a: detour.main, b: detour.t, det: true }] : oppDet ? [{ z0: oppDet.link.z0, len: oppDet.link.len, a: oppDet.t, b: oppDet.main, det: true }] : [];
     return { code, dir, tracks, links, detour, oppDet, plats, stops, platTracks, ref, opp: X(opp), oppT, ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
   }
   // trọng số "đã chia ra các đường của ga" tại vị trí s (m): 0 ở xa, 1 trong phạm vi sân ga; sM = vị trí vạch dừng
@@ -96,6 +115,13 @@
   // khoảng z (so với vạch dừng, khung chiều chạy) mà đường chính của tàu thông qua phải đi vòng qua ghi: dùng cho hạn chế tốc độ (null nếu ga không có)
   const detourSpan = (code, dir) => code === SEN && dir === 'down' ? { z0: DET.z0, z1: DET.z0 + DET.len + DET.hold + DET.ret } : null;
   const trackW = (t, s, sM) => t.in0 === undefined ? 1 : ease(ramp(sM - t.in0, sM - t.in0 + t.len, s)) * (1 - ease(ramp(sM + t.out0, sM + t.out0 + (t.len2 || t.len), s)));
+  // trọng số làn của CAMERA trên đường dừng t (Fukushima): tàu đi Yamagata (follow) bám đường rìa kéo dài; tàu khác (Tohoku, Akita) rời đường rìa qua ghi nối sang đường nhánh rồi nhập lại đường chính (chiều lên: đi từ đường chính qua đường nhánh vào đường rìa)
+  const laneW = (t, s, sM, follow) => {
+    const w = trackW(t, s, sM), r = t.fkr; if (!r || t.x === t.plain) return w;
+    const par = r.par, lp = par.plain + (par.x - par.plain) * trackW(par, s, sM), lr = lp + (t.x - lp) * w;      // đường rìa tách từ đường nhánh: ở w = 0 nó đi theo làn của đường nhánh (chưa phải x của đường nhánh)
+    const e = ease(ramp(sM + r.z0, sM + r.z0 + r.len, s)), R = follow ? lr : (r.pre ? lp + (lr - lp) * e : lr + (lp - lr) * e);
+    return (R - t.plain) / (t.x - t.plain);      // đổi về trọng số theo công thức laneOf (plain + (x - plain)·w)
+  };
 
   // đường cong: bảng [km0, km1, R, sg] theo km; trả về độ cong (1/m, dương = rẽ phải theo chiều chạy) tại s (m dọc tuyến theo chiều chạy)
   function curvatureAt(L, Sim, dir, s) {
@@ -186,6 +212,6 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   // số cầu bộ hành trên cao của một ga theo mã bố trí: ≥ 3 sân ga → 3 lối; 2 sân ga và ≥ 4 đường → 2 lối; 2 sân ga ít đường → 1 lối; 1 sân ga → không có (ga ngầm do nơi gọi loại thêm)
   const _bn = {}; function bridgeCountOf(code) { if (_bn[code] === undefined) { const s = station(code, 'down', 0), np = s.plats.length; _bn[code] = np < 2 ? 0 : np >= 3 ? 3 : s.tracks.filter(t => !t.thr).length >= 4 ? 2 : 1; } return _bn[code]; }
-  root.Layout = { TKS, TKS_EXT, SEN, DET, detourX, oppDetourX, detourSpan, linksOf, hasThrough, refugeName, geoPoints, xovers, xoLines, XLEN, bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { TKS, TKS_EXT, FUK, laneW, SEN, DET, detourX, oppDetourX, detourSpan, linksOf, hasThrough, refugeName, geoPoints, xovers, xoLines, XLEN, bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);
