@@ -47,6 +47,7 @@
     // bản ghi thật: Odawara (Internet Archive, public domain): nền ga 10–118 s; tàu qua/rời ga ở các đoạn CLIPS
     try { const mk2 = () => { const e = new Audio('assets/audio/odawara_leaving.mp3'); e.preload = 'metadata'; e.volume = 0; return e; }; this.amb = mk2(); this.clipEl = mk2(); this.ambOn = false; this.clipT = 0; } catch (e) { this.amb = null; }
     try { root.fetch('assets/audio/shinkansen_horn.mp3').then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).then(buf => { this.hornBuf = buf; }).catch(() => { this.hornBuf = null; }); } catch (e) { this.hornBuf = null; }      // còi: bản ghi do người dùng tải (chỉ dùng cá nhân); chưa tải xong/lỗi thì dùng bản tổng hợp bên dưới
+    try { root.fetch('assets/audio/crossing_bell.mp3').then(r => r.arrayBuffer()).then(b => c.decodeAudioData(b)).then(buf => { this.bellBuf = buf; }).catch(() => { this.bellBuf = null; }); } catch (e) { this.bellBuf = null; }      // chuông đường ngang: bản ghi do người dùng tải (chỉ dùng cá nhân); chưa tải xong/lỗi thì dùng tiếng tổng hợp
     this.ready = true;
     this.rt = { comp: 20 + Math.random() * 30, oppose: 90 + Math.random() * 120, thunder: 40 + Math.random() * 50, last: performance.now() };
   };
@@ -98,6 +99,10 @@
   GameAudio.prototype.oppose = function (sp) { const g = 0.15 + 0.3 * sp; this.burst(0.9, g, 500, 0.8, 'bandpass', 0, 3200); this.burst(0.9, g, 3200, 0.8, 'bandpass', 0.55, 400); this.tone(50, 0.3, 'sine', 0.3 * sp, 0.45, 35); };
   GameAudio.prototype.thunder = function () { this.lastThunder = performance.now(); this.burst(2.4, 0.5, 130, 0.7, 'lowpass'); this.burst(1.2, 0.35, 90, 0.7, 'lowpass', 0.8); };
   // còi hơi (空気笛) của Shinkansen, tổng hợp [I]: hai cao độ hơi lệch nhau (hai còi cùng kêu) có thành phần hơi gió, vào nhanh, ngắt gọn; KHÔNG dùng còi điện/nhạc của tàu thường. Cao độ là ước lượng, chưa có số liệu kiểm chứng [?]
+  GameAudio.prototype.bellSet = function (vol) {      // chuông đường ngang bằng bản ghi: lặp liên tục khi còn trong tầm, to dần khi lại gần; vol = 0 thì tắt
+    if (vol > 0 && this.bellBuf) { const c = this.ctx; if (!this.bellSrc) { const src = c.createBufferSource(), g = c.createGain(); src.buffer = this.bellBuf; src.loop = true; g.gain.value = 0; src.connect(g); g.connect(this.master); src.start(); this.bellSrc = src; this.bellG = g; } this.bellG.gain.setTargetAtTime(vol, c.currentTime, 0.1); }
+    else if (this.bellSrc) { const src = this.bellSrc, g = this.bellG; this.bellSrc = null; this.bellG = null; try { g.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08); src.stop(this.ctx.currentTime + 0.4); } catch (e) { } }
+  };
   GameAudio.prototype.horn = function () {
     if (!this.ready) return;
     if (this.hornBuf) { const c = this.ctx, src = c.createBufferSource(), g = c.createGain(); src.buffer = this.hornBuf; g.gain.value = 0.8; src.connect(g); g.connect(this.master); src.start(); return; }      // bản ghi thật
@@ -248,15 +253,17 @@
     // trụ điện lướt qua (mỗi 50 m)
     if (active && v > 3 && root.Sim.switchPoints) { const px0 = this.prevSw; if (px0 !== undefined && T.x > px0 && T.x - px0 < 200 && !this.cabin) for (const p of root.Sim.switchPoints(T)) if (px0 < p && T.x >= p) this.switchClatter(v); this.prevSw = T.x; } else this.prevSw = undefined;
     if (active && v > 8) { const idx = Math.floor(T.x / 50); if (this.lastMast !== undefined && idx !== this.lastMast && !this.cabin) this.burst(0.09, 0.05 + 0.18 * sp, 700 + 900 * sp, 0.8); this.lastMast = idx; } else this.lastMast = undefined;
-    if (!this.enabled || st.paused) { this.ambience(0); return; }
+    if (!this.enabled || st.paused) { this.ambience(0); this.bellSet(0); return; }
     // ---- âm theo thời gian thực: máy nén khí, tàu ngược chiều, sấm, ho, em bé, bước chân ----
-    const R = this.rt; if (st.scale <= 1) {
+    const R = this.rt; this.bellWant = 0; if (st.scale <= 1) {
       R.comp -= dt; if (R.comp < 0) { this.compressor(); R.comp = 35 + Math.random() * 50; }
       { const xg = (W.xings || []).find(g => g.s - T.x > -25 && g.s - T.x < 520); R.bell = (R.bell || 0) - dt;      // chuông đường ngang (踏切警報機): kêu khi tàu cách đường ngang < 520 m
-        if (xg && v > 3 && R.bell < 0) { const d = Math.max(0, xg.s - T.x), vol = 0.03 + 0.07 * (1 - d / 520); this.tone(2150, 0.09, 'sine', vol, 0); this.tone(1750, 0.09, 'sine', vol, 0.14); R.bell = 0.3; } }
+        if (xg && v > 3 && this.bellBuf) this.bellWant = 0.12 + 0.5 * (1 - Math.max(0, xg.s - T.x) / 520);
+        else if (xg && v > 3 && R.bell < 0) { const d = Math.max(0, xg.s - T.x), vol = 0.03 + 0.07 * (1 - d / 520); this.tone(2150, 0.09, 'sine', vol, 0); this.tone(1750, 0.09, 'sine', vol, 0.14); R.bell = 0.3; } }
       if (this.prevWt !== undefined && (v > 40 || W.oppCat) && !root.Sim.oppHidden(W, T)) for (const t0 of W.opposing || []) if (this.prevWt < t0 - 2.3 && W.t >= t0 - 2.3) this.playClip(0.35 + 0.4 * sp, 0, 5.5);
       if (W.weatherKind === 'typhoon' || W.weatherKind === 'rain') { R.thunder -= dt; if (R.thunder < 0) { if (W.weatherKind === 'typhoon' || Math.random() < 0.4) this.thunder(); R.thunder = 35 + Math.random() * 70; } }
     }
+    this.bellSet(this.bellWant || 0);
     this.ambience(dw && !st.paused && st.scale <= 4 ? (T.door === 'open' ? 0.55 : 0.4) : 0);
     const mk0 = T.M[T.k], atEnd = !mk0 || mk0.i === 0 || mk0.i === W.line.stations.length - 1;      // ga đầu/cuối tuyến: tàu không lao qua ga
     if (dw && !atEnd) for (const pa of root.Sim.passersAt(W, T.k)) { const pd = root.Sim.passDur(W, T.k, 404.7), u = (W.t - (pa.t - pd / 2)) / pd; if (u > 0 && u < 1 && !pa.played) { pa.played = true; this.playClip(0.95, pa.t | 0); } if (u >= 1) pa.played = false; }
