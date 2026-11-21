@@ -36,6 +36,7 @@
   #menu{--mw:min(780px,94vw);position:fixed;inset:0;z-index:55;display:none;overflow:auto;color:var(--fg);font-size:14px}
   #menu.solid{background:transparent}
   #menu.dim{background:transparent}
+  #menu[data-s=settings].dim{background:rgba(0,0,0,.6)}      /* cài đặt mở từ menu tạm dừng: phủ đen nhẹ lên màn lái tàu */
   #mWall{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
   #stage{position:relative;z-index:1}
   body.mSolid #stage{visibility:hidden}
@@ -120,6 +121,13 @@
   #menu .box{max-width:290px;margin:12vh auto 0;background:#171c25;border:1px solid #33475e;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:9px}
   #menu .box h2{margin:0 0 4px;text-align:center;font-size:19px}
   #menu .box p{margin:0 0 6px;color:var(--mut);font-size:13px;text-align:center;line-height:1.5}
+  /* menu tạm dừng: góc trên phải màn lái tàu, rộng bằng 5 nút biểu tượng (5×44 + 4×6 = 244 px canvas); --k = tỉ lệ canvas/1920 do placePause() đặt */
+  #menu #m-pause{padding:0;min-height:0}
+  #menu #m-pause .box{--k:1;position:fixed;right:16px;top:62px;width:calc(244px * var(--k));max-width:none;margin:0;padding:calc(12px * var(--k));gap:calc(6px * var(--k));border-radius:calc(10px * var(--k));box-sizing:border-box}
+  #menu #m-pause .box h2{font-size:max(13px,calc(17px * var(--k)));margin:0 0 calc(2px * var(--k))}
+  #menu #m-pause .box button{height:max(28px,calc(36px * var(--k)));font-size:max(12px,calc(15px * var(--k)));padding:0 calc(8px * var(--k));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #menu #m-pause .box button.go{font-weight:600}
+  html[lang=ja] #menu #m-pause .box button{font-size:max(12px,calc(14px * var(--k)))}
   #menu .row2{display:flex;gap:8px} #menu .row2 button{flex:1}
   #menu .lrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #243447;font-size:14px}
   #menu .lang{position:relative;width:min(62%,300px)}
@@ -978,7 +986,7 @@ const M = (function () {
     if (name === 'setup') $('driveOpts').style.display = 'contents';
     if (name === 'learn') m.learnRender();
     for (const k in scr) scr[k].classList.toggle('on', k === name);
-    m.screen = name; el.style.display = 'block'; el.scrollTop = 0;
+    m.screen = name; el.style.display = 'block'; el.scrollTop = 0; if (name === 'pause') placePause();
     if (name === 'home') { logoBuild(); trainBuild(); }
     if (name === 'setup') { PV.reset(); tpUpd(); }      // sau khi màn hình đã hiện (đo được bề rộng khung): đoàn tàu tiến vào từ đầu
     m.setSolid(!(name === 'pause' || name === 'confirm' || (name === 'settings' && m.from === 'pause'))); el.dataset.s = name; document.body.dataset.m = name; el.className = (name === 'pause' || name === 'confirm' || (name === 'settings' && m.from === 'pause')) ? 'dim' : 'solid';
@@ -1005,6 +1013,11 @@ const M = (function () {
     layoutWall();
   }
   buildWall(); addEventListener('resize', layoutWall);
+  function placePause() {      // menu tạm dừng bám góc trên phải khung lái tàu (ngay dưới thanh trên), bề rộng = 5 nút biểu tượng, co theo tỉ lệ canvas
+    const box = document.querySelector('#m-pause .box'), r = cv.getBoundingClientRect(); if (!box || !r.width) return; const k = r.width / FW;
+    box.style.setProperty('--k', k.toFixed(3)); box.style.right = Math.round(innerWidth - r.right + 16 * k) + 'px'; box.style.top = Math.round(r.top + (TOPH + 4) * k) + 'px';
+  }
+  addEventListener('resize', () => { if (m.screen === 'pause') placePause(); });
   m.setSolid = v => { m.solid = v; document.body.classList.toggle('mSolid', v); };
   m.trainShow = key => { const e = MT_LIST.find(x => x[0] === key); if (e) { mtBag = [e]; trainLoad(); } };      // chọn mẫu cụ thể (dùng khi kiểm thử)
   m.hide = function () { m.screen = null; m.setSolid(false); document.body.dataset.m = 'play'; el.style.display = 'none'; };
