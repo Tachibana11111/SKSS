@@ -42,7 +42,7 @@
       grade: [[0, 515.4, 8, 20], [515.4, 1069.1, 9, 18], [1069.1, 1325.9, 13, 35]]   // [km0, km1, điển hình ‰, tối đa ‰]; hình dạng giả lập, tối đa theo docs/02
     },
     toh: {
-      pa: '東北・北海道', atc: 'DS', defVeh: 'E5', flipDown: false, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata' }, { km: 498.5, side: -1, branch: true, R: 1500, len: 1.2, to: 'Akita' }], coupleMini: { maxKm: 496.5, p: 0.4, mini: 'E6' }, snow: [[330, 400, 230, _t('tuyết Sendai–Morioka')], [520, 674, 200, _t('tuyết Morioka–Shin-Aomori')]],
+      pa: '東北・北海道', atc: 'DS', defVeh: 'E5', flipDown: false, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata' }, { km: 498.5, side: -1, branch: true, one: true, R: 1500, len: 1.2, to: 'Akita' }], coupleMini: { maxKm: 496.5, p: 0.4, mini: 'E6' }, snow: [[330, 400, 230, _t('tuyết Sendai–Morioka')], [520, 674, 200, _t('tuyết Morioka–Shin-Aomori')]],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 703.8, 260], [703.8, 715.9, 140], [715.9, 769.8, 160], [769.8, 786.3, 140], [786.3, 823.7, 260]],   // Hokkaido: đoạn dùng chung ray ba với tàu hàng (Shin-Nakaoguni–Kikonai) 140 km/h ngoài hầm, 160 km/h trong hầm Seikan [N]
       tunnels: [[533, 559, 'Iwate-Ichinohe'], [641, 667, 'Hakkoda'], [715.9, 769.8, 'Seikan']],
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [520, 565, 'mountain'], [636, 674.9, 'mountain'], [674.9, 715, 'mountain'], [769.8, 823.7, 'field']],
@@ -73,7 +73,7 @@
       pa: '秋田', atc: 'DS', defVeh: 'E6', flipDown: false,
       snow: [[330, 400, 230, _t('tuyết Sendai–Morioka')], [496.5, 545, 95, _t('tuyết Sengan-toge')], [545, 623.8, 110, _t('tuyết Akita')]],
       limits: [[0, 31.3, 110], [31.3, 109, 275], [109, 496.5, 320], [496.5, 623.8, 130]],
-      curveA: 1.3, curveFrom: 496.5, tunnels: [], coupleMini: { maxKm: 496.5, p: 0.6, mini: 'E6' }, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata' }, { km: 498.5, side: -1, line: 'toh' }],
+      curveA: 1.3, curveFrom: 496.5, tunnels: [], coupleMini: { maxKm: 496.5, p: 0.6, mini: 'E6' }, junctions: [{ km: 32.3, side: -1, branch: true, R: 4000, len: 1.5, to: 'Joetsu / Hokuriku' }, { km: 257.1, side: -1, branch: true, R: 1500, len: 1.2, to: 'Yamagata' }, { km: 498.5, side: -1, line: 'toh', run: { km0: 497.8, km1: 497.65 } }],
       biomes: [[0, 36, 'urban'], [100, 112, 'urban'], [320, 330, 'urban'], [490, 500, 'urban'], [515, 548, 'mountain'], [548, 616, 'field'], [616, 623.8, 'urban']],
       grade: [[0, 36, 15, 25], [36, 496.5, 7, 15], [496.5, 545, 22, 37], [545, 623.8, 8, 18]],
       notes: [{ km: 496.5, dir: 'down', text: _t('Rời Shinkansen thật tại Morioka, vào Tazawako Line (đường sắt thường khổ chuẩn): ≤ 130 km/h, đường đơn, đường ngang, đèo Sengan-toge cong và dốc.') },
@@ -937,6 +937,25 @@
     }
     return 0;
   }
+  // các làn của đường nhánh/tuyến kia ở một ngã rẽ, tính theo độ lệch so với trunkOff: mặc định CẶP đường (làn của ta và làn ngược chiều); ngã rẽ có cờ one (nhánh Akita, hình tohoku/020_10, tazawako/010_05)
+  // chỉ MỘT đường nhánh gắn vào đường chính XUỐNG: chiều xuống nó là đường nối từ làn của ta, chiều lên (và camera sau của chiều xuống) nó nối từ làn ngược chiều (camera sau: làn ngược chiều nằm bên đối diện)
+  function branchDeltas(W, jc) { const ADJ = root.Layout.ADJ, rr = !!W.rearOf, rd = W.rearOf || W.dir; if (jc && jc.run && !jc.branch && rd === 'up') return [rr ? ADJ : -ADJ, 0]; if (!jc || !jc.one || !jc.branch) return [0, ADJ]; return rd === 'down' ? [0] : [rr ? -ADJ : ADJ]; }      // ngã rẽ cờ run, chiều LÊN: hai đường chính Tohoku lệch so với đường mini: đường chính xuống (làn ngược chiều của tàu mini) trùng đường mini ở ngã rẽ, đường chính lên nằm bên trái nó
+  // ---- Ngã rẽ Akita, chiều LÊN (cờ run, hình tohoku/020_10 và tazawako/010_05): tàu mini nhập vào đường chính XUỐNG (làn ngược chiều của nó), chạy làn đó tới ghi chéo đơn 's' của Morioka rồi sang đường chính lên (làn của nó) trước ga
+  // Khung hình: đường chính Tohoku cố định (khung 'T': đường chính lên X = 0, đường chính xuống X = ADJ); camera ở làn runLane(s) (ADJ trước ghi chéo, về 0 sau ghi chéo); vật thể nằm TRƯỚC ngã rẽ (theo km) thuộc khung đường mini nên lệch thêm runStep (ADJ) vì ở ngã rẽ đường mini trùng đường chính xuống
+  const runCache = new Map();
+  function runCfg(W) {
+    const js = W.line.meta.junctions; if (!js) return null; const q = js.findIndex(j => j.run); if (q < 0) return null; const rr = !!W.rearOf, rd = W.rearOf || W.dir; if (rd !== 'up') return null;
+    const key = W.lineId + W.dir + (rr ? 'r' : ''); let c = runCache.get(key); if (!c) { const jq = js[q]; c = { q, rr, km: jq.km, k0: jq.run.km0, k1: jq.run.km1, sg: rr ? -1 : 1, sj: sOfKm(jq.km, W.dir, W.line.kmEnd) }; runCache.set(key, c); } return c;
+  }
+  const runW = (c, km) => { if (km >= c.k0) return 1; if (km <= c.k1) return 0; const t = (c.k0 - km) / (c.k0 - c.k1); return 1 - t * t * (3 - 2 * t); };
+  function runLane(W, s) { const c = runCfg(W); return c ? c.sg * root.Layout.ADJ * runW(c, kmOfS(s, W.dir, W.line.kmEnd)) : 0; }
+  function runStep(W, s) { const c = runCfg(W); return c && kmOfS(s, W.dir, W.line.kmEnd) > c.km ? c.sg * root.Layout.ADJ : 0; }
+  function leadDelta(W) { const c = runCfg(W); return c ? -c.sg * root.Layout.ADJ : 0; }      // tàu Tohoku đi trước ở ngã rẽ (cờ run) chạy trên đường chính lên: lệch so với trunkOff
+  // ngã rẽ cờ run (Akita): đường ngược chiều của tuyến mini (làn thứ hai của đường đơn) chỉ tồn tại tới ngã rẽ; sau đó chỉ còn MỘT đường mini rẽ khỏi đường chính xuống, đường chính lên Tohoku đi thẳng (hình tohoku/020_10)
+  function runJn(W) { const js = W.line.meta.junctions; if (!js) return null; const q = js.findIndex(j => j.run); return q < 0 ? null : { q, km: js[q].km, sj: sOfKm(js[q].km, W.dir, W.line.kmEnd) }; }
+  const runBefore = (W, z, T) => { const c = runCfg(W); return !!c && kmOfS(T.x + z, W.dir, W.line.kmEnd) > c.km; };
+  // ---- Nút giao Takasaki (junction có cờ xb, docs/16):
+  const branchLane0 = (W, jn) => branchDeltas(W, (W.line.meta.junctions || [])[jn])[0];      // làn của đường nhánh gắn vào đường chính (lệch so với trunkOff) cho tàu nhánh đỗ / ghép ở ngã rẽ
   // ---- Nút giao Takasaki (junction có cờ xb, docs/16): Hokuriku chiều lên đi theo đường nhánh dưới của ga (kéo dài về phía đông, bên phải đôi đường Joetsu), rồi chui dưới hai đường chính Joetsu sang trái và hội tụ về đôi đường chuẩn (4,3 m) với Hokuriku chiều xuống;
   // Hokuriku chiều xuống rẽ ra từ đường chính xuống (đường cong ngã rẽ cũ). Hình học theo tọa độ VẬT LÝ (m, dương = bên trái người đi xuống; 0 = đường chính xuống Joetsu, -4,3 = đường chính lên Joetsu) rồi đổi sang toạ độ khung nhìn (0 = đường chính của chiều thật).
   const XB_ZB1 = 360, XB_X0 = -8.6, XB_PAIR = 4.3, ease01 = u => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
@@ -1577,7 +1596,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { runJn, runCfg, runLane, runStep, leadDelta, runBefore, branchDeltas, branchLane0, ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, rearVis, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

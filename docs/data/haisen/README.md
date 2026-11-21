@@ -12,3 +12,5 @@
 
 **Kiểm tra nguyên vẹn:** `manifest.json` ghi số byte và 16 ký tự đầu của SHA-256 của từng tệp SVG tải về; `.gitattributes` đặt `-text` cho các SVG này để git không đổi LF thành CRLF khi checkout trên Windows (đổi thì mã băm lệch).
 - `kh_graph.json`, `kh_layout.html`: Kumagaya + Honjo-Waseda (ghép `joetsu/010_01` và `010_02`), từ `tools/haisen_graph.py kh`.
+- `yam_aki_draft.html`: bản thảo kiến trúc toàn tuyến Yamagata và Akita để nghiên cứu (vẽ lại từ số liệu các SVG `ou_1`, `tazawako`, không nhúng/sửa SVG gốc), kèm bảng token từng ga so với mã trong game; sinh bằng `tools/haisen_yam_aki.py`. Chưa áp dụng vào game.
+- `morioka_plan.html`: ga Morioka và ngã rẽ sang Akita: sơ đồ gốc (vẽ lại từ `tohoku/020_10`, `tazawako/010_05`), mô hình hiện tại trong game và bố cục dự kiến (đề xuất, chưa áp dụng); sinh bằng `tools/haisen_morioka.py`.
