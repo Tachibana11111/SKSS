@@ -200,6 +200,7 @@
     <div id="driveOpts" style="display:contents">
     <label class="inl" id="realBox" title="Giờ Nhật Bản, thời tiết và động đất thật (Open-Meteo, P2PQuake). Cần mạng khi bấm Bắt đầu; Độ khó cố định Thường."><input type="checkbox" id="real"><span>Chế độ thực tế</span><small id="jstClock" style="color:var(--mut);margin-left:auto"></small></label>
     <label class="inl" id="freeBox" title="Có nút tự lái; chuyến chạy không tính điểm, không ghi thành tựu và không lưu vào lịch sử/kỷ lục."><input type="checkbox" id="free"><span>Chế độ tự do</span></label>
+    <label class="inl" id="devBox" title="Giống chế độ tự do, thêm: bấm một điểm bất kỳ trên bản đồ toàn quốc để dịch chuyển tàu tới đó (đứng yên, tốc độ 0). Tàu là tàu ma: các tàu khác và các ga không thấy, không dính sự cố ngẫu nhiên, không ảnh hưởng ATC của tàu khác và không bị tàu khác chặn."><input type="checkbox" id="dev"><span>Chế độ nhà phát triển</span></label>
     <label>Độ khó <select id="diff"></select></label>
     <label>Thời tiết <select id="weather"></select></label>
     <label class="w2">Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px"><span data-ic="dice" data-size="18"></span></button></span></label>
@@ -486,6 +487,7 @@ function realClock() {      // giờ máy người chơi (múi giờ của hệ 
   if (d.getTimezoneOffset() !== -540) { let tz = ''; try { tz = (new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(d).find(p => p.type === 'timeZoneName') || {}).value || ''; } catch (e) { } loc = RealMode.hhmm(d.getHours() * 3600 + d.getMinutes() * 60) + (tz ? ' (' + tz + ')' : '') + '  ·  '; }
   el.textContent = loc + jst; el.style.whiteSpace = 'nowrap';
 }
+$('dev').onchange = () => { const d = $('dev').checked; if (d) $('free').checked = true; $('free').disabled = d; };
 $('real').onchange = realUpd;
 setInterval(() => {      // đồng hồ giờ Nhật; nếu chuyến đang chọn vừa rời ga thì dựng lại danh sách
   if (!realOn || !M.screen || M.screen !== 'setup') return; realClock(); const rec = Lc().trains[+$('train').value]; if (!rec || Sim.INSPECT[rec.v]) return;
@@ -530,6 +532,18 @@ window.Snap = { state: sceneState, restore: restoreScene };
 // ---- vào buồng lái tàu khác (chế độ tự do): đoàn đó chạy tự lái cố định, các bộ điều khiển bị khoá (doAct); tàu của ta chạy tự lái nền trong HOME; quay về bằng bản đồ toàn quốc
 const foreignOn = () => !!HOME;
 const mapW = () => HOME ? HOME.W : W, mapT = () => HOME ? HOME.T : T;      // bản đồ toàn quốc luôn là bản đồ của tàu ta (thế giới HOME khi đang ở buồng lái tàu khác)
+const devOK = () => !!(recipe && recipe.dev && W && T && !replaying && !tutLessonActive && mode === 'drive' && !HOME);      // chế độ nhà phát triển (kèm chế độ tự do): bấm điểm bất kỳ trên bản đồ toàn quốc để dịch chuyển
+// dịch chuyển tàu tới điểm chọn: dựng thế giới mới bằng spawnAt ở chế độ TÀU MA (đứng yên, tốc độ 0, không sự cố ngẫu nhiên, các tàu khác/ga/ATC không thấy); chọn chuyến mẫu cùng loại tàu (nếu có) có ga dừng phía trước điểm đó
+function devTeleport(c) {
+  if (!devOK()) return; const L = LINES[c.line], sg = c.dir === 'down' ? 1 : -1, now = W.trip.t0 + W.t, pv = W.trip.rec && W.trip.rec.v;
+  const stopsKm = r => r.s.filter(e => !e[3]).map(e => L.stations[e[0]].km), okRec = r => r.d === c.dir && stopsKm(r).some(k => sg * (k - c.km) > 0.05) && !(Sim.INSPECT && Sim.INSPECT[r.v] && Sim.INSPECT[r.v].x);
+  const cand = L.trains.filter(okRec), rec = cand.find(r => r.v === pv && !r.cp && stopsKm(r).some(k => sg * (k - c.km) <= 0.05)) || cand.find(r => r.v === pv && !r.cp) || cand.find(r => stopsKm(r).some(k => sg * (k - c.km) <= 0.05)) || cand[0];
+  const Wg = rec ? Sim.spawnAt(c.line, rec, now, { km: c.km, kmh: 0 }, { diff: recipe.diff, seed: recipe.seed, weather: W.weatherKind || recipe.weather, real: recipe.real, ghost: true }) : null;
+  if (!Wg) { W.say('warn', _t('Không dịch chuyển được tới điểm này (không dựng được chuyến mẫu).')); return; }
+  try { AUD.silence(); } catch (e) { }
+  NatMap.V.sel = null; W = Wg; T = Wg.player; window.__W = W; window.__T = T; auto = false; recTainted = true; ui.nat = false;      // giữ nguyên trạng thái chạy/tạm dừng (không tự dừng game)
+  W.say('info', _t('Đã dịch chuyển tới {0} · km {1}. Tàu ma đứng yên (tốc độ 0).', _ln(Sim.lineOf(c.line)), c.km.toFixed(1)));
+}
 const cabOK = () => !!(recipe && recipe.free && W && T && !replaying && !tutLessonActive && mode === 'drive');      // kể cả khi tàu của ta đang làm nhiệm vụ kiểm tra
 function enterCab(t) {
   if (!cabOK() || t.me || t.home || !t.c || (t.s && t.s.dwell === 'end')) return;
@@ -641,7 +655,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) focus
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
-function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: realOn ? 'real' : $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, real: realOn && realSnap ? realSnap : undefined, free: $('free').checked || undefined }; }
+function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: realOn ? 'real' : $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, real: realOn && realSnap ? realSnap : undefined, free: $('free').checked || $('dev').checked || undefined, dev: $('dev').checked || undefined }; }
 function startDrive(r, opts) {
   opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec0 = r.rec || L.trains[r.recIdx], rec = r.veh && /^(E5|E7)$/.test(rec0.v) && Sim.VEH[r.veh] ? Object.assign({}, rec0, { v: r.veh, retro: 1 }) : rec0, trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert(_t('Chọn ga đi/đến hợp lệ cho chuyến này.')); return false; }
@@ -729,7 +743,7 @@ cv.addEventListener('click', e => {
   clk = [x, y];
   for (const b of btns) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { if (ui.sndOpen && !b.keep) ui.sndOpen = false; b.fn(); return; }
   if (ui.sndOpen) { ui.sndOpen = false; return; }
-  if (ui.nat) { if (window.__natMoved) { window.__natMoved = false; return; } NatMap.click(x, y); }
+  if (ui.nat) { if (window.__natMoved) { window.__natMoved = false; return; } NatMap.click(x, y, devOK()); }
 });
 
 // ---- vòng lặp
@@ -870,7 +884,8 @@ function drawEnd() {
     txt(pen.map(p => p[0] + ' ' + p[1]).join(' · '), 60, y, '#8aa0b5', '13px system-ui'); y += 20; txt(_t('Điện {0} kWh (hoàn {1}) · Má phanh nóng nhất {2}% · bất an cao nhất {3}%', sc.kwh, sc.regen, Math.round((T.btMax || 0) * 100), Math.round(T.anxMax)), 60, y, '#8aa0b5', '13px system-ui');
     txt(_t('ĐIỂM: ') + sc.final + ' / 100', 560, 700, sc.final >= 80 ? '#4cd68a' : sc.final >= 50 ? '#ffc247' : '#ff6464', 'bold 34px system-ui', 'center');
     if (endInfo && endInfo.best) txt(_t('Tốt nhất cho cấu hình này: ') + endInfo.best.score, 560, 724, '#8aa0b5', '13px system-ui', 'center');
-    if (recipe && recipe.free) txt(_t('Chế độ tự do: không tính điểm, không ghi thành tựu'), 560, 748, '#8aa0b5', 'bold 14px system-ui', 'center');
+    if (recipe && recipe.dev) txt(_t('Chế độ nhà phát triển: tàu ma, không tính điểm, không ảnh hưởng tàu khác'), 560, 748, '#8aa0b5', 'bold 14px system-ui', 'center');
+    else if (recipe && recipe.free) txt(_t('Chế độ tự do: không tính điểm, không ghi thành tựu'), 560, 748, '#8aa0b5', 'bold 14px system-ui', 'center');
     else if (endInfo && endInfo.fresh.length) txt(_t('Thành tích mới: ') + endInfo.fresh.map(a => '★ ' + a.name).join('  '), 560, 748, '#ffd24a', 'bold 14px system-ui', 'center');
   } else drawSummary();
 }

@@ -41,3 +41,4 @@
 
 ## Cập nhật 2026-11-22
 - **Fukushima (mã `2-4-1f`) và ngã rẽ Yamagata** đã dựng lại từ sơ đồ: hai đường rìa không nhập lại đường chính mà kéo dài thành đường Yamagata, ngã rẽ cách ga 1,0 km. Tuyến `yam` đi theo đường rìa (đổi gốc khung hình tại ngã rẽ, cơ chế gộp trong `runLane`/`runStep`). Đọc `docs/14` §8e trước khi sửa. Test mục 33o. Ga Tohoku chưa dựng lại: chỉ còn Omiya (Tokyo, Ueno không cần sửa).
+- **Chế độ nhà phát triển (22/11/2026):** ô riêng (kéo theo chế độ tự do); bản đồ toàn quốc bấm điểm bất kỳ → xác nhận → tàu ma (`W.ghost`) đứng yên tại đó, không dính sự cố ngẫu nhiên, không ảnh hưởng ATC tàu khác. Xem `docs/14` §5b trước khi sửa `spawnAt`/`natcat.js`.

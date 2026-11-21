@@ -309,7 +309,7 @@
     return st.platSign > 0 ? { ja: '左側', vi: _t('trái') } : { ja: '右側', vi: _t('phải') };
   };
   GameAudio.prototype.announce = function (W, T, p) {
-    const M = T.M, A = this.ann; if (W.mission || (root.Sim && root.Sim.INSPECT && root.Sim.INSPECT[W.trip.rec.v])) return;      // tàu kiểm tra (làm nhiệm vụ hay xem từ bản đồ): không phát thanh
+    const M = T.M, A = this.ann; if (W.mission || W.ghost || (root.Sim && root.Sim.INSPECT && root.Sim.INSPECT[W.trip.rec.v])) return;      // tàu kiểm tra (làm nhiệm vụ hay xem từ bản đồ): không phát thanh
     const Mel = root.Melody, L = W.line, sg = W.dir === 'down' ? 1 : -1, Sm = root.Sim;
     const nameJ = k => M[k].jp || M[k].name, typeJ = TYPEJ[W.trip.rec.t] || '', no = W.trip.rec.n;
     const last = M.length - 1, destJ = nameJ(last), dest = M[last].rom || M[last].name;

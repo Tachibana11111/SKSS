@@ -45,6 +45,19 @@ HOME.W.fgnW = thế giới tàu được chọn          // để bản đồ v�
 7. **Phát thanh** (`audio.js`): mỗi thế giới có kênh riêng (`W._aud`); tàu không ngồi chạy ngầm (`bgTick` + `vtick`), quay về phát nốt phần còn lại.
 8. **Quay về** (`backHome`): hoán đổi lại `W/T`, tự lái vẫn bật (người chơi tắt bằng T); thế giới tàu kia bị bỏ (`AUD.park` cất phần PA dở theo khoá tàu).
 
+## 5b. Chế độ nhà phát triển: dịch chuyển và tàu ma (22/11/2026)
+
+- **Bật:** ô "Chế độ nhà phát triển" ở màn thiết lập, cạnh chế độ thực tế và tự do. Chọn nó thì tự bật (và khoá) chế độ tự do: `recipe.dev` kéo theo `recipe.free` (có tự lái, ngó buồng lái tàu khác, không tính điểm, không ghi thành tựu/kỷ lục).
+- **Dịch chuyển:** mở bản đồ toàn quốc (D), bấm vào chỗ trống gần một tuyến (≤ 16 px; ga và tàu vẫn được ưu tiên). `NatMap.nearLines(lon, lat, s, tol)` trả về các tuyến gần điểm đó {line, km} (tuyến đi chung đường như Tohoku/Yamagata/Akita cùng hiện ra, nút "Đổi tuyến" xoay giữa chúng). Thẻ xác nhận kiểu tooltip "Dịch chuyển tới vị trí này?" có nút "Chiều xuống", "Chiều lên", "Hủy". `index.html: devTeleport({line, km, dir})` chọn một chuyến mẫu (ưu tiên cùng loại tàu, không ghép, có ga dừng phía trước điểm) rồi dựng thế giới mới bằng `Sim.spawnAt(..., { ghost: true })`, thay `W/T`, đóng bản đồ và dừng game (bấm P để chạy).
+- **Tàu ma** (`W.ghost`, `T.ghost`; `T.foreign` = false nên điều khiển được): xuất hiện đúng km đã chọn, tốc độ 0, không hành khách, không có sự cố ngẫu nhiên (`events: false`, `W.events = []`). Không ảnh hưởng và không chịu ảnh hưởng của tàu khác:
+  1. `NatCat.step` không tính tàu ma là vật cản của tàu danh mục;
+  2. `NatCat.updateObstacle` đặt `W.obs = null` (không bị ATC chặn bởi tàu phía trước, đi xuyên qua tàu khác);
+  3. `NatCat` bỏ tàu ma khỏi vật cản khi nó là "tàu của ta chạy nền" của một buồng lái khác;
+  4. `Sim.dwellersAt` không đếm tàu ma vào sức chứa ga; `playerClaim` không chiếm đoạn đường đơn;
+  5. `departBlock` bỏ qua chờ đường đơn (`singleBusy`), ghi nối vào đường chính ngược chiều (`oppClash`) và ô giữ tàu thời tiết (`gateZone`).
+- **Hạn chế:** lịch của chuyến mẫu vẫn hiện độ lệch kế hoạch (không có ý nghĩa với tàu ma); ga/đoạn có tàu danh mục đỗ thì tàu ma đi xuyên qua nhau (không có chống va chạm); chưa có nút "Dịch chuyển lại" ngoài việc mở bản đồ bấm điểm mới.
+- Test: mục 33p (`nearLines`, `spawnAt` ghost, `updateObstacle`, nối dây giao diện).
+
 ## 6. Bất biến và bẫy đã gặp [D]
 
 - **Không bước (`step`) thế giới `W.fgn`**: nó dùng bản đồ của tàu ta (`step` thoát ngay nếu `W.fgn`).

@@ -164,8 +164,23 @@
     ic(px2, ey, '#fff', (cx, cy) => { ctx.beginPath(); ctx.arc(cx, cy, 6.5, 0, 7); ctx.stroke(); ctx.beginPath(); for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) { ctx.moveTo(cx + dx * 9, cy + dy * 9); ctx.lineTo(cx + dx * 13, cy + dy * 13); } ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, 2, 0, 7); ctx.fill(); });
     txt(_t('BẢN ĐỒ TOÀN QUỐC · ') + hhmm(W.trip.t0 + W.t) + _t(' · con lăn: zoom · kéo: di chuyển · bấm ga/tàu: chi tiết'), x + 14, y + 22, dk ? '#cfe0f0' : '#1b2633', 'bold 13px system-ui');
     // thẻ chi tiết
+    if (V.sel && V.sel.dev) {      // thẻ xác nhận dịch chuyển (chế độ nhà phát triển): tàu ma sẽ xuất hiện ở điểm này, tốc độ 0
+      const S0 = V.sel, cd = S0.cands[S0.ci % S0.cands.length], Lx = root.LINES[cd.line], fz = n => Math.round(n * U), mw = (str, f) => { ctx.font = f; return ctx.measureText(str).width; };
+      const nearI = Lx.stations.reduce((b, s, i) => Math.abs(s.km - cd.km) < Math.abs(Lx.stations[b].km - cd.km) ? i : b, 0), nd = Math.abs(Lx.stations[nearI].km - cd.km), lnm = typeof _ln === 'function' ? _ln(Lx) : (Lx.name || cd.line);
+      const title = _t('Dịch chuyển tới vị trí này?'), rows = [[lnm + ' · km ' + cd.km.toFixed(1), '#4aa3ff'], [(nd < 0.1 ? _t('tại ga ') + _sk(Lx.stations[nearI]) : _t('gần ga ') + _sk(Lx.stations[nearI]) + _t(' (cách ') + nd.toFixed(1) + ' km)'), '#8aa0b5']];
+      const labs = [[_t('Chiều xuống'), () => { if (o.devGo) o.devGo({ line: cd.line, km: cd.km, dir: 'down' }); }, '#2a6fd6', 'train'], [_t('Chiều lên'), () => { if (o.devGo) o.devGo({ line: cd.line, km: cd.km, dir: 'up' }); }, '#2a6fd6', 'train']];
+      if (S0.cands.length > 1) labs.push([_t('Đổi tuyến'), () => { S0.ci = (S0.ci + 1) % S0.cands.length; }, '#7a5aa8']);
+      labs.push([_t('Hủy'), () => { V.sel = null; }, '#8a3a3a']);
+      const bws = labs.map(l => Math.max(76, Math.ceil(mw(l[0], fz(12) + 'px system-ui') / U) + 26)), btnW = bws.reduce((a, b) => a + b, 0) + 8 * (labs.length - 1);
+      const cw = Math.round(Math.max(fz(280), Math.min(Math.max(mw(title, 'bold ' + fz(15) + 'px system-ui') + 24, ...rows.map(q => mw(q[0], fz(12) + 'px system-ui') + fz(26) + 14), btnW * U + 24), fz(640)))), rh = Math.round(18 * U), ch = Math.round(40 * U) + rows.length * rh + Math.round(40 * U), ax = [S0.lon, S0.lat];
+      const q0 = P(ax[0], ax[1], r); ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q0[0], q0[1], 8 * U, 0, 7); ctx.moveTo(q0[0] - 13 * U, q0[1]); ctx.lineTo(q0[0] + 13 * U, q0[1]); ctx.moveTo(q0[0], q0[1] - 13 * U); ctx.lineTo(q0[0], q0[1] + 13 * U); ctx.stroke();
+      let cx = q0[0] + 18, cy = q0[1] + 18; if (cx + cw > x + w - 8) cx = q0[0] - 18 - cw; if (cy + ch > y + h - 8) cy = y + h - 8 - ch; cx = Math.max(x + 8, cx); cy = Math.max(y + 8, cy);
+      ctx.fillStyle = dk ? 'rgba(8,12,18,.92)' : 'rgba(255,255,255,.94)'; ctx.fillRect(cx, cy, cw, ch); ctx.strokeStyle = '#ffd24a'; ctx.lineWidth = 1; ctx.strokeRect(cx, cy, cw, ch);
+      txt(title, cx + 12, cy + 22 * U, dk ? '#fff' : '#111', 'bold 15px system-ui'); rows.forEach((q, i) => { ctx.fillStyle = q[1]; ctx.fillRect(cx + 12, cy + 33 * U + i * rh, 8 * U, 8 * U); txt(q[0], cx + 26 * U, cy + 41 * U + i * rh, dk ? '#e8eef5' : '#1b2633', '12px system-ui'); });
+      let bx = cx + 12; labs.forEach((l, i) => { btn(bx / 1 - 0, cy + ch - Math.round(34 * U), bws[i], 26, l[0], l[1], true, l[2], 12, l[3]); bx += Math.round((bws[i] + 8) * U); });
+    }
     const selT = V.sel && V.sel.tk ? tr.find(t => (t.me ? 'me' : t.c.key) === V.sel.tk) : null; if (V.sel && V.sel.tk && !selT) V.sel = null;
-    if (V.sel) {
+    if (V.sel && !V.sel.dev) {
       const rows = []; let title = '', sub = '';
       if (V.sel.en) { title = I18N.lang === 'ja' ? (V.sel.jp || V.sel.en) + (root.STATION_KANA && root.STATION_KANA[V.sel.jp] ? '(' + root.STATION_KANA[V.sel.jp] + ')' : '') : V.sel.en + ' ' + (V.sel.jp || ''); const rr = stationRows(V.sel.jp, W, T); sub = rr.length ? _t('Tàu quanh giờ hiện tại:') : _t('Không có tàu nào trong 30 phút tới.'); for (const q of rr.slice(0, 12)) rows.push([q[1], q[2]]); }
       else if (selT) { const t = selT, L = t.me ? root.LINES[t.line] : root.LINES[t.c.line]; title = t.label; const st = t.s;
@@ -203,10 +218,20 @@
   function down(px, py) { if (!inRect(px, py)) return false; V.drag = { x: px, y: py, cx: V.cx, cy: V.cy, moved: false }; return true; }
   function move(px, py) { const d = V.drag; if (!d) return; const dx = px - d.x, dy = py - d.y; if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true; V.cx = d.cx - dx / V.s / KX; V.cy = d.cy + dy / V.s; }
   function up() { const d = V.drag; V.drag = null; return d && d.moved; }
-  function click(px, py) {
+  // chế độ nhà phát triển: các tuyến nằm gần một toạ độ (kinh/vĩ độ) trong tol "px" ở tỉ lệ s (px / độ vĩ), gần nhất trước; mỗi mục {line, km, d (px)}; tuyến đi chung đường (Tohoku/Yamagata/Akita...) cùng hiện ra để chọn
+  function nearLines(lon, lat, s, tol) {
+    const out = [], LNS = root.LINES || {};
+    for (const id of Object.keys(LNS)) { const L = LNS[id], k0 = L.stations[0].km, k1 = L.stations[L.stations.length - 1].km, f = km => { const a = atKm(L, km); return Math.hypot((a.lon - lon) * KX, a.lat - lat) * s; };
+      let bk = k0, bd = Infinity; for (let km = k0; km <= k1 + 1e-9; km += 0.4) { const d = f(km); if (d < bd) { bd = d; bk = km; } }
+      for (let km = Math.max(k0, bk - 0.4); km <= Math.min(k1, bk + 0.4) + 1e-9; km += 0.02) { const d = f(km); if (d < bd) { bd = d; bk = km; } }
+      if (bd <= tol) out.push({ line: id, km: Math.round(bk * 100) / 100, d: bd }); }
+    out.sort((a, b) => a.d - b.d); return out.filter(c => c.d <= out[0].d + 3);
+  }
+  function click(px, py, dev) {
     if (!inRect(px, py)) return false; let best = null, bd = 100;      // ga (bán kính ~10 px) ưu tiên hơn tàu đang đỗ ở đó; tàu tìm trong 14 px
     for (const en of Object.keys(ST || {})) { const s = ST[en], q = P(s.lon, s.lat, V.rect), d = (q[0] - px) ** 2 + (q[1] - py) ** 2; if (d < bd) { bd = d; best = s; } }
     if (!best) { bd = 196; for (const h of V.trains || []) { const d = (h.x - px) ** 2 + (h.y - py) ** 2; if (d < bd) { bd = d; best = { tk: h.t.me ? 'me' : h.t.c.key }; } } }
+    if (!best && dev) { const r = V.rect, lon = (wx(V.cx) + (px - r[0] - r[2] / 2) / V.s) / KX, lat = V.cy - (py - r[1] - r[3] / 2) / V.s, c = nearLines(lon, lat, V.s, 16); V.sel = c.length ? { dev: true, lon, lat, cands: c, ci: 0 } : null; return true; }      // bấm vào chỗ trống gần một tuyến: thẻ xác nhận dịch chuyển
     V.sel = best; return true;
   }
   // danh sách cho ô tìm kiếm trên bản đồ: tất cả ga (theo tên đang dùng) / tất cả đoàn đang có trên bản đồ; chọn thì dời bản đồ tới đó và mở thẻ chi tiết
@@ -220,5 +245,5 @@
     else { const t = (V.all || []).find(x => (x.me ? 'me' : x.c.key) === key); if (!t) return; V.sel = { tk: key }; V.cx = t.s.lon; V.cy = t.s.lat; }
     V.s = 120000; V.fit = true;      // phóng to hết cỡ tới điểm tìm thấy
   }
-  root.NatMap = { V, shownDelay, follow, searchItems, focus, stationRows, stations: () => ST, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(root.Sim.mapX(T), W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
+  root.NatMap = { V, nearLines, shownDelay, follow, searchItems, focus, stationRows, stations: () => ST, draw, drawMini, wheel, down, move, up, click, setLight: v => { V.light = !!v; }, playerCol: (W, T) => { const L = root.LINES && root.LINES[W.lineId]; if (!L) return null; const km = root.Sim.kmOfS(root.Sim.mapX(T), W.dir, W.line.kmEnd); return colAt(W.lineId, atKm(L, Math.max(L.stations[0].km, Math.min(L.stations[L.stations.length - 1].km, km))).idx); }, colors: () => SEGS.map(s => [s.key, s.name, s.col]), colAt, SEGS };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1639,6 +1639,51 @@ if (section('33o. Ga Fukushima (2-4-1f) và ngã rẽ Yamagata: hai đường r�
     while (!T.finished && k++ < 8e5) { Sim.tick(W, 0.05, {}, true); if (T.x < prevX - 0.5) back++; prevX = T.x; if (!isFinite(T.x) || !isFinite(T.v)) bad = true; }
     ok(T.finished && !bad && back === 0, `chạy tự động ${id} ${dir} (${A} – ${B}) qua Fukushima: hết chuyến, không lùi, không NaN`, [T.finished, bad, back, k]); }
 }
+if (section('33p. Chế độ nhà phát triển: dịch chuyển tới điểm bất kỳ trên bản đồ toàn quốc, tàu ma (đứng yên, không sự cố ngẫu nhiên, không ảnh hưởng/chịu ảnh hưởng của tàu khác và ATC)')) {
+  global.hhmm = global.hhmm || (x => String(x)); require(path.join(DRIVE, 'natmap.js'));
+  const NC = global.NatCat, NM = global.NatMap, LNS = window.LINES;
+  // 1) NatMap.nearLines: điểm gần tuyến (kể cả tuyến đi chung đường) → danh sách {line, km}; điểm ngoài biển → rỗng
+  { const at = (id, km) => NC.atKm(LNS[id], km), near = (id, km, dx, dy) => { const a = at(id, km); return NM.nearLines(a.lon + (dx || 0), a.lat + (dy || 0), 900, 16); };
+    const c1 = near('tsk', 100, 0.002, 0.001); ok(c1.length >= 1 && c1[0].line === 'tsk' && Math.abs(c1[0].km - 100) < 1.2, 'nearLines: điểm gần Tokaido km 100 → tsk ≈ km 100', c1);
+    const c2 = near('toh', 200); ok(['toh', 'yam', 'aki'].every(id => c2.some(c => c.line === id)), 'nearLines: điểm trên đoạn đi chung Tokyo – Fukushima trả về cả toh, yam, aki', c2.map(c => c.line));
+    const c3 = near('yam', 340); ok(c3[0].line === 'yam' && Math.abs(c3[0].km - 340) < 0.7 && c3.length === 1, 'nearLines: điểm trên đoạn riêng Yamagata chỉ có yam', c3);
+    ok(NM.nearLines(130.0, 30.0, 900, 16).length === 0 && NM.nearLines(142.0, 36.0, 900, 16).length === 0, 'nearLines: điểm ngoài biển không chọn được tuyến nào'); }
+  // 2) tàu ma: Sim.spawnAt với opts.ghost
+  const Lt = Sim.lineOf('tsk'), rg = Lt.trains.find(t => t.d === 'down' && t.t === 'Nozomi' && !t.cp), cg = NC.build(LNS).find(c => c.rec === rg), qg = Sim.trainSeq(rg).filter(e => e.stop), tNoon = (qg[0].dep != null ? qg[0].dep : qg[0].arr) + 1500;
+  const s0g = NC.stateOf(LNS, cg, tNoon), kmG = s0g.km;
+  const Wgh = Sim.spawnAt('tsk', rg, tNoon, { km: kmG, kmh: 0 }, { seed: 3, ghost: true }), Tgh = Wgh && Wgh.player;
+  ok(!!Wgh && Wgh.ghost === true && Tgh.ghost === true && Tgh.foreign === false && Tgh.v === 0 && Tgh.noPax === true && (Wgh.events || []).length === 0 && Tgh.phase === 'run', 'spawnAt ghost: tàu ma đứng yên (v = 0), không hành khách, không sự cố ngẫu nhiên, không phải tàu foreign', Wgh && [Wgh.ghost, Tgh.v, Tgh.foreign, Tgh.phase]);
+  ok(Math.abs(Sim.kmOfS(Tgh.x, Wgh.dir, Wgh.line.kmEnd) - kmG) < 0.05, 'tàu ma xuất hiện đúng điểm đã chọn (km ' + kmG.toFixed(2) + ')');
+  // 3) không ảnh hưởng/chịu ảnh hưởng ATC của tàu khác: vật cản phía trước, giữ ở ga đường đơn, ga đầy
+  { const ahead = NC.stateOf(LNS, cg, tNoon + 90), Wn = Sim.spawnAt('tsk', rg, tNoon, { km: kmG - 2.5 * (ahead.km > kmG ? 1 : -1), kmh: 0 }, { seed: 3 }), Wg2 = Sim.spawnAt('tsk', rg, tNoon, { km: kmG - 2.5 * (ahead.km > kmG ? 1 : -1), kmh: 0 }, { seed: 3, ghost: true });
+    NC.init(Wn); NC.init(Wg2); NC.updateObstacle(Wn, Wn.player); NC.updateObstacle(Wg2, Wg2.player); ok(Wg2.obs === null, 'tàu ma không bị ATC chặn bởi tàu phía trước (W.obs = null)', Wg2.obs); }
+  // 3b) giống tàu kiểm tra: không ATC, không giờ biểu đồ/cửa/PA/melody, không dừng ga giữa đường
+  { const Wx = Sim.spawnAt('tsk', rg, tNoon, { km: kmG, kmh: 0 }, { seed: 3, ghost: true }), Tx = Wx.player, last = Tx.M.length - 1;
+    ok(Tx.atcOn === false && Tx.atc === false && Tx.door === 'closed' && Tx.M.slice(1, last).every(m => !m.stop), 'tàu ma: ATC tắt, cửa đóng, không dừng ga giữa đường (chỉ còn ga cuối chuyến mẫu)', [Tx.atcOn, Tx.door, Tx.M.map(m => !!m.stop)]);
+    const n0 = Wx.msgs.length; ok(Sim.toggleATC(Tx) === 'on' && Tx.atcOn === true && Sim.toggleATC(Tx) === 'off' && Tx.atcOn === false && Wx.msgs.length === n0, 'tàu ma: bật/tắt ATC tức thì, không thông báo/cảnh báo/phạt');
+    let k = 0, stops = 0, prevK = Tx.k; while (k++ < 6000 && !Tx.finished) { Sim.tick(Wx, 0.1, {}, true); if (Tx.phase === 'dwell') stops++; }
+    ok(stops === 0 && Tx.results.length === 0, 'tàu ma không đỗ ga giữa đường và không ghi kết quả dừng ga (' + stops + ' tick đỗ)', [stops, Tx.results.length]);
+    const au = require('fs').readFileSync(path.join(DRIVE, 'audio.js'), 'utf8'), fu2 = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8'), ix2 = require('fs').readFileSync(path.join(DRIVE, 'index.html'), 'utf8');
+    ok(/W\.mission \|\| W\.ghost/.test(au), 'audio.js: tàu ma không phát PA/melody (như tàu kiểm tra)');
+    ok(/!W\.mission && !W\.ghost/.test(fu2) && /if \(!W\.ghost\) \{ const delay/.test(fu2) && /T\.atcOn === false && blink && !T\.ghost/.test(fu2), 'fullui.js: tàu ma ẩn dòng cửa/giờ đi, ô lệch kế hoạch và viền đỏ cắt ATC');
+    ok(!/paused = true; recTainted = true; ui\.nat = false;/.test(ix2.slice(ix2.indexOf('function devTeleport'), ix2.indexOf('const cabOK'))), 'devTeleport không tự tạm dừng game'); }
+  // 3c) ở nút N, gần đứng yên: tàu ma giữ đứng yên (không lăn theo độ dốc); tàu thường (đối chứng) vẫn lăn; đang chạy nhanh thì tàu ma vẫn lăn tự do
+  { const roll = (opts, kmh) => { const W0 = Sim.spawnAt('tsk', rg, tNoon, { km: 60, kmh }, Object.assign({ seed: 3 }, opts)), T0 = W0.player; if (kmh > 0) T0.v = kmh / 3.6; for (let i = 0; i < 600; i++) Sim.tick(W0, 0.1, {}, false); return T0.v * 3.6; };
+    const g0 = roll({ ghost: true }, 0), n0 = roll({}, 0), g1 = roll({ ghost: true }, 30);
+    ok(g0 === 0 && n0 > 3 && g1 > 3, 'nút N: tàu ma đứng yên trên dốc (' + g0.toFixed(2) + ' km/h), tàu thường lăn (' + n0.toFixed(1) + ' km/h), tàu ma đang chạy 30 km/h vẫn lăn tự do (' + g1.toFixed(1) + ' km/h)', [g0, n0, g1]); }
+  // 3d) tàu ma không có hành khách: đứng yên 20 phút giữa đường mà mức bất an vẫn 0, không hoảng loạn, không phát thanh trấn an; tàu thường (đối chứng) bất an tăng
+  { const run = opts => { const W0 = Sim.spawnAt('tsk', rg, tNoon, { km: 150.4, kmh: 0 }, Object.assign({ seed: 3 }, opts)), T0 = W0.player; for (let i = 0; i < 12000; i++) Sim.tick(W0, 0.1, {}, false); return { anx: T0.anx, panic: !!T0.panic, pa: W0.paCount || 0 }; };
+    const gh = run({ ghost: true }), nm = run({}); ok(gh.anx === 0 && !gh.panic && gh.pa === 0 && nm.anx > 20, 'tàu ma đứng yên 20 phút: bất an ' + gh.anx + ', không hoảng loạn, không phát thanh; tàu thường (đối chứng) bất an ' + Math.round(nm.anx), [gh, nm]);
+    const fu3 = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8'); ok(/W\.mission \|\| T\.noPax \? \[\]/.test(fu3) && /!W\.mission && !T\.noPax\) \{ txt\(_t\('Bất an hành khách'\)/.test(fu3), 'fullui.js: ẩn dòng "Tải khách" và thanh "Bất an hành khách" khi không có hành khách'); }
+  // 4) chạy được: bấm tăng tốc, tàu ma chạy tới ga kế và vẫn tuân theo ATC của chính nó
+  { const Wr = Sim.spawnAt('tsk', rg, tNoon, { km: kmG, kmh: 0 }, { seed: 3, ghost: true }), Tr = Wr.player; let k = 0, x0 = Tr.x; while (k++ < 3000) Sim.tick(Wr, 0.1, {}, true);
+    ok(isFinite(Tr.x) && isFinite(Tr.v) && Tr.v >= 0 && Math.abs(Tr.x - x0) > 500, 'tàu ma chạy tự lái bình thường (đi được ' + Math.round(Math.abs(Tr.x - x0)) + ' m, không NaN)', [Tr.x, Tr.v]); }
+  // 5) giao diện: ô chọn chế độ nhà phát triển và dịch chuyển (index.html, fullui.js, natmap.js)
+  { const idx = require('fs').readFileSync(path.join(DRIVE, 'index.html'), 'utf8'), fu = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8'), nm = require('fs').readFileSync(path.join(DRIVE, 'natmap.js'), 'utf8');
+    ok(/id="dev"/.test(idx) && /dev: \$\('dev'\)\.checked/.test(idx) && /free: \$\('free'\)\.checked \|\| \$\('dev'\)\.checked/.test(idx), 'index.html: ô "Chế độ nhà phát triển" và công thức recipe (dev kéo theo free)');
+    ok(/devGo: devOK\(\)/.test(fu) && /NatMap\.click\(x, y, devOK\(\)\)/.test(idx) && /function devTeleport/.test(idx) && /ghost: true/.test(idx), 'dịch chuyển nối đủ: bản đồ → nút xác nhận → devTeleport → spawnAt ghost');
+    ok(/V\.sel\.dev/.test(nm) && /nearLines/.test(nm), 'natmap.js: thẻ xác nhận dịch chuyển'); }
+}
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);
   const T = Sim.lineOf('tsk'), H = Sim.lineOf('hok'), N = Sim.lineOf('nks');
