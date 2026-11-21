@@ -206,10 +206,23 @@
         if (end || sl !== cur) { if (cur) strip(q => xl(q) - FOFF, q => xr(q) + FOFF, 0, a, zz, col); a = zz; cur = sl; }
         if (end) break; }
     };
-    const ballastStrip = (xf, z0, z1, alpha, yf) => { z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return; strip(z => xf(z) - 2.1, z => xf(z) + 2.1, yf || 0, z0, z1, ballast.replace('rgb', 'rgba').replace(')', ',' + (alpha == null ? 1 : alpha) + ')')); };
+    // ---- mặt đường (mẫu B + D, docs/data/track_texture_candidates.html): đoạn nền đất = đá dăm + tà vẹt bê tông dự ứng lực (dài 2,4 m, cách 0,6 m, kẹp ray); đoạn cầu cạn / cầu / hầm = tấm bê tông (rộng 2,34 m, dài 4,9 m, khe ngang, kẹp ray cách 0,625 m) trên bệ bê tông
+    const slabRuns = []; if (zExit === null) { let a = null; for (let z = Math.max(0, zMin); z <= ZF + 20; z += 20) { const k = S.structAt(L, km(z)), is = k === 'b' || k === 't' || k === 'v'; if (is && a === null) a = z; else if (!is && a !== null) { slabRuns.push([a, z]); a = null; } } if (a !== null) slabRuns.push([a, ZF + 20]); }
+    const inSlab = z => { for (const r of slabRuns) if (z >= r[0] && z < r[1]) return true; return false; };
+    const splitSlab = (z0, z1) => { const bal = [], sl = []; let c = z0; for (const [a, b] of slabRuns) { if (b <= z0 || a >= z1) continue; const lo = Math.max(a, z0), hi = Math.min(b, z1); if (lo > c) bal.push([c, lo]); sl.push([lo, hi]); c = hi; } if (c < z1) bal.push([c, z1]); return { bal, sl }; };
+    const dk = day * (1 - wx * 0.3), sleeperC = snowTr ? 'rgba(' + (day > 0.5 ? '226,232,240' : '92,100,116') + ',.92)' : mixc([46, 48, 52], [150, 148, 142], dk).replace('rgb', 'rgba').replace(')', ',.96)'), clipC = snowTr ? 'rgba(60,66,78,.8)' : 'rgba(14,14,16,.7)';
+    const deckC = snowTr ? mixc([62, 70, 82], [214, 220, 230], day) : mixc([26, 28, 32], [112, 112, 108], dk), panelC = snowTr ? mixc([74, 82, 94], [232, 237, 244], day) : mixc([44, 46, 50], [168, 168, 162], dk);
+    const ballastStrip = (xf, z0, z1, alpha, yf) => {
+      z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return; const al = alpha == null ? 1 : alpha, bc = ballast.replace('rgb', 'rgba').replace(')', ',' + al + ')'), sp = splitSlab(z0, z1);
+      for (const [a, b] of sp.bal) strip(z => xf(z) - 2.1, z => xf(z) + 2.1, yf || 0, a, b, bc);
+      for (const [a, b] of sp.sl) { strip(z => xf(z) - 2.1, z => xf(z) + 2.1, yf || 0, a, b, deckC.replace('rgb', 'rgba').replace(')', ',' + al + ')')); strip(z => xf(z) - 1.17, z => xf(z) + 1.17, yf ? z => yf(z) + 0.05 : 0.05, a, b, panelC.replace('rgb', 'rgba').replace(')', ',' + al + ')'));
+        for (let k = Math.ceil((T.x + a) / 4.9), z = k * 4.9 - T.x; z < Math.min(b, 90); k++, z = k * 4.9 - T.x) { const X = xf(z), yo = (yf ? yf(z) : 0) + 0.05, p = P(X - 1.17, yo, z), q = P(X + 1.17, yo, z), d = P(X + 1.17, yo, z + 0.08), e = P(X - 1.17, yo, z + 0.08); if (d[1] - q[1] < 0.3 && z > 30) continue; quad(p, q, d, e, snowTr ? 'rgba(90,98,112,.55)' : 'rgba(0,0,0,.4)'); } }      // khe giữa hai tấm (cứ 4,9 m)
+    };
     const railStrip = (xf, z0, z1, sleepers, yf) => {
       z0 = Math.max(z0, zMin); z1 = Math.min(z1, zLim); if (z1 <= z0) return;
-      if (sleepers) for (let k = Math.ceil((T.x + z0) / 1.3), z = k * 1.3 - T.x; z < Math.min(z1, 110); k++, z = k * 1.3 - T.x) { const X = xf(z), yo = yf ? yf(z) : 0, p = P(X - 1.3, yo, z), q = P(X + 1.3, yo, z), d = P(X + 1.3, yo, z + 0.28), e = P(X - 1.3, yo, z + 0.28); if (d[1] - q[1] < 0.4 && z > 40) continue; quad(p, q, d, e, snowTr ? 'rgba(' + (day > 0.5 ? '226,232,240' : '92,100,116') + ',.9)' : 'rgba(34,36,40,.85)'); }
+      if (sleepers) { for (let k = Math.ceil((T.x + z0) / 0.6), z = k * 0.6 - T.x; z < Math.min(z1, 90); k++, z = k * 0.6 - T.x) { if (inSlab(z)) continue; const X = xf(z), yo = yf ? yf(z) : 0, p = P(X - 1.2, yo, z), q = P(X + 1.2, yo, z), d = P(X + 1.2, yo, z + 0.2), e = P(X - 1.2, yo, z + 0.2); if (d[1] - q[1] < 0.35 && z > 25) continue; quad(p, q, d, e, sleeperC);
+          if (z < 28) for (const sx of [-GAUGE / 2, GAUGE / 2]) { const c0 = P(X + sx - 0.11, yo + 0.04, z + 0.03), c1 = P(X + sx + 0.11, yo + 0.04, z + 0.03), c2 = P(X + sx + 0.11, yo + 0.04, z + 0.17), c3 = P(X + sx - 0.11, yo + 0.04, z + 0.17); quad(c0, c1, c2, c3, clipC); } }
+        if (slabRuns.length) for (let k = Math.ceil((T.x + z0) / 0.625), z = k * 0.625 - T.x; z < Math.min(z1, 28); k++, z = k * 0.625 - T.x) { if (!inSlab(z)) continue; const X = xf(z), yo = (yf ? yf(z) : 0) + 0.06; for (const sx of [-GAUGE / 2, GAUGE / 2]) { const c0 = P(X + sx - 0.12, yo, z), c1 = P(X + sx + 0.12, yo, z), c2 = P(X + sx + 0.12, yo, z + 0.16), c3 = P(X + sx - 0.12, yo, z + 0.16); quad(c0, c1, c2, c3, clipC); } } }      // tà vẹt PC cách 0,6 m (nền đất) / kẹp ray trên tấm bê tông cách 0,625 m
       for (const sx of [-GAUGE / 2, GAUGE / 2]) strip(z => xf(z) + sx - 0.075, z => xf(z) + sx + 0.075, yf ? z => yf(z) + 0.15 : 0.15, z0, z1, snowTr ? 'rgba(14,16,20,.97)' : 'rgba(208,216,226,.9)');
     };
     const drawTracks = (zFrom) => {
@@ -554,17 +567,35 @@
       for (const [s, txt, col] of [[d.s0 - 500, '予告', '#ffd23a'], [d.s0, '惰行', '#2fbf71'], [d.s1 + 30, '力行', '#e8eef5']]) { const z = s - T.x; if (z < ZN || z > 2200) continue;
         items.push({ z, fn: () => { const X = 3.4, a = P(X, 3.3, z), b = P(X, 2.3, z), w = (b[1] - a[1]) * 1.25, bt = P(X, 0, z); ctx.strokeStyle = '#6b7f95'; ctx.lineWidth = Math.max(1, 0.1 * c.f / z); ctx.beginPath(); ctx.moveTo(bt[0], bt[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.fillStyle = col; ctx.fillRect(a[0] - w / 2, a[1], w, b[1] - a[1]); if (b[1] - a[1] > 7) { ctx.fillStyle = '#10151c'; ctx.textAlign = 'center'; ctx.font = 'bold ' + (b[1] - a[1]) * 0.5 + 'px system-ui'; ctx.fillText(txt, a[0], b[1] - (b[1] - a[1]) * 0.27); } } }); }
     }
+    const drawPost = (a, s, closing, flash) => {      // a = chân trụ trên màn hình, s = số pixel mỗi mét ở độ sâu đó; vẽ đối diện camera (hình chiếu thẳng) để thấy rõ biển và đèn
+      const R = (x0, y0, x1, y1) => ctx.fillRect(a[0] + x0 * s, a[1] - y1 * s, (x1 - x0) * s, (y1 - y0) * s), H = 4.3, nStripe = 11, sh = H / nStripe;
+      for (let i = 0; i < nStripe; i++) { ctx.fillStyle = i % 2 ? '#1b1b1b' : '#f0b81a'; R(-0.11, i * sh, 0.11, (i + 1) * sh); }      // thân trụ vàng - đen
+      if (s < 5) { for (const lk of [0, 1]) { ctx.fillStyle = closing && (flash ^ lk) ? '#ff3a2a' : '#5a1818'; ctx.beginPath(); ctx.arc(a[0] + (lk ? 0.9 : -0.9) * s, a[1] - 3.75 * s, Math.max(1.2, 0.27 * s), 0, 7); ctx.fill(); } return; }      // ở xa chỉ cần trụ và hai đèn
+      ctx.lineCap = 'butt'; ctx.lineWidth = 0.2 * s; for (const sg of [-1, 1]) { const x0 = -0.95 * s, y0 = sg * 0.35 * s; for (let i = 0; i < 6; i++) { const t0 = i / 6, t1 = (i + 1) / 6; ctx.strokeStyle = i % 2 ? '#16181b' : '#f0b81a'; ctx.beginPath(); ctx.moveTo(a[0] + x0 * (1 - 2 * t0), a[1] - 4.75 * s + y0 * (1 - 2 * t0)); ctx.lineTo(a[0] + x0 * (1 - 2 * t1), a[1] - 4.75 * s + y0 * (1 - 2 * t1)); ctx.stroke(); } }      // dấu X chéo vàng - đen trên đỉnh trụ
+      ctx.fillStyle = '#16181b'; R(-1.0, 3.7, 1.0, 3.8);      // xà ngang
+      for (const lk of [0, 1]) { const cx = a[0] + (lk ? 0.9 : -0.9) * s, cy = a[1] - 3.75 * s, lit = closing && (flash ^ lk);
+        ctx.fillStyle = '#16181b'; ctx.beginPath(); ctx.arc(cx, cy, 0.4 * s, 0, 7); ctx.fill();      // vành đen quanh đèn
+        if (lit) { const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 1.1 * s); g.addColorStop(0, 'rgba(255,60,40,.55)'); g.addColorStop(1, 'rgba(255,60,40,0)'); ctx.fillStyle = g; ctx.fillRect(cx - 1.1 * s, cy - 1.1 * s, 2.2 * s, 2.2 * s); }
+        ctx.fillStyle = lit ? '#ff3b25' : '#4a1414'; ctx.beginPath(); ctx.arc(cx, cy, 0.27 * s, 0, 7); ctx.fill(); if (lit) { ctx.fillStyle = '#ffb09a'; ctx.beginPath(); ctx.arc(cx - 0.07 * s, cy - 0.07 * s, 0.08 * s, 0, 7); ctx.fill(); } }
+      ctx.fillStyle = '#16181b'; R(0.22, 2.2, 1.55, 3.0);      // hộp mũi tên (hướng xe cộ): mũi tên xám trên, mũi tên vàng nhấp nháy dưới
+      ctx.fillStyle = '#9aa0a6'; R(0.4, 2.76, 1.3, 2.8); ctx.fillStyle = closing && flash ? '#ffc21a' : '#6b560f'; R(0.4, 2.38, 1.3, 2.42);
+      const cx = a[0], cy = a[1] - 1.2 * s, r = 0.62 * s, o = Math.SQRT1_2;      // biển bát giác 踏切注意: nền đen, bốn hình thoi vàng
+      ctx.fillStyle = '#16181b'; ctx.beginPath(); for (let i = 0; i < 8; i++) { const ang = Math.PI / 8 + i * Math.PI / 4; ctx.lineTo(cx + Math.cos(ang) * r / Math.cos(Math.PI / 8) * 0.96, cy + Math.sin(ang) * r / Math.cos(Math.PI / 8) * 0.96); } ctx.closePath(); ctx.fill();
+      const dm = 0.26 * s, kx = [[-1, -1, '踏'], [1, -1, '切'], [-1, 1, '注'], [1, 1, '意']];
+      for (const [qx, qy, ch] of kx) { const px = cx + qx * 0.27 * s, py = cy + qy * 0.27 * s; ctx.fillStyle = '#f0b81a'; ctx.beginPath(); ctx.moveTo(px, py - dm); ctx.lineTo(px + dm, py); ctx.lineTo(px, py + dm); ctx.lineTo(px - dm, py); ctx.closePath(); ctx.fill();
+        if (s > 14) { ctx.fillStyle = '#16181b'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold ' + 0.27 * s + 'px system-ui'; ctx.fillText(ch, px, py + 0.01 * s); ctx.textBaseline = 'alphabetic'; } }
+      if (s > 10) { ctx.fillStyle = '#16181b'; R(-0.5, 3.1, -0.12, 3.4); ctx.beginPath(); ctx.arc(a[0] - 0.55 * s, a[1] - 3.25 * s, 0.22 * s, 0, 7); ctx.fill(); }      // loa cảnh báo nhỏ
+    };
     for (const g of W.xings || []) {       // đường ngang: mặt đường nhựa cắt qua ray, rào chắn hạ khi tàu tới gần, đèn đỏ nhấp nháy, xe kẹt và đèn tín hiệu đặc biệt (特殊信号発光機)
       const zc = g.s - T.x; if (zc < ZN - 6 || zc > 1800) continue; const closing = zc < 750 || g.blocked, flash = Math.floor(now / 450) % 2;
       items.push({ z: Math.max(zc, ZN + 0.5), fn: () => {
         strip(z => Math.min(oppAt(z), 0) - 3.6, z => Math.max(oppAt(z), 0) + 3.6, 0.03, zc - 3.2, zc + 3.2, mixc([22, 24, 28], [74, 76, 80], day * (1 - wx * 0.3)));
         railStrip(() => 0, zc - 3.2, zc + 3.2, false); if (Math.abs(oppAt(zc)) > 1) railStrip(oppAt, zc - 3.2, zc + 3.2, false);
-        const xo = Math.min(oppAt(zc), 0) - 3.4, zz = Math.max(zc - 3.8, ZN + 0.2), sc = Math.max(1, c.f / Math.max(zz, 2));
-        for (const [Xp, side] of [[3.5, 1], [xo, -1]]) { const a = P(Xp, 0, zz), b = P(Xp, 2.0, zz); ctx.strokeStyle = '#d8dde3'; ctx.lineWidth = Math.max(1, 0.12 * sc); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
-          if (closing) { for (const lk of [0, 1]) { const q = P(Xp + side * (lk ? -0.5 : 0.5) * 0.0, 1.7 - lk * 0.45, zz); ctx.fillStyle = (flash ^ lk) ? 'rgba(255,50,40,1)' : 'rgba(110,20,20,1)'; ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(1.2, 0.2 * sc), 0, 7); ctx.fill(); } } }
-        // thanh chắn: nằm trên ĐƯỜNG BỘ (vuông góc với ray), mỗi bên một thanh đưa từ trụ ra phía ngoài; hạ ngang khi tàu tới, dựng đứng khi chưa
-        for (const zz2 of [Math.max(zc - 3.8, ZN + 0.2), zc + 3.8]) for (const [Xp, dirx] of [[3.5, 1], [xo, -1]]) { const A = closing ? P(Xp, 1.1, zz2) : P(Xp, 1.9, zz2), B = closing ? P(Xp + dirx * 6.0, 1.1, zz2) : P(Xp, 3.6, zz2), n = closing ? 8 : 1; ctx.lineWidth = Math.max(1.4, 0.16 * Math.max(1, c.f / Math.max(zz2, 2)));
-          for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n; ctx.strokeStyle = i % 2 ? '#f2f2f2' : '#d63a2f'; ctx.beginPath(); ctx.moveTo(A[0] + (B[0] - A[0]) * t0, A[1] + (B[1] - A[1]) * t0); ctx.lineTo(A[0] + (B[0] - A[0]) * t1, A[1] + (B[1] - A[1]) * t1); ctx.stroke(); } }
+        const xo = Math.min(oppAt(zc), 0) - 4.5, zz = Math.max(zc - 3.8, ZN + 0.2), sc = Math.max(1, c.f / Math.max(zz, 2));
+        for (const Xp of [4.6, xo]) drawPost(P(Xp, 0, zz), sc, closing, flash);      // trụ đường ngang kiểu Nhật (踏切): trụ vàng-đen, xà ngang hai đèn đỏ tròn, hộp mũi tên, biển bát giác 踏切注意
+        // thanh chắn: mỗi bên MỘT thanh, song song với ray (chạy dọc theo ray, chắn ngang lối vào đường bộ), vàng - đen; hạ ngang khi tàu tới (từ trụ gần tới đầu xa của đường bộ), dựng đứng khi chưa
+        for (const Xp of [4.6, xo]) { const zA = Math.max(zc - 3.8, ZN + 0.2), zB = zc + 3.8, A = closing ? P(Xp, 1.1, zA) : P(Xp, 1.9, zA), B = closing ? P(Xp, 1.1, zB) : P(Xp, 3.9, zA), n = closing ? 8 : 4; ctx.lineWidth = Math.max(1.6, 0.18 * Math.max(1, c.f / Math.max(zA, 2)));
+          for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n; ctx.strokeStyle = i % 2 ? '#1c1c1c' : '#f2c21b'; ctx.beginPath(); ctx.moveTo(A[0] + (B[0] - A[0]) * t0, A[1] + (B[1] - A[1]) * t0); ctx.lineTo(A[0] + (B[0] - A[0]) * t1, A[1] + (B[1] - A[1]) * t1); ctx.stroke(); } }
         if (g.blocked) { const zq = Math.max(zc - 0.9, ZN + 0.3), a = P(-2.2, 0.25, zq), b = P(2.2, 0.25, zq), d = P(2.2, 1.5, zq), e = P(-2.2, 1.5, zq); quad(a, b, d, e, '#b3322d'); const w1 = P(-1.7, 0.95, zq), w2 = P(1.7, 0.95, zq), w3 = P(1.7, 1.4, zq), w4 = P(-1.7, 1.4, zq); quad(w1, w2, w3, w4, 'rgba(20,28,38,.85)'); }
       } });
       if (g.blocked && !g.hit) { const zl = g.s - 600 - T.x; if (zl > ZN && zl < 1800) items.push({ z: zl, fn: () => { const a = P(3.6, 0, zl), b = P(3.6, 4.2, zl), sc = Math.max(1, c.f / zl); ctx.strokeStyle = '#8c98a6'; ctx.lineWidth = Math.max(1, 0.15 * sc); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();

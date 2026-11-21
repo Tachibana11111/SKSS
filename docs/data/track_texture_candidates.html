@@ -1,0 +1,36 @@
+<!doctype html><meta charset="utf-8"><title>Mẫu texture tà vẹt / ray — nhìn từ trên xuống</title>
+<style>
+body{margin:0;background:#12171d;color:#e8eef5;font:14px system-ui;padding:20px}
+h1{font-size:18px;margin:0 0 4px}p{color:#8aa0b5;margin:4px 0 14px;max-width:900px}
+.row{display:flex;gap:16px;flex-wrap:wrap}.c{background:#1a222c;border:1px solid #2b3b4d;border-radius:10px;padding:10px}
+.c b{display:block;margin-bottom:2px}.c span{display:block;color:#8aa0b5;font-size:12px;max-width:290px;min-height:48px;margin-bottom:6px}
+canvas{display:block;border-radius:6px}
+button{background:#223042;color:#e8eef5;border:1px solid #33475e;border-radius:8px;padding:6px 14px;margin-right:6px;cursor:pointer}button.on{background:#2a6fd6}
+</style>
+<h1>Mẫu texture tà vẹt / ray (nhìn từ trên xuống, 80 px = 1 m, khổ 1,435 m)</h1>
+<p>Chỉ là mẫu để chọn hướng; chưa đưa vào game. Hiện tại: tà vẹt rộng 2,6 m, cách nhau 1,3 m (dòng 212 trong cabview.js). Thực tế Shinkansen: tà vẹt bê tông dự ứng lực dài ~2,4 m cách ~0,6 m (đường đá dăm) hoặc tấm bê tông ~4,9 m (cầu cạn, hầm).</p>
+<div style="margin-bottom:12px"><button id="b0" class="on">Ban ngày</button><button id="b1">Tuyết</button><button id="b2">Hoàng hôn</button></div>
+<div class="row" id="row"></div>
+<script>
+const S=80,W=290,H=520,G=1.435;
+let seed=1;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+const mix=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));const rgb=c=>`rgb(${c[0]},${c[1]},${c[2]})`;
+let mode=0;
+const PAL=[{bal:[104,100,94],balD:[70,68,64],balL:[142,138,130],conc:[158,156,150],concD:[122,120,116],rail:[176,180,186],railD:[96,100,108],wood:[74,58,44],ground:[84,92,70],pad:[40,40,44]},
+{bal:[214,220,228],balD:[176,184,196],balL:[246,248,252],conc:[226,230,236],concD:[190,196,206],rail:[200,206,214],railD:[120,128,140],wood:[196,190,184],ground:[236,240,246],pad:[110,116,126]},
+{bal:[84,76,74],balD:[52,48,50],balL:[120,106,98],conc:[118,108,104],concD:[84,78,78],rail:[190,160,140],railD:[80,70,72],wood:[58,44,36],ground:[64,62,52],pad:[34,30,32]}];
+function grains(g,x0,y0,x1,y1,n,p){for(let i=0;i<n;i++){const x=x0+rnd()*(x1-x0),y=y0+rnd()*(y1-y0),r=1+rnd()*2.6,t=rnd();g.fillStyle=rgb(t<.33?p.balD:t<.66?p.bal:p.balL);g.beginPath();g.ellipse(x,y,r,r*(.6+rnd()*.5),rnd()*3,0,7);g.fill();}}
+function rails(g,cx,p,polish=true){for(const s of[-1,1]){const x=cx+s*G/2*S;g.fillStyle=rgb(p.railD);g.fillRect(x-4.5,0,9,H);g.fillStyle=rgb(p.rail);g.fillRect(x-3,0,6,H);if(polish){g.fillStyle='rgba(255,255,255,.28)';g.fillRect(x-1,0,2,H);}}}
+function clips(g,cx,y,p){for(const s of[-1,1]){const x=cx+s*G/2*S;g.fillStyle=rgb(p.pad);g.fillRect(x-8,y-5,16,10);g.fillStyle='rgba(0,0,0,.45)';g.fillRect(x-7,y-3,3,6);g.fillRect(x+4,y-3,3,6);}}
+const cands=[
+{n:'A · Hiện tại (mô phỏng)',d:'Đá dăm phẳng, tà vẹt rộng 2,6 m cách 1,3 m. Thưa và rộng hơn thực tế.',f:(g,p,cx)=>{g.fillStyle=rgb(p.bal);g.fillRect(cx-2.1*S,0,4.2*S,H);for(let y=10;y<H;y+=1.3*S){g.fillStyle=rgb(p.wood);g.fillRect(cx-1.3*S,y,2.6*S,.25*S);}rails(g,cx,p,false);}},
+{n:'B · Đá dăm + tà vẹt PC dày',d:'Tà vẹt bê tông dài 2,4 m cách 0,6 m; hạt đá dăm; ray bóng ở đỉnh; kẹp ray.',f:(g,p,cx)=>{g.fillStyle=rgb(p.bal);g.fillRect(cx-2.1*S,0,4.2*S,H);grains(g,cx-2.1*S,0,cx+2.1*S,H,2600,p);for(let y=6;y<H;y+=.6*S){g.fillStyle='rgba(0,0,0,.25)';g.fillRect(cx-1.2*S+3,y+3,2.4*S,.2*S);g.fillStyle=rgb(p.conc);g.fillRect(cx-1.2*S,y,2.4*S,.2*S);g.fillStyle=rgb(p.concD);g.fillRect(cx-1.2*S,y+.2*S-3,2.4*S,3);clips(g,cx,y+.1*S,p);}rails(g,cx,p);}},
+{n:'C · Đá dăm đầy ô + vai đá',d:'Như B nhưng đá lấp gần kín giữa các tà vẹt, có vai đá dăm (shoulder) và mép đất, thấy rõ nền.',f:(g,p,cx)=>{g.fillStyle=rgb(p.ground);g.fillRect(0,0,W,H);grains(g,0,0,W,H,500,{bal:p.ground,balD:mix(p.ground,[0,0,0],.2),balL:mix(p.ground,[255,255,255],.15)});const bx=cx-1.9*S;g.fillStyle=rgb(p.bal);g.beginPath();g.moveTo(bx-18,0);g.lineTo(bx,0);g.lineTo(bx,H);g.lineTo(bx-18,H);g.fill();g.fillRect(cx-1.9*S,0,3.8*S,H);g.fillStyle=rgb(p.bal);g.beginPath();g.moveTo(cx+1.9*S,0);g.lineTo(cx+1.9*S+22,0);g.lineTo(cx+1.9*S+22,H);g.lineTo(cx+1.9*S,H);g.fill();grains(g,bx-18,0,cx+1.9*S+22,H,3400,p);for(let y=6;y<H;y+=.6*S){g.fillStyle=rgb(p.conc);g.fillRect(cx-1.2*S,y,2.4*S,.2*S);clips(g,cx,y+.1*S,p);}rails(g,cx,p);}},
+{n:'D · Tấm bê tông (cầu cạn / hầm)',d:'Tấm đường dài 4,9 m rộng 2,34 m, khe ngang, vữa CA hai bên, cặp kẹp ray cách 0,625 m. Hai rãnh cáp hai bên.',f:(g,p,cx)=>{g.fillStyle=rgb(p.concD);g.fillRect(cx-2.1*S,0,4.2*S,H);for(const s of[-1,1]){g.fillStyle=rgb(p.concD);g.fillRect(cx+s*1.62*S-.15*S,0,.3*S,H);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(cx+s*1.62*S-1,0,2,H);}const pl=4.9*S;let off=-70;for(let y=off;y<H;y+=pl){g.fillStyle=rgb(p.conc);g.fillRect(cx-1.17*S,y+4,2.34*S,pl-8);g.fillStyle='rgba(0,0,0,.35)';g.fillRect(cx-1.17*S,y,2.34*S,4);g.fillStyle='rgba(255,255,255,.12)';g.fillRect(cx-1.17*S,y+4,2.34*S,2);for(let k=.3;k<4.9;k+=.625)clips(g,cx,y+k*S,p);}rails(g,cx,p);}},
+{n:'E · Tấm bê tông + ống phun nước tuyết',d:'Như D nhưng có ống phun nước giữa hai ray và rãnh thoát (tuyến Joetsu/Hokuriku/Tohoku vùng tuyết). Có thể bật chỉ khi tuyết.',f:(g,p,cx)=>{cands[3].f(g,p,cx);g.fillStyle=rgb(p.pad);g.fillRect(cx-3,0,6,H);for(let y=14;y<H;y+=1.2*S){g.fillStyle=rgb(p.railD);g.fillRect(cx-6,y,12,5);g.fillStyle='rgba(120,190,255,.55)';g.beginPath();g.arc(cx,y+2.5,3,0,7);g.fill();}}},
+{n:'F · Tà vẹt gỗ cũ (đường nhánh / depot)',d:'Tà vẹt gỗ sẫm nứt vân, cách 0,6 m, đá dăm bẩn/cỏ, ray gỉ. Dành cho đường depot hoặc đường dừng.',f:(g,p,cx)=>{g.fillStyle=rgb(p.bal);g.fillRect(cx-2.1*S,0,4.2*S,H);grains(g,cx-2.1*S,0,cx+2.1*S,H,2200,p);for(let y=6;y<H;y+=.6*S){const l=2.6*S+(rnd()-.5)*10;g.fillStyle=rgb(p.wood);g.fillRect(cx-l/2,y+(rnd()-.5)*3,l,.22*S);g.strokeStyle='rgba(0,0,0,.35)';for(let k=0;k<4;k++){g.beginPath();const yy=y+3+rnd()*.15*S;g.moveTo(cx-l/2+rnd()*20,yy);g.lineTo(cx+l/2-rnd()*20,yy);g.stroke();}clips(g,cx,y+.11*S,p);}for(let i=0;i<60;i++){g.fillStyle=`rgba(${60+rnd()*30|0},${100+rnd()*40|0},50,.6)`;g.beginPath();g.arc(cx-2*S+rnd()*4*S,rnd()*H,1+rnd()*2.5,0,7);g.fill();}rails(g,cx,p,false);for(const s of[-1,1]){g.fillStyle='rgba(150,80,40,.5)';g.fillRect(cx+s*G/2*S-3,0,6,H);}}}
+];
+function draw(){const row=document.getElementById('row');row.innerHTML='';const p=PAL[mode];cands.forEach(c=>{seed=7;const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');g.fillStyle=rgb(p.ground);g.fillRect(0,0,W,H);c.f(g,p,W/2);const d=document.createElement('div');d.className='c';d.innerHTML=`<b>${c.n}</b><span>${c.d}</span>`;d.appendChild(cv);row.appendChild(d);});}
+[0,1,2].forEach(i=>document.getElementById('b'+i).onclick=()=>{mode=i;[0,1,2].forEach(j=>document.getElementById('b'+j).className=j===i?'on':'');draw();});
+draw();
+</script>
