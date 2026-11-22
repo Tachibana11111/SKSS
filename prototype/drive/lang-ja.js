@@ -790,4 +790,12 @@ I18N.add("ja", {
 "Chiều lên": "上り",
 "Hủy": "キャンセル",
 "Đổi tuyến": "路線を変更",
+"Omagari: chờ {0} (ngược chiều) vào ga rồi mới được rời ga ({1} s)": "大曲：対向の{0}が到着するまで待ってから発車します（{1}秒）",
+"Đổi đầu tàu tại Omagari: góc nhìn chuyển sang đuôi tàu (đầu tàu mới), chắn cuối nằm sau lưng.": "大曲で進行方向が変わります：視点が列車の後端（新しい先頭）に切り替わり、車止めは背後になります。",
+"Chạy lùi": "後退",
+"LÙI": "後退",
+"Chỉ đổi giữa chạy tiến và chạy lùi khi tàu đã dừng hẳn (0 km/h).": "前進と後退の切り替えは、列車が完全に停止（0km/h）してからのみ行えます。",
+"Chạy lùi chỉ dùng được khi tàu đang ở đường chạy (không ở ga đang đỗ).": "後退は列車が本線上にあるときのみ使えます（停車中の駅では使えません）。",
+"Chạy lùi: BẬT. Kéo cần gia tốc để lùi; về 0 km/h rồi bấm lại để chạy tiến.": "後退：オン。ノッチを入れて後退します。0km/hまで止まってから再度押すと前進に戻ります。",
+"Chạy lùi: TẮT. Tàu chạy tiến như bình thường.": "後退：オフ。通常どおり前進します。",
 });

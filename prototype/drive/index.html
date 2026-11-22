@@ -687,7 +687,7 @@ const act = {
   power(d) { Sim.setPower(T, T.pw + d); }, brake(d) { Sim.setBrake(T, T.bk + d); }, setpw(n) { Sim.setPower(T, n); }, setbk(n) { Sim.setBrake(T, n); }, coast() { Sim.coast(T); }, eb() { Sim.setBrake(T, 8); },
   door() { Sim.requestClose(T); }, cs() { Sim.toggleCS(T); }, csAdj(d) { Sim.adjustCS(T, d); },
   ack() { if (W.decision) { Sim.answerDecision(W, 'a'); return; } if (!Sim.ackOldest(W)) W.say('info', _t('Không có lệnh nào cần nhắc lại.')); }, no() { if (W.decision) Sim.answerDecision(W, 'b'); },
-  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', _t('Đèn pha: ') + ({ auto: _t('tự động'), on: _t('BẬT'), off: _t('TẮT') }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, auto() { if (tutLessonActive) return; auto = !auto; }, quake(q) { Sim.injectQuake(W, q); if (HOME) Sim.injectQuake(HOME.W, q); }
+  confirm() { Sim.confirmATC(T); }, horn() { Sim.honk(T); }, wiper() { Sim.toggleWiper(T); }, measure() { Sim.toggleMeasure(T); }, mark() { Sim.markDefect(T); }, atcsw() { Sim.toggleATC(T); }, pan() { Sim.togglePan(T); }, lamp() { Sim.cycleLamp(T); W.say('info', _t('Đèn pha: ') + ({ auto: _t('tự động'), on: _t('BẬT'), off: _t('TẮT') }[T.lamp]) + '.'); }, pa() { Sim.announcePA(T); }, rev() { if (devOK()) Sim.toggleReverse(T); }, auto() { if (tutLessonActive) return; auto = !auto; }, quake(q) { Sim.injectQuake(W, q); if (HOME) Sim.injectQuake(HOME.W, q); }
 };
 const autoOK = () => !!((recipe && recipe.free) || replaying);      // tự lái chỉ có ở chế độ tự do (xem lại chuyến cũ thì cho phép để phát lại đúng)
 function doAct(name, arg) { if (!W || replaying) return; if (HOME && name !== 'quake') { if (performance.now() - cabWarnAt > 4000) { cabWarnAt = performance.now(); W.say('warn', _t('Đang ở buồng lái tàu khác: không điều khiển được (dùng nút Quay về tàu của bạn).')); } return; } if (name === 'auto' && !tutLessonActive && !autoOK()) { W.say('warn', _t('Tự lái chỉ dùng được ở chế độ tự do (bật ở màn hình thiết lập chuyến).')); return; } recActs.push([tickCount, name, arg]); act[name](arg); }
@@ -721,7 +721,7 @@ addEventListener('keydown', e => {
   else if (k === 'c' || k === 'C') doAct('cs'); else if (k === '[') doAct('csAdj', -5); else if (k === ']') doAct('csAdj', 5);
   else if (k === 'y' || k === 'Y') doAct('ack'); else if (k === 'n' || k === 'N') doAct('no');
   else if (k === 'v' || k === 'V') doAct('wiper'); else if (k === 'l' || k === 'L') doAct('lamp'); else if (k === 'a' || k === 'A') doAct('atcsw'); else if (k === 'g' || k === 'G') doAct('pan');
-  else if (k === 'm' || k === 'M') doAct('pa'); else if (k === 't' || k === 'T') doAct('auto');
+  else if (k === 'm' || k === 'M') doAct(devOK() ? 'rev' : 'pa'); else if (k === 't' || k === 'T') doAct('auto');
   else return;
   e.preventDefault();
 });

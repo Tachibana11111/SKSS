@@ -179,7 +179,7 @@
       if (o.umb) { ctx.strokeStyle = '#222'; ctx.lineWidth = Math.max(1, 0.03 * k); ctx.beginPath(); ctx.moveTo(x + w * 0.4, yf - hh * 0.6); ctx.lineTo(x + w * 0.4, yf - hh * 1.2); ctx.stroke(); ctx.fillStyle = hs(sd, 13) < 0.5 ? '#2a3c5e' : '#6a2a2a'; ctx.beginPath(); ctx.arc(x + w * 0.4, yf - hh * 1.2, hh * 0.32, Math.PI, 0); ctx.fill(); }
       ctx.globalAlpha = ga; };
     for (const q of sts) {
-      const st = q.st, gs = q.gs, sa = gs - 420, sb = gs + 20, isNow = T.phase === 'dwell' && T.k === q.i, openDoors = isNow && T.door === 'open', dwellT = isNow ? T.dwellT : 0;
+      const st = q.st, gs = q.gs, sa = gs - st.pb, sb = gs + st.pf, isNow = T.phase === 'dwell' && T.k === q.i, openDoors = isNow && T.door === 'open', dwellT = isNow ? T.dwellT : 0;
       if (sb < sAt(ox0, 3) - 30 || sa > sAt(ox1, 3) + 30) continue;
       // tàu đỗ ở đường khác (kể cả tàu đứng ở sân ga bên kia)
       for (const sb2 of W.stabled || []) { if (sb2.i !== q.i) continue; const veh = S.VEH[sb2.key]; if (!veh) continue; const tk2 = sb2.track, mid2 = sb2.front - veh.len / 2, e = out(tk2.in0 !== undefined ? tk2.plain + (tk2.x - tk2.plain) * LAY.trackW(tk2, mid2, q.m.s) : tk2.x); if (e < 2.5) continue; const dd = dep(e - 1.45); items.push({ d: dd, fn: () => { if (veh.parts) { let off = 0; for (const pk of (sb2.face === 1 ? veh.parts.slice().reverse() : veh.parts)) { const pv = S.VEH[pk]; trainSide(pk, sb2.front - veh.len + off, pv.len, sb2.face !== 1, dd, sb2.v || 0); off += pv.len + (veh.gap || 2.5); } } else trainSide(sb2.key, sb2.front - veh.len, veh.len, sb2.face !== 1, dd, sb2.v || 0); } }); }
@@ -223,7 +223,7 @@
         // thang bộ có mái từ cầu vượt xuống sân ga + trụ cầu (vị trí như cabview: 1/6, 1/2, 5/6 hoặc 1/4, 3/4 hoặc 1/2 chiều dài sân ga)
         { const nb0 = LAY.bridgeCountOf(L.stations[q.i].lay || '2-2-0'), nb = nb0 && !tunAt(gs) ? nb0 : 0, fr = nb === 3 ? [1 / 6, 1 / 2, 5 / 6] : nb === 2 ? [0.25, 0.75] : nb === 1 ? [0.5] : [];
           const eC = out((p.xa + p.xb) / 2), BY = 9.4, BH = 2.4, Ls = (BY - PH) / 0.55;
-          for (const fq of fr) { const sb0 = gs - 420 + 440 * fq, dS = dep(Math.max(0.6, eC - 1.15)), dPl = dep(Math.max(0.6, eC - 1.9));
+          for (const fq of fr) { const sb0 = gs - st.pb + (st.pb + st.pf) * fq, dS = dep(Math.max(0.6, eC - 1.15)), dPl = dep(Math.max(0.6, eC - 1.9));
             items.push({ d: dPl, fn: () => { const kk = f / dPl, x = X(sb0, dPl), w = Math.max(5, 0.6 * kk); ctx.fillStyle = mixc([26, 28, 32], [150, 152, 148], lit); ctx.fillRect(x - w / 2, Y(BY, dPl), w, Y(PH, dPl) - Y(BY, dPl)); } });
             items.push({ d: dS, fn: () => { const xa = X(sb0 + 1.6, dS), xb = X(sb0 + 1.6 + Ls, dS); if (Math.max(xa, xb) < ox0 || Math.min(xa, xb) > ox1) return; ctx.fillStyle = mixc([30, 34, 40], [178, 176, 160], lit); ctx.beginPath(); ctx.moveTo(xa, Y(BY, dS)); ctx.lineTo(xb, Y(PH, dS)); ctx.lineTo(xb, Y(PH + BH, dS)); ctx.lineTo(xa, Y(BY + BH, dS)); ctx.closePath(); ctx.fill();
               ctx.fillStyle = mixc([12, 20, 32], [92, 124, 156], lit); ctx.beginPath(); ctx.moveTo(xa, Y(BY + 0.9, dS)); ctx.lineTo(xb, Y(PH + 0.9, dS)); ctx.lineTo(xb, Y(PH + 1.8, dS)); ctx.lineTo(xa, Y(BY + 1.8, dS)); ctx.closePath(); ctx.fill(); ctx.fillStyle = mixc([6, 8, 12], [30, 32, 38], lit); ctx.fillRect(Math.min(xb, xb - 4), Y(PH + BH, dS), 4, Y(PH, dS) - Y(PH + BH, dS)); } }); } }

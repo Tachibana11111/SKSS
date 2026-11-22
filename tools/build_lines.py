@@ -73,6 +73,8 @@ for _lid in ('yam', 'aki'):
     XO[_lid] = {_k: _v for _k, _v in XO['toh'].items() if _k in _names}
 # Fukushima (2-4-1f, hình ou_1/030_01, docs/data/haisen/fukushima_plan.html): phía tây hai ghi đơn s (xa) rồi r (gần), phía đông một ghi đơn r; tuyến Yamagata có thêm hai ghi đơn s, r trên đoạn đường đôi sau khi tách khỏi tuyến cha (z ≈ 1700 / 1900 m sau vạch dừng; [I] vị trí, không có trong sơ đồ)
 XO['yam']['Fukushima'] = XO['toh']['Fukushima'] + [['a', 's', 1680], ['a', 'r', 1880]]
+XO['aki']['Omagari'] = []      # ga switchback (2-2-0w): mạng đường riêng (Layout.om*), không dùng chữ X
+XO['aki']['Akita'] = []      # ga cuối đầu cụt (1-2-0t, docs/data/haisen/akita_plan.html): không có chữ X, một đường vào chia thành hai đường dừng bằng cơ chế tách đường của ga
 for _lid, _d in XO.items():
     for _s in LINES[_lid]['stations']:
         if _s['en'] in _d: _s['xo'] = _d[_s['en']]

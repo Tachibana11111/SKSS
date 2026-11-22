@@ -3,7 +3,7 @@
 // Chuỗi bố trí viết theo chiều chạy XUỐNG (km tăng), trái -> phải khi nhìn từ buồng lái; Nhật chạy bên trái nên đường xuống nằm bên trái đường lên.
 //   d/u = đường dừng chiều xuống/lên, D/U = đường thông qua chiều xuống/lên, P = sân ga.
 (function (root) {
-  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-1c': 'dPdDUuP', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-0s': 'dPduPu', '2-4-1': 'dPdDUuPu', '2-4-1k': 'dPdDUuPu', '2-4-1f': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '3-4-0': 'PdPduPu', '2-4-0t': 'dPddPu', '2-3-0a': 'PdduP', '2-3-0b': 'PduuP', '2-3-0c': 'dPduP' };      // 2-3-0c: Chikugo-Funagoya (Kyushu 010_02): đường tránh nằm ở phía đường xuống, sân ga đảo giữa đường tránh và đường chính xuống [D sơ đồ]; ảnh gương của 2-3-0 (PduPu). 2-3-0a / 2-3-0b: Okutsugaru-Imabetsu / Kikonai theo hình 010_02 / 010_04 (hai đường chính cạnh hai sân ga ngoài + một đường 1435 mm mảnh sát một sân ga; chiều xuống: ga a dừng ở đường mảnh phía trên, ga b dừng ngay trên đường chính xuống) [D sơ đồ, I vai trò đường mảnh; vẫn tính là ga tránh được như mã cũ 2-2-1]. 2-4-0t: Tokyo (Tohoku/Joetsu/Hokuriku) theo sơ đồ ray HaisenNet: 3 đường nhập đường chính xuống, 1 đường nhập đường chính lên [D sơ đồ, I hướng]
+  const TOK = { '2-2-0': 'PduP', '2-2-1': 'PdDUuP', '2-3-1': 'PdDUuPu', '2-3-1c': 'dPdDUuP', '2-3-0': 'PduPu', '2-4-0': 'dPduPu', '2-4-0s': 'dPduPu', '2-4-1': 'dPdDUuPu', '2-4-1k': 'dPdDUuPu', '2-4-1f': 'dPdDUuPu', '1-2-1': 'DdPuU', '3-6-0': 'dPddPuuPu', '5-8-0': 'PdPddPduPuuPu', '1-2-0': 'dPu', '1-2-0t': 'dPu', '2-2-0w': 'PddP', '3-4-0': 'PdPduPu', '2-4-0t': 'dPddPu', '2-3-0a': 'PdduP', '2-3-0b': 'PduuP', '2-3-0c': 'dPduP' };      // 2-3-0c: Chikugo-Funagoya (Kyushu 010_02): đường tránh nằm ở phía đường xuống, sân ga đảo giữa đường tránh và đường chính xuống [D sơ đồ]; ảnh gương của 2-3-0 (PduPu). 2-3-0a / 2-3-0b: Okutsugaru-Imabetsu / Kikonai theo hình 010_02 / 010_04 (hai đường chính cạnh hai sân ga ngoài + một đường 1435 mm mảnh sát một sân ga; chiều xuống: ga a dừng ở đường mảnh phía trên, ga b dừng ngay trên đường chính xuống) [D sơ đồ, I vai trò đường mảnh; vẫn tính là ga tránh được như mã cũ 2-2-1]. 2-4-0t: Tokyo (Tohoku/Joetsu/Hokuriku) theo sơ đồ ray HaisenNet: 3 đường nhập đường chính xuống, 1 đường nhập đường chính lên [D sơ đồ, I hướng]
   const ADJ = -4.3, TRK_GAP = 4.3, EDGE = 1.75, ISLAND = 7.2, SIDE = 9.0;       // toạ độ mô hình: X dương = phía "sân ga của đường ta"; đường ngược chiều gần nhất ở X = ADJ
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -58,7 +58,41 @@
   // ghi nối trong khung ĐANG NHÌN (camera sau: z' = -z - len); a, b = hai đường được nối
   const linksOf = (st, rear) => (st.links || []).map(l => ({ z: rear ? -l.z0 - l.len : l.z0, len: l.len, a: rear && l.det ? l.b : l.a, b: rear && l.det ? l.a : l.b, det: !!l.det }));      // ghi nối đi từ đường a sang đường b theo chiều tiến z; camera sau (thế giới gương) đảo a, b với ghi của Sendai (đường chính → đường ngoài theo chiều chạy)
   // pick: chọn đường dừng khi có nhiều đường (số nguyên). Trả về {tracks, plats, ref, opp, stops, ours}
-  function station(code, dir, pick, rev) {      // rev: nhìn NGƯỢC chiều chạy (camera sau): đảo thứ tự trái-phải, giữ nguyên vai trò đường ta / đường ngược chiều
+  // ---- Omagari (switchback tuyến Akita, docs/data/haisen/omagari_plan.html, 22/11/2026): ga cụt, hai đường dừng giữa hai sân ga, ghi gộp 2→1, đường đơn 500 m, ghi tách 1→2, hai đường song song (Kita-Ōmagari bắc K, Akita nam L)
+  // có ghi chéo X nối K → L, rồi tách hẳn. Toạ độ TUYỆT ĐỐI của mạng đường: u (m) từ chắn cuối ra phía ngoài (tây), X (m) bắc dương. Khung ĐẾN (ph = 'A'): tàu chạy về chắn cuối (z = 15 − u, trái = bắc);
+  // khung ĐI (ph = 'B', sau khi đổi đầu): tàu chạy ra ngoài (z = u − ub, trái = nam); toạ độ khung = sgn·(X − X_ta) với sgn = +1 (A) / −1 (B). Mọi vật vẽ theo toạ độ TƯƠNG ĐỐI so với đường của ta.
+  const OMA = '2-2-0w', OMU = { merge: [455, 535], split: [1035, 1115], xo: [1235, 1385], div: [1465, 1765], end: 8000, endOpp: 3500, ub: 165, buf: 15, pb: 344, plen: 359 };
+  const omSm = (a, b, u) => smooth(a, b, u);
+  function omTrack(id, u) {      // X tuyệt đối của đường id tại u (null nếu ngoài phạm vi)
+    const M = OMU;
+    if (id === 'A') return u >= 0 && u <= M.merge[1] ? 0 : null;
+    if (id === 'B') return u >= 0 && u <= M.merge[1] ? (u <= M.merge[0] ? -4.3 : -4.3 * (1 - omSm(M.merge[0], M.merge[1], u))) : null;
+    if (id === 'S') return u >= M.merge[1] && u <= M.split[0] ? 0 : null;
+    if (id === 'K' || id === 'L') { if (u < M.split[0] || u > M.end) return null; const sg = id === 'K' ? 1 : -1, x = u < M.split[1] ? 4.3 * omSm(M.split[0], M.split[1], u) : u <= M.div[0] ? 4.3 : 4.3 + 15.7 * omSm(M.div[0], M.div[1], u); return sg * x; }
+    if (id === 'X') return u >= M.xo[0] && u <= M.xo[1] ? 4.3 - 8.6 * omSm(M.xo[0], M.xo[1], u) : null;
+    return null;
+  }
+  const omPk = pk => { const v = pk && typeof pk === 'object' ? (pk.i | 0) : (pk | 0); return { ph: v >= 10 ? 'B' : 'A', lane: v % 10 === 1 ? 1 : 0 }; };      // mã chọn: 10·(đã đổi đầu) + làn (0 = đường A phía bắc, 1 = đường B phía nam)
+  const omPkCode = (ph, lane) => (ph === 'B' ? 10 : 0) + (lane ? 1 : 0);
+  function omLine(dir, ph) { return ((dir === 'down') === (ph === 'A')) ? 'K' : 'L'; }      // đường ngoài của ta: xuống: đến từ K (Kita-Ōmagari), đi sang L (Akita); lên: ngược lại
+  function omOurs(dir, pk, u) { const q = omPk(pk), M = OMU; if (u <= M.merge[1]) return omTrack(q.lane ? 'B' : 'A', Math.max(0, u)); if (u <= M.split[0]) return 0; const x = omTrack(omLine(dir, q.ph), u); return x === null ? omTrack(omLine(dir, q.ph), M.end) : x; }
+  function omOther(dir, pk, u) { const q = omPk(pk), M = OMU; if (u <= M.merge[1]) return omTrack(q.lane ? 'A' : 'B', Math.max(0, u)); if (u <= M.split[0]) return 0; const x = omTrack(omLine(dir, q.ph) === 'K' ? 'L' : 'K', u); return x === null ? omTrack(omLine(dir, q.ph) === 'K' ? 'L' : 'K', M.end) : x; }
+  const omSgn = pk => omPk(pk).ph === 'A' ? 1 : -1;
+  // u ↔ z của khung đang nhìn (ub = chiều dài tàu + 12 m: đầu tàu cách chắn cuối sau khi đổi đầu)
+  const omU = (pk, z, ub) => omPk(pk).ph === 'A' ? OMU.buf - z : z + (ub || OMU.ub);
+  const omZ = (pk, u, ub) => omPk(pk).ph === 'A' ? OMU.buf - u : u - (ub || OMU.ub);
+  function omRelOther(dir, pk, u) { return omSgn(pk) * (omOther(dir, pk, u) - omOurs(dir, pk, u)); }      // làn "ngược" (đường chính còn lại gần nhất) so với đường của ta
+  function omRelTrack(dir, pk, id, u) { const x = omTrack(id, u); return x === null ? null : omSgn(pk) * (x - omOurs(dir, pk, u)); }
+  function omaStation(pkIn, dir) {
+    const q = omPk(pkIn), sg = q.ph === 'A' ? 1 : -1, xo = q.lane ? 0 : -4.3, xOurs = q.lane ? -4.3 : 0, xOth = q.lane ? 0 : -4.3, ub = (pkIn && pkIn.ub) || OMU.ub;
+    const rel = x => sg * (x - xOurs), pl = (a, b) => { const p = rel(a), r = rel(b); return { xa: Math.min(p, r), xb: Math.max(p, r), side: false }; };
+    const tOurs = { i: 0, x: 0, c: 'd', own: true, thr: false, plain: 0, main: true }, tOth = { i: 1, x: rel(xOth), c: 'd', own: true, thr: false, plain: 0, main: false };
+    const plats = [pl(1.75, 10.75), pl(-15.05, -6.05)], plat = plats.find(p => Math.abs(Math.min(Math.abs(p.xa), Math.abs(p.xb)) - EDGE) < 0.01) || plats[0];
+    const a = q.ph === 'A';
+    return { code: OMA, dir, pb: a ? OMU.pb : ub, pf: a ? 20 : OMU.plen - ub, tracks: [tOurs, tOth], links: [], detour: null, oppDet: null, plats, stops: [tOurs, tOth], platTracks: [tOurs, tOth], ref: 0, opp: tOth.x, oppT: tOth, ours: tOurs, plat, platSign: (plat.xa + plat.xb) / 2 > 0 ? 1 : -1, extent: [Math.min(0, tOth.x, ...plats.map(p => p.xa)), Math.max(0, tOth.x, ...plats.map(p => p.xb))], om: { ph: q.ph, lane: q.lane, sgn: sg, ub } };
+  }
+  function station(code, dir, pick, rev) {
+    if (code === OMA) return omaStation(pick, dir);      // rev: nhìn NGƯỢC chiều chạy (camera sau): đảo thứ tự trái-phải, giữ nguyên vai trò đường ta / đường ngược chiều
     const s = rev ? tokens(code, dir).split('').reverse().join('') : tokens(code, dir), n = s.length, isT = i => s[i] !== 'P', width = i => (i > 0 && i < n - 1 && isT(i - 1) && isT(i + 1)) ? ISLAND : (i === 0 || i === n - 1) ? SIDE : ISLAND;
     const c = [0];
     for (let i = 1; i < n; i++) c[i] = c[i - 1] + (isT(i) && isT(i - 1) ? TRK_GAP : EDGE + width(isT(i) ? i - 1 : i) / 2);
@@ -92,7 +126,7 @@
     if (code === SEN && dir === 'up') { const dn = station(code, 'down', 0, false), tD = dn.tracks.find(t => physIdx(t.i, 6, 'down', false) === 0), tU = tracks.find(t => physIdx(t.i, n, dir, rev) === 0), oM = tracks.find(t => t.i === opp);
       if (tD && tU && oM) { tU.in0 = TKS_SHIFT + tD.out0 + tD.len2; tU.len = tD.len2; tU.det = true; oppDet = { t: tU, main: oM, link: { z0: -TKS_SHIFT - DET.z0 - DET.len, len: DET.len }, zA: -TKS_SHIFT - (DET.z0 + DET.len + DET.hold + DET.ret), zB: -TKS_SHIFT - DET.z0 }; } }
     const links = code === TKS ? tksLinks(tracks, n, dir, rev) : code === FUK ? fukLinks(tracks, n, dir, rev) : detour ? [{ z0: detour.z0, len: detour.len, a: detour.main, b: detour.t, det: true }] : oppDet ? [{ z0: oppDet.link.z0, len: oppDet.link.len, a: oppDet.t, b: oppDet.main, det: true }] : [];
-    return { code, dir, tracks, links, detour, oppDet, plats, stops, platTracks, ref, opp: X(opp), oppT, ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
+    return { code, dir, pb: code === '1-2-0t' ? 240 : 420, pf: 20, tracks, links, detour, oppDet, plats, stops, platTracks, ref, opp: X(opp), oppT, ours, plat, platSign, extent: [Math.min(...tracks.map(t => t.x), ...plats.map(p => p.xa)), Math.max(...tracks.map(t => t.x), ...plats.map(p => p.xb))] };
   }
   // trọng số "đã chia ra các đường của ga" tại vị trí s (m): 0 ở xa, 1 trong phạm vi sân ga; sM = vị trí vạch dừng
   // mức "đã toả hết" của cả ga (theo đường ngoài cùng): dùng cho bề rộng hành lang; từng đường có trackW riêng (ghi riêng)
@@ -212,6 +246,6 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   // số cầu bộ hành trên cao của một ga theo mã bố trí: ≥ 3 sân ga → 3 lối; 2 sân ga và ≥ 4 đường → 2 lối; 2 sân ga ít đường → 1 lối; 1 sân ga → không có (ga ngầm do nơi gọi loại thêm)
   const _bn = {}; function bridgeCountOf(code) { if (_bn[code] === undefined) { const s = station(code, 'down', 0), np = s.plats.length; _bn[code] = np < 2 ? 0 : np >= 3 ? 3 : s.tracks.filter(t => !t.thr).length >= 4 ? 2 : 1; } return _bn[code]; }
-  root.Layout = { TKS, TKS_EXT, FUK, laneW, SEN, DET, detourX, oppDetourX, detourSpan, linksOf, hasThrough, refugeName, geoPoints, xovers, xoLines, XLEN, bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
+  root.Layout = { OMA, OMU, omTrack, omOurs, omOther, omRelOther, omRelTrack, omU, omZ, omPk, omPkCode, omLine, TKS, TKS_EXT, FUK, laneW, SEN, DET, detourX, oppDetourX, detourSpan, linksOf, hasThrough, refugeName, geoPoints, xovers, xoLines, XLEN, bridgeCountOf, laneOf, pickOf: (st, i, W) => W && W.termPick && W.termPick[i] !== undefined ? { i: W.termPick[i] } : st && st.side ? -1 : i, lateralTableBack, bearingAt, stopCount, diverts, TOK, ADJ, EDGE, tokens, station, spread, trackW, curvatureAt, curvatureSmooth, lateralTable, elevTable, ELEV, smooth };
   if (typeof module !== 'undefined') module.exports = root.Layout;
 })(typeof window !== 'undefined' ? window : globalThis);

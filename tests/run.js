@@ -47,7 +47,7 @@ if (section('2. Tự lái bám lịch trên mọi loại tàu (đơn độc, kh�
     if (SUB[1] && (subI++ % SUB[1]) !== SUB[0]) continue;
     const st = rec.s.filter(e => !e[3]); const a = st[0][0], b = st[st.length - 1][0]; const r = runAuto(ln, rec, a, b); cnt++;
     ok(r.T.finished && !r.T.failed, `${ln} ${rec.t} ${rec.n}: hoàn thành`);
-    const d = Math.max(...r.T.results.map(x => Math.abs(x.delay))); if (Sim.INSPECT[rec.v]) { /* tàu kiểm tra tự lái chạy theo ATC cao nhất, không bám giờ kế hoạch */ } else if (ln !== 'jts' && ln !== 'yam') worst = Math.max(worst, d); else ok(d < 260, `${ln} ${rec.t} ${rec.n}: lịch rất căng, tự lái trễ < 260 s`, Math.round(d));      // Joetsu: lịch thật dồn (Takasaki–Echigo-Yuzawa 23 phút) vượt khả năng tăng/giảm tốc của mô hình [I]
+    const d = Math.max(...r.T.results.map(x => Math.abs(x.delay))); if (Sim.INSPECT[rec.v]) { /* tàu kiểm tra tự lái chạy theo ATC cao nhất, không bám giờ kế hoạch */ } else if (ln !== 'jts' && ln !== 'yam' && ln !== 'aki') worst = Math.max(worst, d); else if (ln === 'aki') ok(d < 420, `${ln} ${rec.t} ${rec.n}: chờ tàu ngược chiều gặp nhau ở Omagari (tính là miễn trừ), tự lái trễ < 420 s`, Math.round(d)); else ok(d < 260, `${ln} ${rec.t} ${rec.n}: lịch rất căng, tự lái trễ < 260 s`, Math.round(d));      // Joetsu: lịch thật dồn (Takasaki–Echigo-Yuzawa 23 phút) vượt khả năng tăng/giảm tốc của mô hình [I]
     for (const x of r.T.results) if (!x.overrun) ok(Math.abs(x.err) < 3, `${ln} ${rec.t} ${rec.n} ${x.station}: dừng lệch < 3 m`, x.err.toFixed(2));
   } }
   ok(worst < 90, 'trễ/sớm tối đa của tự lái < 90 s', Math.round(worst)); console.log('  đã chạy', cnt, 'chuyến, lệch giờ lớn nhất', Math.round(worst), 's');
@@ -378,7 +378,7 @@ if (section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường
     let found = null; for (const rec8 of recs8) for (let sd = 1; sd <= 8 && !found; sd++) { const W = Sim.createWorld('toh', Sim.makeTrip('toh', rec8, 0, iM), { diff: 'easy', seed: sd, events: false }); if (W.lead && W.lead.cp) found = W; }
     ok(!!found && found.lead.veh.parts && found.lead.veh.parts[1] === 'E5', 'tàu chạy trước trên Tohoku có khi là đoàn ghép (mini ở đầu khi đi xuống)'); }
   // --- đường đơn mini-Shinkansen: dừng tránh tàu ngược chiều; Akita có đoạn đôi Jingūji–Mineyoshikawa
-  { const A2 = Sim.lineOf('aki'), Wd = { line: A2, dir: 'down', player: { M: [] } }; ok(Sim.singleW(Wd, 593 * 1000) === 0 && Sim.singleW(Wd, 550 * 1000) > 0.9, 'Akita: đoạn 586–600 km là đường đôi, còn lại đường đơn');
+  { const A2 = Sim.lineOf('aki'), Wd = { line: A2, dir: 'down', player: { M: [] } }; ok(Sim.singleW(Wd, 593 * 1000) > 0.9 && Sim.singleW(Wd, 550 * 1000) > 0.9 && Sim.singleW(Wd, 610 * 1000) > 0.9, 'Akita: Morioka – Akita là đường đơn liền một mạch (không còn đoạn đôi 586–600)');
     const recC = A2.trains.find(t => t.d === 'down' && t.cp), trip = Sim.makeTrip('aki', recC, recC.cp[0], A2.stations.length - 1);
     let tot = 0; for (const sd of [1, 2, 3]) { const W = Sim.createWorld('aki', trip, { diff: 'easy', seed: sd, lead: false, weather: 'clear' }), T = W.player; let n = 0; while (!T.finished && n++ < 4e6 && W.t < 60000) Sim.tick(W, 0.05, {}, true); tot += W.msgs.filter(m => /DỪNG TRÁNH/.test(m.text)).length; ok(T.finished && Math.max(...T.results.map(r => Math.abs(r.delay))) < 200, `Akita seed ${sd}: có dừng tránh mà vẫn đúng giờ (thời gian chờ được miễn)`); }
     /* việc tránh tàu ngược chiều giờ do NatCat.singleStep + Sim.singleDispatch quyết định theo lịch thật (không còn lệnh ngẫu nhiên); kiểm ở mục 31 */ }
@@ -427,7 +427,7 @@ if (section('16. Joetsu/Hokuriku tách khỏi Tohoku ở Omiya, Hokuriku tách k
 if (section('17. Ga: ghi riêng từng đường, tường bao, hồ sơ hình học')) {
   const LAY = require(path.join(DRIVE, 'layout.js'));
   for (const code of Object.keys(LAY.TOK)) for (const dir of ['down', 'up']) {
-    if (code === LAY.TKS || code === LAY.FUK) continue;      // Takasaki, Fukushima: hình học riêng theo sơ đồ, kiểm ở mục 33k / 33o
+    if (code === LAY.TKS || code === LAY.FUK || code === LAY.OMA) continue;      // Takasaki, Fukushima: hình học riêng theo sơ đồ, kiểm ở mục 33k / 33o; Omagari (2-2-0w): mạng đường riêng, kiểm ở mục 33q
     const st = LAY.station(code, dir, 0), outer = st.tracks.filter(t => !t.main);
     ok(outer.every(t => t.in0 !== undefined && t.len >= 40 && t.len <= 300), `${code} ${dir}: mọi đường ngoài có ghi riêng (in0/len)`);
     ok(outer.every(t => t.in0 - t.len >= 380), `${code} ${dir}: ghi cuối cùng xong trước khi vào sân ga (còn ≥ 380 m)`, outer.map(t => [t.in0, t.len]));
@@ -457,9 +457,13 @@ if (section('18. Ga cuối: chọn đường có sân ga của cả hai nhóm, �
 }
 
 if (section('20. Cầu bộ hành trên cao theo cỡ ga')) {
-  const LAY = require(path.join(DRIVE, 'layout.js')), want = { '3-6-0': 3, '5-8-0': 3, '3-4-0': 3, '2-4-0': 2, '2-4-1': 2, '2-4-1k': 2, '2-4-1f': 2, '2-4-0t': 2, '2-4-0s': 2, '2-2-0': 1, '2-2-1': 1, '2-3-0': 1, '2-3-1': 1, '2-3-1c': 1, '2-3-0a': 1, '2-3-0b': 1, '2-3-0c': 1, '1-2-0': 0, '1-2-1': 0 };
+  const LAY = require(path.join(DRIVE, 'layout.js')), want = { '3-6-0': 3, '5-8-0': 3, '3-4-0': 3, '2-4-0': 2, '2-4-1': 2, '2-4-1k': 2, '2-4-1f': 2, '2-4-0t': 2, '2-4-0s': 2, '2-2-0': 1, '2-2-1': 1, '2-3-0': 1, '2-3-1': 1, '2-3-1c': 1, '2-3-0a': 1, '2-3-0b': 1, '2-3-0c': 1, '1-2-0': 0, '1-2-0t': 0, '2-2-0w': 1, '1-2-1': 0 };
   for (const [code, n] of Object.entries(want)) ok(LAY.bridgeCountOf(code) === n, `cầu bộ hành ga ${code}: ${n} lối`, LAY.bridgeCountOf(code));
   ok(Object.keys(LAY.TOK).every(c => want[c] !== undefined), 'mọi mã bố trí có quy tắc cầu bộ hành');
+  // Akita (22/11/2026): ga cuối đầu cụt 1-2-0t, sân ga 240 m, không chữ X; các mã khác giữ 420 m
+  { const LAk = window.LINES.aki.stations.find(x => x.en === 'Akita'); ok(LAk.lay === '1-2-0t' && Array.isArray(LAk.xo) && LAk.xo.length === 0, 'Akita: mã 1-2-0t, xo rỗng (không chữ X)', [LAk.lay, LAk.xo]);
+    ok(LAY.station('1-2-0t', 'down', -1).pb === 240 && LAY.station('1-2-0t', 'up', -1).pb === 240 && LAY.station('2-4-0', 'down', 0).pb === 420 && LAY.station('1-2-0', 'down', 0).pb === 420, 'độ dài sân ga phía sau vạch (pb): Akita 240 m, các mã khác 420 m');
+    const sk = LAY.station('1-2-0t', 'down', -1); ok(sk.plats.length === 1 && sk.tracks.length === 2 && sk.stops.length === 1, 'Akita: một sân ga đảo giữa hai đường', [sk.plats.length, sk.tracks.length]); }
   const T = Sim.lineOf('toh'); for (const s of T.stations.filter(x => /^(東京|上野)$/.test(x.jp))) ok(Sim.inTunnel({ line: T, dir: 'down' }, Sim.sOfKm(s.km, 'down', T.kmEnd)), `${s.en} (Tohoku) là ga ngầm nên không có cầu bộ hành`);
 }
 
@@ -1454,8 +1458,8 @@ if (section('33l. Tohoku Shinkansen dựng lại từ sơ đồ (Oyama – Shin-
     ok(Ly.tokens('2-3-1c', 'down') === 'dPdDUuP' && Ly.tokens('2-3-1c', 'up') === Ly.tokens('2-3-1', 'down') && Ly.tokens('2-3-1c', 'down') === Ly.tokens('2-3-1', 'up') && Ly.stopCount('2-3-1c', 'down') === 2 && Ly.stopCount('2-3-1c', 'up') === 1 && Ly.hasThrough('2-3-1c', 'down') && Ly.hasThrough('2-3-1c', 'up') && Ly.bridgeCountOf('2-3-1c') === Ly.bridgeCountOf('2-3-1'), '2-3-1c là ảnh gương của 2-3-1: chiều xuống giống 2-3-1 chiều lên và ngược lại, có đường thông qua', [sm('2-3-1c', 'down'), sm('2-3-1c', 'up')]); }
   // 3) yam và aki chạy chung trục Tohoku: cùng ga thì cùng xo
   { const Y = window.LINES.yam, A = window.LINES.aki; const sh = (LL, e) => JSON.stringify((LL.stations.find(x => x.en === e) || {}).xo);
-    ok(Y.stations.filter(s => s.xo !== undefined).map(s => s.en).join() === 'Oyama,Utsunomiya,Nasushiobara,Shin-Shirakawa,Koriyama,Fukushima' && A.stations.filter(s => s.xo !== undefined).map(s => s.en).join() === 'Oyama,Utsunomiya,Nasushiobara,Shin-Shirakawa,Koriyama,Fukushima,Shiroishi-Zao,Sendai,Furukawa,Kurikoma-Kogen,Ichinoseki,Mizusawa-Esashi,Kitakami,Shin-Hanamaki,Morioka', 'yam có xo ở 6 ga Oyama – Fukushima, aki ở 15 ga Oyama – Morioka (không có Tokyo, Ueno, Omiya, ga mini-Shinkansen)');
-    ok(Y.stations.filter(s => s.xo !== undefined && s.en !== 'Fukushima').every(s => sh(Y, s.en) === xo(s.en) && Y.stations.find(x => x.en === s.en).lay === byEn(s.en).lay) && A.stations.filter(s => s.xo !== undefined).every(s => sh(A, s.en) === xo(s.en) && A.stations.find(x => x.en === s.en).lay === byEn(s.en).lay), 'ga chung trục Tohoku có xo và mã bố trí giống nhau ở toh, yam, aki'); }
+    ok(Y.stations.filter(s => s.xo !== undefined).map(s => s.en).join() === 'Oyama,Utsunomiya,Nasushiobara,Shin-Shirakawa,Koriyama,Fukushima' && A.stations.filter(s => s.xo !== undefined).map(s => s.en).join() === 'Oyama,Utsunomiya,Nasushiobara,Shin-Shirakawa,Koriyama,Fukushima,Shiroishi-Zao,Sendai,Furukawa,Kurikoma-Kogen,Ichinoseki,Mizusawa-Esashi,Kitakami,Shin-Hanamaki,Morioka,Omagari,Akita', 'yam có xo ở 6 ga Oyama – Fukushima, aki ở 15 ga Oyama – Morioka cộng Omagari và Akita (xo rỗng: ga cụt, không chữ X; không có Tokyo, Ueno, Omiya, ga mini-Shinkansen khác)');
+    ok(Y.stations.filter(s => s.xo !== undefined && s.en !== 'Fukushima' && byEn(s.en)).every(s => sh(Y, s.en) === xo(s.en) && Y.stations.find(x => x.en === s.en).lay === byEn(s.en).lay) && A.stations.filter(s => s.xo !== undefined && byEn(s.en)).every(s => sh(A, s.en) === xo(s.en) && A.stations.find(x => x.en === s.en).lay === byEn(s.en).lay), 'ga chung trục Tohoku có xo và mã bố trí giống nhau ở toh, yam, aki'); }
   // 4) vị trí ghi chéo theo hai chiều và camera sau
   { const zs = (en, d, r) => Ly.xovers(byEn(en), d, r).map(x => x.kind + x.z).join();
     ok(zs('Oyama', 'down') === 'r-1530,s-1300,s720' && zs('Oyama', 'up') === 'r950,s720,s-1300' && zs('Sendai', 'up') === 'd720,r-1300,s-1490' && zs('Sendai', 'down') === 'd-1300,r720,s910' && zs('Hachinohe', 'down') === 'd-1300,r720' && zs('Kitakami', 'down') === 's-1300,r720' && zs('Kitakami', 'up') === 's720,r-1300' && zs('Furukawa', 'down') === 'r-1300,s720' && NONE.every(e => zs(e, 'down') === '' && zs(e, 'up') === ''), 'vị trí và loại ghi chéo Tohoku theo hai chiều: ga có đường tránh giữ vị trí cũ 1300/720 m (Oyama: r xa thêm 230 m; Sendai: s xa thêm 190 m), ga 2 đường (kể cả Shin-Hanamaki) không có');
@@ -1692,12 +1696,12 @@ if (section('33o. Ga Fukushima (2-4-1f) và ngã rẽ Yamagata: hai đường r�
         if (nm.startsWith('aki') && n === 0) continue;      // đường đơn: không có cảnh nào có tàu ngược chiều trên đường đôi
         ok(n > 0 && errs === 0, `${nm}: vẽ được tàu ngược chiều (${n} cảnh, ${errs} lỗi)`, [n, errs]);
         ok(n > 0 && lo > 1.2 && hi < 3.6, `${nm}: thân tàu ngược chiều ở mép gần camera của đường ngược chiều (|X| từ ${lo.toFixed(2)} tới ${hi.toFixed(2)} m ở km ${hk}, mong đợi ~2,45)`, [lo, hi, hk]); } }
-    // f) Akita: đoạn đường đôi Omagari – Akita (km 586–600) phải có ray của cả hai đường (4 ray ở hàng gần nhất), đoạn đường đơn chỉ 2 ray (trước đây làn ngược chiều bị cắt khỏi ngã rẽ Morioka nên chỉ còn 1 đường dù nền cầu/dây điện dựng cho đường đôi)
+    // f) Akita (22/11/2026): Morioka – Akita là đường đơn liền một mạch: ở km 594 và 610 chỉ thấy một đường (2 ray ở hàng gần nhất), không còn hạ tầng đường đôi
     { global.document = { createElement: () => ({ getContext: () => rctx, width: 0, height: 0 }) }; const LA4 = window.LINES.aki, iOm4 = LA4.stations.findIndex(x => x.en === 'Omagari'), iAk = LA4.stations.findIndex(x => x.en === 'Akita');
       const railClusters = (W, T, km) => { T.x = Sim.sOfKm(km, W.dir, LA4.kmEnd); T.v = 40; polys.length = 0; global.CabView.draw(rctx, 0, 0, PW, 618, W, T, { sprites: {}, aud: null, imgs: {} }); let ymax = -1e9; for (const q of polys) for (const [, y] of q) if (y > ymax) ymax = y; const xs = []; for (const q of polys) for (const [x, y] of q) if (y > ymax - 6) xs.push(x); xs.sort((a, b) => a - b); let n = 0, last = -1e9; for (const x of xs) { if (x - last > 120) n++; last = x; } return n; };
       for (const dir of ['down', 'up']) { const rc = LA4.trains.find(r => r.d === dir && r.s.some(e => e[0] === iAk && !e[3]) && r.s.some(e => e[0] === iOm4 && !e[3])); if (!rc) continue; const [a, b] = dir === 'down' ? [iOm4, iAk] : [iAk, iOm4];
         const W = Sim.createWorld('aki', Sim.makeTrip('aki', rc, a, b), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, dbl = railClusters(W, T, 594), sgl = railClusters(W, T, 610);
-        ok(Sim.singleEff(W, Sim.sOfKm(594, dir, LA4.kmEnd)) < 0.01 && dbl >= 4, `aki ${dir} km 594 (đường đôi): thấy ${dbl} ray ở hàng gần nhất (cần ≥ 4: hai đường)`, [dbl]);
+        ok(Sim.singleEff(W, Sim.sOfKm(594, dir, LA4.kmEnd)) > 0.99 && dbl <= 3, `aki ${dir} km 594 (đường đơn): thấy ${dbl} ray ở hàng gần nhất (≤ 3: một đường)`, [dbl]);
         ok(sgl <= 3, `aki ${dir} km 610 (đường đơn): thấy ${sgl} ray (≤ 3: một đường; singleEff ${Sim.singleEff(W, Sim.sOfKm(610, dir, LA4.kmEnd)).toFixed(2)})`, [sgl]); } }
     // g) tàu đỗ chờ phía trước (W.parked), tàu ngược chiều chạy thông qua ga (W.oppThru), tàu vượt (passers) ở khung đường mini yam/aki: vị trí ngang tính theo camX = lane − off
     { const dr5 = []; const base5 = Object.assign({}, base, { drawImage(img, ...a) { if (img && a.length === 8) dr5.push({ sp: img.__sp, a }); else if (img && a.length === 4) dr5.push({ sp: img.__sp, a: [0, 0, 0, 0, a[0], a[1], a[2], a[3]] }); } });
@@ -1724,6 +1728,38 @@ if (section('33o. Ga Fukushima (2-4-1f) và ngã rẽ Yamagata: hai đường r�
     const tp = trip3(id, dir), Lx = tp.Lx, A = Lx.stations[tp.a].en, B = Lx.stations[tp.b].en, W = Sim.createWorld(id, Sim.makeTrip(id, tp.rec, tp.a, tp.b), { diff: 'easy', seed: 5, lead: false, events: false }), T = W.player; let k = 0, back = 0, prevX = T.x, bad = false;
     while (!T.finished && k++ < 8e5) { Sim.tick(W, 0.05, {}, true); if (T.x < prevX - 0.5) back++; prevX = T.x; if (!isFinite(T.x) || !isFinite(T.v)) bad = true; }
     ok(T.finished && !bad && back === 0, `chạy tự động ${id} ${dir} (${A} – ${B}) qua Fukushima: hết chuyến, không lùi, không NaN`, [T.finished, bad, back, k]); }
+}
+if (section('33q. Ga Omagari (switchback 2-2-0w): mạng đường (ghi gộp, đường đơn, ghi tách, ghi chéo), hai khung ĐẾN/ĐI, hai làn, gặp nhau tại ga, vẽ buồng lái và bản đồ nhỏ')) {
+  global.hhmm = global.hhmm || (x => String(x)); global.CanvasRenderingContext2D = global.CanvasRenderingContext2D || function () { }; global.CanvasRenderingContext2D.prototype.roundRect = global.CanvasRenderingContext2D.prototype.roundRect || function () { };
+  const LY = require(path.join(DRIVE, 'layout.js')), LAo = window.LINES.aki, iO = LAo.stations.findIndex(x => x.en === 'Omagari'), iAkq = LAo.stations.findIndex(x => x.en === 'Akita'), iTz = LAo.stations.findIndex(x => x.en === 'Tazawako'), OU = LY.OMU;
+  // 1) hình học mạng đường: liên tục, đúng khoảng cách các đường ở từng đoạn
+  for (const dir of ['down', 'up']) for (const ph of ['A', 'B']) for (const lane of [0, 1]) { const pk = { i: LY.omPkCode(ph, lane) }; let mx = 0, prev = LY.omOurs(dir, pk, 0); for (let u = 5; u <= 3000; u += 5) { const v = LY.omOurs(dir, pk, u); mx = Math.max(mx, Math.abs(v - prev) / 5); prev = v; }
+    const r = u => Math.abs(LY.omRelOther(dir, pk, u));
+    ok(mx < 0.12 && Math.abs(r(100) - 4.3) < 1e-6 && r(800) < 1e-6 && Math.abs(r(1300) - 8.6) < 1e-6 && Math.abs(r(2500) - 40) < 1e-6, `${dir} ${ph}${lane}: đường của ta liên tục (độ dốc ngang ${mx.toFixed(3)} m/m); làn kia cách 4,3 m ở ga, 0 ở đường đơn, 8,6 m khi song song, 40 m khi tách hẳn`, [mx, r(100), r(800), r(1300), r(2500)]); }
+  // 2) ga: đường ta x = 0, đường kia ±4,3 m, hai sân ga, sân ga kề đường ta; pb/pf theo khung
+  for (const ph of ['A', 'B']) for (const lane of [0, 1]) { const st = LY.station(LY.OMA, 'down', { i: LY.omPkCode(ph, lane), ub: 165 });
+    ok(st.ours.x === 0 && Math.abs(Math.abs(st.oppT.x) - 4.3) < 1e-9 && st.plats.length === 2 && !!st.plat && Math.abs(Math.min(Math.abs(st.plat.xa), Math.abs(st.plat.xb)) - 1.75) < 1e-9 && st.stops.length === 2 && (ph === 'A' ? st.pb === 344 && st.pf === 20 : st.pb === 165 && st.pf === 194), `Omagari ${ph}${lane}: đường ta x = 0, đường kia ±4,3 m, sân ga kề đường ta, pb/pf theo khung`, [st.pb, st.pf, st.oppT.x]); }
+  // 3) các chuyến chạy tự động hết: số lần đổi đầu đúng, đổi đầu sau khi đã vào ga
+  const runSw = (rec, a, b) => { const W = Sim.createWorld('aki', Sim.makeTrip('aki', rec, a, b), { diff: 'easy', seed: 4, lead: false, events: false }), T = W.player; const ph0 = W.sw && W.sw.ph; let flips = 0, lp = ph0, k = 0, arrT = null, flipT = null; while (!T.finished && k++ < 600000) { Sim.tick(W, 0.05, {}, true); if (arrT === null && T.phase === 'dwell' && W.sw && T.M[T.k].i === W.sw.i) arrT = W.t; if (W.sw && W.sw.ph !== lp) { flips++; lp = W.sw.ph; flipT = W.t; } } return { W, T, ph0, flips, arrT, flipT, fin: T.finished && !T.failed }; };
+  for (const [nm, dir, a, b, f0, fl] of [['Tazawako → Akita', 'down', iTz, iAkq, 'A', 1], ['Akita → Tazawako', 'up', iAkq, iTz, 'A', 1], ['Omagari → Akita', 'down', iO, iAkq, 'B', 0], ['Omagari → Tazawako', 'up', iO, iTz, 'B', 0], ['Tazawako → Omagari', 'down', iTz, iO, 'A', 0]]) {
+    const rec = LAo.trains.find(r => r.d === dir && r.s.some(e => e[0] === a && !e[3]) && r.s.some(e => e[0] === b && !e[3])); if (!rec) { ok(false, `Omagari: có chuyến mẫu ${nm}`); continue; } const r = runSw(rec, a, b);
+    ok(r.fin && r.ph0 === f0 && r.flips === fl && (fl === 0 || (r.arrT !== null && r.flipT >= r.arrT)), `Omagari ${nm}: chạy hết, khung đầu ${f0}, ${fl} lần đổi đầu, đổi đầu sau khi đã vào ga`, [r.fin, r.ph0, r.flips, r.arrT, r.flipT]); }
+  // 4) gặp nhau tại ga: nếu phải chờ tàu ngược chiều thì có thông báo và tính miễn trừ
+  { const rec = LAo.trains.find(r => r.d === 'down' && r.s.some(e => e[0] === iTz && !e[3]) && r.s.some(e => e[0] === iAkq && !e[3])), W = Sim.createWorld('aki', Sim.makeTrip('aki', rec, iTz, iAkq), { diff: 'easy', seed: 4, lead: false, events: false }), T = W.player; let k = 0, blocked = 0, msg = ''; while (!T.finished && k++ < 600000) { Sim.tick(W, 0.05, {}, true); const bw = Sim.swWait(W, T); if (bw) { blocked++; msg = bw; } }
+    ok(T.finished && typeof Sim.swWait === 'function' && (blocked === 0 || (/Omagari/.test(msg) && T.excused > 0)), 'chuyến Tazawako → Akita: nếu phải chờ tàu ngược chiều ở Omagari thì có thông báo và tính miễn trừ (' + blocked + ' nhịp chờ)', [blocked, T.excused]); }
+  // 5) vẽ cabview/bản đồ nhỏ/cửa sổ quanh Omagari ở cả hai khung và hai chiều: không lỗi; ray của ta luôn gần giữa màn hình
+  { const store = { fillStyle: '' }, polys = []; let pth = []; const base = { beginPath() { pth = []; }, moveTo(x, y) { pth = [[x, y]]; }, lineTo(x, y) { pth.push([x, y]); }, fill() { if (store.fillStyle === 'rgba(208,216,226,.9)') polys.push(pth.slice()); }, measureText: () => ({ width: 10 }), createLinearGradient: () => ({ addColorStop() { } }), createRadialGradient: () => ({ addColorStop() { } }) };
+    const rctx = new Proxy(store, { get: (t, k) => k in t ? t[k] : (k in base ? base[k] : () => { }), set: (t, k, v) => { t[k] = v; return true; } }), keepD = global.document; global.document = { createElement: () => ({ getContext: () => rctx, width: 0, height: 0 }) };
+    require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js')); require(path.join(DRIVE, 'winlit.js')); require(path.join(DRIVE, 'winview.js')); require(path.join(DRIVE, 'topview.js'));
+    const PWq = 1920; let errs = 0, nDraw = 0, worst = 0, wAt = null;
+    for (const [dir, a, b] of [['down', iTz, iAkq], ['up', iAkq, iTz]]) { const rec = LAo.trains.find(r => r.d === dir && r.s.some(e => e[0] === a && !e[3]) && r.s.some(e => e[0] === b && !e[3])), W = Sim.createWorld('aki', Sim.makeTrip('aki', rec, a, b), { diff: 'easy', seed: 4, lead: false, events: false }), T = W.player, sw = W.sw;
+      for (const ph of ['A', 'B']) for (const lane of [0, 1]) { sw.ph = ph; sw.lane = lane; sw.ub = 165; Sim.swSync(W);
+        for (let off = -2600; off <= 2600; off += 260) { if ((ph === 'A') !== (off <= 0)) continue; T.x = sw.sM + off; T.v = 40; T.phase = 'run'; polys.length = 0;
+          try { global.CabView.draw(rctx, 0, 0, PWq, 618, W, T, { sprites: {}, aud: null, imgs: {} }); nDraw++; global.TopView.draw(rctx, 0, 0, 300, 300, W, T, { sprites: {}, tops: {}, aud: null }); global.WinView.draw(rctx, 0, 0, 400, 300, W, T, { sprites: {}, aud: null }, 1); } catch (e) { errs++; if (errs < 3) console.log('  vẽ lỗi', dir, ph, lane, off, e.message); continue; }
+          polys.length = 0; global.CabView.draw(rctx, 0, 0, PWq, 618, W, T, { sprites: {}, aud: null, imgs: {} }); let ymax = -1e9; for (const q of polys) for (const [, y] of q) if (y > ymax) ymax = y; let best = 1e9; for (const q of polys) for (const [x, y] of q) if (y > ymax - 6) best = Math.min(best, Math.abs(x - PWq / 2)); if (polys.length && best > worst) { worst = best; wAt = [dir, ph, lane, off]; } } } }
+    global.document = keepD;
+    ok(errs === 0 && nDraw > 60, `vẽ cabview/bản đồ nhỏ/cửa sổ quanh Omagari (${nDraw} cảnh, ${errs} lỗi)`, [nDraw, errs]);
+    ok(worst < 0.1 * PWq, `Omagari: ray của ta gần tâm màn hình ở mọi cảnh (lệch lớn nhất ${worst.toFixed(0)} px ở ${JSON.stringify(wAt)})`, [worst, wAt]); }
 }
 if (section('33p. Chế độ nhà phát triển: dịch chuyển tới điểm bất kỳ trên bản đồ toàn quốc, tàu ma (đứng yên, không sự cố ngẫu nhiên, không ảnh hưởng/chịu ảnh hưởng của tàu khác và ATC)')) {
   global.hhmm = global.hhmm || (x => String(x)); require(path.join(DRIVE, 'natmap.js'));
@@ -1769,6 +1805,18 @@ if (section('33p. Chế độ nhà phát triển: dịch chuyển tới điểm 
     ok(/id="dev"/.test(idx) && /dev: \$\('dev'\)\.checked/.test(idx) && /free: \$\('free'\)\.checked \|\| \$\('dev'\)\.checked/.test(idx), 'index.html: ô "Chế độ nhà phát triển" và công thức recipe (dev kéo theo free)');
     ok(/devGo: devOK\(\)/.test(fu) && /NatMap\.click\(x, y, devOK\(\)\)/.test(idx) && /function devTeleport/.test(idx) && /ghost: true/.test(idx), 'dịch chuyển nối đủ: bản đồ → nút xác nhận → devTeleport → spawnAt ghost');
     ok(/V\.sel\.dev/.test(nm) && /nearLines/.test(nm), 'natmap.js: thẻ xác nhận dịch chuyển'); }
+  // 6) chạy lùi (chỉ chế độ nhà phát triển): bật/tắt chỉ khi đã dừng hẳn, lùi giảm vị trí, giới hạn tốc độ như khi tiến, không lùi xuyên chắn cuối đường
+  { const Wr = Sim.spawnAt('tsk', rg, tNoon, { km: kmG, kmh: 0 }, { seed: 3, ghost: true }), Tr = Wr.player, x0 = Tr.x; ok(Sim.toggleReverse(Tr) && Tr.rev === true, 'chạy lùi: bật được khi tàu đứng yên hoàn toàn');
+    Sim.setPower(Tr, 3); let k = 0; while (k++ < 600) Sim.tick(Wr, 0.1, {}, false); ok(Tr.x < x0 - 50 && Tr.v > 5, 'chạy lùi: kéo cần gia tốc thì vị trí giảm (tàu lùi)', [Tr.x - x0, Tr.v]);
+    const nW = Tr.W.msgs.length; ok(Sim.toggleReverse(Tr) === false && Tr.rev === true, 'chạy lùi: đang lùi (tốc độ > 0) thì chưa đổi sang tiến được');
+    Sim.setPower(Tr, 0); Sim.setBrake(Tr, 7); k = 0; while (k++ < 3000 && Tr.v > 0.01) Sim.tick(Wr, 0.1, {}, false); ok(Tr.v <= 0.05 && Sim.toggleReverse(Tr) === true && Tr.rev === false, 'chạy lùi: tốc độ lùi về 0 rồi mới đổi lại chạy tiến được');
+    // giới hạn: không có trần riêng 25 km/h (tốc độ lùi vượt 25 km/h nếu cần gia tốc đủ lâu)
+    const Wf = Sim.spawnAt('tsk', rg, tNoon, { km: kmG, kmh: 0 }, { seed: 3, ghost: true }), Tf = Wf.player; Sim.toggleReverse(Tf); Sim.setPower(Tf, 13); k = 0; let vmax = 0; while (k++ < 1500) { Sim.tick(Wf, 0.1, {}, false); vmax = Math.max(vmax, Tf.v); } ok(vmax * 3.6 > 40, 'chạy lùi: tốc độ lùi không bị trần riêng (đạt ' + (vmax * 3.6).toFixed(0) + ' km/h)', vmax * 3.6);
+    // chắn cuối: lùi mãi về đầu tuyến thì đuôi tàu dừng sát chắn (s = −440 + chiều dài tàu + 1 m), không xuyên qua
+    const Wb = Sim.spawnAt('tsk', rg, tNoon, { km: Sim.lineOf('tsk').stations[0].km + 2, kmh: 0 }, { seed: 3, ghost: true }), Tb = Wb.player; Sim.toggleReverse(Tb); Sim.setPower(Tb, 13); k = 0; while (k++ < 8000 && Tb.x > -440 + Tb.veh.len + 3) Sim.tick(Wb, 0.1, {}, false); Sim.setPower(Tb, 13); for (let i = 0; i < 400; i++) Sim.tick(Wb, 0.1, {}, false);
+    ok(Tb.x >= -440 + Tb.veh.len + 1 - 1e-6 && isFinite(Tb.x), 'chạy lùi: không lùi xuyên chắn cuối đường (x = ' + Tb.x.toFixed(1) + ' ≥ ' + (-440 + Tb.veh.len + 1).toFixed(1) + ')', [Tb.x, Tb.veh.len]); }
+  { const idx = require('fs').readFileSync(path.join(DRIVE, 'index.html'), 'utf8'), fu = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8');
+    ok(/rev\(\) \{ if \(devOK\(\)\) Sim\.toggleReverse\(T\); \}/.test(idx) && /doAct\(devOK\(\) \? 'rev' : 'pa'\)/.test(idx) && /devOK\(\) \? \['rev'/.test(fu) && /icon === 'rev'/.test(fu), 'chạy lùi: nút thay nút phát thanh chỉ ở chế độ nhà phát triển, phím M, biểu tượng'); }
 }
 if (section('33. Melody theo tuyến/ga, đèn cửa chờ melody khởi hành, bộ phát chuỗi PA')) {
   const Mel = require(path.join(DRIVE, 'melody.js')); const ix = (L, en) => L.stations.findIndex(s => s.en === en);

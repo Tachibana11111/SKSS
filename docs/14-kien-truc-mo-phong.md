@@ -152,6 +152,27 @@ Nguồn: `ou_1/030_01`, `tohoku/010_05` (配線略図.net); trang nghiên cứu 
 - **Dữ liệu:** `tools/build_struct.py` (`'福島': '2-4-1f'`, `JUNC['yam'] = (256.1, …)`: đường cong, đường ngang bắt đầu từ km 256,1), `tools/build_lines.py` (`XO`), `sim.js` (`junctions`, `SUP_SIMPLE_FROM.yam`).
 - **Hạn chế đã biết [?]:** (1) sơ đồ không ghi cao độ nên đường rìa nam cắt đồng mức; (2) đường 1435 mm từ ga tuyến thường Ou Line (đường mini thứ hai trong sơ đồ) không dựng; (3) tàu Tohoku khác chạy qua đoạn hội tụ không có bản vẽ riêng; (4) Fukushima chiều lên dùng khung quay 180°, hai ghi nối rìa vẽ cả hai rìa nhưng tàu của ta chỉ đi rìa nam.
 
+- **Chạy lùi (23/11/2026, chế độ nhà phát triển):** nút "Chạy lùi" thay nút Phát thanh (phím M) chỉ khi `devOK()`; `Sim.toggleReverse(T)` bật/tắt chỉ khi `T.v < 0,05` (tàu đứng hẳn) và `T.phase === 'run'`. `T.v` vẫn là độ lớn tốc độ nên lùi phải về 0 thì mới đổi lại chạy tiến được; chạy lùi: `T.x -= T.v·dt`, độ dốc đổi dấu, giới hạn tốc độ/ATC giữ như khi tiến, đuôi tàu dừng sát chắn cuối (đầu tuyến s = −440 m, Omagari khung ĐI là chắn sau lưng). Đồng hồ hiện chữ LÙI. Test 33p (6).
+
+## 8f. Ga Akita: ga cuối đầu cụt `1-2-0t` [D sơ đồ / I hình học] (22/11/2026)
+
+Nguồn: `ou_1/030_14` (配線略図.net); trang nghiên cứu `docs/data/haisen/akita_plan.html` (sinh bằng `tools/haisen_akita.py`). Sơ đồ chỉ có MỘT sân ga đảo cho tàu mini (khổ 1435 mm ở cả hai mặt), một đường vào chia thành hai mặt bằng một đường chéo, đường 1435 mm hết ở chắn cuối (phần sân ga còn lại chỉ khổ 1067 mm: không dựng).
+
+- **Mã `1-2-0t`** (`layout.js`): chuỗi token như `1-2-0` (`dPu`: một sân ga đảo, đường ta + đường thứ hai), nhưng `station().pb` = 240 m (độ dài sân ga phía sau vạch; mặc định 420 m). `pb` thay hằng 420 trong `cabview` (sân ga, tường, cầu bộ hành, chi tiết sân ga: cột số toa, ghế, biển, hành khách), `topview`, `winview`. Một đường vào (đường đơn) chia hai nhờ cơ chế đường ngược chiều của ga (`spread`/`singleEff`), chắn cuối của game (hai đầu tuyến) vẽ chắn cho cả hai đường. `xo` của Akita = `[]` (không chữ X; `tools/build_lines.py`).
+- **Chưa làm [?]:** chạy `node tests/run.js` (mã Akita đổi từ `2-4-0`; các test cũ có thể giả định mã cũ); chắn cuối ở đầu chiều lên vẫn ở −440 m (chỉ ảnh hưởng bản đồ nhỏ, buồng lái nhìn về phía trước); đường đơn → hai đường dài ~330 m (cơ chế `spread` chung) thay vì ~80 m như sơ đồ.
+
+## 8g. Ga Omagari (switchback) `2-2-0w` [D sơ đồ / I hình học và luật gặp nhau] (22–23/11/2026)
+
+Nguồn: `tazawako/010_01`, `ou_1/030_12` (配線略図.net), trang nghiên cứu `docs/data/haisen/omagari_plan.html` (`tools/haisen_omagari.py`); bố cục đường đơn/ghi tách/ghi chéo là chỉ dẫn của người dùng (đơn giản hoá từ sơ đồ).
+
+- **Mạng đường** (`layout.js`: `OMA`, `OMU`, `omTrack`, `omOurs`, `omOther`, `omRelOther`, `omRelTrack`): toạ độ tuyệt đối u (m từ chắn cuối ra phía ngoài), X (bắc dương): hai đường ga A (bắc) và B (nam) giữa hai sân ga, ghi gộp 2→1 ở u 455–535, đường đơn tới u 1035, ghi tách 1→2 (1035–1115), hai đường song song K (Kita-Ōmagari, bắc) và L (Akita, nam), ghi chéo X K→L (1235–1385), tách hẳn (1465–1765). Mọi vật vẽ theo toạ độ TƯƠNG ĐỐI so với đường của ta.
+- **Hai khung nhìn:** khung ĐẾN `ph='A'` (z = 15 − u, chắn cuối phía trước, trái = bắc) và khung ĐI `ph='B'` (z = u − ub, `ub` = chiều dài tàu + 12 m, chắn cuối sau lưng, trái = nam). `W.sw = {i, k, sM, lane, ph, ub}`; mã chọn đường `W.termPick[i] = 10·(đã đổi đầu) + làn` nên khoá cache của cabview/topview/winview tự đổi. Tàu đổi đầu khi ĐÓNG CỬA (`swFlip`), hoặc ngay khi được khởi hành nếu tàu ngược chiều chưa vào ga (tàu kia còn đang chạy vào ga theo khung ĐẾN).
+- **Hai làn:** tàu danh mục đỗ ở Omagari luôn nằm ở làn còn lại (`dwellInfo`/`refreshDwellers`: cùng hướng, đường của ta bị loại); ga sức chứa 2 tàu.
+- **Gặp nhau tại ga:** `Sim.swWait` + `NatCat.omMeeting`: tàu của người chơi chờ tàu danh mục NGƯỢC chiều (giờ đến lệch ≤ 7 phút) vào ga rồi mới được rời ga (tối đa 10 phút sau giờ đi); thời gian chờ được tính miễn trừ (`T.excused`). `NatCat.singleStep` giữ tàu danh mục ngược chiều đang đỗ ở Omagari cho tới khi tàu người chơi vào ga.
+- **Bề rộng nền/hàng rào** kẹp làn kia ở ±9,5 m (`omOpp`), ray và dây điện dùng vị trí thật (`omOppT`), nếu không nền bị kéo giãn khi hai đường tách xa 40 m.
+- **Akita (22/11/2026):** cả Morioka – Akita là đường đơn liền một mạch (`SINGLE['aki'] = [(498.5, 623.8)]`); đoạn đôi km 586–600 đã bỏ.
+- **Chưa làm [?]:** bản đồ nhỏ (`topview`) chưa vẽ các đường K/L/ghi chéo ngoài vùng ga; cửa sổ chỉ thấy sân ga; tàu danh mục ngược chiều vào ga trong lúc ta đã đổi đầu vẫn được vẽ theo khung ĐẾN; kiểm thử riêng cho Omagari (mục 33q) chưa viết.
+
 ## 9. Điểm cứu hộ trong hầm Seikan (竜飛定点, 吉岡定点) [N/I]
 
 - **Dữ liệu:** `LINE_META.toh.refugeInfo` (`sim.js`): km 732,9 và 755,9 (trùng `refuges`, dùng cho sự cố cháy trong hầm), toạ độ và độ sâu theo Wikipedia JA (Tappi 41,25722 N 140,34806 E, sâu 135 m; Yoshioka 41,44222 N 140,23917 E, sâu 149,5 m).

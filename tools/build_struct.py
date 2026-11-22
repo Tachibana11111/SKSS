@@ -23,7 +23,7 @@ LAY = {
     '武雄温泉': '2-2-0', '嬉野温泉': '2-2-0', '新大村': '2-2-0', '諫早': '2-2-0', '長崎': '2-4-0',
     # mini-Shinkansen (Yamagata / Akita): ga đường sắt thường cũ; có đường tránh để tàu đối hướng gặp nhau ở ga (đường đơn) [I]
     '米沢': '2-3-0', '高畠': '1-2-0', '赤湯': '2-3-0', 'かみのやま温泉': '2-3-0', '山形': '2-4-0', '天童': '2-3-0', 'さくらんぼ東根': '1-2-0', '村山': '2-3-0', '大石田': '1-2-0', '新庄': '2-3-0',
-    '雫石': '1-2-0', '田沢湖': '2-3-0', '角館': '2-3-0', '大曲': '2-3-0', '秋田': '2-4-0'}
+    '雫石': '1-2-0', '田沢湖': '2-3-0', '角館': '2-3-0', '大曲': '2-2-0w', '秋田': '1-2-0t'}
 
 # Toạ độ ga (vĩ độ, kinh độ) để tính hướng địa lý của tuyến cho la bàn ở bản đồ nhỏ. [N] từ trường coordinates của Wikipedia tiếng Nhật (tra 22/10/2026 qua API công khai, 3 yêu cầu); các ga đánh dấu [K] là xấp xỉ từ kiến thức nền (Wikipedia không có toạ độ cho trang đó).
 COORD = {
@@ -70,7 +70,7 @@ SHARE_FROM = {'jts': ('toh', 30.3), 'hok': ('jts', 105.0), 'yam': ('toh', 255.1)
 BASE_CURVE = {'jts': 4000, 'hok': 4000, 'nks': 4000}
 JUNC = {'yam': (256.1, 1.2, 1500, -1), 'aki': (498.5, 1.2, 1500, -1), 'jts': (32.3, 1.5, 4000, -1), 'hok': (107.0, 1.5, 4000, -1)}      # (km, chiều dài km, R m, dấu: -1 = rẽ trái khi đi xuống)
 MINI = {'yam': 255.1, 'aki': 496.5}                                    # km bắt đầu phần đường sắt thường (mini-Shinkansen)
-SINGLE = {'yam': [(255.1 + 7.0, 311.2), (313.5, 322.0), (342.2, 392.0), (400.0, 403.7)], 'aki': [(498.5, 586.0), (600.0, 623.8)]}     # đường đơn (Akita: đoạn Jingūji–Mineyoshikawa là đường đôi [N tên đoạn], km 586–600 là I); đoạn đôi: Fukushima–Sekine, Akayu–Kita-Akayu, Uzen-Nakayama–Yamagata, Ashisawa–Funagata [N tên đoạn, km là I]
+SINGLE = {'yam': [(255.1 + 7.0, 311.2), (313.5, 322.0), (342.2, 392.0), (400.0, 403.7)], 'aki': [(498.5, 623.8)]}     # đường đơn (Akita: từ 22/11/2026 cả Morioka–Akita là đường đơn liền một mạch theo yêu cầu người chơi; trước đó có đoạn đôi Jingūji–Mineyoshikawa km 586–600); đoạn đôi: Fukushima–Sekine, Akayu–Kita-Akayu, Uzen-Nakayama–Yamagata, Ashisawa–Funagata [N tên đoạn, km là I]
 XING = {'yam': (41, 12), 'aki': (45, 0)}                                # số đường ngang: (Yamagata–Shinjo [N: 41 sau năm 1999]; phần Fukushima–Yamagata [I]) và Akita [I]
 CURVE_PREFIX = {'jts': (0, 30.3), 'hok': (0, 105.0)}
 

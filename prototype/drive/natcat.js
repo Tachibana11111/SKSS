@@ -242,12 +242,22 @@
       if (o && o.dir !== a.dir) { const fresh = !(a.d.hold > 0 && a.d.why === 'single'); a.d.hold = Math.max(a.d.hold, 12); a.d.why = 'single'; if (fresh && !a.dwell) snapHold(LN, a, S[j].km, tNow, dt); }
       else { if (a.d.why === 'single' && a.d.hold > 0) { a.d.hold = 0; a.d.why = ''; } const ck = nx + a.dir; if (!cat[a.dir].has(nx)) { cat[a.dir].set(nx, { dir: a.dir, label: lab(a) }); cc[ck] = { seg: nx, dir: a.dir, t: tNow, label: lab(a) }; } }      // đoạn không bị người chơi chiếm: tàu danh mục đi vào và giữ đoạn cho người chơi biết
     }
+    if (W.sw && line === 'aki') {      // Omagari (switchback): tàu danh mục ngược chiều đang đỗ ở Omagari chờ tàu của người chơi vào ga rồi mới được đi (hai tàu gặp nhau tại ga)
+      const Tm = W.player, mo = Tm.M[W.sw.k], swKm = S[W.sw.i].km, arrived = Tm.k > W.sw.k || (Tm.k === W.sw.k && Tm.phase === 'dwell'), tArr = mo && mo.arr != null ? W.trip.t0 + mo.arr : null;
+      if (!arrived && tArr !== null && Math.abs(tNow - tArr) < 900) for (const a of ent) { if (a.me || !a.c || a.dir === W.dir || !(a.dwell || (a.s && a.s.dwell)) || a.s.dwell === 'end' || Math.abs(a.km - swKm) > 0.15) continue; const p = a.c.stops[a.s.k]; if (p && a.eff + 2 * dt >= a.c.td(p) - 6) { a.d.hold = Math.max(a.d.hold, 12); a.d.why = 'single'; } } }
     H.segOwner[line] = cat;
   }
   // tàu của người chơi sắp rời ga vào đoạn đường đơn: có tàu danh mục ngược chiều đang chiếm đoạn đó thì trả về tên tàu đó (không thì null); mức nhìn trước cho cả ga đang tới (đường đơn phía sau ga tới)
   function singleBusy(W, T, k) {
     const H = W.haz, line = W.lineId, o = H && H.segOwner && H.segOwner[line]; if (!o || (line !== 'aki' && line !== 'yam')) return null;
     const m = T.M[k === undefined ? T.k : k]; if (!m || m.i === undefined) return null; const nx = W.dir === 'down' ? m.i : m.i - 1, e = o[W.dir === 'down' ? 'up' : 'down'].get(nx); if (e) H.intent = { line, seg: nx, dir: W.dir, t: W.trip.t0 + W.t }; return e ? (e.label || '?') : null;
+  }
+  // Omagari (switchback): tàu danh mục ngược chiều gặp tàu của người chơi tại ga (giờ đến gần nhất trong ±20 phút); chưa vào ga thì tàu người chơi phải chờ
+  function omMeeting(W, T) {
+    const LN = root.LINES, L = LN && LN[W.lineId], sw = W.sw; if (!L || !sw) return null; const m = T.M[sw.k]; if (!m) return null; const tp = W.trip.t0 + (m.arr != null ? m.arr : (m.dep || 0)), now = W.trip.t0 + W.t; let best = null;
+    for (const c of build(LN)) { if (c.line !== W.lineId || c.rec.d === W.dir || c.rec === W.trip.rec) continue; const p = c.stops.find(q => q.i === sw.i); if (!p) continue; const dt = Math.abs(c.ta(p) - tp); if (dt > 420) continue; if (!best || dt < best.dt) best = { c, p, dt }; }      // chỉ ghép cặp gặp nhau khi giờ đến lệch ≤ 7 phút (giờ phần mini là ước tính nên các cặp xa nhau không thật sự gặp ở Omagari)
+    if (!best) return null; const d = delayOf(W, best.c.key), dl = d ? d.delay : 0, ta = best.c.ta(best.p) + dl;
+    return { label: root.Sim.labelAt(best.c.rec, L.stations[sw.i].km), arrived: now >= ta, eta: ta - now };
   }
   function playerClaim(W, T) {
     const H = W.haz, line = W.lineId; if (!H || (line !== 'aki' && line !== 'yam')) return; const m = T.M[T.k]; if (!m || m.i === undefined) return;
@@ -272,5 +282,5 @@
     W.obs = { x: T.x + best.dist, key: root.Sim.vehAt(best.c.rec, best.s.km), dw: !!best.s.dwell, len: veh.len, v: held ? 0 : (best.s.kmh || 0) * (1 - rate) / 3.6, t: W.t, label: root.Sim.labelAt(best.c.rec, best.s.km) };
   }
   const delayOf = (W, key) => { const H = W.fgn && W.home ? W.home.W.haz : W.haz, d = H && H.delay.get(key); return d ? d : null; };      // tàu vào buồng lái từ bản đồ: tàu khác (ngược chiều, đỗ ga, thông qua) theo độ trễ/giữ của bản đồ của tàu ta
-  root.NatCat = { bindEvents, canPass, updateObstacle, refOf, KX, VP, VS, hav, shindoAt, build, atKm, stateOf, init, step, delayOf, singleBusy, playerClaim };
+  root.NatCat = { bindEvents, canPass, updateObstacle, refOf, KX, VP, VS, hav, shindoAt, build, atKm, stateOf, init, step, delayOf, singleBusy, playerClaim, omMeeting };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -790,4 +790,12 @@ I18N.add("en", {
 "Chiều lên": "Up direction",
 "Hủy": "Cancel",
 "Đổi tuyến": "Change line",
+"Omagari: chờ {0} (ngược chiều) vào ga rồi mới được rời ga ({1} s)": "Omagari: wait for {0} (opposite direction) to arrive before leaving ({1} s)",
+"Đổi đầu tàu tại Omagari: góc nhìn chuyển sang đuôi tàu (đầu tàu mới), chắn cuối nằm sau lưng.": "Changing ends at Omagari: the view switches to the rear of the train (the new front); the buffer stop is now behind you.",
+"Chạy lùi": "Reverse",
+"LÙI": "REV",
+"Chỉ đổi giữa chạy tiến và chạy lùi khi tàu đã dừng hẳn (0 km/h).": "Forward and reverse can only be switched when the train has come to a complete stop (0 km/h).",
+"Chạy lùi chỉ dùng được khi tàu đang ở đường chạy (không ở ga đang đỗ).": "Reverse is only available while the train is on the line (not dwelling at a station).",
+"Chạy lùi: BẬT. Kéo cần gia tốc để lùi; về 0 km/h rồi bấm lại để chạy tiến.": "Reverse: ON. Pull the throttle to back up; come to 0 km/h and press again to drive forward.",
+"Chạy lùi: TẮT. Tàu chạy tiến như bình thường.": "Reverse: OFF. The train drives forward as usual.",
 });
