@@ -951,9 +951,9 @@
   const _fkg = new WeakMap();
   function fkGeo(W) {      // hình học ga Fukushima của thế giới W (đường dừng của ta = đường rìa) và vạch tham chiếu sM
     let g = _fkg.get(W); if (g !== undefined) return g; const Ly = root.Layout, i = W.line.stations.findIndex(s => s.lay === Ly.FUK), m = i >= 0 ? W.player.M.find(mm => mm.i === i) : null;
-    g = m ? { o: Ly.station(Ly.FUK, W.dir, -1).ours, sM: m.sOrig !== undefined ? m.sOrig : m.s } : null; if (g) _fkg.set(W, g); return g || null;
+    g = i >= 0 ? { o: Ly.station(Ly.FUK, W.dir, -1).ours, sM: m ? (m.sOrig !== undefined ? m.sOrig : m.s) : sOfKm(W.line.stations[i].km, W.dir, W.line.kmEnd) } : null; if (g) _fkg.set(W, g); return g || null;      // chuyến không đi qua Fukushima (bắt đầu sau ga / kết thúc trước ga / tàu ma dịch chuyển): vẫn phải có làn Yamagata (+15 m), lấy vạch ga từ km
   }
-  function fkLane(W, s) { if (!fkFollows(W)) return 0; const g = fkGeo(W); if (!g) return 0; const o = g.o, w = root.Layout.laneW(o, s, g.sM, true); return o.plain + (o.x - o.plain) * w; }
+  function fkLane(W, s) { if (!fkFollows(W)) return 0; const g = fkGeo(W); if (!g) return 0; const o = g.o, w = fkStep(W, s) ? 1 : root.Layout.laneW(o, s, g.sM, true); return o.plain + (o.x - o.plain) * w; }      // phía đường Yamagata của ngã rẽ: luôn ở đường rìa (trọng số của đường dừng giảm về 0 xa ga nên không dùng được ở đó)
   function fkStep(W, s) { if (!fkFollows(W)) return 0; const jq = W.line.meta.junctions[fkOf(W)], sj = sOfKm(jq.km, W.dir, W.line.kmEnd); return (W.dir === 'down' ? s > sj : s < sj) ? jq.fk.a0 : 0; }
   // làn ngược chiều của ta (trong khung đường của ta) trên đoạn đường Yamagata sát ngã rẽ: từ đường rìa kia (cách 34,3 m) hội tụ về đôi đường chuẩn 4,3 m trên zb1 m
   function fkOwnOpp(W, s) { const jq = W.line.meta.junctions[fkOf(W)], fk = jq.fk, sj = sOfKm(jq.km, W.dir, W.line.kmEnd), u = W.dir === 'down' ? s - sj : sj - s, d0 = fk.a0 - fk.x0; return u <= 0 ? -d0 : -(d0 + (XB_PAIR - d0) * ease01(u / fk.zb1)); }
