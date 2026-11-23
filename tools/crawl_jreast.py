@@ -22,7 +22,7 @@ VER = "2610"
 STATIONS = {"1039": "Tokyo", "0788": "Shinagawa", "0350": "Omiya"}
 UA = {"User-Agent": "Mozilla/5.0 (personal hobby project; low rate)"}
 # Ga của mini-Shinkansen: dùng để tách hai nhánh của tàu ghép (Komachi, Tsubasa).
-MINI_STATIONS = {"雫石", "田沢湖", "角館", "大曲", "秋田", "米沢", "高畠", "赤湯", "かみのやま温泉", "山形",
+MINI_STATIONS = {"雫石", "田沢湖", "角館", "羽後四ツ屋", "北大曲", "大曲", "秋田", "米沢", "高畠", "赤湯", "かみのやま温泉", "山形",
                  "天童", "さくらんぼ東根", "村山", "大石田", "新庄", "羽前千歳", "北山形"}
 
 

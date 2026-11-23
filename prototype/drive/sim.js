@@ -782,7 +782,8 @@
   }
   function singleEff(W, s) {
     const w = singleW(W, s); if (w <= 0) return 0; const Ly = root.Layout; let cov = 0;
-    if (Ly && W.player) for (const m of W.player.M) cov = Math.max(cov, Ly.spread(s, m.s)); else if (Ly && W.net) for (const m of (W.net.trains[0] ? W.net.trains[0].M : [])) cov = Math.max(cov, Ly.spread(s, m.s));
+    const solo = m => { const st = W.line.stations[m.i]; return !!(st && Ly.isSingle(st.lay)); };      // ga một đường (Kita-Omagari): không có đường ngược chiều thật nên vẫn là đường đơn
+    if (Ly && W.player) for (const m of W.player.M) { if (!solo(m)) cov = Math.max(cov, Ly.spread(s, m.s)); } else if (Ly && W.net) for (const m of (W.net.trains[0] ? W.net.trains[0].M : [])) { if (!solo(m)) cov = Math.max(cov, Ly.spread(s, m.s)); }
     return w * (1 - cov);
   }
   const worldXings = (L, dir) => (L.xings || []).map(k => ({ s: sOfKm(k, dir, L.kmEnd), blocked: false, until: 0, hit: false, cleared: false })).sort((a, b) => a.s - b.s);
@@ -1014,7 +1015,7 @@
     const c0 = W.dwInfo || (W.dwInfo = {}); if (c0[k]) return c0[k]; const Ly = root.Layout, m = W.player.M[k], st = W.line.stations[m.i], sc = Ly.station(st.lay || '2-2-0', W.dir, Ly.pickOf(st, m.i, W));
     // tàu ngược chiều đỗ chỉ ở đường PHỤ có sân ga kề: đường chính ngược chiều là đường tàu chạy thông qua ga đi (vẽ ở làn đường chính), và đường tàu của ta đang dùng cũng bị loại, nếu không các tàu sẽ đi xuyên qua nhau
     const oppSide = sc.tracks.filter(x => !x.own && !x.main && !x.thr && x !== sc.ours && platAdj(sc, x));
-    const ownL = sc.tracks.filter(x => x.own && !x.main && !x.thr && (x !== sc.ours || !m.stop)); return c0[k] = { jp: st.jp, own: ownL, opp: sc.code === root.Layout.OMA ? ownL : oppSide };      // ta chạy thông qua ga (không dừng) thì đường dừng của ta để trống cho tàu khác đỗ
+    const ownL = sc.tracks.filter(x => x.own && !x.main && !x.thr && (x !== sc.ours || !m.stop)); return c0[k] = { jp: st.jp, own: ownL, opp: sc.code === root.Layout.OMA || root.Layout.MAINUP.has(sc.code) ? ownL : oppSide };      // ta chạy thông qua ga (không dừng) thì đường dừng của ta để trống cho tàu khác đỗ
   }
   function refreshDwellers(W, T) {
     if (!W.dwOn || W.mission || !root.NatCat || !root.LINES || (W.dwAt !== undefined && W.t - W.dwAt < 1 && W.t >= W.dwAt)) return; W.dwAt = W.t;
@@ -1050,12 +1051,24 @@
         if (created) break;
       }
     }
+    if (near.size) for (const c of cat) {      // tàu NGƯỢC chiều bị giữ ở ga vì đường đơn (NatCat.singleStep) dù không có giờ dừng ở đó: đỗ ở đường tránh khi ta chạy suốt qua ga. Cùng nguồn với bản đồ toàn quốc: tàu đứng yên đúng km ga
+      if (c.line !== W.lineId || c.rec.d === W.dir || c.rec === me) continue;
+      const d = NC.delayOf(W, c.key), old = cur.get(c.key), held = !!(d && d.hold > 0 && d.why === 'single');
+      if (!held) { if (old && old.hd) { if (!old.hdRel) { old.hdRel = true; old.depA = true; old.dc = now - (d ? d.delay : old.dl); } if (d) old.dl = d.delay; if (now - old.dl <= old.dc + T_DEP + 5) seen.add(c.key); } continue; }      // hết bị giữ: tăng tốc rời ga rồi biến mất
+      const LL = LN[c.line], s = NC.stateOf(LN, c, now - d.delay, d.skip); if (!s || s.dwell) continue;
+      const j = LL.stations.findIndex(x => Math.abs(x.km - s.km) < 0.12); if (j < 0 || c.stops.some(q => q.i === j)) continue; const k = near.get(LL.stations[j].jp); if (k === undefined) continue;
+      if (old && old.hd && old.k === k) { old.dl = d.delay; old.hdRel = false; old.depA = false; seen.add(c.key); continue; }
+      if (old) continue;
+      const info = dwellInfo(W, k), used = new Set(); for (const e of cur.values()) if (e.k === k) used.add(e.track); const pool = info.opp.filter(x => !used.has(x)); if (!pool.length) continue;
+      const kmE = LL.stations[j].km, vk = vehAt(c.rec, kmE); if (!VEH[vk]) continue; const fz = geoS(M[k]);
+      cur.set(c.key, { k, i: M[k].i, track: pool[0], key: vk, face: -1, front: fz, f0: fz, ck: c.key, label: labelAt(c.rec, kmE), dl: d.delay, ac: -1e18, dc: 1e18, arrA: false, depA: false, v: 0, hd: true }); seen.add(c.key); changed = true; }
     for (const [ck, e] of cur) if (!seen.has(ck) || !near.has(W.line.stations[e.i].jp)) { cur.delete(ck); changed = true; }
     if (changed || !W.stabled) W.stabled = [...cur.values()];
   }
   function animDwellers(W) {      // mỗi nhịp: vị trí tàu theo giờ biểu đồ (hãm vào ga / đỗ / tăng tốc ra)
     const cur = W.dwMap; if (!cur || !cur.size) return; const now = W.trip.t0 + W.t;
-    for (const e of cur.values()) { const eff = now - e.dl, same = e.face === 1; let off = 0, v = 0;
+    for (const e of cur.values()) { if (W.sw && e.i === W.sw.i && e.depA && now - e.dl > e.dc) e.face = -1;      // Omagari (switchback): tàu đỗ vào ga hướng về chắn cuối, tới giờ đi thì đổi đầu và chạy NGƯỢC ra (face −1 → off âm), không tiến xuyên qua chắn cuối
+      const eff = now - e.dl, same = e.face === 1; let off = 0, v = 0;
       if (e.arrA && eff < e.ac) { const tau = Math.max(0, e.ac - eff); off = (same ? -1 : 1) * V_ARR * tau * tau / (2 * T_ARR); v = V_ARR * tau / T_ARR; }
       else if (e.depA && eff > e.dc) { const tau = eff - e.dc; off = (same ? 1 : -1) * 0.5 * A_DEP * tau * tau; v = A_DEP * tau; }
       e.front = e.f0 + off; e.v = v; }
