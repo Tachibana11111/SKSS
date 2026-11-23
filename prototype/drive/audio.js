@@ -320,7 +320,8 @@
     const melTo = i => Mel ? Mel.seg(L, Math.max(0, Math.min(L.stations.length - 1, i - sg)), i) : null;      // đoạn dẫn tới ga i (ga ranh giới vẫn dùng melody của đoạn đang đi tới)
     const hm = sec => { const t = Math.round(W.trip.t0 + sec) % 86400; return [Math.floor(t / 3600), Math.floor(t % 3600 / 60)]; };
     // thông báo ga dừng kế tiếp (+ xin lỗi nếu trễ): không melody, chỉ ngắt 2,5 giây sau đèn cửa xanh
-    const nextStop = () => { if (A.nxt === T.k) return; A.nxt = T.k; const delay = W.t - Sm.plannedTime(T), st = [pa(`次は、${nameJ(j)}に止まります。`, _t('Ga dừng tiếp theo là {0}.', nxt.name))];
+    const nextStop = () => { if (A.nxt === T.k) return; if (M[j].sig || (M[T.k] && M[T.k].sig)) return; A.nxt = T.k;      // tín hiệu trường (tránh tàu): không PA/melody
+       const delay = W.t - Sm.plannedTime(T), st = [pa(`次は、${nameJ(j)}に止まります。`, _t('Ga dừng tiếp theo là {0}.', nxt.name))];
       if (delay > 120) st.push(pa(`お急ぎのところ、列車が約${Math.round(delay / 60)}分遅れております。お詫び申し上げます。`, _t('Tàu đang trễ khoảng {0} phút, xin lỗi quý khách.', Math.round(delay / 60))));
       this.chain(W, st); A.apr = -1; };
     // lúc bắt đầu chuyến (đèn cửa đã xanh): melody tuyến -> cảm ơn -> các ga dừng kèm giờ đến -> ga dừng kế tiếp
@@ -339,7 +340,7 @@
     if (T.phase === 'run' && p.phase === 'dwell' && T.k > 0) nextStop();
     // sắp tới ga (2,5 km; 3,5 km với Hakata/Kumamoto/Kagoshima-Chuo; không quá 60% khoảng cách tới ga dừng trước): melody -> tên ga -> đổi tàu -> bên cửa mở (ga cuối: thêm lời cảm ơn)
     if (T.phase === 'run') { const d = M[j].s - T.x, trig = Mel ? Mel.trigger(L, M[j].i, M[j].s - M[T.k].s) : 3500;
-      if (d < trig && A.apr !== j && T.v > 15) { A.apr = j; const fin = j === last, st = mel((Mel && Mel.arr(L, M[j].i)) || melTo(M[j].i));
+      if (d < trig && A.apr !== j && T.v > 15 && !M[j].sig) { A.apr = j; const fin = j === last, st = mel((Mel && Mel.arr(L, M[j].i)) || melTo(M[j].i));
         st.push(pa(fin ? `まもなく、終点、${nameJ(j)}、${nameJ(j)}です。` : `まもなく、${nameJ(j)}、${nameJ(j)}です。`, fin ? _t('Sắp tới ga cuối {0}.', nxt.name) : _t('Sắp tới ga {0}.', nxt.name)));
         const tr = (root.TRANSFERS || {})[M[j].jp] || [], rail = tr.filter(x => x !== '路線バス');
         if (rail.length) st.push(pa(`${nameJ(j)}では、${rail.join('、')}はお乗り換えです。`, _t('Quý khách có thể đổi tàu tại {0}: {1}.', nxt.name, rail.map(railName).join(', '))));

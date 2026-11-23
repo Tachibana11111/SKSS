@@ -229,10 +229,11 @@
     H.segOwner = {}; const line = W.lineId; if (line !== 'aki' && line !== 'yam') return; const L = LN[line]; if (!L || !L.single || !L.single.length) return;
     H.claim = H.claim || {}; const S = L.stations, cl = H.claim[line] || (H.claim[line] = {}), cc = H.cclaim = H.cclaim || {}, mine = new Map(), cat = { down: new Map(), up: new Map() };
     const segOf = km => { for (let i = 0; i < S.length - 1; i++) if (km >= S[i].km - 1e-4 && km <= S[i + 1].km + 1e-4) return i; return -1; };
+    const strict = i => line === 'aki' && i >= 0 && i + 1 < S.length && S[i + 1].km - S[i].km >= 30;      // khu gian Omagari – Akita (một đường, 51,7 km, không ga giữa): luật chặn áp dụng cả giữa hai tàu danh mục (chỉ tuyến Akita, theo yêu cầu; Yamagata giữ luật cũ)
     const single = i => i >= 0 && i < S.length - 1 && L.single.some(([a, b]) => Math.min(S[i + 1].km, b) - Math.max(S[i].km, a) > 0.05), M = 0.2;
     const ent = act.filter(a => a.c ? (a.c.line === line && a.c.rec !== W.trip.rec) : a.me), lab = a => a.me ? null : root.Sim.labelAt(a.c.rec, a.km);
     for (const a of ent) { a.km = a.c ? a.s.km : a.g.k; const i = segOf(a.km); if (i < 0 || !single(i) || a.dwell || (a.d.hold > 0 && a.d.why === 'single')) continue;
-      if (a.km > S[i].km + 0.02 && a.km < S[i + 1].km - 0.02) { if (a.me) mine.set(blk(L, i), { dir: a.dir }); else cat[a.dir].set(blk(L, i), { dir: a.dir, label: lab(a) }); } }
+      if (a.km > S[i].km + 0.02 && a.km < S[i + 1].km - 0.02) { if (a.me) mine.set(blk(L, i), { dir: a.dir }); else cat[a.dir].set(blk(L, i), { dir: a.dir, label: lab(a), km: a.km, held: a.d.hold > 0 }); } }
     for (const k of Object.keys(cl)) { if (tNow - cl[k].t > 25) { delete cl[k]; continue; } if (!mine.has(+k)) mine.set(+k, { dir: cl[k].dir }); }
     { const it = H.intent; if (it && it.line === line && tNow - it.t < 20 && !mine.has(it.seg)) mine.set(it.seg, { dir: it.dir }); }      // người chơi đang chờ ở ga để vào đoạn này: tàu ngược chiều chưa vào đoạn phải nhường (tránh để người chơi chờ mãi khi tàu ngược chiều nối đuôi nhau)
     for (const k of Object.keys(cc)) { if (tNow - cc[k].t > 25) { delete cc[k]; continue; } if (!cat[cc[k].dir].has(cc[k].seg)) cat[cc[k].dir].set(cc[k].seg, { dir: cc[k].dir, label: cc[k].label }); }
@@ -241,8 +242,8 @@
       if (a.dwell || (a.s && a.s.dwell)) { if (a.s.dwell === 'end') continue; j = S.findIndex(st => Math.abs(st.km - a.km) < 0.15); const p = a.c.stops[a.s.k]; ready = !!p && a.eff + 2 * dt >= a.c.td(p) - 6; }      // nhìn trước 2 nhịp: giữ tàu trước khi nó kịp nhích khỏi ga
       else if (!a.still || a.d.why === 'single') { const jj = S.findIndex(st => a.dir === 'down' ? (st.km - a.km >= -0.02 && st.km - a.km <= M) : (a.km - st.km >= -0.02 && a.km - st.km <= M)); if (jj >= 0) { j = jj; ready = true; } }      // ga phía trước theo chiều chạy trong vòng 200 m (kể cả đang đứng đúng ga, nơi segOf trả về đoạn phía sau)
       if (j < 0 || !ready) continue; const nx0 = a.dir === 'down' ? j : j - 1; if (!single(nx0)) continue; const nx = blk(L, nx0);
-      const o = mine.get(nx);
-      if (o && o.dir !== a.dir) { const fresh = !(a.d.hold > 0 && a.d.why === 'single'); a.d.hold = Math.max(a.d.hold, 12); a.d.why = 'single'; if (fresh && !a.dwell) snapHold(LN, a, S[j].km, tNow, dt); }
+      const o = mine.get(nx), oc = strict(nx) ? cat[a.dir === 'down' ? 'up' : 'down'].get(nx) : null;      // khu gian dài không ga giữa (Omagari – Akita 51,7 km): hai tàu danh mục ngược chiều cũng KHÔNG được ở trong đoạn cùng lúc, tàu tới sau đỗ chờ ở ga đầu đoạn
+      if ((o && o.dir !== a.dir) || oc) { const fresh = !(a.d.hold > 0 && a.d.why === 'single'); a.d.hold = Math.max(a.d.hold, 12); a.d.why = 'single'; if (fresh && !a.dwell) snapHold(LN, a, S[j].km, tNow, dt); }
       else { if (a.d.why === 'single' && a.d.hold > 0) { a.d.hold = 0; a.d.why = ''; } const ck = nx + a.dir; if (!cat[a.dir].has(nx)) { cat[a.dir].set(nx, { dir: a.dir, label: lab(a) }); cc[ck] = { seg: nx, dir: a.dir, t: tNow, label: lab(a) }; } }      // đoạn không bị người chơi chiếm: tàu danh mục đi vào và giữ đoạn cho người chơi biết
     }
     if (W.sw && line === 'aki') {      // Omagari (switchback): tàu danh mục ngược chiều đang đỗ ở Omagari chờ tàu của người chơi vào ga rồi mới được đi (hai tàu gặp nhau tại ga)
@@ -253,7 +254,9 @@
   // tàu của người chơi sắp rời ga vào đoạn đường đơn: có tàu danh mục ngược chiều đang chiếm đoạn đó thì trả về tên tàu đó (không thì null); mức nhìn trước cho cả ga đang tới (đường đơn phía sau ga tới)
   function singleBusy(W, T, k) {
     const H = W.haz, line = W.lineId, o = H && H.segOwner && H.segOwner[line]; if (!o || (line !== 'aki' && line !== 'yam')) return null;
-    const m = T.M[k === undefined ? T.k : k]; if (!m || m.i === undefined) return null; const nx = blk(root.LINES[line], W.dir === 'down' ? m.i : m.i - 1), e = o[W.dir === 'down' ? 'up' : 'down'].get(nx); if (e) H.intent = { line, seg: nx, dir: W.dir, t: W.trip.t0 + W.t }; return e ? (e.label || '?') : null;
+    const m = T.M[k === undefined ? T.k : k]; if (!m || m.i === undefined) return null; const nx = blk(root.LINES[line], W.dir === 'down' ? m.i : m.i - 1), e = o[W.dir === 'down' ? 'up' : 'down'].get(nx); if (e) H.intent = { line, seg: nx, dir: W.dir, t: W.trip.t0 + W.t };
+    if (!e) return null; const lb = e.label || '?'; if (e.km === undefined) return lb;      // tàu ngược chiều có thể ở xa (> 4,5 km: ngoài tầm vẽ của buồng lái và bản đồ nhỏ, chỉ thấy trên bản đồ toàn quốc) hoặc đang bị giữ giữa đường (sự cố): báo khoảng cách và tình trạng
+    const dk = Math.abs(e.km - root.Sim.kmOfS(T.x, W.dir, root.LINES[line].kmEnd)); return e.held ? _t('{0} (cách {1} km, đang bị giữ giữa đường)', lb, dk.toFixed(1)) : _t('{0} (cách {1} km)', lb, dk.toFixed(1));
   }
   // Omagari (switchback): tàu danh mục ngược chiều gặp tàu của người chơi tại ga (giờ đến gần nhất trong ±20 phút); chưa vào ga thì tàu người chơi phải chờ
   function omMeeting(W, T) {

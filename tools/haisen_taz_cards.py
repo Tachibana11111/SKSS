@@ -45,7 +45,8 @@ NOTE = {
     'dPddP': 'ba đường, sân ga đảo phía bắc + sân ga bên phía nam',
     'PddPd': 'ba đường, sân ga bên phía bắc + sân ga đảo phía nam',
 }
-COL = {'GIỮ': '#2e8b57', 'SỬA': '#d98a00', 'THÊM MỚI': '#4169a8', 'THÊM (mã có sẵn)': '#3a7f9a'}
+BUILT = {'1-1-0', '1-1-0m', '2-2-1s', '2-2-1o', '1-3-1k', '2-3-1t', '2-3-1h', '0-2-1s', '0-2-1n'}      # mã đã dựng cho tuyến Tazawako (docs/14 §8h)
+COL = {'ĐÃ DỰNG': '#2e8b57', 'GIỮ': '#2e8b57', 'SỬA': '#d98a00', 'THÊM MỚI': '#4169a8', 'THÊM (mã có sẵn)': '#3a7f9a'}
 
 
 SC_M = 8.15          # m / đơn vị sơ đồ [I]
@@ -137,7 +138,7 @@ def main():
         if cx is None: cx = cen[fi].get(jp + '（信）', 100)
         c = dict(fig=figs[fi], cx=cx, ox=0)
         down = tok[::-1]; code = CODE.get(down); g = game.get(jp)
-        if g: verdict = 'GIỮ' if g['lay'] == code else 'SỬA'
+        if g: verdict = 'ĐÃ DỰNG' if g['lay'] in BUILT else ('GIỮ' if g['lay'] == code else 'SỬA')
         else: verdict = 'THÊM (mã có sẵn)' if code else 'THÊM MỚI'
         cnt[verdict] = cnt.get(verdict, 0) + 1
         a = YC.crop_svg(c, 'orig')
