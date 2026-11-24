@@ -115,15 +115,25 @@ function drawTopBar(blink) {
   const pt = Sim.plannedTime(T), delay = W.t - pt, M = T.M;
   txt(Sim.hudLabel(W, T) + ' · ' + T.veh.name + ' · ' + hhmm(W.trip.t0 + W.t), 16, 24, '#fff', 'bold 17px system-ui');
   txt(_ln(W.line) + ' · ' + Sim.DIFF[W.diffKey].name + ' · ' + Sim.WEATHER[W.weatherKind] + (replaying ? _t(' · XEM LẠI') : '') + _t(' · tua ×') + scale + (auto ? _t(' · TỰ LÁI') : '') + (paused ? _t(' · TẠM DỪNG') : ''), 16, 45, '#8aa0b5', '12px system-ui');
-  // tuyến các ga
-  const x0 = 470, x1 = 1560, s0 = M[0].s, s1 = M[M.length - 1].s, pos = s => x0 + (x1 - x0) * (s - s0) / (s1 - s0), ly = 36;
-  ctx.strokeStyle = '#3b516a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x0, ly); ctx.lineTo(x1, ly); ctx.stroke();
-  for (const z of W.zones) { if (W.t < z.tA || W.t > z.tB) continue; const lo = Math.max(x0, Math.min(pos(z.s0), pos(z.s1))), hi = Math.min(x1, Math.max(pos(z.s0), pos(z.s1))); if (hi <= lo) continue; ctx.fillStyle = z.hold ? 'rgba(138,150,166,.6)' : (ZC[z.kind] || '#e08a2f'); ctx.fillRect(lo, ly + 4, hi - lo, 4); }
-  const showAll = M.length < 9, j = Sim.nextTarget(T);
-  M.forEach((m, i) => { const px = pos(m.s); ctx.fillStyle = i === j && T.phase === 'run' ? '#ffd24a' : m.stop ? (i <= T.k ? '#4cd68a' : '#e8eef5') : '#5a6f86'; ctx.beginPath(); ctx.arc(px, ly, m.stop ? 5 : 3, 0, 7); ctx.fill();
-    if (m.stop || showAll) txt(m.name, px, i % 2 ? 20 : 54, m.stop ? '#e8eef5' : '#7a8ea5', '10px system-ui', 'center'); });
-  if (W.lead && W.lead.phase !== 'end') { const lx = pos(W.lead.x); if (lx > x0 - 6 && lx < x1 + 6) { ctx.fillStyle = '#ffa24a'; ctx.fillRect(lx - 4, ly - 8, 8, 16); } }
-  ctx.fillStyle = '#4aa3ff'; ctx.fillRect(pos(T.x) - 6, ly - 9, 12, 18);
+  // thanh hành trình (mockup docs/mockups/route_strip.html, 24/11/2026): hai đầu mút cố định là ga đầu và ga cuối của chuyến (đổi khi kết thúc sớm), con trỏ tròn đứng giữa; ga dừng/thông qua và sự kiện trôi qua con trỏ theo khoảng cách thật,
+  // tầm nhìn nửa thanh ±25 km. Tàu đứng ở ga đầu: đầu mút trái ngay dưới con trỏ (thanh chỉ còn nửa phải); chạy thì đầu mút lùi sang trái tới chỗ cố định. Ga cuối: đầu mút phải tiến về con trỏ khi tàu tới gần, xoá phần đường sau nó.
+  const x0 = 470, x1 = 1560, xc = (x0 + x1) / 2, ly = 49, NFS = 22, SPAN = 25000, kx = (x1 - x0) / 2 / SPAN, X = s => xc + (s - T.x) * kx, lastI = M.length - 1;
+  const xo = Math.max(x0, X(M[0].s)), xd = Math.min(x1, X(M[lastI].s)), j = Sim.nextTarget(T);
+  ctx.strokeStyle = '#3b516a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(xo, ly); ctx.lineTo(xd, ly); ctx.stroke();
+  // sự kiện nhuộm màu thẳng lên đoạn đường bị ảnh hưởng (sự cố toàn chuyến vẽ trước, dưới các sự kiện theo đoạn)
+  const zs = W.zones.filter(z => W.t >= z.tA && W.t <= z.tB).sort((p, q) => (q.kind === 'fault') - (p.kind === 'fault'));
+  ctx.lineCap = 'butt'; ctx.lineWidth = 5;
+  for (const z of zs) { const lo = Math.max(xo, Math.min(X(z.s0), X(z.s1))), hi = Math.min(xd, Math.max(X(z.s0), X(z.s1))); if (hi <= lo) continue; ctx.strokeStyle = z.hold ? 'rgba(138,150,166,.6)' : (ZC[z.kind] || '#e08a2f'); ctx.beginPath(); ctx.moveTo(lo, ly); ctx.lineTo(hi, ly); ctx.stroke(); }
+  // ga trung gian: chấm trôi qua con trỏ, không đè lên hai đầu mút; chỉ ga dừng có tên (phía trên chấm)
+  const labs = [];      // tên ga: tất cả phía TRÊN thanh, căn giữa chấm, cỡ lớn nhất có thể (không tăng chiều cao dải đen); nhãn chồng nhau thì bỏ nhãn kém ưu tiên: đầu mút > ga kế > ga gần con trỏ
+  M.forEach((m, i) => { if (i === 0 || i === lastI) return; const px = X(m.s); if (px < xo + 9 || px > xd - 9) return; ctx.fillStyle = i === j && T.phase === 'run' ? '#ffd24a' : m.stop ? (i <= T.k ? '#4cd68a' : '#e8eef5') : '#5a6f86'; ctx.beginPath(); ctx.arc(px, ly, m.stop ? 5 : 3, 0, 7); ctx.fill();
+    if (m.stop) labs.push({ x: px, t: m.name, pr: i === j && T.phase === 'run' ? 1 : 2, end: false}); });
+  // hai đầu mút (chấm ga dừng viền tối, tên đậm phía dưới)
+  for (const [ex, mi] of [[xo, 0], [xd, lastI]]) { const m = M[mi]; const done = mi === 0 ? (T.k > 0 || T.phase === 'run') : T.phase === 'end'; ctx.fillStyle = mi === j && T.phase === 'run' ? '#ffd24a' : done ? '#4cd68a' : '#e8eef5'; ctx.beginPath(); ctx.arc(ex, ly, 6, 0, 7); ctx.fill(); ctx.strokeStyle = '#0b1117'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(ex, ly, 6, 0, 7); ctx.stroke(); labs.push({ x: ex, t: m.name, pr: 0, end: true }); }
+  labs.sort((p, q) => p.pr - q.pr || Math.abs(p.x - xc) - Math.abs(q.x - xc)); const placed = [];
+  for (const l of labs) { const f = (l.end ? 'bold ' : '') + NFS + 'px system-ui'; ctx.font = f; const w = ctx.measureText(l.t).width, a = Math.max(4, Math.min(l.x - w / 2, FW - 4 - w)); if (placed.some(q => a < q[1] + 10 && a + w > q[0] - 10)) continue; placed.push([a, a + w]); txt(l.t, a, ly - 11, '#e8eef5', f, 'left'); }
+  // con trỏ: chấm tròn cỡ chấm ga dừng, đứng giữa
+  ctx.fillStyle = '#4aa3ff'; ctx.beginPath(); ctx.arc(xc, ly, 5, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(xc, ly, 5, 0, 7); ctx.stroke();
 
   // nút nhỏ: điện đàm, HUD, toàn màn hình
   // các ô vuông biểu tượng cạnh nhau, dồn sát mép phải: âm thanh, tua, điện đàm (O), toàn màn hình (F11), tạm dừng (Esc)

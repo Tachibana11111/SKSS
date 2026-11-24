@@ -1,0 +1,96 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mockup: thanh hành trình mới</title>
+<style>
+:root{--bg:#10161e;--panel:#17202b;--line:#243447;--fg:#e8eef5;--mut:#8aa0b5;--acc:#4aa3ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px 16px 40px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:22px 0 8px;color:#cfe0f2}.sub{color:var(--mut);margin:0 0 12px;max-width:1100px}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:10px 0}
+.ctl label{display:flex;gap:6px;align-items:center;color:#cfe0f2;font-size:13px}.ctl input[type=range]{width:360px}.ctl select,.ctl button{background:#1d2a39;color:var(--fg);border:1px solid #33475e;border-radius:6px;padding:5px 9px;font:inherit}
+.ctl button{cursor:pointer}.ctl button:hover{background:#25374c}
+.bar{margin:6px 0 2px}.bar .tag{font-size:12px;color:var(--mut);margin:0 0 2px}.bar canvas{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:4px;background:#0b1117}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--mut);margin:6px 0 0}.legend i{display:inline-block;width:22px;height:5px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.grid{display:grid;grid-template-columns:1fr;gap:6px;max-width:1500px}.frame{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.frame .cap{font-size:13px;color:#cfe0f2;margin:0 0 4px}.frame .cap b{color:#fff}.frame .sm{font-size:11px;color:var(--mut);margin:2px 0}
+ul.rules{margin:6px 0 0 18px;padding:0;max-width:1100px;color:#cfe0f2}ul.rules li{margin:3px 0}
+.note{color:var(--mut);font-size:12.5px;max-width:1100px}
+</style></head><body>
+<h1>Mockup: thanh hành trình (đoạn thẳng trên cùng màn hình lái)</h1>
+<p class="sub">Dữ liệu ga là chuyến Komachi 1 thật (Tokyo → Akita, ga dừng/không dừng theo lịch); các sự kiện là mẫu. Kéo thanh trượt hoặc bấm Chạy để so sánh <b>thanh hiện tại</b> (trên) với <b>thanh mới</b> (dưới) ở cùng một vị trí tàu. Chỉ là mockup, chưa sửa game.</p>
+<div class="ctl">
+ <label>Vị trí tàu <input id="pos" type="range" min="0" max="1000" value="0"><b id="posT" style="min-width:170px"></b></label>
+ <button id="play">▶ Chạy</button>
+ <label>Chuyến <select id="trip"></select></label>
+ <label><input type="checkbox" id="evs" checked> sự kiện (thời tiết, chạy chậm)</label>
+</div>
+<div class="bar"><div class="tag">HIỆN TẠI: ga dọc đường dàn hết cả chuyến, con trỏ chữ nhật chạy dọc, sự kiện là vạch màu bên dưới đường</div><canvas id="cOld" width="1920" height="58"></canvas></div>
+<div class="bar"><div class="tag">MỚI: hai đầu mút cố định, con trỏ tròn đứng giữa, ga và sự kiện trôi qua con trỏ, sự kiện nhuộm màu ngay trên đường</div><canvas id="cNew" width="1920" height="58"></canvas></div>
+<div class="legend"><span><i style="background:#2f6fd6"></i>mưa</span><span><i style="background:#8a96a6"></i>gió</span><span><i style="background:#dfe9f5"></i>tuyết</span><span><i style="background:#9a5ad6"></i>kiểm tra sau động đất</span><span><i style="background:#e08a2f"></i>chạy chậm theo lệnh</span><span><i style="background:#d64a4a"></i>sự cố</span><span><i style="background:#8a96a6;opacity:.6"></i>giữ tàu (mưa/gió quá ngưỡng)</span></div>
+
+<h2>Quy tắc của thanh mới</h2>
+<ul class="rules">
+<li><b>Hai đầu mút</b> là ga đầu và ga cuối của chuyến (đổi khi kết thúc sớm do sự cố); không còn liệt kê ga dọc đường theo cả chuyến.</li>
+<li><b>Con trỏ</b> cố định giữa thanh, đổi từ chữ nhật đứng thành chấm tròn bằng chấm ga dừng.</li>
+<li><b>Ga đầu:</b> lúc tàu đứng ở ga đầu, đầu mút trái nằm ngay dưới con trỏ (thanh chỉ còn nửa phải); tàu chạy thì đầu mút trôi lùi sang trái, tới vị trí cố định bên trái thì đứng yên. <b>Ga cuối:</b> đầu mút phải cố định, khi tàu tới gần thì trôi về phía con trỏ và xoá phần đường phía sau nó (lúc tới ga cuối thanh chỉ còn nửa trái).</li>
+<li><b>Mọi tên ga nằm phía TRÊN thanh</b> (đầu mút cũng vậy), thanh sát mép dưới của dải đen, chữ cỡ 22 px (to nhất có thể mà không tăng chiều cao dải đen 58 px); nhãn chồng nhau thì bỏ nhãn kém ưu tiên (đầu mút, rồi ga kế tiếp, rồi ga gần con trỏ).</li><li><b>Ga trung gian</b> là các chấm trôi qua con trỏ theo khoảng cách thật (tầm nhìn nửa thanh cố định ±25 km, nên ga trôi nhanh hay chậm theo đúng tốc độ tàu, như cách ga trôi ở màn hình 2D); không đè lên hai đầu mút. <b>Tên ga dừng hiện phía trên chấm; ga thông qua chỉ có chấm, không tên.</b> Không vẽ ngã rẽ và không vẽ tàu chạy trước.</li>
+<li><b>Sự kiện</b> (thời tiết, chạy chậm, kiểm tra sau động đất, giữ tàu) nhuộm màu thẳng lên đoạn đường bị ảnh hưởng và trôi dần qua con trỏ. Dù đã có lệnh điều độ về đoạn phía trước, đoạn đó chỉ hiện lên thanh khi nằm trong tầm nhìn ±25 km.</li>
+</ul>
+<p class="note">Cơ chế giống đồ thị 1,5 km gần nhất của đồng hồ đo trên tàu kiểm tra (cửa sổ trượt theo tàu, con trỏ cố định); khác ở chỗ hai đầu chuyến có mút cố định.</p>
+
+<h2>Sáu thời điểm (tự dựng từ chuyến đang chọn; mỗi thời điểm: hiện tại ở trên, mới ở dưới)</h2>
+<div class="grid" id="gal"></div>
+
+<script>
+const ST=[{"n":"Tokyo","km":0,"stop":1,"sig":0},{"n":"Ueno","km":3.6,"stop":1,"sig":0},{"n":"Omiya","km":31.3,"stop":1,"sig":0},{"n":"Oyama","km":80.3,"stop":0,"sig":0},{"n":"Utsunomiya","km":109,"stop":0,"sig":0},{"n":"Nasushiobara","km":152.4,"stop":0,"sig":0},{"n":"Shin-Shirakawa","km":178.4,"stop":0,"sig":0},{"n":"Koriyama","km":213.9,"stop":0,"sig":0},{"n":"Fukushima","km":255.1,"stop":0,"sig":0},{"n":"Shiroishi-Zao","km":286.2,"stop":0,"sig":0},{"n":"Sendai","km":325.4,"stop":1,"sig":0},{"n":"Furukawa","km":363.8,"stop":0,"sig":0},{"n":"Kurikoma-Kogen","km":385.7,"stop":0,"sig":0},{"n":"Ichinoseki","km":406.3,"stop":0,"sig":0},{"n":"Mizusawa-Esashi","km":431.3,"stop":0,"sig":0},{"n":"Kitakami","km":448.6,"stop":0,"sig":0},{"n":"Shin-Hanamaki","km":463.1,"stop":0,"sig":0},{"n":"Morioka","km":496.5,"stop":1,"sig":0},{"n":"Maegata","km":499.9,"stop":0,"sig":0},{"n":"Okama","km":502.5,"stop":0,"sig":0},{"n":"Koiwai","km":507,"stop":0,"sig":0},{"n":"Shizukuishi","km":512.5,"stop":0,"sig":0},{"n":"Harukiba","km":515.2,"stop":0,"sig":0},{"n":"Akabuchi","km":518.5,"stop":0,"sig":0},{"n":"Ochizawa Jct.","km":525,"stop":0,"sig":1},{"n":"Shidonai Jct.","km":530.9,"stop":0,"sig":1},{"n":"Tazawako","km":536.6,"stop":1,"sig":0},{"n":"Sashimaki","km":540.9,"stop":0,"sig":0},{"n":"Jindai","km":549.3,"stop":0,"sig":0},{"n":"Shoden","km":551.8,"stop":0,"sig":0},{"n":"Kakunodate","km":555.3,"stop":1,"sig":0},{"n":"Uguisuno","km":558.1,"stop":0,"sig":0},{"n":"Ugo-Nagano","km":561.1,"stop":0,"sig":0},{"n":"Yariminai","km":564.4,"stop":0,"sig":0},{"n":"Ugo-Yotsuya","km":566.7,"stop":0,"sig":0},{"n":"Kita-Omagari","km":568.5,"stop":0,"sig":0},{"n":"Omagari","km":572.1,"stop":1,"sig":0},{"n":"Akita","km":623.8,"stop":1,"sig":0}];
+const ZC={rain:'#2f6fd6',wind:'#8a96a6',snow:'#dfe9f5',order:'#e08a2f',fault:'#d64a4a',eqk:'#9a5ad6',hold:'rgba(138,150,166,.6)'};
+const EV=[[118,142,'rain'],[250,282,'wind'],[372,395,'rain'],[438,472,'eqk'],[519,536,'snow'],[556,570,'order'],[585,598,'hold'],[303,306,'fault']];
+const TRIPS={
+ 'long':{name:'Tokyo → Akita (đường dài, 623,8 km)',a:'Tokyo',b:'Akita'},
+ 'mid':{name:'Morioka → Akita (127 km)',a:'Morioka',b:'Akita'},
+ 'short':{name:'Kakunodate → Akita (68,5 km)',a:'Kakunodate',b:'Akita'},
+ 'early':{name:'Tokyo → Sendai (kết thúc sớm do sự cố)',a:'Tokyo',b:'Sendai'},
+ 'tiny':{name:'Omagari → Akita (chuyến ngắn 51,7 km)',a:'Omagari',b:'Akita'}
+};
+const byName=n=>ST.find(s=>s.n===n);
+let trip='long',span=25,showNames=true,showEv=true;      // tầm nhìn nửa thanh cố định ±25 km; tên ga dừng luôn hiện (phía trên chấm), ga thông qua không có tên
+const X0=470,X1=1560,LY=36,XC=(X0+X1)/2;      // thanh cũ: LY=36; thanh mới: LN=49 (sát mép dưới), mọi tên ga ở phía trên, cỡ chữ NFS
+const LN=49,NFS=22;
+const tripO=()=>byName(TRIPS[trip].a).km,tripD=()=>byName(TRIPS[trip].b).km,tripLen=()=>tripD()-tripO();
+const stopsOf=()=>ST.filter(s=>s.km>=tripO()&&s.km<=tripD());
+function txt(c,t,x,y,col,font,al){c.fillStyle=col;c.font=font||'12px system-ui';c.textAlign=al||'left';c.fillText(t,x,y)}
+function head(c,tag){c.fillStyle='#0b1117';c.fillRect(0,0,1920,58);c.fillStyle='#243447';c.fillRect(0,57,1920,1);
+ txt(c,'Komachi 1 · E6+E5 · 06:32',16,24,'#fff','bold 17px system-ui');txt(c,'Akita mini-Shinkansen · '+tag,16,45,'#8aa0b5','12px system-ui');
+ for(let i=0;i<5;i++){c.fillStyle='#1d2a39';c.beginPath();c.roundRect(1920-16-5*44-4*6+i*50,7,44,44,6);c.fill()}}
+function drawOld(c,sT){head(c,'hiện tại');const st=stopsOf(),s0=tripO(),s1=tripD(),pos=s=>X0+(X1-X0)*(s-s0)/(s1-s0);
+ c.strokeStyle='#3b516a';c.lineWidth=3;c.beginPath();c.moveTo(X0,LY);c.lineTo(X1,LY);c.stroke();
+ if(showEv)for(const [a,b,k] of EV){const lo=Math.max(X0,pos(a)),hi=Math.min(X1,pos(b));if(hi<=lo)continue;c.fillStyle=ZC[k];c.fillRect(lo,LY+4,hi-lo,4)}
+ const showAll=st.length<9;const j=st.findIndex(s=>s.stop&&s.km>sT);
+ st.forEach((m,i)=>{const px=pos(m.km);c.fillStyle=(i===j)?'#ffd24a':m.stop?(m.km<=sT?'#4cd68a':'#e8eef5'):'#5a6f86';c.beginPath();c.arc(px,LY,m.stop?5:3,0,7);c.fill();
+  if(m.stop||showAll)txt(c,m.n,px,i%2?20:54,m.stop?'#e8eef5':'#7a8ea5','10px system-ui','center')});
+ c.fillStyle='#4aa3ff';c.fillRect(pos(sT)-6,LY-9,12,18)}
+function drawNew(c,sT){head(c,'thanh mới');const sO=tripO(),sD=tripD(),k=(X1-X0)/2/span,X=s=>XC+(s-sT)*k;
+ const xo=Math.max(X0,X(sO)),xd=Math.min(X1,X(sD)),ly=LN;
+ c.strokeStyle='#3b516a';c.lineWidth=3;c.beginPath();c.moveTo(xo,ly);c.lineTo(xd,ly);c.stroke();
+ if(showEv)for(const [a,b,kd] of EV){const lo=Math.max(xo,X(a)),hi=Math.min(xd,X(b));if(hi<=lo)continue;c.strokeStyle=ZC[kd];c.lineWidth=5;c.lineCap='butt';c.beginPath();c.moveTo(lo,ly);c.lineTo(hi,ly);c.stroke()}
+ const nxt=ST.find(s=>s.stop&&s.km>sT+0.05&&s.km<=sD),labs=[];
+ for(const m of ST){if(m.km<=sO||m.km>=sD)continue;const px=X(m.km);if(px<xo+9||px>xd-9)continue;
+  c.fillStyle=(nxt&&m===nxt)?'#ffd24a':m.stop?(m.km<=sT?'#4cd68a':'#e8eef5'):'#5a6f86';c.beginPath();c.arc(px,ly,m.stop?5:3,0,7);c.fill();
+  if(m.stop)labs.push({x:px,t:m.n,pr:(nxt&&m===nxt)?1:2,al:'c'})}
+ const ends=[[xo,byName(TRIPS[trip].a).n,sO<sT+1e-6?'#4cd68a':'#e8eef5','c'],[xd,byName(TRIPS[trip].b).n,'#e8eef5','c']];
+ for(const [x,n,col,al] of ends){c.fillStyle=col;c.beginPath();c.arc(x,ly,6,0,7);c.fill();c.strokeStyle='#0b1117';c.lineWidth=2;c.beginPath();c.arc(x,ly,6,0,7);c.stroke();labs.push({x,t:n,pr:0,al,end:1})}
+ // tên ga: tất cả phía trên, cỡ lớn nhất có thể; nhãn chồng nhau thì bỏ nhãn kém ưu tiên (đầu mút > ga kế > ga gần con trỏ)
+ labs.sort((p,q)=>p.pr-q.pr||Math.abs(p.x-XC)-Math.abs(q.x-XC));const placed=[];
+ for(const l of labs){c.font=(l.end?'bold ':'')+NFS+'px system-ui';const w=c.measureText(l.t).width;const a=Math.max(4,Math.min(l.x-w/2,1916-w));      // luôn căn giữa phía trên chấm (chỉ kẹp ở mép canvas)
+  if(placed.some(p=>a<p[1]+10&&a+w>p[0]-10))continue;placed.push([a,a+w]);txt(c,l.t,a,ly-11,'#e8eef5',c.font,'left')}
+ c.fillStyle='#4aa3ff';c.beginPath();c.arc(XC,ly,5,0,7);c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.arc(XC,ly,5,0,7);c.stroke()}
+function sOfPos(p){return tripO()+tripLen()*p/1000}
+function labelPos(sT){const nx=ST.find(s=>s.stop&&s.km>sT+0.05&&s.km<=tripD());return 'km '+sT.toFixed(1)+' · '+Math.round((sT-tripO())/tripLen()*100)+'% hành trình'+(nx?' · ga dừng kế: '+nx.n+' ('+(nx.km-sT).toFixed(1)+' km)':' · đã tới ga cuối')}
+const el=id=>document.getElementById(id);
+function refresh(){const sT=sOfPos(+el('pos').value);el('posT').textContent=labelPos(sT);drawOld(el('cOld').getContext('2d'),sT);drawNew(el('cNew').getContext('2d'),sT)}
+function gallery(){const g=el('gal');g.innerHTML='';const L=tripLen(),pts=[[0,'tàu đứng ở ga đầu (đầu mút trái ngay dưới con trỏ)'],[Math.min(12,L*0.25),'vừa chạy 12 km (ga đầu trôi lùi sang trái)'],[Math.min(span*1.2,L*0.4),'ga đầu đã tới chỗ cố định bên trái'],[L*0.5,'giữa hành trình (hai đầu mút cố định, ga và sự kiện trôi qua)'],[Math.max(L-span*0.5,L*0.7),'ga cuối trôi vào tầm nhìn (đầu mút phải tiến về con trỏ)'],[L,'tàu đứng ở ga cuối (thanh còn nửa trái)']];
+ pts.forEach(([d,t])=>{const sT=tripO()+d,f=document.createElement('div');f.className='frame';f.innerHTML='<div class="cap"><b>'+t+'</b> · km '+sT.toFixed(1)+'</div><div class="sm">hiện tại</div><div class="bar"><canvas width="1920" height="58"></canvas></div><div class="sm">mới</div><div class="bar"><canvas width="1920" height="58"></canvas></div>';g.appendChild(f);const cs=f.querySelectorAll('canvas');
+  drawOld(cs[0].getContext('2d'),sT);drawNew(cs[1].getContext('2d'),sT)})}
+function setTrip(){trip=el('trip').value;el('pos').value=0;refresh();gallery()}
+for(const [k,v] of Object.entries(TRIPS)){const o=document.createElement('option');o.value=k;o.textContent=v.name;el('trip').appendChild(o)}
+el('trip').onchange=setTrip;el('evs').onchange=()=>{showEv=el('evs').checked;refresh();gallery()};el('pos').oninput=refresh;
+let timer=null;el('play').onclick=()=>{if(timer){clearInterval(timer);timer=null;el('play').textContent='▶ Chạy';return}el('play').textContent='❚❚ Dừng';timer=setInterval(()=>{let v=+el('pos').value+Math.max(1,Math.round(1000/Math.max(60,tripLen())*1.5));if(v>1000)v=0;el('pos').value=v;refresh()},50)};
+setTrip();
+</script></body></html>
