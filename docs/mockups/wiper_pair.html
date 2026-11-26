@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup gạt mưa đôi</title>
+<style>
+:root{--bg:#0b0f14;--fg:#dbe6f2;--mut:#8aa0b5;--ln:#243447}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 4px}p.n{color:var(--mut);margin:2px 0 8px}
+.bar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0;padding:8px 10px;background:#121a23;border:1px solid var(--ln);border-radius:8px}
+.bar label{color:var(--mut)}
+button,select{background:#1b2735;color:var(--fg);border:1px solid #3b516a;border-radius:6px;padding:4px 10px;font:inherit;cursor:pointer}
+button.on{background:#2a6fd6;border-color:#6fb0ff}
+canvas{display:block;width:100%;max-width:960px;height:auto;border:1px solid var(--ln);border-radius:6px}
+input[type=range]{vertical-align:middle}
+ul{margin:4px 0;padding-left:20px}
+</style></head><body><main>
+<h1>Mockup: bộ gạt mưa đôi (nở ra / co lại)</h1>
+<p class="n">Hai trục đặt ở HAI BÊN đáy kính (đối xứng qua giữa), mỗi cần quay như cần hiện tại (±Θ quanh phương thẳng đứng) nhưng hai cần quay NGƯỢC chiều nhau. <b>Co lại</b>: cả hai cần ngả vào trong hết cỡ, hai lưỡi gạt thẳng đứng song song ở chính giữa. <b>Nở ra</b>: cả hai ngả ra ngoài hết cỡ, tầm quét mỗi bên rộng gấp đôi cần đơn. Khoảng cách trục tự tính để lúc co lại hai lưỡi đúng giữa: P = L·sinΘ + khe.</p>
+<div class="bar">
+  <label>Kiểu <span id="md"></span></label>
+  <label>Khe giữa hai lưỡi lúc co <input type="range" id="gp" min="0" max="60" value="22"><b id="vg"></b></label>
+  <label>Cần phụ L <input type="range" id="wL" min="90" max="230" value="200"><b id="vL"></b></label>
+  <label>Góc nở tối đa <input type="range" id="wA" min="20" max="80" value="61"><b id="vA"></b></label>
+  <label>Lưỡi gạt <input type="range" id="wB" min="100" max="340" value="228"><b id="vB"></b></label>
+  <label>Chu kỳ <select id="wS"><option value="1.6">chậm</option><option value="3" selected>nhanh</option></select></label>
+  <label><input type="checkbox" id="wZ" checked> vùng quét</label>
+  <label><input type="checkbox" id="wR" checked> mưa</label>
+</div>
+<canvas id="wip" width="960" height="440"></canvas>
+<p class="n">Cách tính: θ(t) = Θ·cos ωt (+Θ = co lại, −Θ = nở hết). Lưỡi trái ở x = c − P + L·sinθ, lưỡi phải ở x = c + P − L·sinθ, y = đáy − L·cosθ; P = L·sinΘ + g (g = nửa khe lúc co). Tầm quét: từ c − P − L·sinΘ tới c + P + L·sinΘ (mặc định ±372 px so với ±175 px của cần đơn).</p><ul><li>Co lại: hai lưỡi cách nhau 2g (mặc định 44 px), song song ở giữa kính; nở hết: lưỡi ở ngoài cùng cách giữa P + L·sinΘ.</li><li>Cần đơn hiện tại giữ lại ở nút trên để so sánh.</li></ul>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let mode='pair';
+const MODES=[['one','Một cần (hiện tại)'],['pair','Đôi: hai trục ở hai bên']];
+const md=$('md');MODES.forEach(([k,t])=>{const b=document.createElement('button');b.textContent=t;b.className=k===mode?'on':'';b.onclick=()=>{mode=k;[...md.children].forEach(c=>c.className='');b.className='on';drops.length=0};md.appendChild(b)});
+const wc=$('wip'),wx=wc.getContext('2d'),WW=wc.width,SILL=360;
+let drops=[],ph=0,last=performance.now(),prev=null;
+const sv=()=>{$('vg').textContent=' '+$('gp').value;$('vL').textContent=' '+$('wL').value;$('vA').textContent=' '+$('wA').value+'°';$('vB').textContent=' '+$('wB').value};['gp','wL','wA','wB'].forEach(i=>$(i).oninput=()=>{sv();prev=null});sv();
+function tick(now){const dt=Math.min(.05,(now-last)/1000);last=now;const g=+$('gp').value,L=+$('wL').value,Am=+$('wA').value*Math.PI/180,B=+$('wB').value,sp=+$('wS').value;ph+=dt*sp;
+ const px=WW/2,py=SILL;let blades=[];
+ if(mode==='one'){const th=Am*Math.sin(ph);blades=[{px,ex:px+L*Math.sin(th),ey:py-L*Math.cos(th)}]}
+ else{const th=Am*Math.cos(ph),P=L*Math.sin(Am)+g;      // trục trái ở c−P, phải ở c+P; th = +Θ: ngả vào trong (co lại), −Θ: ngả ra ngoài (nở hết)
+  blades=[{px:px-P,ex:px-P+L*Math.sin(th),ey:py-L*Math.cos(th)},{px:px+P,ex:px+P-L*Math.sin(th),ey:py-L*Math.cos(th)}]}
+ if($('wR').checked){for(let i=0;i<7;i++)drops.push({x:Math.random()*WW,y:Math.random()*SILL,r:1.5+Math.random()*2.6})}
+ if(drops.length>1400)drops.splice(0,drops.length-1400);
+ if(prev&&prev.length===blades.length){blades.forEach((b,i)=>{const a=Math.min(prev[i].ex,b.ex)-3,c=Math.max(prev[i].ex,b.ex)+3,y0=Math.min(prev[i].ey,b.ey)-B/2,y1=Math.max(prev[i].ey,b.ey)+B/2;drops=drops.filter(d=>!(d.x>=a&&d.x<=c&&d.y>=y0&&d.y<=y1))})}
+ prev=blades.map(b=>({ex:b.ex,ey:b.ey}));
+ wx.clearRect(0,0,WW,wc.height);const sk=wx.createLinearGradient(0,0,0,SILL);sk.addColorStop(0,'#5a6f86');sk.addColorStop(.55,'#8a9bab');sk.addColorStop(.56,'#3d4a3c');sk.addColorStop(1,'#2a342b');wx.fillStyle=sk;wx.fillRect(0,0,WW,SILL);
+ wx.fillStyle='#4a4f55';wx.beginPath();wx.moveTo(WW/2-30,SILL*.56);wx.lineTo(WW/2+30,SILL*.56);wx.lineTo(WW/2+260,SILL);wx.lineTo(WW/2-260,SILL);wx.fill();
+ if($('wZ').checked){wx.fillStyle='rgba(74,163,255,.10)';let lo=1e9,hi=-1e9;if(mode==='one'){lo=px-L*Math.sin(Am);hi=px+L*Math.sin(Am)}else{const P=L*Math.sin(Am)+g;lo=px-P-L*Math.sin(Am);hi=px+P+L*Math.sin(Am)}wx.fillRect(lo,0,hi-lo,SILL)}
+ wx.fillStyle='rgba(190,215,240,.55)';for(const d of drops){wx.beginPath();wx.arc(d.x,d.y,d.r,0,7);wx.fill()}
+ wx.save();wx.beginPath();wx.rect(0,0,WW,SILL);wx.clip();wx.lineCap='round';
+ for(const b of blades){wx.strokeStyle='#cfd8e2';wx.lineWidth=3;wx.beginPath();wx.moveTo(b.px,py);wx.lineTo(b.ex,b.ey);wx.stroke();wx.lineWidth=6;wx.strokeStyle='#111';wx.beginPath();wx.moveTo(b.ex,b.ey-B/2);wx.lineTo(b.ex,b.ey+B/2);wx.stroke();wx.fillStyle='#ffc247';wx.beginPath();wx.arc(b.ex,b.ey,5,0,7);wx.fill();wx.fillStyle='#4aa3ff';wx.beginPath();wx.arc(b.px,py,6,0,7);wx.fill()}
+ wx.restore();wx.fillStyle='#10161d';wx.fillRect(0,SILL,WW,wc.height-SILL);wx.fillStyle='#2a3b4f';wx.fillRect(0,SILL,WW,3);
+ wx.fillStyle='#9fb4c9';wx.font='13px system-ui';const th0=mode==='one'?'':' · θ='+(Am*Math.cos(ph)*180/Math.PI).toFixed(0)+'°';wx.fillText('L='+L+' · lưỡi '+B+(mode==='one'?'':' · hai trục cách '+2*(L*Math.sin(Am)+g).toFixed(0)+' px · khe lúc co '+2*g)+th0+((blades[0].ey-B/2<0)?'  ⚠ chạm mép trên':''),12,SILL+30);
+ requestAnimationFrame(tick)}
+requestAnimationFrame(tick);
+</script></body></html>
