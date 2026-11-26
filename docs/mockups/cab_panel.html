@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup bảng điều khiển mới</title>
+<style>
+:root{--bg:#0b0f14;--fg:#dbe6f2;--mut:#8aa0b5;--ln:#243447;--ac:#4aa3ff}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
+main{max-width:1440px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;margin:26px 0 6px}
+p.n{color:var(--mut);margin:2px 0 8px}
+.bar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0;padding:8px 10px;background:#121a23;border:1px solid var(--ln);border-radius:8px}
+.bar label{color:var(--mut)}
+button,select{background:#1b2735;color:var(--fg);border:1px solid #3b516a;border-radius:6px;padding:4px 10px;font:inherit;cursor:pointer}
+button.on{background:#2a6fd6;border-color:#6fb0ff}
+canvas{display:block;width:100%;height:auto;border:1px solid var(--ln);border-radius:6px;background:#0b0f14}
+.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+.row>div{flex:1 1 420px}
+ul{margin:4px 0;padding-left:20px}li{margin:2px 0}
+code{background:#16212d;padding:1px 5px;border-radius:4px}
+input[type=range]{vertical-align:middle}
+</style></head><body><main>
+<h1>Mockup: bảng điều khiển + cần gạt mưa</h1>
+<p class="n">Vẽ lại đúng toạ độ của <code>fullui.js</code> (canvas 1920×1080, dải bảng điều khiển y = 676…1080). Phần bên phải (bản đồ, camera) giữ nguyên nên chỉ tô xám. Bấm vào các nút trong ảnh để thử hiệu ứng sáng.</p>
+
+<div class="bar">
+  <label>Ngôn ngữ</label><span id="lg"></span>
+  <label>Tình huống</label><span id="st"></span>
+  <label>Số toa</label><span id="cr"></span>
+  <label><input type="checkbox" id="flt"> toa 5 báo lỗi (đỏ)</label>
+</div>
+<canvas id="dash" width="1920" height="404"></canvas>
+
+<h2>Đã bố trí</h2>
+<ul>
+<li><b>Bỏ 6 đèn báo</b>; bốn đồng hồ nhỏ xếp dọc bên phải đồng hồ tốc độ: Dòng kéo · Áp phanh · Gia tốc · <b>Nhiệt phanh</b> (thanh nhiệt cũ bỏ; kim hiển thị theo % của <code>T.bt</code>).</li>
+<li><b>Tốc độ đều / Chạy lùi</b> nằm ngay dưới đồng hồ, rộng bằng đồng hồ (250 px), vẫn sáng khi bật. Dòng “giới hạn bởi” tự xuống tối đa 2 dòng trong bề rộng đồng hồ nên không đè sang đồng hồ nhỏ. Không còn nút Phanh khẩn / Về N.</li>
+<li><b>Hàng nút còn 5</b>: Gạt mưa · Đèn · Còi · Nhắc lệnh · Tự lái (82 px/nút như cũ, chữ nhãn 10→12 px).</li>
+<li><b>TIMS</b> 2 dòng, mỗi dòng tối đa 9 toa, số toa ghi thẳng trong ô; vàng chữ đen, xanh/đỏ chữ trắng. Tải khách · Điện · Độ êm chữ 17 px. Mất thanh “Bất an hành khách” và thanh nhiệt má phanh.</li>
+<li><b>Hai cần đổi chỗ</b>: cần phanh bên trái (W/S), cần ga bên phải (↑/↓). Phanh: <b>EB trên cùng, N dưới cùng</b>; ga: <b>N trên cùng, P13 dưới cùng</b>. Khi đỗ ga, phanh mặc định ở EB.</li>
+<li>Ngắt ga: bật “Phanh trên ga” để xem — ô P13 hiện sọc vàng “NGẮT”, ga phải về N mới nối lại.</li>
+</ul>
+
+<h2>Gạt mưa (mới)</h2>
+<p class="n">Cần 2 (ngắn) xoay quanh trục ở giữa mép đáy kính, đầu kia gắn vào tâm lưỡi gạt thẳng đứng; lưỡi dịch ngang theo cung tròn. Hạt mưa chỉ bị xoá khi lưỡi quét qua đúng x của nó (trong khoảng cao của lưỡi).</p>
+<div class="bar">
+  <label>Cần phụ L <input type="range" id="wL" min="90" max="230" value="200"><b id="vL"></b></label>
+  <label>Góc tối đa <input type="range" id="wA" min="20" max="80" value="61"><b id="vA"></b></label>
+  <label>Lưỡi gạt <input type="range" id="wB" min="100" max="340" value="228"><b id="vB"></b></label>
+  <label>Tốc độ <select id="wS"><option value="1.6">chậm</option><option value="3" selected>nhanh</option></select></label>
+  <label><input type="checkbox" id="wZ" checked> tô vùng quét</label>
+  <label><input type="checkbox" id="wR" checked> mưa</label>
+</div>
+<canvas id="wip" width="960" height="440" style="max-width:960px"></canvas>
+<p class="n">Ràng buộc: tâm lưỡi cách đáy = L·cosθ nên lưỡi (dài B) không chạm mép trên khi L + B/2 ≤ chiều cao kính; phần lưỡi chìm xuống dưới đáy kính bị che bởi bệ. Tầm quét ngang = ±L·sinθ_max (thanh trượt cho chỉnh thử).</p>
+
+<h2>Những việc còn lại khi triển khai (chưa làm)</h2>
+<ul>
+<li><b>Trưởng tàu tự đóng cửa</b>: ga đầu, sau khi vào màn chơi và bấm Enter bắt đầu, đợi ~10 s rồi cửa đóng (đèn toa chuyển xanh); các ga sau trưởng tàu tự quyết thời điểm, đóng xong mới kéo được ga. Bỏ nút Đóng cửa, bỏ Bất an hành khách; tính lại điểm (ket cửa vẫn báo, trưởng tàu xử lý).</li>
+<li><b>Phanh mặc định EB</b> khi khởi hành/đỗ ga; <b>ga bị ngắt</b> khi phanh ≥ B1 dù ở P13, phải về N (phanh N rồi ga N) mới kéo lại — cả chấm điểm và tự do.</li>
+<li><b>ATC</b> giảm dần thay vì nhảy 130→60 (trừ động đất); động đất: ga về N, phanh lên EB ngay.</li>
+<li>Bỏ chữ “speed ×” và “AUTOPILOT” góc trên trái; cập nhật README, bảng phím, tutorial, tests.</li>
+</ul>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+// ---------- chuỗi 3 ngôn ngữ (lấy từ lang-en.js / lang-ja.js; chuỗi mới đánh dấu *) ----------
+const L={vi:{wiper:'Gạt mưa',lamp:'Đèn: ',lampSt:'Tự động',horn:'Còi',ack:'Nhắc lệnh',auto:'Tự lái',cruise:'Tốc độ đều',rev:'Chạy lùi',tr:'Dòng kéo',bp:'Áp phanh',ac:'Gia tốc',bt:'Nhiệt phanh',tims:'TIMS (trạng thái xe)',pax:'Tải khách',pow:'Điện',com:'Độ êm',comv:'{0}/100 · ATC phanh {1} lần',kwh:'kWh (hoàn {0})',thr:'CẦN GA',brk:'CẦN PHANH',kT:'phím ↑ / ↓',kB:'phím W / S',cut:'ga bị ngắt: về N',lim:'giới hạn bởi: ',why:'chạy chậm sau ga Hakata theo bảng tốc độ cong của đường',atc:'ATC',ctl:'NÚT ĐIỀU KHIỂN',cs:'TỐC ĐỘ ĐỀU',cut2:'NGẮT',n:'N'},
+en:{wiper:'Wipers',lamp:'Lights: ',lampSt:'Auto',horn:'Horn',ack:'Order reply',auto:'Autopilot',cruise:'Cruise',rev:'Reverse',tr:'Traction current',bp:'Brake pressure',ac:'Acceleration',bt:'Brake temp',tims:'TIMS (car status)',pax:'Passengers',pow:'Power',com:'Comfort',comv:'{0}/100 · ATC braked {1}×',kwh:'kWh (regen {0})',thr:'THROTTLE',brk:'BRAKE',kT:'keys ↑ / ↓',kB:'keys W / S',cut:'power cut: go to N',lim:'limited by: ',why:'slow after Hakata per the curve speed table of the line',atc:'ATC',ctl:'CONTROLS',cs:'CRUISE',cut2:'CUT',n:'N'},
+ja:{wiper:'ワイパー',lamp:'ライト: ',lampSt:'自動',horn:'警笛',ack:'指令の復唱',auto:'自動運転',cruise:'定速',rev:'後退',tr:'牽引電流',bp:'ブレーキ圧',ac:'加速度',bt:'ブレーキ温度',tims:'TIMS(車両状態)',pax:'乗車率',pow:'電力',com:'乗り心地',comv:'{0}/100 · ATCブレーキ{1}回',kwh:'kWh(回生 {0})',thr:'加速レバー',brk:'ブレーキ',kT:'キー ↑ / ↓',kB:'キー W / S',cut:'力行遮断:Nへ',lim:'制限要因: ',why:'博多以降は曲線速度表に従い減速',atc:'ATC',ctl:'操作ボタン',cs:'定速',cut2:'遮断',n:'N'}};
+let lang='vi',state=1,cars=16,flt=false,lit={wiper:false,lamp:true,horn:false,ack:false,auto:false,cruise:false,rev:false};
+const STATES={0:{name:'Đỗ ga (cửa mở)',v:0,pw:0,bk:8,door:'open',cut:false,tr:0,bar:5,a:0,bt:.15,atc:300,why:true,pax:'72% (480 t)',kwh:'210'},
+1:{name:'Đang chạy',v:245,pw:10,bk:0,door:'closed',cut:false,tr:620,bar:0,a:.2,bt:.3,atc:285,why:true,pax:'72% (480 t)',kwh:'412'},
+2:{name:'Phanh trên ga (ngắt ga)',v:200,pw:13,bk:3,door:'closed',cut:true,tr:0,bar:1.9,a:-.45,bt:.62,atc:260,why:true,pax:'72% (480 t)',kwh:'418'}};
+function mk(el,items,cur,fn){el.innerHTML='';items.forEach(([k,t])=>{const b=document.createElement('button');b.textContent=t;b.className=String(k)===String(cur())?'on':'';b.onclick=()=>{fn(k);[...el.children].forEach(c=>c.className='');b.className='on';draw()};el.appendChild(b)})}
+mk($('lg'),[['vi','Tiếng Việt'],['en','English'],['ja','日本語']],()=>lang,k=>lang=k);
+mk($('st'),Object.entries(STATES).map(([k,s])=>[k,s.name]),()=>state,k=>state=+k);
+mk($('cr'),[[8,'8'],[10,'10'],[16,'16']],()=>cars,k=>cars=+k);
+$('flt').onchange=e=>{flt=e.target.checked;draw()};
+// ---------- vẽ ----------
+const cv=$('dash'),ctx=cv.getContext('2d'),PY=14,PH=376,GX=468;let hits=[];
+const F='system-ui,"Yu Gothic","Meiryo",sans-serif';
+const txt=(t,x,y,c,f,al='left')=>{ctx.font=f.replace('system-ui',F);ctx.fillStyle=c;ctx.textAlign=al;ctx.fillText(String(t),x,y)};
+function wrap(t,w,f,max){ctx.font=f.replace('system-ui',F);const out=[];let cur='';const parts=/\s/.test(t)?t.split(/(\s+)/):[...t];for(const p of parts){if(ctx.measureText(cur+p).width>w&&cur){out.push(cur.trim());cur=p}else cur+=p}if(cur.trim())out.push(cur.trim());if(out.length>max){out.length=max;out[max-1]=out[max-1].replace(/.{1}$/,'…')}return out}
+function panel(x,y,w,h,c='#111923'){ctx.fillStyle=c;ctx.beginPath();ctx.roundRect(x,y,w,h,8);ctx.fill();ctx.strokeStyle='#243447';ctx.lineWidth=1;ctx.stroke()}
+function miniGauge(mx,my,r,v,lo,hi,label,unit,col,ticks){const a0=Math.PI*.75,a1=Math.PI*2.25,f=t=>a0+(a1-a0)*(Math.max(lo,Math.min(hi,t))-lo)/(hi-lo);
+ ctx.lineWidth=7;ctx.strokeStyle='#243447';ctx.beginPath();ctx.arc(mx,my,r,a0,a1);ctx.stroke();ctx.strokeStyle=col;ctx.beginPath();ctx.arc(mx,my,r,f(Math.min(0,hi)),f(v));ctx.stroke();
+ ctx.lineWidth=1.2;ctx.strokeStyle='#6a8098';for(const t of ticks){const a=f(t);ctx.beginPath();ctx.moveTo(mx+Math.cos(a)*(r+6),my+Math.sin(a)*(r+6));ctx.lineTo(mx+Math.cos(a)*(r+10),my+Math.sin(a)*(r+10));ctx.stroke()}
+ const a=f(v);ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(mx+Math.cos(a)*r*.3,my+Math.sin(a)*r*.3);ctx.lineTo(mx+Math.cos(a)*(r-4),my+Math.sin(a)*(r-4));ctx.stroke();ctx.lineCap='butt';
+ ctx.lineJoin='round';ctx.lineWidth=3;ctx.strokeStyle='rgba(16,24,34,.92)';ctx.font='bold 13px '+F;ctx.textAlign='center';ctx.strokeText(unit,mx,my+r*.66);txt(unit,mx,my+r*.66,'#e8eef5','bold 13px system-ui','center');
+ txt(label,mx,my+r+23,'#9fb4c9','13px system-ui','center')}
+function bigDial(cx,cy,rr,S,t){const s=rr/105,vmax=340,ang=v=>Math.PI*.8+Math.PI*1.4*Math.min(v,vmax)/vmax,kmh=S.v,atcK=S.atc;
+ ctx.lineWidth=14*s;ctx.strokeStyle='#243447';ctx.beginPath();ctx.arc(cx,cy,rr,ang(0),ang(vmax));ctx.stroke();ctx.strokeStyle='#7a2d2d';ctx.beginPath();ctx.arc(cx,cy,rr,ang(atcK),ang(vmax));ctx.stroke();ctx.strokeStyle='#2f7a55';ctx.beginPath();ctx.arc(cx,cy,rr,ang(0),ang(atcK));ctx.stroke();
+ ctx.lineWidth=2*s;ctx.strokeStyle='#8aa0b5';for(let v=0;v<=vmax;v+=20){const a=ang(v);ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*(rr-12*s),cy+Math.sin(a)*(rr-12*s));ctx.lineTo(cx+Math.cos(a)*(rr-20*s),cy+Math.sin(a)*(rr-20*s));ctx.stroke()}
+ {const a=ang(kmh);ctx.strokeStyle='#fff';ctx.lineWidth=4*s;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*50*s,cy+Math.sin(a)*50*s);ctx.lineTo(cx+Math.cos(a)*(rr-16*s),cy+Math.sin(a)*(rr-16*s));ctx.stroke();ctx.lineCap='butt'}
+ for(let v=0;v<=vmax;v+=40){const a=ang(v);txt(v,cx+Math.cos(a)*(rr-36*s),cy+Math.sin(a)*(rr-36*s)+5*s,'#8aa0b5',Math.round(11*s)+'px system-ui','center')}
+ txt(Math.round(kmh),cx,cy+22*s,'#fff','bold '+Math.round(38*s)+'px system-ui','center');txt('km/h',cx,cy+42*s,'#8aa0b5',Math.round(12*s)+'px system-ui','center');
+ txt('ATC '+atcK,cx,cy+62*s,'#4cd68a','bold '+Math.round(18*s)+'px system-ui','center');txt('DS-ATC',cx,cy+77*s,'#6f8399',Math.round(10*s)+'px system-ui','center');
+ if(lit.cruise)txt(t.cs+' 240 km/h',cx,cy-40*s,'#3ad6e6','bold '+Math.round(13*s)+'px system-ui','center');
+ const fs=Math.round(13*s);wrap(t.lim+t.why,rr*2,fs+'px system-ui',2).forEach((l,i)=>txt(l,cx,cy+97*s+i*(fs+3),'#9fb4c9',fs+'px system-ui','center'))}
+function bigBtn(x,y,w,h,label,key,on,col,id){ctx.fillStyle=on?col:'#243447';ctx.beginPath();ctx.roundRect(x,y,w,h,10);ctx.fill();ctx.strokeStyle=on?'rgba(255,255,255,.7)':'#3b516a';ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(x,y,w,h,10);ctx.stroke();
+ txt(label,x+w/2,y+h/2+1,on?'#fff':'#c7d5e4','bold 17px system-ui','center');txt(key,x+w/2,y+h/2+22,on?'rgba(255,255,255,.85)':'#7f93a9','12px system-ui','center');hits.push({x,y,w,h,id})}
+function tile(x,y,s,id,label,key,on,col,icon){ctx.fillStyle=on?col:'#243447';ctx.beginPath();ctx.roundRect(x,y,s,s,10);ctx.fill();ctx.strokeStyle=on?'rgba(255,255,255,.65)':'#3b516a';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x,y,s,s,10);ctx.stroke();
+ const cx=x+s/2,cy=y+s/2-10,c=on?'#fff':'#b6c6d8';ctx.strokeStyle=c;ctx.fillStyle=c;ctx.lineWidth=2.6;ctx.lineCap='round';ctx.lineJoin='round';icon(cx,cy);ctx.lineCap='butt';
+ let fs=12;ctx.font='bold '+fs+'px '+F;while(fs>9&&ctx.measureText(label).width>s-6){fs--;ctx.font='bold '+fs+'px '+F}
+ txt(label,x+s/2,y+s-9,on?'#fff':'#c0d0e0','bold '+fs+'px system-ui','center');txt(key,x+s-6,y+13,on?'rgba(255,255,255,.8)':'#7f93a9','10px system-ui','right');hits.push({x,y,w:s,h:s,id})}
+const ln=(cx,cy)=>(a,b,d,e)=>{ctx.beginPath();ctx.moveTo(cx+a,cy+b);ctx.lineTo(cx+d,cy+e);ctx.stroke()};
+const ICON={
+ wiper:(cx,cy)=>{const l=ln(cx,cy);ctx.beginPath();ctx.moveTo(cx,cy+16);ctx.lineTo(cx+9,cy-14);ctx.stroke();l(-3,-14,-3,14);ctx.beginPath();ctx.arc(cx,cy+16,3,0,7);ctx.fill()},
+ lamp:(cx,cy)=>{const l=ln(cx,cy);ctx.beginPath();ctx.moveTo(cx-6,cy-11);ctx.lineTo(cx+3,cy-11);ctx.quadraticCurveTo(cx+10,cy,cx+3,cy+11);ctx.lineTo(cx-6,cy+11);ctx.closePath();ctx.stroke();for(const dy of[-9,0,9])l(8,dy,18,dy*1.4)},
+ horn:(cx,cy)=>{const l=ln(cx,cy);ctx.beginPath();ctx.roundRect(cx-15,cy-5,9,10,2);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-6,cy-5);ctx.lineTo(cx+8,cy-14);ctx.lineTo(cx+8,cy+14);ctx.lineTo(cx-6,cy+5);ctx.closePath();ctx.stroke();l(13,-6,17,-9);l(13,0,18,0);l(13,6,17,9)},
+ ack:(cx,cy)=>{const l=ln(cx,cy);ctx.beginPath();ctx.roundRect(cx-15,cy-13,30,22,5);ctx.stroke();l(-6,9,-9,16);l(-8,-2,-2,3);l(-2,3,8,-7)},
+ auto:(cx,cy)=>{const l=ln(cx,cy);ctx.beginPath();ctx.arc(cx,cy,14,.4,Math.PI*1.4);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,14,Math.PI*1.4+.4,Math.PI*2.4);ctx.stroke();l(10,-9,15,-14);l(10,-9,17,-7);l(-10,9,-15,14);l(-10,9,-17,7)}};
+function lever(x,y,w,h,kind,S,t){panel(x,y,w,h);txt(kind==='pw'?t.thr:t.brk,x+w/2,y+22,'#fff','bold 14px system-ui','center');
+ const hint=[kind==='pw'?t.kT:t.kB];if(kind==='pw'&&S.cut)hint.push(t.cut);
+ ctx.font='11px '+F;const hl=hint.flatMap(h=>wrap(h,w-12,'11px system-ui',2));
+ const items=kind==='pw'?Array.from({length:14},(_,i)=>i):[8,7,6,5,4,3,2,1,0],top=y+36,bot=y+h-12-hl.length*14-8,ch=(bot-top)/items.length;      // ga: N trên → P13 dưới; phanh: EB trên → N dưới
+ items.forEach((n,i)=>{const yy=top+i*ch,on=kind==='pw'?n===S.pw:n===S.bk,cutHere=kind==='pw'&&S.cut&&n===S.pw;
+  ctx.fillStyle=on?(kind==='pw'?(n>0?'#4aa3ff':'#4cd68a'):(n===8?'#ff5a5a':n>0?'#ff8a4a':'#4cd68a')):'#243447';
+  if(cutHere){ctx.fillStyle='#3a3320'}
+  ctx.fillRect(x+8,yy+1,w-16,ch-2);
+  if(cutHere){ctx.save();ctx.beginPath();ctx.rect(x+8,yy+1,w-16,ch-2);ctx.clip();ctx.strokeStyle='#ffc247';ctx.lineWidth=2;for(let k=-20;k<w;k+=9){ctx.beginPath();ctx.moveTo(x+8+k,yy+ch);ctx.lineTo(x+8+k+ch,yy);ctx.stroke()}ctx.restore()}
+  const lab=kind==='pw'?(n===0?'N':'P'+n):(n===8?'EB':n===0?'N':'B'+n);
+  txt(lab+(cutHere?' · '+t.cut2:''),x+w/2,yy+ch/2+5,cutHere?'#ffe08a':on?'#0b0f14':'#8aa0b5',(on||cutHere?'bold ':'')+'13px system-ui','center')});
+ hl.forEach((l,i)=>txt(l,x+w/2,y+h-12-(hl.length-1-i)*14,i&&kind==='pw'&&S.cut?'#ffc247':'#7a8ea5','11px system-ui','center'))}
+function draw(){const t=L[lang],S=STATES[state];hits=[];ctx.clearRect(0,0,1920,404);ctx.fillStyle='#0b0f14';ctx.fillRect(0,0,1920,404);
+ const g=ctx.createLinearGradient(0,0,0,404);g.addColorStop(0,'#0d1319');g.addColorStop(1,'#070a0e');ctx.fillStyle=g;ctx.fillRect(0,0,1920,404);ctx.fillStyle='#2a3b4f';ctx.fillRect(0,0,1920,3);
+ // phần giữ nguyên (xám)
+ for(const [x,w] of [[1152,300],[1460,448]]){panel(x,PY,w,PH,'#0f161d');txt('(giữ nguyên)',x+w/2,PY+PH/2,'#3b516a','16px system-ui','center')}
+ // nút điều khiển + TIMS
+ const PX=12,PW=460;panel(PX,PY,PW,PH);txt(t.ctl,PX+PW/2,PY+22,'#fff','bold 14px system-ui','center');
+ const TS=82,TG=6,row=[['wiper',t.wiper,'V','#2a6fd6'],['lamp',t.lamp+t.lampSt,'L','#c9a227'],['horn',t.horn,'H','#c9a227'],['ack',t.ack,'Y','#c9a227'],['auto',t.auto,'T','#2a6fd6']];
+ row.forEach((r,i)=>tile(PX+12+i*(TS+TG),PY+36,TS,r[0],r[1],r[2],lit[r[0]],r[3],ICON[r[0]]));
+ let ty=PY+36+TS+12;ctx.fillStyle='#243447';ctx.fillRect(PX+12,ty-6,PW-24,1);txt(t.tims,PX+12,ty+14,'#9fb4c9','bold 13px system-ui');
+ const per=9,cw=(PW-24)/per,ch=34;
+ for(let c=1;c<=cars;c++){const r=Math.floor((c-1)/per),k=(c-1)%per,x=PX+12+k*cw,y=ty+24+r*(ch+6);
+  const bad=flt&&c===5,door=S.door==='open'?'#ffc247':'#2f9a60',fill=bad?'#d94a4a':door,dark=!bad&&S.door==='open';
+  ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,cw-4,ch,4);ctx.fill();txt(c,x+(cw-4)/2,y+ch/2+6,dark?'#101010':'#fff','bold 17px system-ui','center')}
+ const yy0=ty+24+2*(ch+6)+8,fm=(s,...a)=>s.replace(/\{(\d)\}/g,(_,i)=>a[i]);
+ [[t.pax,S.pax],[t.pow,S.kwh+' '+fm(t.kwh,'18')],[t.com,fm(t.comv,88,2)]].forEach((r,i)=>{txt(r[0],PX+12,yy0+i*28+18,'#9fb4c9','17px system-ui');txt(r[1],PX+PW-12,yy0+i*28+18,'#dbe6f2','17px system-ui','right')});
+ // cần phanh (trái) – bảng tốc độ – cần ga (phải)
+ lever(12+GX,PY,119,PH,'bk',S,t);
+ panel(139+GX,PY,410,PH);bigDial(283+GX,PY+150,125,S,t);
+ const G=[[ 'tr',t.tr,S.tr,-500,900,Math.round(S.tr)+' A',S.tr<0?'#4cd68a':'#4aa3ff',[-500,0,400,900]],['bp',t.bp,S.bar,0,5,S.bar.toFixed(1)+' bar',S.bar>3.5?'#ff8a4a':'#ffc247',[0,2.5,5]],['ac',t.ac,S.a,-1.2,.8,(S.a>=0?'+':'')+S.a.toFixed(2),S.a<-.05?'#ff8a4a':'#4aa3ff',[-1,-.5,0,.5]],['bt',t.bt,S.bt*600,0,600,Math.round(S.bt*600)+'°C',S.bt>.8?'#ff5a5a':S.bt>.5?'#ffc247':'#4cd68a',[0,300,600]]];
+ G.forEach((q,i)=>miniGauge(952+GX-GX+0,PY+40+i*94,28,q[2],q[3],q[4],q[1],q[5],q[6],q[7]));
+ // Tốc độ đều / Chạy lùi: rộng đúng bằng đồng hồ (x 626…876)
+ const bx=283+GX-125,bw=121;bigBtn(bx,PY+300,bw,66,t.cruise,'C',lit.cruise,'#2a8fa0','cruise');bigBtn(bx+bw+8,PY+300,bw,66,t.rev,'M',lit.rev,'#d64a4a','rev');
+ lever(557+GX,PY,119,PH,'pw',S,t)}
+cv.onclick=e=>{const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;const h=hits.find(h=>x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h);if(h){lit[h.id]=!lit[h.id];draw()}};
+draw();
+// ---------- gạt mưa ----------
+const wc=$('wip'),wx=wc.getContext('2d'),WW=wc.width,WH=wc.height-80,SILL=WH;       // 80 px dưới cùng = bệ táp-lô che lưỡi gạt
+let drops=[],ph=0,last=performance.now(),prevX=null;
+const sv=()=>{$('vL').textContent=' '+$('wL').value;$('vA').textContent=' '+$('wA').value+'°';$('vB').textContent=' '+$('wB').value};['wL','wA','wB'].forEach(i=>$(i).oninput=()=>{sv();prevX=null});sv();
+function tick(now){const dt=Math.min(.05,(now-last)/1000);last=now;const Lr=+$('wL').value,Am=+$('wA').value*Math.PI/180,Bl=+$('wB').value,sp=+$('wS').value;
+ ph+=dt*sp;const th=Am*Math.sin(ph);const px=WW/2,py=SILL,ex=px+Lr*Math.sin(th),ey=py-Lr*Math.cos(th);
+ if($('wR').checked){for(let i=0;i<7;i++)drops.push({x:Math.random()*WW,y:Math.random()*SILL,r:1.5+Math.random()*2.6})}
+ if(drops.length>1400)drops.splice(0,drops.length-1400);
+ if(prevX!==null){const a=Math.min(prevX,ex)-3,b=Math.max(prevX,ex)+3;drops=drops.filter(d=>!(d.x>=a&&d.x<=b&&d.y>=ey-Bl/2&&d.y<=ey+Bl/2))}prevX=ex;
+ wx.clearRect(0,0,WW,wc.height);const sk=wx.createLinearGradient(0,0,0,SILL);sk.addColorStop(0,'#5a6f86');sk.addColorStop(.55,'#8a9bab');sk.addColorStop(.56,'#3d4a3c');sk.addColorStop(1,'#2a342b');wx.fillStyle=sk;wx.fillRect(0,0,WW,SILL);
+ wx.fillStyle='#4a4f55';wx.beginPath();wx.moveTo(WW/2-30,WH*.56);wx.lineTo(WW/2+30,WH*.56);wx.lineTo(WW/2+260,SILL);wx.lineTo(WW/2-260,SILL);wx.fill();
+ if($('wZ').checked){wx.fillStyle='rgba(74,163,255,.10)';const x0=px-Lr*Math.sin(Am),x1=px+Lr*Math.sin(Am);wx.fillRect(x0,0,x1-x0,SILL)}
+ wx.fillStyle='rgba(190,215,240,.55)';for(const d of drops){wx.beginPath();wx.arc(d.x,d.y,d.r,0,7);wx.fill()}
+ wx.save();wx.beginPath();wx.rect(0,0,WW,SILL);wx.clip();wx.strokeStyle='#cfd8e2';wx.lineCap='round';wx.lineWidth=3;wx.beginPath();wx.moveTo(px,py);wx.lineTo(ex,ey);wx.stroke();
+ wx.lineWidth=6;wx.strokeStyle='#111';wx.beginPath();wx.moveTo(ex,ey-Bl/2);wx.lineTo(ex,ey+Bl/2);wx.stroke();wx.fillStyle='#ffc247';wx.beginPath();wx.arc(ex,ey,5,0,7);wx.fill();wx.beginPath();wx.fillStyle='#4aa3ff';wx.arc(px,py,6,0,7);wx.fill();wx.restore();
+ wx.fillStyle='#10161d';wx.fillRect(0,SILL,WW,80);wx.fillStyle='#2a3b4f';wx.fillRect(0,SILL,WW,3);
+ wx.fillStyle='#9fb4c9';wx.font='13px '+F;wx.fillText('cần phụ L='+Lr+' · θ='+(th*180/Math.PI).toFixed(0)+'° · lưỡi dài '+Bl+(ey-Bl/2<0?'  ⚠ chạm mép trên':''),12,SILL+30);
+ requestAnimationFrame(tick)}
+requestAnimationFrame(tick);
+</script></body></html>

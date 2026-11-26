@@ -247,7 +247,7 @@
   function newTrain(M, W, opts) {
     opts = opts || {}; const cpDone = !!opts.cp && (M[M.length - 1].i >= M[0].i ? M[0].i >= opts.cp[0] : M[0].i <= opts.cp[0]);      // chuyến bắt đầu sau ga ghép/tách: đã ở dạng đoàn sau khi ghép/tách
     const veh = cpDone ? VEH[opts.cp[1]] : (VEH[opts.veh] || VEH['N700']), downTrip = M[M.length - 1].i >= M[0].i;
-    const T = { M, W, veh, load: opts.load != null ? opts.load : 0.7, k: 0, x: M[0].s, v: 0, f: 0, cmd: 0, pw: 0, bk: 0, notch: 0, a: 0, phase: 'dwell', dwellT: 0, started: false, atc: false, atcCount: 0, atcOk: 0, confirmed: false, needConfirm: false,
+    const T = { M, W, veh, load: opts.load != null ? opts.load : 0.7, k: 0, x: M[0].s, v: 0, f: 0, cmd: 0, pw: 0, bk: opts.lead ? 0 : 8, pwCut: false, notch: 0, a: 0, phase: 'dwell', dwellT: 0, started: false, atc: false, atcCount: 0, atcOk: 0, confirmed: false, needConfirm: false,
       allowed: 0, why: '', results: [], log: [], comfort: 0, jerkTime: 0, earlyDep: 0, excused: 0, holds: {}, forced: -1, cut: false, arrT: 0, free: 0,
       lamp: 'auto', lampBad: 0, atcOn: true, pan: true, atcArm: -1e9, atcOffBad: 0, atcCuts: 0, door: opts.lead ? 'closed' : 'open', doorT: 0, doorDur: 0, willReopen: false, doorFaultOnce: false, cs: false, csSet: 0, wiper: false, horn: 0, hornAt: -99, hornPen: 0, wiperBad: 0, 
       xingHit: 0, cp: opts.cp ? { i: opts.cp[0], v: opts.cp[1], done: cpDone, kind: downTrip ? 'split' : 'join' } : null, coup: null, cc: null, gapX: 0, deadViol: 0, vcbUntil: -1e9, bt: 0, kwh: 0, regen: 0, grade: 0, anx: 0, anxMax: 0, paAt: -999, fireTunnel: 0, waitFor: null, blockedT: 0, trace: [],
@@ -260,7 +260,7 @@
   const resistOf = (T, v) => (2000 + 80 * v) * (massOf(T) / 715e3) + 19.5 * v * v * T.veh.cd * lenFactor(T.veh);
   const tractiveOf = (T, v) => Math.min(T.veh.m * T.veh.a0, T.veh.P / Math.max(v, 1));
   const EBCMD = T => -T.veh.aEB / T.veh.aB7;
-  const handleCmd = T => T.bk > 0 ? (T.bk >= 8 ? EBCMD(T) : -T.bk / 7) : T.pw / 13;
+  const handleCmd = T => T.bk > 0 ? (T.bk >= 8 ? EBCMD(T) : -T.bk / 7) : (T.pwCut ? 0 : T.pw / 13);      // cần ga bị ngắt (đã phanh khi đang kéo): không có lực kéo tới khi về N
   const nextTarget = T => { for (let j = T.k + 1; j < T.M.length; j++) if (T.M[j].stop || T.forced === j) return j; return T.M.length - 1; };
   const allTrains = W => [W.player, W.lead].concat(W.net ? W.net.trains : []).filter(Boolean);
   // tàu sắp rẽ vào đường tránh ở ga có đường thông qua (trong 2,5 km) coi như rời đường chính: tàu sau vẫn chạy thẳng
@@ -300,7 +300,7 @@
     const W = T.W;
     if (T.phase === 'dwell' || T.phase === 'end') { T.why = T.phase === 'end' ? '' : 'ga'; return 0; }
     if (T.cut) { T.why = 'eqk'; return 0; }
-    const x = T.x; let a = staticLimit(W, T, x), why = 'line';
+    const x = T.x; let a = staticLimit(W, T, x), why = 'line', hard = Infinity;      // hard: đường cong phanh liên tục an toàn (ga đích, tàu phía trước, chặn ghép): mức trần cho phép nội suy (làm mượt) không được vượt
     for (const [s0, vz] of staticBoundaries(W, T)) if (s0 > x && vz < a) { const q = Math.sqrt(vz * vz + 2 * G.aATC * (s0 - x)); if (q < a) a = q; }
     for (const z of W.zones) {
       if (z.hold || W.t < z.tA || W.t > z.tB) continue;
@@ -312,20 +312,21 @@
       else if (z.s0 > x && z.v < a) { const q = Math.sqrt(z.v * z.v + 2 * G.aATC * (z.s0 - x)); if (q < a) { a = q; why = 'turnout'; } }
     }
     T.free = a;
-    const j = nextTarget(T), tgt = T.M[j].s, d = tgt + G.stopTol - x; let q = d > 0 ? Math.sqrt(2 * G.aATC * d) : 0;
+    const j = nextTarget(T), tgt = T.M[j].s, d = tgt + G.stopTol - x; let q = d > 0 ? Math.sqrt(2 * G.aATC * d) : 0; if (!T.M[j].thru) hard = Math.min(hard, q);
     if (W.line.meta.atc === 'KS' && !T.M[j].thru && q >= 60 / 3.6 && q < 170 / 3.6) q = (q >= 160 / 3.6 ? 160 : q >= 110 / 3.6 ? 110 : 60) / 3.6;      // KS-ATC: dừng ga phanh BA giai đoạn (160 → 110 → 60 km/h, dưới 60 theo mẫu liên tục) [N: ba giai đoạn; các mức km/h là I]
     if (q < a && !T.M[j].thru) { a = q; why = 'stop'; }
     const L = leaderOf(T);
     if (L && L.phase !== 'end' && !leadDiverged(W, L) && !(L.phase === 'dwell' && L.atMark && sharesPlatformLane(W, L) && !stationFull(W, L)) && !offMain(L)) {
       const gap = L.x - L.veh.len - x - G.atcBuf;
-      if (gap < 15000) { const qq = gap > 0 ? Math.sqrt(2 * G.aATC * gap) : 0; if (qq < a) { a = qq; why = 'lead'; } }
+      if (gap < 15000) { const qq = gap > 0 ? Math.sqrt(2 * G.aATC * gap) : 0; hard = Math.min(hard, qq); if (qq < a) { a = qq; why = 'lead'; } }
     }
     { const ob = T === W.player ? W.obs : null;      // đoàn khác (từ danh mục lịch toàn quốc) chạy hoặc dừng giữa đường phía trước: ATC giữ khoảng cách như với tàu đi trước thật, không thể vượt
-      if (ob) { const gap = ob.x + ob.v * (W.t - ob.t) - ob.len - x - G.atcBuf; if (gap < 15000) { const qq = gap > 0 ? Math.sqrt(2 * G.aATC * gap) : 0; if (qq < a) { a = qq; why = 'lead'; W.obsLabel = ob.label; } } } }
+      if (ob) { const gap = ob.x + ob.v * (W.t - ob.t) - ob.len - x - G.atcBuf; if (gap < 15000) { const qq = gap > 0 ? Math.sqrt(2 * G.aATC * gap) : 0; hard = Math.min(hard, qq); if (qq < a) { a = qq; why = 'lead'; W.obsLabel = ob.label; } } } }
     { const jg = T === W.player ? joinGate(T) : null;      // tàu nhánh chưa được vào phạm vi ga ghép khi đoàn Tohoku chưa về ga: ATC chặn ở điểm trước đầu ga
-      if (jg && x < jg.sIn) { const dj = jg.s - 60 - x, qq = dj > 0 ? Math.sqrt(2 * G.aATC * dj) : 0; /* dừng sớm hơn điểm chặn 60 m; lỡ vượt thì giữ chặt (v = 0) cho tới đầu sân ga */ if (qq < a) { a = qq; why = 'lead'; W.obsLabel = jg.js.label; } } }
+      if (jg && x < jg.sIn) { const dj = jg.s - 60 - x, qq = dj > 0 ? Math.sqrt(2 * G.aATC * dj) : 0; /* dừng sớm hơn điểm chặn 60 m; lỡ vượt thì giữ chặt (v = 0) cho tới đầu sân ga */ hard = Math.min(hard, qq); if (qq < a) { a = qq; why = 'lead'; W.obsLabel = jg.js.label; } } }
     if (T.mapCap !== undefined && T.mapCap < a) { a = T.mapCap; why = T.mapWhy || 'eqk'; }      // tàu vào buồng lái từ bản đồ: bản đồ của tàu ta đang giữ tàu này (động đất, mưa gió lớn) thì phải dừng
-    T.why = why; return a;
+    if (T.mapCap !== undefined) hard = Math.min(hard, T.mapCap);
+    T.hard = hard; T.why = why; return a;
   }
 
   // ---- Điều khiển của người lái ---------------------------------------------
@@ -336,13 +337,16 @@
     if (T.phase !== 'run' || T.finished) { W.say('warn', _t('Chạy lùi chỉ dùng được khi tàu đang ở đường chạy (không ở ga đang đỗ).')); return false; }
     T.rev = !T.rev; T.pw = 0; W.say('info', T.rev ? _t('Chạy lùi: BẬT. Kéo cần gia tốc để lùi; về 0 km/h rồi bấm lại để chạy tiến.') : _t('Chạy lùi: TẮT. Tàu chạy tiến như bình thường.')); return true;
   }
-  function setPower(T, n) { n = clamp(Math.round(n), 0, 13); if (T.bk > 0 && n > 0) { if (!T.isLead) T.W.say('warn', _t('Cần phanh chưa về 0: không kéo được (liên động).')); return false; } if (n !== T.pw && T.cs) cancelCS(T, _t('thao tác cần gia tốc')); T.pw = n; return true; }
-  function setBrake(T, n) { n = clamp(Math.round(n), 0, 8); T.bk = n; if (n > 0) { T.pw = 0; cancelCS(T, _t('phanh')); } }
-  function coast(T) { T.pw = 0; T.bk = 0; cancelCS(T, _t('về N')); }
+  // cần ga (P0 = N … P13) và cần phanh (N … B7, EB): phanh có thể áp dù cần ga đang ở nấc cao (ga bị NGẮT giữa chừng, không tự về N); muốn kéo lại phải đưa phanh về N rồi đưa cần ga về N, sau đó mới kéo lại
+  function setPower(T, n) { n = clamp(Math.round(n), 0, 13);
+    if (n > T.pw && (T.bk > 0 || T.pwCut)) { if (!T.isLead && T.W.t - (T.lastIlk === undefined ? -99 : T.lastIlk) > 3) { T.lastIlk = T.W.t; T.W.say('warn', T.bk > 0 ? _t('Cần phanh chưa về N: không kéo được (liên động).') : _t('Cần ga đang bị ngắt: đưa cần ga về N rồi mới kéo lại.')); } return false; }
+    if (n !== T.pw && T.cs) cancelCS(T, _t('thao tác cần gia tốc')); T.pw = n; if (n === 0) T.pwCut = false; return true; }
+  function setBrake(T, n) { n = clamp(Math.round(n), 0, 8); T.bk = n; if (n > 0) { if (T.pw > 0) T.pwCut = true; cancelCS(T, _t('phanh')); } }
+  function coast(T) { T.pw = 0; T.bk = 0; T.pwCut = false; cancelCS(T, _t('về N')); }
   function toggleCS(T) {
     if (T.cs) { cancelCS(T); return; }
     if (T.phase !== 'run' || T.v < 70 / 3.6 || T.atc) { T.W.say('warn', _t('Chỉ bật tốc độ không đổi khi đang chạy ≥ 70 km/h và ATC không phanh.')); return; }
-    T.cs = true; T.csSet = Math.round(T.v * 3.6 / 5) * 5 / 3.6; T.pw = 0; T.bk = 0; T.W.say('info', _t('Chạy tốc độ không đổi: BẬT {0} km/h ([ ] đổi ±5 km/h).', Math.round(T.csSet * 3.6)));
+    T.cs = true; T.csSet = Math.round(T.v * 3.6 / 5) * 5 / 3.6; T.pw = 0; T.bk = 0; T.pwCut = false; T.W.say('info', _t('Chạy tốc độ không đổi: BẬT {0} km/h ([ ] đổi ±5 km/h).', Math.round(T.csSet * 3.6)));
   }
   function adjustCS(T, d) { if (T.cs) T.csSet = clamp(T.csSet + d / 3.6, 70 / 3.6, T.veh.vmax); }
   function toggleWiper(T) { T.wiper = !T.wiper; }
@@ -390,8 +394,9 @@
     if (T.door !== 'closing') return;
     const W = T.W; T.doorT += dt;
     if (T.doorT >= T.doorDur) {
-      if (T.willReopen) { T.door = 'open'; T.willReopen = false; T.dwellT = Math.max(T.dwellT, 20); W.say('warn', _t('Trưởng tàu: cửa bị kẹt (hành khách/cửa lỗi), mở lại. Đóng cửa lại (Enter).')); W.faults = (W.faults || []).filter(f => f.kind !== 'door'); }
-      else { T.door = 'closed'; W.say('info', _t('Đèn ĐÓNG CỬA sáng. Được khởi hành: kéo cần gia tốc.')); if (T.k === 0 && !T.started) { T.started = true; W.running = true; } if (W.sw) swFlip(T); }
+      if (T.willReopen) { T.door = 'open'; T.willReopen = false; T.dwellT = Math.max(T.dwellT, 20); T.excused += T.doorDur + 4;      // cửa kẹt do hành khách/cửa lỗi, trưởng tàu xử lý: thời gian mất thêm không tính lỗi của người lái
+        W.say('warn', _t('Trưởng tàu: cửa bị kẹt (hành khách/cửa lỗi), mở lại. Trưởng tàu sẽ đóng cửa lại.')); W.faults = (W.faults || []).filter(f => f.kind !== 'door'); }
+      else { T.door = 'closed'; W.say('info', _t('Trưởng tàu: đã đóng cửa (các toa báo xanh). Được khởi hành: hạ cần phanh về N rồi kéo cần ga.')); if (T.k === 0 && !T.started) { T.started = true; W.running = true; } if (W.sw) swFlip(T); }
     }
   }
   // Ghép / tách toa của tàu mini-Shinkansen tại Fukushima (Yamabiko + Tsubasa) và Morioka (Hayabusa + Komachi). Thời gian lấy từ thời gian dừng trong lịch [I]
@@ -600,13 +605,14 @@
     if (T.phase === 'end') return;
     const W = T.W, D = W.diff, M = T.M, veh = T.veh, mass = massOf(T);
     let cmd = input && input.cmd !== undefined ? input.cmd : handleCmd(T);
-    T.allowed = allowedSpeed(T);
+    { const raw = allowedSpeed(T);      // ATC giảm dần: giới hạn tốc độ rơi tối đa 1,6 × gia tốc ATC (≈ 3 km/h mỗi giây) thay vì nhảy bậc (vd 130 → 60); không bao giờ vượt đường cong phanh liên tục an toàn (T.hard); động đất / đứng ga: tức thì
+      T.allowed = (T.phase === 'run' && !T.cut && T.allowedS !== undefined && raw < T.allowedS) ? Math.max(raw, Math.min(T.allowedS - 1.6 * G.aATC * dt, T.hard)) : raw; T.allowedS = T.allowed; }
     if (T.cs) {
       if (T.phase !== 'run' || T.atc || T.cut) cancelCS(T, T.atc ? _t('ATC phanh') : '');
       else { const vset = Math.min(T.csSet, Math.max(0, T.allowed - 3 / 3.6)), err = vset - T.v; cmd = clamp((resistOf(T, T.v) + mass * 9.81 * T.grade / 1000) / tractiveOf(T, T.v) + 0.6 * err, -0.25, 1); }
     }
     if ((T.vcbUntil > W.t || T.pan === false) && cmd > 0) cmd = 0;                                    // máy cắt chính nhảy: mất lực kéo
-    if (T.cut) { cmd = EBCMD(T); T.atc = false; }
+    if (T.cut) { cmd = EBCMD(T); T.atc = false; if (T === W.player && !T.isLead) { T.pw = 0; T.pwCut = false; T.bk = 8; } }      // động đất / mất điện: cần ga tự về N, cần phanh tự lên EB
     else if (T.atcOn === false) { T.atc = false; T.needConfirm = false; }      // ATC đang cắt: không có phanh tự động
     else {
       if (!T.atc && T.v > T.allowed + (T.isLead ? 0.3 : D.atcOver) && T.v > 0.5) {
@@ -627,10 +633,10 @@
       joinSync(T); coupStep(T);
       doorStep(T, dt);
       if (T.door === 'closed' && cmd > 0.01) { if (!departNow(T)) cmd = 0; }
-      else if (T.door !== 'closed' && cmd > 0.01 && T === W.player && !T.isLead && !W.mission && W.t - (T.lastDoorWarn === undefined ? -99 : T.lastDoorWarn) > 8) { T.lastDoorWarn = W.t; W.say('warn', _t('Chưa đóng cửa: nhấn Enter để đóng cửa rồi mới kéo cần gia tốc.')); }
+      else if (T.door !== 'closed' && cmd > 0.01 && T === W.player && !T.isLead && !W.mission && W.t - (T.lastDoorWarn === undefined ? -99 : T.lastDoorWarn) > 8) { T.lastDoorWarn = W.t; W.say('warn', _t('Cửa chưa đóng: chờ trưởng tàu đóng cửa (các toa báo xanh) rồi mới kéo cần ga.')); }
       if (T.phase === 'dwell') cmd = Math.min(cmd, 0);
     }
-    T.notch = T.bk > 0 ? -T.bk : T.pw; T.cmd = cmd;
+    T.notch = T.bk > 0 ? -T.bk : (T.pwCut ? 0 : T.pw); T.cmd = cmd;
     const rate = T.isLead ? 1 : D.rate, r = rate * dt, rUp = (T.f >= 0 && cmd > T.f ? 0.6 * rate : rate) * dt;
     T.f += Math.max(-r, Math.min(rUp, cmd - T.f));
     // độ dốc, nhiệt má phanh, hiệu suất phanh
@@ -655,7 +661,7 @@
     if (!T.isLead) {
       if (T.phase === 'run' && T.v < 0.3 && W.running && !W.mission && !T.noPax) { T.anx = Math.min(100, T.anx + dt * 100 / 900); } else if (T.anx > 0) T.anx = Math.max(0, T.anx - dt * 0.4);
       T.anxMax = Math.max(T.anxMax, T.anx);
-      if (T.anx >= 100 && !T.panic) { T.panic = true; W.say('bad', _t('Hành khách hoảng loạn và đòi sơ tán! Hãy phát thanh trấn an (M) và báo điều độ.')); T.anx = 60; }
+      if (T.anx >= 100 && !T.panic) { T.panic = true; W.say('bad', _t('Hành khách hoảng loạn và đòi sơ tán! Trưởng tàu đang trấn an hành khách và báo điều độ.')); T.anx = 60; }
       if (T.v > 0.5 && !T.atc && !T.cut) { const jerk = (a - prevA) / dt; if (Math.abs(jerk) > 0.7) T.jerkTime += dt; T.comfort += Math.max(0, Math.abs(jerk) - 0.7) * dt; }
       if (W.rainHere && !T.wiper && T.v > 5) T.wiperBad += dt;
       if (T.atcOn === false && T.v > 30 / 3.6) T.atcOffBad += dt;                // cắt ATC mà chạy quá 30 km/h
@@ -671,10 +677,10 @@
     if (T.phase === 'run') {
       const j = nextTarget(T), mk = M[j];
       if (T.v < 0.05 && Math.abs(T.x - mk.s) <= G.stopTol + 5) {
-        T.v = 0; T.f = 0; T.k = j; T.arrT = W.t; T.sbSince = null; T.atMark = true; T.door = (T.isLead || mk.mainStop || T.noPax || mk.sig) ? 'closed' : 'open'; T.doorT = 0;      // tàu kiểm tra (không hành khách): đỗ ở ga nhưng không mở cửa T.cs = false;
+        T.v = 0; T.f = 0; T.k = j; T.arrT = W.t; T.sbSince = null; T.atMark = true; if (!T.isLead) { T.pw = 0; T.pwCut = false; T.bk = 8; }      // đỗ ga: cần phanh luôn ở EB
+        T.door = (T.isLead || mk.mainStop || T.noPax || mk.sig) ? 'closed' : 'open'; T.doorT = 0;      // tàu kiểm tra (không hành khách): đỗ ở ga nhưng không mở cửa T.cs = false;
         if (mk.mainStop && !T.isLead) W.say('bad', _t('Dừng ở ĐƯỜNG CHÍNH tại {0} (quá gần để rẽ ghi sang đường sân ga): không có sân ga bên cạnh, cửa KHÔNG mở. Chờ lệnh điều độ rồi chạy tiếp.', mk.name));
         const e = T.x - mk.s, planned = mk.arr != null ? mk.arr : mk.pt;
-        if (!T.isLead && !T.noPax && depLead(T) > 0) W.say('info', _t('Ga {0} có melody khởi hành (PA nhắc đóng cửa + melody khoảng {1} s): hãy bấm đóng cửa sớm hơn để kịp giờ.', mk.name, Math.round(depLead(T))));
         if (!T.isLead && !T.ghost && mk.sig) W.say('info', mk.jwait ? _t('{0}: dừng chờ ghép toa (cửa không mở). Được chạy tiếp khi đoàn Tohoku đã vào ga ghép.', mk.name) : _t('{0} (tín hiệu trường): dừng tránh tàu, cửa không mở. Chờ tàu ngược chiều qua rồi chạy tiếp.', mk.name));      // tín hiệu trường: không chấm điểm dừng ga, không mở cửa
         else if (!T.isLead && !T.ghost) {
           const res = { station: mk.name, err: e, delay: planned != null ? W.t - planned : 0, excused: T.excused, atc: T.atcCount, extra: !mk.stop, t: W.t };
@@ -722,6 +728,14 @@
       else if (T.k === 0 && T.foreign && T.dwellT >= 15 && W.t >= dep - Math.max(10, depLead(T))) requestClose(T);      // tàu vào buồng lái từ bản đồ (spawnAt) đang đỗ ở ga đầu của chặng: chờ tới giờ rồi đóng cửa
       else if (T.k > 0 && T.dwellT >= 20 && W.t >= Math.max(dep, T.holds[T.k] || 0) - Math.max(10, depLead(T))) requestClose(T);
     }
+  }
+  // trưởng tàu lo việc đóng cửa cho tàu của người chơi: ga đầu thì ~10 s sau khi vào màn chơi, các ga sau theo giờ đi (như tự lái). Người lái chỉ chờ đèn các toa xanh rồi hạ phanh về N và kéo ga
+  function captainDoor(T, dt) {
+    const W = T.W; if (T !== W.player || T.isLead || W.mission || T.ghost) return;
+    if (T.anx > 40 && T.v < 0.5 && W.t - T.paAt > 45 && !T.noPax && !(T.M[T.k] && T.M[T.k].sig)) announcePA(T);      // trưởng tàu tự phát thanh trấn an khi tàu đứng yên giữa đường lâu
+    if (T.phase !== 'dwell' || T.door !== 'open') return;
+    if (T.k === 0 && !T.started && !T.foreign) { T.capT = (T.capT || 0) + dt; if (T.capT >= 10) requestClose(T); return; }
+    autoDepart(T);
   }
   function autoHorn(T) {       // còi tự động khi tới gần nhân viên làm việc / thú rừng trên đường (không còn nút còi)
     const W = T.W;
@@ -1283,8 +1297,8 @@
       if (pr) { const down = rec.d === 'down', sSp = sOfKm(W.line.stations[pr.split].km, rec.d, W.line.kmEnd), m0 = M[0], xPos = st.dwellI !== undefined ? geoS(m0) : sOfKm(st.km, rec.d, W.line.kmEnd);
         if (down ? xPos < sSp - 5 : xPos > sSp + 5) { T.veh = VEH[down ? pr.mini + '+E5' : 'E5+' + pr.mini]; if (T.coup && T.coup.kind === 'pjoin0') { T.coup = null; T.gapX = 0; W.parked = W.parked.filter(p => !(p.kind === 'wait' && p.own)); if (m0.sOrig !== undefined) m0.s = m0.sOrig; } } } }
     if (st.dwellI !== undefined) { T.phase = 'dwell'; T.k = 0; T.x = M[0].s; T.v = 0; T.door = T.noPax ? 'closed' : 'open'; T.dwellT = 20; T.arrT = W.t; }
-    else { const j = nextTarget(T), x0 = M[0].s, x1 = M[j].s; T.phase = 'run'; T.k = 0; T.x = clamp(sOfKm(st.km, rec.d, L.kmEnd), Math.min(x0, x1), Math.max(x0, x1)); T.door = 'closed'; T.v = Math.max(0, Math.min((st.kmh || 0) / 3.6, allowedSpeed(T) - 2 / 3.6)); }      // bắt đầu trong giới hạn ATC của vị trí đó (không xuất hiện đang vượt tốc độ rồi phanh gấp)
-    if (opts.ghost) { W.ghost = true; T.ghost = true; T.foreign = false; T.noPax = true; T.load = 0; T.door = 'closed'; T.dwellT = 0; T.started = true; if (W.player.phase === 'run') T.v = 0; T.atcOn = false; T.atc = false; T.needConfirm = false;      // không bật ATC (không phanh tự động, không cảnh báo cắt ATC)
+    else { const j = nextTarget(T), x0 = M[0].s, x1 = M[j].s; T.phase = 'run'; T.k = 0; T.x = clamp(sOfKm(st.km, rec.d, L.kmEnd), Math.min(x0, x1), Math.max(x0, x1)); T.door = 'closed'; T.bk = 0; T.v = Math.max(0, Math.min((st.kmh || 0) / 3.6, allowedSpeed(T) - 2 / 3.6)); }      // bắt đầu trong giới hạn ATC của vị trí đó (không xuất hiện đang vượt tốc độ rồi phanh gấp)
+    if (opts.ghost) { W.ghost = true; T.ghost = true; T.foreign = false; T.bk = 0; T.noPax = true; T.load = 0; T.door = 'closed'; T.dwellT = 0; T.started = true; if (W.player.phase === 'run') T.v = 0; T.atcOn = false; T.atc = false; T.needConfirm = false;      // không bật ATC (không phanh tự động, không cảnh báo cắt ATC)
       for (let j = 1; j < M.length - 1; j++) M[j].stop = false; fillPlan(M); }      // tàu ma không dừng ga theo lịch (chạy thông qua mọi ga giữa đường, chỉ còn ga cuối chuyến mẫu); không giờ biểu đồ, không báo dừng ga, không PA/melody      // chế độ nhà phát triển: TÀU MA, đứng yên (tốc độ 0) tại điểm chọn; không có sự cố ngẫu nhiên; các tàu khác, ga và ATC của chúng không thấy tàu này (xem NatCat.step, updateObstacle, dwellersAt, departBlock); tàu này cũng không bị tàu khác chặn
     swSync(W); return W;
   }
@@ -1367,11 +1381,12 @@
     W.rainHere = W.zones.some(z => z.kind === 'rain' && !z.hold && W.t >= z.tA && W.t <= z.tB && T.x >= z.s0 && T.x < z.s1);
     if (auto) {
       const c = autopilot(T);
-      if (c !== undefined) { if (c >= 0) { T.pw = Math.round(c * 13); T.bk = 0; } else { T.pw = 0; const raw = -c * 7, cur = T.bk; let nb = c < -1.05 ? 8 : Math.round(raw);
+      if (T.cs && c !== undefined && c < -0.02) cancelCS(T, _t('phanh'));      // tự lái áp phanh thì tắt tốc độ đều để tàu giảm tốc (nếu không tốc độ đều đè lệnh phanh)
+      if (c !== undefined) { T.pwCut = false; if (c >= 0) { T.pw = Math.round(c * 13); T.bk = 0; } else { T.pw = 0; const raw = -c * 7, cur = T.bk; let nb = c < -1.05 ? 8 : Math.round(raw);
         if (nb >= 1 && nb < 8 && cur >= 1 && cur < 8 && Math.abs(raw - cur) < 0.8) nb = cur;      // trễ: nấc phanh hiển thị chỉ đổi khi lực lệch hẳn khỏi nấc hiện tại (không nhấp nháy khi lực nằm sát ranh giới hai nấc)
         T.bk = nb >= 1 ? nb : (c < -0.001 && T._apBrk ? 1 : 0); } }      // lực phanh rất nhỏ (< nấc B1) hiện là N      // lực phanh rất nhỏ (< nấc B1) hiện là N, không nhấp nháy B1 ↔ N
       step(T, dt, c === undefined ? {} : { cmd: c });
-    } else { autoHorn(T); step(T, dt, input || {}); }
+    } else { autoHorn(T); captainDoor(T, dt); step(T, dt, input || {}); }
     if (W.mission) missionStep(W, T, dt);
     if (!T.isLead) leadWatch(W, T);
     if (W.eqkActive && W.t >= W.eqkRelease) {
@@ -1671,13 +1686,14 @@
     n = Math.max(1, n);
     const comfort = Math.max(0, 100 - T.comfort * D.comfortK), atcPen = T.atcCount * 8, earlyPen = Math.min(30, T.earlyDep * 0.3);
     const ackPen = Math.min(20, W.ackPen), hornPen = Math.min(20, T.hornPen), wiperPen = Math.min(10, Math.round(T.wiperBad / 20)), lampPen = Math.min(10, Math.round((T.lampBad || 0) / 30)), atcOffPen = Math.min(30, Math.round((T.atcOffBad || 0) / 8) + (T.atcCuts || 0) * 3);
-    const colPen = T.collision ? 100 : 0, anxPen = Math.min(15, Math.round(Math.max(0, T.anxMax - 60) / 2.5)) + (T.panic ? 10 : 0), firePen = T.fireTunnel ? 15 : 0, deadPen = Math.min(20, (T.deadViol || 0) * 6), xingPen = Math.min(40, (T.xingHit || 0) * 25), netBonus = clamp(W.netScore || 0, -9, 9);
+    const colPen = T.collision ? 100 : 0, anxPen = T.panic ? 10 : 0,      // trưởng tàu tự phát thanh trấn an nên chỉ còn phạt khi hành khách đã hoảng loạn (hầu như không xảy ra)
+       firePen = T.fireTunnel ? 15 : 0, deadPen = Math.min(20, (T.deadViol || 0) * 6), xingPen = Math.min(40, (T.xingHit || 0) * 25), netBonus = clamp(W.netScore || 0, -9, 9);
     const final = Math.max(0, Math.min(100, Math.round(tot / (2 * n) * 0.7 + comfort * 0.3 - atcPen - earlyPen - ackPen - hornPen - wiperPen - lampPen - atcOffPen - anxPen - firePen - deadPen - xingPen - colPen + netBonus)));
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
   const api = { toggleReverse, swSync, swFlip, swIdx, swWait, fkOf, fkLanes, fkFollows, fkOwnOpp, trunkLanes, runJn, runCfg, runLane, runStep, leadDelta, runBefore, branchDeltas, branchLane0, ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, togglePan, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
-    createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
+    createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, captainDoor, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;
 })(typeof window !== 'undefined' ? window : globalThis);

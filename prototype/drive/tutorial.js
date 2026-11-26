@@ -9,23 +9,23 @@
   const LESSONS = [
     { id: 'basic', title: _t('Bài 1 · Khởi hành, lái, dừng đúng vạch'), line: 'tsk', from: 15, to: 16, diff: 'easy', weather: 'clear', seed: 11, radio: false,
       steps: [
-        { text: _t('Nhấn ENTER để trưởng tàu đóng cửa (mất khoảng 10 giây).'), hint: _t('Enter / nút "Đóng cửa"'), check: (W, T) => T.door !== 'open' },
-        { text: _t('Khi đèn ĐÓNG CỬA sáng, nhấn W để kéo cần gia tốc. Tàu sẽ khởi hành.'), hint: 'W', check: (W, T) => T.phase === 'run' },
-        { text: _t('Nhấn W thêm cho tới nấc P10 trở lên. Vòng xanh trên đồng hồ là tốc độ ATC cho phép: đừng vượt.'), hint: 'W', check: (W, T) => T.pw >= 10 },
+        { text: _t('Trưởng tàu sẽ tự đóng cửa sau khoảng 10 giây. Chờ các toa trong bảng TIMS chuyển sang màu xanh.'), hint: 'TIMS', check: (W, T) => T.door === 'closed' },
+        { text: _t('Các toa đã xanh. Cần phanh đang ở EB: nhấn S nhiều lần để hạ về N, rồi nhấn ↓ để kéo cần ga. Tàu sẽ khởi hành.'), hint: 'S, ↓', check: (W, T) => T.phase === 'run' },
+        { text: _t('Nhấn ↓ thêm cho tới nấc P10 trở lên. Vòng xanh trên đồng hồ là tốc độ ATC cho phép: đừng vượt.'), hint: '↓', check: (W, T) => T.pw >= 10 },
         { text: _t('Chờ tốc độ vượt 120 km/h (tàu nặng ~700 tấn nên tăng tốc khá chậm).'), hint: _t('đồng hồ'), check: (W, T) => T.v * 3.6 >= 120 },
-        { text: _t('Nhấn SPACE để về N: tàu chạy đà (không kéo, không phanh).'), hint: 'Space', check: (W, T) => T.pw === 0 && T.bk === 0 },
-        { text: _t('Phanh nhẹ: nhấn ↓ hai lần (B2), rồi nhấn ↑ hai lần để nhả. Phải nhả phanh về 0 thì mới kéo được lại.'), hint: '↓ ↑', init: st => { st.hit = false; }, check: (W, T, st) => { if (T.bk >= 2) st.hit = true; return st.hit && T.bk === 0; } },
-        { text: _t('Kéo lại cho tốc độ gần 200 km/h (W), rồi nhấn C để bật chạy tốc độ không đổi (tàu tự giữ tốc độ).'), hint: 'W, C', check: (W, T) => T.cs },
-        { text: _t('Tắt chế độ đó bằng cách đạp phanh nhẹ: nhấn ↓ (B1), rồi nhả ↑.'), hint: '↓ ↑', init: st => { st.hit = false; }, check: (W, T, st) => { if (T.bk >= 1) st.hit = true; return !T.cs && st.hit && T.bk === 0; } },
-        { text: _t('Sắp tới Shin-Osaka. Nhìn dòng "Gợi ý" và thanh khoảng cách: về N (Space) rồi bắt đầu phanh dần bằng ↓ (B3–B5) khi tới điểm gợi ý.'), hint: '↓', check: (W, T) => T.phase === 'run' && dist(W, T) < 1500 },
-        { text: _t('Dừng đúng vạch xanh, mục tiêu ±2 m. Ở cuối chỉ dùng nấc thấp (B1–B2). Nếu lệch nhiều, nhấn R để thử lại.'), hint: '↓ ↑', check: (W, T) => T.results.length >= 1 && Math.abs(T.results[T.results.length - 1].err) <= 5, note: (W, T) => T.results.length ? (Math.abs(T.results[T.results.length - 1].err) <= 2 ? _t('Rất tốt!') : _t('Hơi lệch, nhấn R để thử lại cho ±2 m.')) : '' }
+        { text: _t('Nhấn ↑ nhiều lần để đưa cần ga về N: tàu chạy đà (không kéo, không phanh).'), hint: '↑', check: (W, T) => T.pw === 0 && T.bk === 0 },
+        { text: _t('Phanh nhẹ: nhấn W hai lần (B2), rồi nhấn S hai lần để nhả. Phải nhả phanh về N thì mới kéo được lại.'), hint: 'W S', init: st => { st.hit = false; }, check: (W, T, st) => { if (T.bk >= 2) st.hit = true; return st.hit && T.bk === 0; } },
+        { text: _t('Kéo lại cho tốc độ gần 200 km/h (↓), rồi nhấn C để bật chạy tốc độ không đổi (tàu tự giữ tốc độ).'), hint: '↓, C', check: (W, T) => T.cs },
+        { text: _t('Tắt chế độ đó bằng cách đạp phanh nhẹ: nhấn W (B1), rồi nhả S.'), hint: 'W S', init: st => { st.hit = false; }, check: (W, T, st) => { if (T.bk >= 1) st.hit = true; return !T.cs && st.hit && T.bk === 0; } },
+        { text: _t('Sắp tới Shin-Osaka. Nhìn dòng "Gợi ý" và thanh khoảng cách: về N (↑) rồi bắt đầu phanh dần bằng W (B3–B5) khi tới điểm gợi ý.'), hint: 'W', check: (W, T) => T.phase === 'run' && dist(W, T) < 1500 },
+        { text: _t('Dừng đúng vạch xanh, mục tiêu ±2 m. Ở cuối chỉ dùng nấc thấp (B1–B2). Nếu lệch nhiều, nhấn R để thử lại.'), hint: 'W S', check: (W, T) => T.results.length >= 1 && Math.abs(T.results[T.results.length - 1].err) <= 5, note: (W, T) => T.results.length ? (Math.abs(T.results[T.results.length - 1].err) <= 2 ? _t('Rất tốt!') : _t('Hơi lệch, nhấn R để thử lại cho ±2 m.')) : '' }
       ] },
     { id: 'gear', title: _t('Bài 2 · Thiết bị: mưa, nhắc lệnh, cảnh báo đường'), line: 'tsk', from: 12, to: 16, diff: 'normal', weather: 'clear', seed: 12,
       steps: [
-        { text: _t('Đóng cửa (Enter) rồi khởi hành (W). Chạy tới khoảng 200 km/h.'), hint: 'Enter, W', check: (W, T) => T.v * 3.6 >= 200 },
+        { text: _t('Chờ trưởng tàu đóng cửa, hạ phanh về N (S) rồi khởi hành (↓). Chạy tới khoảng 200 km/h.'), hint: 'S, ↓', check: (W, T) => T.v * 3.6 >= 200 },
         { text: _t('Điều độ báo MƯA. Khi nghe tin, nhấn Y để nhắc lại lệnh (nếu không sẽ bị trừ điểm).'), hint: 'Y', onEnter: (W, T) => root.Sim.inject(W, 'rain', { ahead: 9000 }), check: (W, T) => (W.ackCount || 0) >= 1 },
         { text: _t('Bật gạt mưa (V) trước khi vào vùng mưa.'), hint: 'V', check: (W, T) => T.wiper },
-        { text: _t('Vào vùng mưa: ATC giảm xuống 70 km/h, hãy giảm tốc kịp (phanh, rồi N). Chạy qua vùng mưa.'), hint: '↓ Space', init: st => { st.in = false; }, check: (W, T, st) => { if (W.rainHere) st.in = true; return st.in && !W.rainHere; } },
+        { text: _t('Vào vùng mưa: ATC giảm xuống 70 km/h, hãy giảm tốc kịp (phanh W, rồi đưa cần ga về N bằng ↑). Chạy qua vùng mưa.'), hint: 'W ↑', init: st => { st.in = false; }, check: (W, T, st) => { if (W.rainHere) st.in = true; return st.in && !W.rainHere; } },
         { text: _t('Ra khỏi vùng mưa: tắt gạt mưa (V), kéo lại tốc độ.'), hint: 'V', check: (W, T) => !T.wiper && !W.rainHere },
         { text: _t('Điều độ báo NHÂN VIÊN LÀM VIỆC cạnh đường: giữ tốc độ ≤ 230 km/h khi qua khu đó (xem thanh cam trên bản đồ). Tàu tự bấm còi báo hiệu.'), hint: '', onEnter: (W, T) => root.Sim.inject(W, 'workers', { ahead: 6000 }), check: (W, T) => W.workers.length && W.workers[0].checked && W.workers[0].hornOK, fail: (W, T) => W.workers.length && W.workers[0].checked && !W.workers[0].hornOK },
         { text: _t('Điều độ GIỮ tàu thêm ở ga tới. Nhấn Y xác nhận, dừng đúng vạch và chờ tới khi được thả.'), hint: 'Y', onEnter: (W, T) => root.Sim.inject(W, 'hold', { sec: 90 }), check: (W, T) => (W.ackCount || 0) >= 2 },
@@ -33,20 +33,20 @@
       ] },
     { id: 'crisis', title: _t('Bài 3 · Sự cố: động đất, quyết định, cháy'), line: 'tsk', from: 12, to: 16, diff: 'normal', weather: 'clear', seed: 13,
       steps: [
-        { text: _t('Đóng cửa (Enter), khởi hành (W), chạy tới khoảng 200 km/h.'), hint: 'Enter, W', check: (W, T) => T.v * 3.6 >= 200 },
+        { text: _t('Chờ trưởng tàu đóng cửa, hạ phanh về N (S), khởi hành (↓), chạy tới khoảng 200 km/h.'), hint: 'S, ↓', check: (W, T) => T.v * 3.6 >= 200 },
         { text: _t('Điều độ đề nghị CHO TÀU NHANH VƯỢT: Y (chấp nhận, giữ tàu thêm) hay N (từ chối). Tự chọn.'), hint: 'Y / N', onEnter: (W, T) => root.Sim.inject(W, 'overtake'), check: (W, T) => !W.decision && (W.decisions || 0) >= 1 },
-        { text: _t('ĐỘNG ĐẤT! Điện bị cắt, tàu tự phanh khẩn cấp. Nhấn M để phát thanh trấn an hành khách.'), hint: 'M', onEnter: (W, T) => root.Sim.inject(W, 'eqk', { sec: 240 }), check: (W, T) => (W.paCount || 0) >= 1 },
-        { text: _t('Chờ kiểm tra xong (nhấn 3 để tua ×16). Sau đó tàu được chạy lại với tốc độ ≤ 70 km/h trong 12 km.'), hint: '3', check: (W, T) => !W.eqkActive && !T.cut },
+        { text: _t('ĐỘNG ĐẤT! Điện bị cắt: cần ga tự về N, cần phanh tự lên EB và tàu phanh khẩn cấp. Chờ tàu dừng hẳn (trưởng tàu trấn an hành khách).'), hint: '', onEnter: (W, T) => root.Sim.inject(W, 'eqk', { sec: 240 }), check: (W, T) => W.eqkActive && T.v < 0.3 },
+        { text: _t('Chờ kiểm tra xong (nhấn 3 để tua ×16). Sau đó hạ phanh về N (S), kéo ga lại: tàu được chạy với tốc độ ≤ 70 km/h trong 12 km.'), hint: '3', check: (W, T) => !W.eqkActive && !T.cut },
         { text: _t('Báo CHÁY ở toa 6: ngoài hầm thì dừng ở ga gần nhất (không phanh gấp giữa đường). Nhấn Y báo điều độ, rồi tiếp tục.'), hint: 'Y', onEnter: (W, T) => root.Sim.inject(W, 'fire'), check: (W, T) => (W.ackCount || 0) >= 1 },
         { text: _t('Dừng ở ga, chờ khi điều độ thả tàu, rồi hoàn thành chuyến.'), hint: '', check: (W, T) => T.finished }
       ] },
     { id: 'power', title: _t('Bài 4 · Cần vẹt, ATC cắt/bật, tàu đứng phía trước'), line: 'tsk', from: 12, to: 16, diff: 'normal', weather: 'clear', seed: 14, lead: true,
       steps: [
-        { text: _t('Đóng cửa (Enter), khởi hành (W), chạy tới khoảng 150 km/h.'), hint: 'Enter, W', check: (W, T) => T.v * 3.6 >= 150 },
+        { text: _t('Chờ trưởng tàu đóng cửa, hạ phanh về N (S), khởi hành (↓), chạy tới khoảng 150 km/h.'), hint: 'S, ↓', check: (W, T) => T.v * 3.6 >= 150 },
         { text: _t('Hạ CẦN VẸT (G) như khi qua đoạn cách điện (dead section): mất điện lưới nên không kéo và không hoàn năng được, tàu chỉ chạy đà.'), hint: 'G', check: (W, T) => T.pan === false },
         { text: _t('Nâng cần vẹt lên lại (G) để có điện, rồi kéo lại tốc độ.'), hint: 'G', check: (W, T) => T.pan !== false },
         { text: _t('ATC là lớp an toàn tự phanh. Nhấn A để CẮT ATC (chỉ khi ATC hỏng; tàu không còn ai phanh thay bạn), rồi nhấn A để BẬT lại.'), hint: 'A', init: st => { st.off = false; }, check: (W, T, st) => { if (T.atcOn === false) st.off = true; return st.off && T.atcOn !== false; } },
-        { text: _t('Phía trước có tàu ĐỨNG trên đường chính. Điện đàm sẽ báo khoảng cách. Giảm tốc và dừng lại phía sau nó, cách ít nhất vài trăm mét. Va chạm là kết thúc chuyến (điểm 0).'), hint: '↓', onEnter: (W, T) => { if (W.lead) { W.lead.x = T.x + 3500; W.lead.v = 0; W.leadHoldUntil = 1e9; W.lead.cut = true; } }, check: (W, T) => !W.lead || (T.v < 0.5 && W.lead.x - W.lead.veh.len - T.x > 50), fail: (W, T) => T.collision },
+        { text: _t('Phía trước có tàu ĐỨNG trên đường chính. Điện đàm sẽ báo khoảng cách. Giảm tốc và dừng lại phía sau nó, cách ít nhất vài trăm mét. Va chạm là kết thúc chuyến (điểm 0).'), hint: 'W', onEnter: (W, T) => { if (W.lead) { W.lead.x = T.x + 3500; W.lead.v = 0; W.leadHoldUntil = 1e9; W.lead.cut = true; } }, check: (W, T) => !W.lead || (T.v < 0.5 && W.lead.x - W.lead.veh.len - T.x > 50), fail: (W, T) => T.collision },
       ] },
   ];
   const S = { lesson: -1, step: 0, st: {}, enteredAt: 0, passedAt: -1, done: {}, banner: '' };

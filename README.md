@@ -46,17 +46,16 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 - **Trình phát nhạc** (góc dưới trái, chỉ ở menu): phát/tạm dừng, bài trước/sau, đổi chế độ lặp danh sách/lặp một bài/ngẫu nhiên, danh sách bài, tắt tiếng và âm lượng, thanh tiến trình, thu gọn; phát qua trình nhúng YouTube (cần mạng), tự phát từ lần bấm đầu tiên.
 
 ## Điều khiển nhanh
+Cửa do **trưởng tàu** đóng: ga đầu khoảng 10 giây sau khi vào màn chơi, các ga sau theo giờ đi; các toa trong bảng TIMS chuyển xanh là cửa đã đóng. Trưởng tàu cũng tự phát thanh trấn an khi tàu đứng giữa đường lâu.
 Bảng đầy đủ nằm trong **Cài đặt → Phím tắt**.
 
 | Phím | Việc |
 |---|---|
-| W / S | tăng / giảm cần gia tốc (13 nấc) |
-| ↓ / ↑ | tăng / giảm cần phanh (nhả về 0 mới kéo lại) |
-| Space · Q | về N · phanh khẩn |
-| Enter | đóng cửa, đèn sáng thì kéo cần để đi |
+| W / S | nâng / hạ cần phanh (N … B7, EB; tàu đỗ ga luôn ở EB, phải hạ về N mới chạy) |
+| ↓ / ↑ | tăng / giảm cần ga (N … P13). Áp phanh khi đang kéo thì ga bị **ngắt** (sọc vàng); muốn kéo lại phải đưa phanh về N rồi cần ga về N |
 | C · [ ] | tốc độ không đổi · chỉnh ∓5 km/h |
 | A · G · V · L | ATC (bấm 2 lần để cắt) · cần vẹt · gạt mưa · đèn pha |
-| Y / N · M | nhắc lại lệnh, chấp nhận / từ chối · phát thanh trấn an |
+| Y / N · M | nhắc lại lệnh, chấp nhận / từ chối · chạy lùi (chỉ khi đã dừng hẳn) |
 | K | (tàu kiểm tra) đánh dấu lỗi (đo tự chạy từ lúc rời ga) |
 | Tab · O | đổi khung nhìn · ẩn điện đàm |
 | , · . | cửa sổ hành khách bên trái · bên phải (bấm lại để về buồng lái) |

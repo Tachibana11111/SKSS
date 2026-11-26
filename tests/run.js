@@ -6,6 +6,7 @@ global.localStorage = (() => { const m = {}; return { getItem: k => m[k] || null
 require(path.join(DRIVE, 'data-lines.js'));
 require(path.join(DRIVE, 'i18n.js'));
 const Sim = require(path.join(DRIVE, 'sim.js')); global.Sim = Sim; require(path.join(DRIVE, 'natcat.js'));
+const createWorld0 = Sim.createWorld; Sim.createWorld0 = createWorld0; Sim.createWorld = function () { const W = createWorld0.apply(this, arguments); if (W.player && !W.player.isLead) W.player.bk = 0; return W; };      // các test cũ giả định phanh đã nhả (N); cơ chế EB mặc định có test riêng (phần 39) dùng createWorld0
 require(path.join(DRIVE, 'layout.js')); require(path.join(DRIVE, 'store.js')); require(path.join(DRIVE, 'tutorial.js'));
 let pass = 0, fail = 0; const failures = [];
 function ok(cond, name, info) { if (cond) pass++; else { fail++; failures.push(name + (info !== undefined ? ' → ' + info : '')); } }
@@ -99,7 +100,7 @@ if (section('5. Sự kiện: tiêm từng loại và hậu quả')) {
   W = mkw(); Sim.inject(W, 'wire'); ok(W.wires.length === 1 && W.zones.some(z => z.kind === 'wire'), 'dây điện: tạo sự cố'); T = run(W, w => w.player.phase === 'end'); ok(T.finished, 'dây điện: vẫn hoàn thành chuyến');
   W = mkw(); Sim.inject(W, 'fire'); ok(W.fireActive, 'cháy: kích hoạt'); T = run(W, w => w.player.finished); ok(T.finished && T.fireTunnel === 0, 'cháy: tự lái hoàn thành, không dừng trong hầm');
   // bất an hành khách
-  W = mkw(); T = W.player; Sim.requestClose(T); { let n = 0; while (T.phase !== 'run' && n++ < 5000) { Sim.tick(W, 0.05, {}, false); if (T.door === 'closed') Sim.setPower(T, 1); } T.v = 0; T.pw = 0; T.bk = 8; n = 0; while (n++ < 20 * 60 * 12) Sim.tick(W, 0.05, {}, false); ok(T.anx > 80, 'đứng giữa đường lâu → bất an tăng', T.anx.toFixed(0)); const before = T.anx; ok(Sim.announcePA(T) && T.anx < before - 40, 'phát thanh giảm bất an'); ok(!Sim.announcePA(T), 'phát thanh có thời gian chờ'); }
+  W = mkw(); T = W.player; Sim.requestClose(T); { let n = 0; while (T.phase !== 'run' && n++ < 5000) { Sim.tick(W, 0.05, {}, false); if (T.door === 'closed') Sim.setPower(T, 1); } T.v = 0; T.pw = 0; T.bk = 8; n = 0; while (n++ < 20 * 60 * 12) Sim.tick(W, 0.05, {}, false); ok((W.paCount || 0) >= 1 && T.anxMax >= 40 && !T.panic, 'đứng giữa đường lâu → bất an tăng, trưởng tàu tự phát thanh trấn an (' + (W.paCount || 0) + ' lần)', [T.anxMax, W.paCount]); T.paAt = -999; T.anx = 90; ok(Sim.announcePA(T) && T.anx < 50, 'phát thanh giảm bất an'); ok(!Sim.announcePA(T), 'phát thanh có thời gian chờ'); }
   // ngẫu nhiên có seed: lặp lại được
   const a1 = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 12, 16), { diff: 'hard', weather: 'typhoon', seed: 99, lead: false }), a2 = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 12, 16), { diff: 'hard', weather: 'typhoon', seed: 99, lead: false });
   ok(a1.events.length === a2.events.length && a1.events.every((e, i) => e.at === a2.events[i].at), 'sự kiện ngẫu nhiên lặp lại theo seed'); ok(a1.events.length >= 4, 'độ khó Khó có ≥ 4 sự kiện', a1.events.length);
@@ -116,7 +117,7 @@ if (section('6. Xác định (replay) và chấm điểm')) {
   const W = Sim.createWorld('tsk', trip, { diff: 'normal', lead: false, events: false }), T = W.player; const mkres = e => ({ station: 'X', err: e, delay: 0, excused: 0, t: 0 });
   T.results = [mkres(0.1)]; const s1 = Sim.score(T, W).final; T.results = [mkres(6)]; const s2 = Sim.score(T, W).final; ok(s1 > s2, 'dừng chính xác điểm cao hơn dừng lệch', `${s1} > ${s2}`);
   T.results = [mkres(0.1)]; T.atcCount = 3; const s3 = Sim.score(T, W).final; ok(s3 < s1, 'ATC phanh bị trừ điểm'); T.atcCount = 0; W.ackPen = 6; ok(Sim.score(T, W).final < s1, 'nhắc lệnh chậm bị trừ điểm'); W.ackPen = 0;
-  T.fireTunnel = 1; ok(Sim.score(T, W).final < s1, 'dừng trong hầm khi cháy bị trừ điểm'); T.fireTunnel = 0; T.anxMax = 100; ok(Sim.score(T, W).final < s1, 'bất an hành khách bị trừ điểm');
+  T.fireTunnel = 1; ok(Sim.score(T, W).final < s1, 'dừng trong hầm khi cháy bị trừ điểm'); T.fireTunnel = 0; T.anxMax = 100; ok(Sim.score(T, W).final === s1, 'bất an cao nhưng chưa hoảng loạn: không trừ (trưởng tàu tự trấn an)'); T.panic = true; ok(Sim.score(T, W).final < s1, 'hành khách hoảng loạn bị trừ điểm'); T.panic = false;
 }
 
 if (section('7. Chế độ điều độ (mạng nhiều tàu)')) {
@@ -184,7 +185,7 @@ if (section('9. Hướng dẫn (bot làm theo từng bước)')) {
     const W = Sim.createWorld(c.lineId, trip, { diff: c.diff, weather: c.weather, seed: c.seed, lead: c.lead, events: false }), T = W.player; let now = 0, n = 0; const LS = Tutorial.LESSONS[li], S = Tutorial.S;
     while (n++ < 4e6 && !(S.step >= LS.steps.length)) {
       now += 50; const s = S.step;
-      if (li === 0) { if (s === 0) Sim.requestClose(T); else if (s === 1 && T.door === 'closed') Sim.setPower(T, 1); else if (s === 2) Sim.setPower(T, Math.min(13, T.pw + (n % 30 === 0 ? 1 : 0))); else if (s === 3) Sim.setPower(T, 13); else if (s === 4) Sim.coast(T);
+      if (li === 0) { if (s === 0) { /* trưởng tàu tự đóng cửa sau ~10 s */ } else if (s === 1 && T.door === 'closed') { Sim.setBrake(T, 0); Sim.setPower(T, 1); } else if (s === 2) Sim.setPower(T, Math.min(13, T.pw + (n % 30 === 0 ? 1 : 0))); else if (s === 3) Sim.setPower(T, 13); else if (s === 4) Sim.coast(T);
         else if (s === 5) Sim.setBrake(T, S.st.hit ? 0 : 2); else if (s === 6) { Sim.setBrake(T, 0); if (T.v * 3.6 < 190) Sim.setPower(T, 8); else if (n % 20 === 0) Sim.toggleCS(T); } else if (s === 7) Sim.setBrake(T, S.st.hit ? 0 : 1); }
       if (li >= 1 && s === 0 && T.door === 'open') Sim.requestClose(T);
       if (li === 1) { if (s === 2) T.wiper = true; if (s === 4) T.wiper = false; if (s === 1 || s === 6) Sim.ackOldest(W); if (s === 5) for (const z of W.workers) if (!z.checked && T.x >= z.s0 - 600) Sim.honk(T); }
@@ -344,7 +345,7 @@ if (section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường
   // --- cảnh ghép/tách: ghép ở Tokyo, tách ở Morioka (phần Tohoku ở lại), ghép lại khi về
   { const W = Sim.createWorld('aki', Sim.makeTrip('aki', recK, 0, iAk), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player;
     ok(T.coup && T.coup.kind === 'join0' && T.gapX > 40, 'xuất phát từ Tokyo: đang ghép, đoàn sau còn cách xa'); ok(!Sim.requestClose(T), 'đang ghép ở Tokyo: chưa đóng cửa được');
-    for (let n = 0; n < 950; n++) Sim.tick(W, 0.05, {}, false); ok(!T.coup && T.gapX === 0, "ghép xong ở Tokyo sau ~45 s"); ok(Sim.requestClose(T), 'ghép xong: đóng cửa được');
+    for (let n = 0; n < 950; n++) Sim.tick(W, 0.05, {}, false); ok(!T.coup && T.gapX === 0, "ghép xong ở Tokyo sau ~45 s"); ok(T.door !== 'open' || Sim.requestClose(T), 'ghép xong: trưởng tàu đóng cửa (hoặc đóng được)');
     let n = 0; while (!T.finished && n++ < 4e6 && W.t < 60000 && !(T.k === iMor && T.phase === 'dwell' && !T.coup && T.cp.done)) { if (T.phase === 'dwell' && !T.coup) Sim.requestClose(T); Sim.tick(W, 0.05, {}, true); }
     ok(T.veh.key === 'E6' && W.parked.length === 1 && W.parked[0].key === 'E5' && W.parked[0].kind === 'left' && Math.abs(W.parked[0].front - (T.x - 152.8 - Sim.COUPLE_GAP)) < 0.5, 'tách ở Morioka: E5 ở lại sân ga ngay sau E6'); }
   { const rec6 = A.trains.find(t => t.d === 'up' && t.cp), W = Sim.createWorld('aki', Sim.makeTrip('aki', rec6, rec6.s[0][0], 0), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, m = T.M.find(q => q.i === rec6.cp[0]);
@@ -943,7 +944,7 @@ if (section('31. Đợt sửa tháng 11: Tsubame/S800, 8 toa, nhắc đóng cử
   { require(path.join(DRIVE, 'assets', 'sprites.js')); const sp = window.SPRITES && window.SPRITES.n700s8; ok(sp && sp.cars.length === 8 && sp.width > 2000, 'dải ảnh N700 8 toa (n700s8) có đúng 8 toa'); const ix = require('fs').readFileSync(path.join(DRIVE, 'index.html'), 'utf8'); ok(/'N700-8': 'n700s8'/.test(ix), 'ảnh xem trước dùng dải 8 toa cho N700-8'); ok(Sim.VEH['N700-8'].cars === 8, 'N700-8 có 8 toa'); }
   // nhắc trên điện đàm khi kéo cần mà chưa đóng cửa (không còn lớp phủ che màn hình)
   { const L = Sim.lineOf('tsk'), r = find('tsk', 'Nozomi', 'down', 0, 12), W = Sim.createWorld('tsk', Sim.makeTrip('tsk', r, 0, 12), { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player, msgs = [], say0 = W.say; W.say = function (k, t) { msgs.push(t); return say0.apply(W, arguments); };
-    T.pw = 6; for (let i = 0; i < 200; i++) Sim.tick(W, 0.05, {}, false); ok(msgs.some(m => /đóng cửa/.test(m) && /Enter/.test(m)), 'kéo cần khi chưa đóng cửa: có nhắc trên điện đàm', msgs.slice(-2).join('|'));
+    T.pw = 6; for (let i = 0; i < 200; i++) Sim.tick(W, 0.05, {}, false); ok(msgs.some(m => /Cửa chưa đóng/.test(m) && /trưởng tàu/.test(m)), 'kéo cần khi chưa đóng cửa: có nhắc trên điện đàm', msgs.slice(-2).join('|'));
     const n0 = msgs.length; for (let i = 0; i < 100; i++) Sim.tick(W, 0.05, {}, false); ok(msgs.length - n0 <= 1, 'lời nhắc không bị lặp liên tục (' + (msgs.length - n0) + ')');
     const fu = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8'); ok(!/Nhấn Enter để đóng cửa, rồi kéo cần/.test(fu), 'đã bỏ lớp phủ đen nhắc Enter đóng cửa'); }
   // tên đoàn ghép Tohoku + mini
@@ -1019,6 +1020,39 @@ if (section('38. Xuất phát từ Tokyo (đường ga nhập đường chính n
   ok(bad === 0, 'trên đoạn đi chung đường chính ngược chiều (330-870 m) không có tàu ngược chiều nào trong vùng va chạm', String(bad));
   ok(blocked === 0 || /ngược chiều/.test(msg) || /opposite/.test(msg), 'lý do giữ tàu nêu rõ tàu ngược chiều', msg);
 }
+if (section('39. Cần phanh mặc định EB, ga bị ngắt khi phanh, trưởng tàu tự đóng cửa, ATC giảm dần')) {
+  const rec = find('tsk', 'Nozomi', 'down', 12, 15), trip = Sim.makeTrip('tsk', rec, 12, 15);
+  // 1) vào màn chơi: phanh EB; trưởng tàu đóng cửa sau ~10 s (đèn các toa xanh = T.door 'closed'), cửa mở ở ga đầu trước đó
+  { const W = Sim.createWorld0('tsk', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player; ok(T.bk === 8 && T.pw === 0 && !T.pwCut, 'khởi đầu: cần phanh ở EB, cần ga ở N');
+    ok(!Sim.setPower(T, 3) && T.pw === 0, 'phanh chưa về N: không kéo được ga'); let n = 0; while (n++ < 150) Sim.tick(W, 0.05, {}, false); ok(T.door === 'open', 'trước 10 s cửa còn mở (' + T.door + ')');
+    n = 150; while (T.door !== 'closed' && n++ < 2000) Sim.tick(W, 0.05, {}, false); ok(T.door === 'closed' && n * 0.05 > 10 && n * 0.05 < 40, 'trưởng tàu tự đóng cửa sau khoảng 10–25 s (' + (n * 0.05).toFixed(1) + ' s)', [T.door, n]);
+    Sim.tick(W, 0.05, {}, false); ok(T.phase === 'dwell', 'cửa đã đóng nhưng phanh còn EB: tàu chưa đi');
+    Sim.setBrake(T, 0); ok(Sim.setPower(T, 13), 'phanh về N: kéo được ga'); n = 0; while (T.phase !== 'run' && n++ < 400) Sim.tick(W, 0.05, {}, false); ok(T.phase === 'run', 'kéo ga sau khi cửa đóng: khởi hành');
+    // 2) ga bị ngắt: áp phanh khi cần ga ở P13 thì ga không tự về N
+    for (let i = 0; i < 600; i++) Sim.tick(W, 0.05, {}, false); ok(T.pw === 13 && T.f > 0.2, 'đang kéo P13');
+    Sim.setBrake(T, 3); ok(T.pw === 13 && T.pwCut === true && Sim.handleCmd(T) < 0, 'áp phanh B3: ga vẫn ở P13 nhưng bị ngắt, lệnh là phanh');
+    Sim.setBrake(T, 0); ok(T.pw === 13 && T.pwCut === true && Sim.handleCmd(T) === 0 && T.notch === 0 || Sim.handleCmd(T) === 0, 'phanh về N: ga vẫn bị ngắt (không kéo)');
+    ok(Sim.setPower(T, 12) === true && T.pwCut === true && Sim.handleCmd(T) === 0, 'giảm nấc vẫn còn ngắt');
+    ok(!Sim.setPower(T, 13) && T.pw === 12 && T.pwCut, 'cần ga đang ngắt: không kéo thêm được');
+    Sim.setPower(T, 0); ok(!T.pwCut && Sim.setPower(T, 5) && Sim.handleCmd(T) > 0, 'về N rồi mới kéo lại được'); }
+  // 3) động đất: ga về N, phanh lên EB
+  { const W = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player; Sim.requestClose(T); let n = 0; while (T.door !== 'closed' && n++ < 2000) Sim.tick(W, 0.05, {}, false); Sim.setPower(T, 10); for (let i = 0; i < 400; i++) Sim.tick(W, 0.05, {}, false);
+    Sim.inject(W, 'eqk', { sec: 200 }); Sim.tick(W, 0.05, {}, false); ok(T.pw === 0 && T.bk === 8 && !T.pwCut, 'động đất: cần ga về N, cần phanh lên EB', [T.pw, T.bk]); }
+  // 4) đỗ ga: phanh tự lên EB khi dừng
+  { const r = runAuto('tsk', rec, 12, 15); ok(r.T.finished, 'chạy hết chuyến'); const W = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player; let n = 0, ebAt = true; Sim.requestClose(T); while (T.door !== 'closed' && n++ < 2000) Sim.tick(W, 0.05, {}, false);
+    n = 0; while (T.k < 1 && !T.finished && n++ < 4e6) Sim.tick(W, 0.05, {}, true); ok(T.k >= 1 && T.bk === 8 && T.pw === 0, 'đỗ ga: cần phanh ở EB', [T.phase, T.k, T.bk, T.pw]); }
+  // 5) ATC giảm dần: giới hạn tốc độ không rơi quá 1,6 × gia tốc ATC mỗi giây (trừ động đất / đứng ga / đường cong phanh liên tục)
+  { const W = Sim.createWorld('tsk', Sim.makeTrip('tsk', rec, 12, 16), { diff: 'normal', seed: 5, lead: false, events: true }), T = W.player; let n = 0, prev = null, worst = 0; const dt = 0.05;
+    while (!T.finished && n++ < 2e6) { Sim.tick(W, dt, {}, true); if (T.phase === 'run' && !T.cut && prev !== null && T.allowed < prev && T.allowed > 2 && Math.abs(T.allowed - T.hard) > 0.05) worst = Math.max(worst, (prev - T.allowed) / dt); prev = T.phase === 'run' && !T.cut ? T.allowed : null; }
+    ok(worst <= 1.6 * 0.72 + 0.8, 'ATC: tốc độ cho phép (ngoài đường cong phanh liên tục) rơi tối đa ' + worst.toFixed(2) + ' m/s² (≈ ' + (worst * 3.6).toFixed(1) + ' km/h mỗi giây)', worst); }
+  // 6) giao diện: hai cần đổi chỗ, bốn đồng hồ nhỏ, không còn đèn báo / nút đóng cửa / nút phanh khẩn
+  { const fu = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8'), idx = require('fs').readFileSync(path.join(DRIVE, 'index.html'), 'utf8');
+    ok(/lever\(12 \+ GX, PY, 119, PH, 'bk'\); lever\(557 \+ GX, PY, 119, PH, 'pw'\)/.test(fu), 'cần phanh bên trái, cần ga bên phải');
+    ok(!/lampsL|doAct\('door'\)|doAct\('eb'\)|doAct\('coast'\)|Bất an hành khách|Nhiệt má phanh/.test(fu), 'không còn đèn báo, nút đóng cửa, phanh khẩn, về N, thanh bất an / nhiệt má phanh');
+    ok((fu.match(/miniGauge\(gx,/g) || []).length === 4, 'bốn đồng hồ nhỏ xếp dọc');
+    ok(/k === 'w' \|\| k === 'W'\) doAct\('brake', 1\)/.test(idx) && /k === 'ArrowDown'\) doAct\('power', 1\)/.test(idx) && !/doAct\('coast'\)|doAct\('eb'\)|doAct\('door'\)/.test(idx.slice(idx.indexOf("addEventListener('keydown'"))), 'phím: W/S phanh, ↑/↓ ga; bỏ Space, Q, Enter'); }
+}
+
 if (section('33a. Đoàn ghép Tohoku + mini và đường đơn: mẫu tàu sau ga tách, mũi tên ở ga ghép, tàu bị giữ đứng đúng ga, tách/ghép trong góc nhìn, phụ kiện sân ga')) {
   const A = Sim.lineOf('aki'), T0 = Sim.lineOf('toh'), rc = (t, n, d) => A.trains.find(r => r.t === t && r.n === n && r.d === d), k95 = rc('Komachi', '95', 'down'), k10 = rc('Komachi', '10', 'up'), k1 = rc('Komachi', '1', 'down');
   // mẫu tàu theo vị trí: chỉ còn E6 sau ga tách (bản ghi Komachi chiều xuống ghi "E6+E5" từ ga xuất phát), E5+E6 chỉ khi đang ghép
@@ -1798,8 +1832,8 @@ if (section('33p. Chế độ nhà phát triển: dịch chuyển tới điểm 
     ok(g0 === 0 && n0 > 3 && g1 > 3, 'nút N: tàu ma đứng yên trên dốc (' + g0.toFixed(2) + ' km/h), tàu thường lăn (' + n0.toFixed(1) + ' km/h), tàu ma đang chạy 30 km/h vẫn lăn tự do (' + g1.toFixed(1) + ' km/h)', [g0, n0, g1]); }
   // 3d) tàu ma không có hành khách: đứng yên 20 phút giữa đường mà mức bất an vẫn 0, không hoảng loạn, không phát thanh trấn an; tàu thường (đối chứng) bất an tăng
   { const run = opts => { const W0 = Sim.spawnAt('tsk', rg, tNoon, { km: 150.4, kmh: 0 }, Object.assign({ seed: 3 }, opts)), T0 = W0.player; for (let i = 0; i < 12000; i++) Sim.tick(W0, 0.1, {}, false); return { anx: T0.anx, panic: !!T0.panic, pa: W0.paCount || 0 }; };
-    const gh = run({ ghost: true }), nm = run({}); ok(gh.anx === 0 && !gh.panic && gh.pa === 0 && nm.anx > 20, 'tàu ma đứng yên 20 phút: bất an ' + gh.anx + ', không hoảng loạn, không phát thanh; tàu thường (đối chứng) bất an ' + Math.round(nm.anx), [gh, nm]);
-    const fu3 = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8'); ok(/W\.mission \|\| T\.noPax \? \[\]/.test(fu3) && /!W\.mission && !T\.noPax\) \{ txt\(_t\('Bất an hành khách'\)/.test(fu3), 'fullui.js: ẩn dòng "Tải khách" và thanh "Bất an hành khách" khi không có hành khách'); }
+    const gh = run({ ghost: true }), nm = run({}); ok(gh.anx === 0 && !gh.panic && gh.pa === 0 && nm.pa >= 1, 'tàu ma đứng yên 20 phút: bất an ' + gh.anx + ', không hoảng loạn, không phát thanh; tàu thường (đối chứng) được trưởng tàu phát thanh ' + nm.pa + ' lần', [gh, nm]);
+    const fu3 = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8'); ok(/W\.mission \|\| T\.noPax \? \[\]/.test(fu3) && !/Bất an hành khách/.test(fu3), 'fullui.js: ẩn dòng "Tải khách" khi không có hành khách; không còn thanh "Bất an hành khách"'); }
   // 4) chạy được: bấm tăng tốc, tàu ma chạy tới ga kế và vẫn tuân theo ATC của chính nó
   { const Wr = Sim.spawnAt('tsk', rg, tNoon, { km: kmG, kmh: 0 }, { seed: 3, ghost: true }), Tr = Wr.player; let k = 0, x0 = Tr.x; while (k++ < 3000) Sim.tick(Wr, 0.1, {}, true);
     ok(isFinite(Tr.x) && isFinite(Tr.v) && Tr.v >= 0 && Math.abs(Tr.x - x0) > 500, 'tàu ma chạy tự lái bình thường (đi được ' + Math.round(Math.abs(Tr.x - x0)) + ' m, không NaN)', [Tr.x, Tr.v]); }
@@ -1819,7 +1853,7 @@ if (section('33p. Chế độ nhà phát triển: dịch chuyển tới điểm 
     const Wb = Sim.spawnAt('tsk', rg, tNoon, { km: Sim.lineOf('tsk').stations[0].km + 2, kmh: 0 }, { seed: 3, ghost: true }), Tb = Wb.player; Sim.toggleReverse(Tb); Sim.setPower(Tb, 13); k = 0; while (k++ < 8000 && Tb.x > -440 + Tb.veh.len + 3) Sim.tick(Wb, 0.1, {}, false); Sim.setPower(Tb, 13); for (let i = 0; i < 400; i++) Sim.tick(Wb, 0.1, {}, false);
     ok(Tb.x >= -440 + Tb.veh.len + 1 - 1e-6 && isFinite(Tb.x), 'chạy lùi: không lùi xuyên chắn cuối đường (x = ' + Tb.x.toFixed(1) + ' ≥ ' + (-440 + Tb.veh.len + 1).toFixed(1) + ')', [Tb.x, Tb.veh.len]); }
   { const idx = require('fs').readFileSync(path.join(DRIVE, 'index.html'), 'utf8'), fu = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8');
-    ok(/rev\(\) \{ if \(devOK\(\)\) Sim\.toggleReverse\(T\); \}/.test(idx) && /doAct\(devOK\(\) \? 'rev' : 'pa'\)/.test(idx) && /devOK\(\) \? \['rev'/.test(fu) && /icon === 'rev'/.test(fu), 'chạy lùi: nút thay nút phát thanh chỉ ở chế độ nhà phát triển, phím M, biểu tượng'); }
+    ok(/rev\(\) \{ Sim\.toggleReverse\(T\); \}/.test(idx) && /doAct\('rev'\)/.test(idx) && !/devOK\(\) \? 'rev'/.test(idx) && /wideBtn\([^;]*_t\('Chạy lùi'\)/.test(fu), 'chạy lùi: nút dưới đồng hồ tốc độ ở mọi chế độ, phím M'); }
 }
 // (33r đặt TRƯỚC phần 33: phần 33 có test âm thanh dùng bộ đếm giờ thật (setTimeout), không được để một phần chạy đồng bộ lâu chạy sau nó, nếu không khi chạy tuần tự (CI) các bộ đếm giờ bị chặn rồi bắn dồn và đo sai)
 if (section('33r. Tàu đỗ ở Omagari đổi mặt và lùi ra (không xuyên chắn cuối), tàu ngược chiều bị giữ hiện ở đường tránh Ugo-Yotsuya, khối đường đơn quanh Kita-Omagari')) {

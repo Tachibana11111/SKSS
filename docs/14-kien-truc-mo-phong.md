@@ -191,6 +191,16 @@ Nguồn: `tazawako/010_01`, `ou_1/030_12` (配線略図.net), trang nghiên cứ
 - **Tàu ngược chiều ở xa**: buồng lái và bản đồ nhỏ chỉ vẽ tàu trong khoảng 4,5 km; thông báo chờ (`singleBusy`) nay nêu khoảng cách và tình trạng (đang bị giữ giữa đường). Phần được miễn khi chấm điểm (`T.excused`) gồm cả thời gian chờ nhường tàu ngược chiều (`T.sbSince`) và không vượt quá độ trễ thực.
 - Khối đường đơn quanh ga MỘT đường (`NatCat.blk`), tàu ngược chiều bị giữ hiện ở đường tránh (`refreshDwellers`, nhánh `hd`): xem §8h.
 
+## 8j. Điều khiển buồng lái mới (26/11/2026) [I: lựa chọn của game]
+Mockup: `docs/mockups/cab_panel.html`. Test: mục 39 (`tests/run.js`).
+- **Hai cần đổi chỗ:** cần phanh bên trái (phím W nâng / S hạ; EB trên cùng, N dưới cùng), cần ga bên phải (↓ tăng / ↑ giảm; N trên cùng, P13 dưới cùng). Bỏ nút và phím Phanh khẩn (Q), Về N (Space), Đóng cửa (Enter).
+- **Phanh mặc định EB:** `createWorld` khởi tạo `T.bk = 8` (trừ tàu chạy trước); khi tàu dừng đúng ga (`step`, nhánh tới ga) cần ga về N, phanh lên EB. Muốn đi phải hạ phanh về N. Test cũ dùng `Sim.createWorld` được bọc để nhả phanh (`Sim.createWorld0` là bản gốc có EB).
+- **Ga bị ngắt (`T.pwCut`):** `setBrake(n>0)` khi `T.pw>0` không còn đưa ga về 0 mà đặt `pwCut`; `handleCmd` trả 0 khi `pwCut`. `setPower` chỉ cho giảm nấc khi còn phanh hoặc `pwCut`; về N (`pw = 0`) mới xoá `pwCut`. Động đất / mất điện (`T.cut`) đưa người chơi về ga N, phanh EB.
+- **Trưởng tàu (`captainDoor`, gọi trong `tick` khi không tự lái):** ga đầu `capT ≥ 10 s` thì `requestClose`; ga sau dùng chính luật `autoDepart` của tự lái (đóng trước giờ đi một khoảng bằng melody); phát thanh trấn an khi `anx > 40` và tàu đứng yên. Đèn cửa chỉ còn là màu các toa trong bảng TIMS.
+- **ATC giảm dần (`step`):** `T.allowed` không rơi quá `1,6·aATC` m/s² so với bước trước, nhưng không bao giờ vượt `T.hard` (đường cong phanh liên tục tới ga, tàu phía trước, chặn ghép); động đất và đỗ ga tức thì. Khắc phục KS-ATC nhảy 100 → 60 km/h.
+- **Chấm điểm sau khi bỏ nút đóng cửa:** (1) *Khởi hành sớm* giữ nguyên (người lái vẫn tự chọn lúc hạ phanh, kéo ga; lời khuyên đổi thành "chờ đúng giờ"). (2) Cửa kẹt do trưởng tàu xử lý: thời gian mở lại được cộng vào `T.excused` (`doorDur + 4 s`), nên không bị tính là trễ do người lái. (3) *Bất an hành khách*: trưởng tàu tự phát thanh khi `anx > 40` nên chỉ còn phạt 10 điểm nếu hoảng loạn; bỏ lời khuyên "nhấn M". (4) Thành tích "Trấn an hành khách" giữ nguyên điều kiện (`paCount ≥ 1`) nhưng nay do trưởng tàu tự phát thanh. (5) Giờ đóng cửa không còn do người lái chọn, nên độ trễ ở ga đầu/ga sau tính như chế độ tự lái (đóng trước giờ đi một khoảng bằng melody).
+- **Giao diện (`fullui.js`):** 5 nút (gạt mưa, đèn, còi, nhắc lệnh, tự lái), TIMS 2 dòng × 9 toa, bốn đồng hồ nhỏ (dòng kéo, áp phanh, gia tốc, nhiệt phanh 0–600 °C quy đổi từ `T.bt`), nút Tốc độ đều / Chạy lùi dưới đồng hồ tốc độ. Cần gạt mưa (`cabview.js: wiperPose`): cần phụ 0,556 chiều cao kính xoay ±61° quanh giữa đáy, lưỡi thẳng đứng dài 0,633 chiều cao kính, hạt mưa mất theo vết quét của lưỡi.
+
 ## 9. Điểm cứu hộ trong hầm Seikan (竜飛定点, 吉岡定点) [N/I]
 
 - **Dữ liệu:** `LINE_META.toh.refugeInfo` (`sim.js`): km 732,9 và 755,9 (trùng `refuges`, dùng cho sự cố cháy trong hầm), toạ độ và độ sâu theo Wikipedia JA (Tappi 41,25722 N 140,34806 E, sâu 135 m; Yoshioka 41,44222 N 140,23917 E, sâu 149,5 m).

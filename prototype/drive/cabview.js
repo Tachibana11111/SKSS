@@ -3,6 +3,8 @@
 // Toạ độ mô hình: Z = khoảng cách phía trước (m, theo chiều chạy), X = ngang (m), Y = cao (m). Nhật chạy bên TRÁI: proj() lật X (MIR=-1) nên X dương hiện bên trái màn hình.
 // Đường thông qua của ta ở X=0, đường thông qua ngược chiều ở X=-4,3 (ADJ); bố trí từng ga (số đường, sân đảo/hai bên) lấy từ layout.js; đường cong và cao độ (nền/cầu cạn/cầu/hầm) từ dữ liệu tuyến.
 (function (root) {
+  // wiper: short arm L (0.556 of glass height) swings +-61 deg about the bottom centre; the vertical blade (0.633 of glass height) is centred on the arm end; mockup docs/mockups/cab_panel.html
+  function wiperPose(pw, ph, now) { const th = 61 * Math.PI / 180 * Math.sin(now / 333), L = ph * 0.556; return { ex: pw / 2 + L * Math.sin(th), ey: ph - L * Math.cos(th), B: ph * 0.633 }; }
   const CAMH = 2.9, GAUGE = 1.435, MIR = -1, ADJ = -4.3, ADJ0 = -4.3, PEDGE = 1.75, PH = 1.25, ZN = 3.5, ZF = 2600, STEP = 10;
   const clamp = (a, lo, hi) => Math.max(lo, Math.min(hi, a));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -764,13 +766,15 @@
       if (rain && !noW) { const cap = 170, rate = 26 * dt; let n = Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0); while (n-- > 0 && G.d.length < cap) G.d.push({ u: Math.random(), v: Math.random() * 0.95, r: 1.4 + Math.random() * Math.random() * 3.6 }); }
       else if (!rain && !noW && dt > 0) { const k = dt * 0.06; G.d = G.d.filter(() => Math.random() > k); }
       for (const q of G.d) if (q.r > 2.8) q.v += dt * 0.012 * (q.r - 2.8);
-      if (T.wiper) { const a = Math.sin(now / 280) * 0.95 - 0.1, ok = G.ap !== null && Math.abs(a - G.ap) < 1, lo = (ok ? Math.min(a, G.ap) : a) - 0.03, hi = (ok ? Math.max(a, G.ap) : a) + 0.03, L = ph * 0.85 + 4; G.ap = a;
-        if (G.d.length) G.d = G.d.filter(q => { const x = q.u * pw, y = q.v * ph; for (const pvx of [pw * 0.3, pw * 0.62]) { const dx = x - pvx, dy = ph - y; if (Math.hypot(dx, dy) <= L) { const p = Math.atan2(dx, dy); if (p >= lo && p <= hi) return false; } } return q.v < 1.02; }); }
+      if (T.wiper) { const wp = wiperPose(pw, ph, now), pe = G.ap, ok = pe !== null && Math.abs(wp.ex - pe.ex) < pw * 0.4, x0 = (ok ? Math.min(wp.ex, pe.ex) : wp.ex) - 3, x1 = (ok ? Math.max(wp.ex, pe.ex) : wp.ex) + 3, y0 = (ok ? Math.min(wp.ey, pe.ey) : wp.ey) - wp.B / 2, y1 = (ok ? Math.max(wp.ey, pe.ey) : wp.ey) + wp.B / 2; G.ap = wp;
+        if (G.d.length) G.d = G.d.filter(q => { const x = q.u * pw, y = q.v * ph; if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return false; return q.v < 1.02; }); }
       else { G.ap = null; if (G.d.length && G.d.some(q => q.v >= 1.02)) G.d = G.d.filter(q => q.v < 1.02); }
       if (G.d.length) { const sc = clamp(pw / 1100, 0.45, 1.3); ctx.fillStyle = 'rgba(165,190,225,' + (0.13 * Math.min(1, G.d.length / 120)).toFixed(3) + ')'; ctx.fillRect(px, py, pw, ph);
         ctx.fillStyle = 'rgba(205,222,248,.32)'; ctx.beginPath(); for (const q of G.d) { const x = px + q.u * pw, y = py + q.v * ph, r = q.r * sc + 0.6; ctx.moveTo(x + r, y); ctx.ellipse(x, y, r, r * 1.15, 0, 0, 7); } ctx.fill();
         ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); for (const q of G.d) { const r = q.r * sc + 0.6, hr = Math.max(0.6, r * 0.3), x = px + q.u * pw - r * 0.35, y = py + q.v * ph - r * 0.4; ctx.moveTo(x + hr, y); ctx.arc(x, y, hr, 0, 7); } ctx.fill(); } }
-    if (T.wiper) { for (const [pvx, ph0] of [[px + pw * 0.3, py + ph], [px + pw * 0.62, py + ph]]) { const a = Math.sin(now / 280) * 0.95 - 0.1; ctx.strokeStyle = 'rgba(15,18,24,.92)'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(pvx, ph0); ctx.lineTo(pvx + Math.sin(a) * ph * 0.85, ph0 - Math.cos(a) * ph * 0.85); ctx.stroke(); } }
+    if (T.wiper) { const wp = wiperPose(pw, ph, now); ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip(); ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(15,18,24,.92)';
+      ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px + pw / 2, py + ph); ctx.lineTo(px + wp.ex, py + wp.ey); ctx.stroke();      // short arm pivoting at the bottom centre
+      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(px + wp.ex, py + wp.ey - wp.B / 2); ctx.lineTo(px + wp.ex, py + wp.ey + wp.B / 2); ctx.stroke(); ctx.restore(); }      // vertical blade attached at the arm end
     // khung buồng lái (viền hai bên và phía trên; bảng điều khiển thật nằm ngay bên dưới nên không còn dải đen mờ ở đáy)
     ctx.fillStyle = '#05070a'; ctx.fillRect(px, py, 5, ph); ctx.fillRect(px + pw - 5, py, 5, ph); ctx.fillRect(px, py, pw, 3);
     { const swAt = W.cabSwitchAt, u = swAt !== undefined ? 1 - (W.t - swAt) / 1.8 : 0; if (u > 0 && u <= 1) { ctx.fillStyle = 'rgba(0,0,0,' + Math.min(1, u * 1.3) + ')'; ctx.fillRect(px, py, pw, ph); } }       // chuyển buồng lái sau khi ghép: màn đen mờ dần
