@@ -1,5 +1,5 @@
 {
- "note": "Nghiên cứu 22/11/2026: tên Nhật/hiragana/romaji kiểm chéo ja.wikipedia (ふりがな, ローマ字), Wikidata (nhãn en, toạ độ P625), OpenStreetMap (data-osm/tohoku-latest.osm.pbf). Romaji hiển thị là dạng ASCII không dấu vạch (macron), theo quy ước game. KHÔNG có Kita-Akayu (信号場, đã loại theo yêu cầu). km (営業キロ từ Fukushima) lấy từ sơ đồ tuyến trong ja.wikipedia 山形線 (khớp km game của 10 ga đang có: gameKm = 255,1 + km); chưa đưa vào data-lines.js (chỉ đã sửa toạ độ Fukushima, Takahata ở tools/build_struct.py). Kita-Akayu (信号場, ~giữa Akayu và Nakagawa) đã loại; Akaiwa (赤岩, đóng 2021) không thuộc danh sách.",
+ "note": "Nghiên cứu 22/11/2026: tên Nhật/hiragana/romaji kiểm chéo ja.wikipedia (ふりがな, ローマ字), Wikidata (nhãn en, toạ độ P625), OpenStreetMap (data-osm/tohoku-latest.osm.pbf). Romaji hiển thị là dạng ASCII không dấu vạch (macron), theo quy ước game. Kita-Akayu (信号場) KHÔNG nằm trong danh sách 35 ga mà ở khoá riêng signalStations (thêm 28/11/2026). km (営業キロ từ Fukushima) lấy từ sơ đồ tuyến trong ja.wikipedia 山形線 (khớp km game của 10 ga đang có: gameKm = 255,1 + km); chưa đưa vào data-lines.js (chỉ đã sửa toạ độ Fukushima, Takahata ở tools/build_struct.py). Kita-Akayu (信号場, ~giữa Akayu và Nakagawa) đã loại; Akaiwa (赤岩, đóng 2021) không thuộc danh sách.",
  "stations": [
   {
    "order": 1,
@@ -596,6 +596,26 @@
    "kmFromFukushima": 148.6,
    "gameKm": 403.7,
    "tsubasaStop": true
+  }
+ ],
+ "signalStations": [
+  {
+   "jp": "北赤湯信号場",
+   "hira": "きたあかゆしんごうじょう",
+   "en": "Kita-Akayu Jct.",
+   "lat": 38.07806,
+   "lon": 140.18639,
+   "kmFromFukushima": 61.6,
+   "gameKm": 316.7,
+   "between": [
+    "赤湯",
+    "中川"
+   ],
+   "kmFromAkayu": 5.5,
+   "kmToNakagawa": 2.8,
+   "track": "赤湯側が複線、中川側が単線",
+   "opened": "1963-09-27",
+   "source": "https://ja.wikipedia.org/wiki/%E5%8C%97%E8%B5%A4%E6%B9%AF%E4%BF%A1%E5%8F%B7%E5%A0%B4 (rev 104471386, 2025-04-12; 出典要の注記あり)"
   }
  ]
 }

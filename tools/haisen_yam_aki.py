@@ -55,7 +55,9 @@ def place(files, base):
         votes = {}
         for ya in ra:
             for yb in rb: d = round((ya - yb), 1); votes[d] = votes.get(d, 0) + 1
-        if votes:
+        if len(ra) == len(rb) >= 2 and max(ya - yb for ya, yb in zip(ra, rb)) - min(ya - yb for ya, yb in zip(ra, rb)) < 3:
+            dy = sum(ya - yb for ya, yb in zip(ra, rb)) / len(ra)      # cùng số ray ở hai bên chỗ nối: ghép theo thứ tự (Ashisawa - Funagata bị lệch đường đôi vì bỏ phiếu lệch)
+        elif votes:
             top = max(votes.values()); c = sorted(k for k in votes if votes[k] == top)
             dy = sum(c) / len(c) if max(c) - min(c) < 15 else c[0]      # hai bên có số/khoảng cách ray khác nhau (Yamagata 04→05): lấy trung bình để lệch chia đều
         else: dy = 0.0

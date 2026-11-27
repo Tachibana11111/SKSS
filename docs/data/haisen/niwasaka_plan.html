@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Niwasaka: bố cục dự kiến</title>
+<style>
+body{font:14px/1.5 system-ui,sans-serif;margin:16px;color:#111;background:#fff;max-width:1180px}
+h1{font-size:20px}h2{font-size:16px;margin-top:24px}.note{color:#555;font-size:13px}
+svg{display:block;width:100%;height:auto;border:1px solid #ccd;background:#fff}
+.bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:8px 0;padding:6px 10px;background:#f3f5f8;border:1px solid #dde}
+table{border-collapse:collapse;font-size:13px}td,th{border:1px solid #ccc;padding:4px 8px}th{background:#eee}
+code{background:#f0f0f0;padding:0 4px}
+</style></head><body>
+<h1>Niwasaka (庭坂): bố cục dự kiến, đường xuống uốn lượn suốt vùng ghi</h1>
+<p class="note">Vẽ riêng ga Niwasaka theo số đo của thẻ ga (<code>yam_cards.html</code>, 1 đơn vị sơ đồ = 8,15 m [I]). Trục ngang tính bằng <b>mét</b>, gốc 0 = đầu tây sân ga (về Fukushima), trái = phía Fukushima. Trục dọc <b>kéo giãn 4 lần</b>; khoảng cách đường 4,3 m, sân ga đảo rộng ~6 m [I]. Hướng XUỐNG (Fukushima → Shinjo) chạy từ trái sang phải. Vị trí ghi lấy từ sơ đồ [D]; hình dạng đường cong và hệ số kéo dài là [I].</p>
+<div class="bar"><label>Kéo dài vùng ghi <input id="f" type="range" min="1" max="2.2" step="0.05" value="1.4"> <b id="fv">×1,4</b></label><span class="note" id="info"></span></div>
+<div id="host"></div>
+<h2>Cách đọc</h2>
+<ul class="note">
+<li><b>Đường xuống (xanh đậm, phía trên):</b> không còn uốn gấp ở một chỗ; nó <b>trượt dần sang phía bắc suốt cả vùng ghi</b> bằng một đường cong liên tục (đường cong chữ S kéo dài từ trước ghi ngoài đến sát đầu sân ga), rồi chạy thẳng dọc sân ga bắc, sau ga trượt ngược lại cũng bằng một đường cong dài.</li>
+<li><b>Đường vòng giữa (xanh nhạt):</b> đường tránh tàu; <b>ghi ngoài</b> nối đường lên vào đầu đường vòng, <b>ghi trong</b> tách ra từ chính đường xuống đang uốn (điểm tách nằm trên đường cong, nên đường vòng ra khỏi đường xuống đang nghiêng nhẹ).</li>
+<li><b>Đường lên (xanh đậm, phía dưới):</b> thẳng suốt, kề sân ga đảo.</li>
+<li><b>4 ghi (đỏ)</b> đo từ đầu/cuối sân ga; thanh trượt kéo dãn cả khoảng cách ghi lẫn đường cong theo cùng hệ số (×1 = số đo sơ đồ).</li>
+</ul>
+<script>
+(function(){
+var KY=4, PW=441, Y={d:0,l:4.3,u:15}, host=document.getElementById('host'), sl=document.getElementById('f');
+function sm(t){t=Math.max(0,Math.min(1,t));return t*t*t*(t*(6*t-15)+10)}                // smootherstep: đạo hàm 0 ở hai đầu, đường cong liên tục
+function draw(){
+  var f=+sl.value; document.getElementById('fv').textContent='×'+String(f).replace('.',',');
+  var o=[], B='#0b5cad', B2='#3b7dc4', R='#d12f2f';
+  var L=function(x1,y1,x2,y2,c,w){o.push('<line x1="'+x1+'" y1="'+y1*KY+'" x2="'+x2+'" y2="'+y2*KY+'" stroke="'+c+'" stroke-width="'+(w||2.4)+'" stroke-linecap="round"/>')};
+  var T=function(x,y,s,sz,c,a){o.push('<text x="'+x+'" y="'+y+'" font-size="'+(sz||11)+'" fill="'+(c||'#333')+'" text-anchor="'+(a||'middle')+'">'+s+'</text>')};
+  var P=function(x,y0,y1,t){o.push('<rect x="'+x+'" y="'+y0*KY+'" width="'+PW+'" height="'+(y1-y0)*KY+'" fill="#e8eef6" stroke="#44607f" stroke-width="1.4"/>');T(x+PW/2,(y0+y1)/2*KY+4,t,12,'#44607f')};
+  // vị trí (m) cách đầu/cuối sân ga: ghi trong, ghi ngoài (theo sơ đồ), nhân hệ số kéo dài; đường cong trải từ ghi ngoài + 100 m tới sát sân ga
+  var W={in_:59*f, out:121*f, c0:(121+110)*f, c1:14*f}, E={in_:60*f, out:119*f, c0:(119+110)*f, c1:14*f};
+  var xw0=-W.c0, xw1=-W.c1, xe0=PW+E.c1, xe1=PW+E.c0;                                    // đoạn cong phía tây và phía đông
+  var yd=function(x){ if(x<=xw0) return Y.l; if(x<xw1) return Y.l+(Y.d-Y.l)*sm((x-xw0)/(xw1-xw0)); if(x<=xe0) return Y.d; if(x<xe1) return Y.d+(Y.l-Y.d)*sm((x-xe0)/(xe1-xe0)); return Y.l; };
+  var X0=-W.c0-170, X1=PW+E.c0+170;
+  P(0,-7.6,-2.4,'sân ga bắc (441 m)'); P(0,6.6,12.7,'sân ga đảo (441 m)');
+  // đường xuống: một đường liền (lấy mẫu mịn)
+  var pts=[]; for(var x=X0;x<=X1;x+=4) pts.push(x.toFixed(1)+','+(yd(x)*KY).toFixed(2));
+  o.push('<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+B+'" stroke-width="2.6" stroke-linejoin="round"/>');
+  L(X0,Y.u,X1,Y.u,B,2.6);                                                                  // đường lên thẳng suốt
+  // ghi phía tây: ghi trong tách từ đường xuống (đang uốn) về đường vòng; ghi ngoài từ đường lên về đường vòng
+  var sws=[];
+  var xi=-W.in_, xo=-W.out, hi=18.5, ho=40;
+  var wi={a:[xi-hi,yd(xi-hi)],b:[xi+hi,Y.l]}, wo={a:[xo-ho,Y.u],b:[xo+ho,Y.l]};
+  var xi2=PW+E.in_, xo2=PW+E.out;
+  var ei={a:[xi2-hi,Y.l],b:[xi2+hi,yd(xi2+hi)]}, eo={a:[xo2-ho,Y.l],b:[xo2+ho,Y.u]};
+  [[wi,xi,W.in_],[wo,xo,W.out],[ei,xi2,E.in_],[eo,xo2,E.out]].forEach(function(s){L(s[0].a[0],s[0].a[1],s[0].b[0],s[0].b[1],R,3.2);sws.push(s)});
+  L(wo.b[0],Y.l,eo.a[0],Y.l,B2,2.4);                                                       // đường vòng giữa
+  sws.forEach(function(s){o.push('<line x1="'+s[1]+'" y1="'+(-12*KY)+'" x2="'+s[1]+'" y2="'+(19*KY)+'" stroke="'+R+'" stroke-dasharray="3 3"/>');T(s[1],-13*KY,Math.round(s[2])+' m',11,R)});
+  [[(xw0+xw1)/2,'đường cong (tây)'],[(xe0+xe1)/2,'đường cong (đông)']].forEach(function(c){T(c[0],-9.5*KY,c[1],11,B)});
+  T(X0+8,Y.l*KY-8,'đường xuống ◄ Fukushima',11,B,'start'); T(X0+8,Y.u*KY-8,'đường lên',11,B,'start'); T(X1-8,Y.l*KY-8,'Shinjo ►',11,B,'end');
+  T(PW/2,17.8*KY,'0 m = đầu tây sân ga; 441 m = cuối sân ga',10,'#666');
+  var vb=[X0-10,-16*KY,X1-X0+20,(19.5+16)*KY];
+  host.innerHTML='<svg viewBox="'+vb.join(' ')+'" xmlns="http://www.w3.org/2000/svg"><rect x="'+vb[0]+'" y="'+vb[1]+'" width="'+vb[2]+'" height="'+vb[3]+'" fill="#fff"/>'+o.join('')+'</svg>';
+  document.getElementById('info').textContent='Chiều dài toàn vùng ga ≈ '+Math.round(X1-X0-340)+' m (đoạn từ đầu cong tây tới cuối cong đông), hệ số cong ≈ 1:'+Math.round((W.c0-W.c1)/4.3)+' trung bình';
+}
+sl.oninput=draw; draw();
+})();
+</script>
+<h2>So với thẻ ga (6 ghi)</h2>
+<table><tr><th>Phía</th><th>Đoạn chéo trong sơ đồ</th><th>Vai trò thật</th></tr>
+<tr><td rowspan="3">Tây</td><td>ngoài cùng (~181 m trước đầu sân ga)</td><td>đầu đường cong của đường xuống (không phải ghi); nay đường cong kéo dài tới sát sân ga</td></tr>
+<tr><td>giữa (~121 m)</td><td><b>ghi ngoài</b>: đường lên → đường vòng giữa</td></tr>
+<tr><td>trong (~59 m)</td><td><b>ghi trong</b>: đường xuống (đang uốn) → đường vòng giữa</td></tr>
+<tr><td rowspan="3">Đông</td><td>trong (~60 m sau cuối sân ga)</td><td><b>ghi trong</b></td></tr>
+<tr><td>giữa (~119 m)</td><td><b>ghi ngoài</b></td></tr>
+<tr><td>ngoài cùng (~179 m)</td><td>cuối đường cong (không phải ghi)</td></tr></table>
+</body></html>
