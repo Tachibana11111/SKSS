@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Giá đỡ vùng ghi vào ga</title>
+<style>
+:root{--bg:#0b0f14;--fg:#dbe6f2;--mut:#8aa0b5;--ln:#243447}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:14px 0 4px}p.n{color:var(--mut);margin:2px 0 8px}a{color:#6fb0ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0;padding:8px 10px;background:#121a23;border:1px solid var(--ln);border-radius:8px}
+.bar label{color:var(--mut)} select{background:#1b2735;color:var(--fg);border:1px solid #3b516a;border-radius:6px;padding:4px 10px;font:inherit}
+canvas{display:block;width:100%;max-width:1040px;height:auto;border:1px solid var(--ln);border-radius:6px}
+.cap{color:var(--mut);margin:2px 0 10px}.cap b{color:var(--fg)}
+table{border-collapse:collapse;margin:6px 0}td,th{border:1px solid var(--ln);padding:3px 10px;text-align:left}th{color:var(--mut);font-weight:500}
+ul{margin:4px 0;padding-left:20px}
+</style></head><body><main>
+<h1>Trang 3 · Giá đỡ ở vùng ghi trước và sau ga</h1>
+<p class="n"><a href="catenary_supports.html">Trang 1</a> · <a href="catenary_supports_all.html">Trang 2</a>. Đoạn vào/ra ga là nơi các đường tách dần qua ghi (ray chằng chịt), nên số làn và khoảng cách làn đổi liên tục theo chiều dài. Trang này cho thấy giá đỡ chọn thế nào theo từng điểm. Hình trên là nhìn từ trên xuống (bị kéo giãn theo bề ngang cho dễ thấy), hình dưới là mặt cắt tại vị trí trên thanh trượt. Ranh giới tách và khoảng cách làn là giả định [I].</p>
+<div class="bar">
+  <label>Ga <select id="sc">
+    <option value="4">2 → 4 làn (đường thông qua + hai đường dừng ngoài) · PdDUuP</option>
+    <option value="2">2 → 2 làn tách ra hai bên sân ga đảo · dPu</option>
+    <option value="6">2 → 6 làn (hai sân ga đảo) · dPddPuuPu</option>
+  </select></label>
+  <label>Vị trí <input id="z" type="range" min="0" max="300" step="5" value="150" style="width:300px"> <b id="zv">150</b> m tính từ chỗ bắt đầu tách (ga ở 300 m)</label>
+</div>
+<h2>Nhìn từ trên xuống (mỗi 50 m một giá)</h2>
+<canvas id="cp" width="1040" height="300"></canvas>
+<h2>Mặt cắt tại vị trí đang chọn</h2>
+<canvas id="cx" width="1040" height="270"></canvas><div class="cap" id="t"></div>
+<h2>Bảng kiểu giá theo đoạn</h2><div id="tab"></div>
+<h2>Quy tắc đề xuất cho vùng ghi</h2>
+<ul>
+<li>Các làn còn <b>chồng lên nhau</b> hoặc cách nhau dưới 2 m (chưa tách hẳn khỏi ghi) được coi là <b>một làn</b>.</li>
+<li><b>Một hoặc hai làn riêng biệt</b>: dùng giá ngoài ga (mỗi làn một cột bên và tay đòn riêng, cột ở mặt ngoài).</li>
+<li><b>Ba làn riêng biệt trở lên</b>: dùng xà dàn đan lưới giữa hai cột ngoài (cách làn ngoài cùng 3,9 m); không có cột giữa. Chuyển từ tay đòn sang xà dàn ngay tại giá đầu tiên có làn thứ ba tách ra.</li>
+<li><b>Treo</b>: hai làn kề nhau cách từ 4 m trở lên dùng một trụ đôi ở giữa; cách nhau dưới 4 m (còn đang tách) thì mỗi làn một dây treo riêng từ xà. Làn lẻ dùng bộ treo đôi một bên.</li>
+<li>Cột không cắm vào sân ga: vùng ghi nằm trước sân ga nên cột cách làn ngoài cùng 3,9 m; khi vào sân ga thì theo quy tắc trang 1 (cột ngoài mép sân ga).</li>
+<li>Chuyển kiểu giá chỉ xảy ra ở các vị trí giá (mỗi 50 m), không chuyển giữa chừng.</li>
+</ul>
+</main>
+<script>
+const TW = 1.7, CW = 0.45, YB = 6.8, YT = 7.8, LEN = 300, SPAN = 50;
+const C = { steel: '#8d9aab', dark: '#5c6878', ins: '#39b79a', wire: '#d8e2ee', cw: '#ffb454', arm: '#aab6c6' };
+const SC = {
+  4: { fin: [-6.45, -2.15, 2.15, 6.45], st: [-2.15, -2.15, 2.15, 2.15] },
+  2: { fin: [-5.35, 5.35], st: [-2.15, 2.15] },
+  6: null
+};
+(function () { const g = 4.3, i = 10.7, xs = [0, i, i + g, 2 * i + g, 2 * i + 2 * g, 3 * i + 2 * g], c = xs[5] / 2; SC[6] = { fin: xs.map(x => x - c), st: [-2.15, -2.15, -2.15, 2.15, 2.15, 2.15] }; })();
+const sm = t => t * t * (3 - 2 * t);
+const lanesAt = (sc, z) => sc.fin.map((f, i) => sc.st[i] + (f - sc.st[i]) * sm(Math.min(1, Math.max(0, z / LEN))));
+// quy tắc chọn giá tại z: trả { kind, cols, arms, a, b, posts, singles, m }
+function pick(sc, z) {
+  const xs = lanesAt(sc, z).slice().sort((p, q) => p - q), grp = [];
+  for (const x of xs) { const g = grp[grp.length - 1]; if (g && x - g.x1 < 2.0) { g.x1 = x; g.n++; g.x = (g.x0 + x) / 2; } else grp.push({ x0: x, x1: x, x, n: 1 }); }
+  const gx = grp.map(g => g.x), m = gx.length;
+  if (m <= 2) { const arms = gx.map((x, i) => { const left = m === 1 ? true : i === 0; return [left ? x - 3.9 : x + 3.9, x]; }); return { kind: 'cant', m, cols: arms.map(a => a[0]), arms, lanes: gx }; }
+  const a = gx[0] - 3.9, b = gx[m - 1] + 3.9, posts = [], singles = []; let i = 0;
+  while (i < m) { if (i + 1 < m && gx[i + 1] - gx[i] >= 4.0) { posts.push({ xm: (gx[i] + gx[i + 1]) / 2, xa: gx[i], xb: gx[i + 1] }); i += 2; }
+    else if (i + 1 < m) { singles.push(gx[i]); i++; }
+    else { const l = gx[i], dir = l - gx[i - 1] > 0 ? 1 : -1; posts.push({ xm: l + dir * 2.15, xa: dir > 0 ? l : l + dir * 4.3, xb: dir > 0 ? l + 4.3 : l, real: [l] }); i++; } }
+  return { kind: 'truss', m, cols: [a, b], a, b, posts, singles, lanes: gx };
+}
+function sig(p) { return p.kind === 'cant' ? 'Giá ngoài ga · ' + p.m + ' làn riêng' : 'Xà dàn · ' + p.m + ' làn · ' + p.posts.length + ' trụ đôi' + (p.singles.length ? ' + ' + p.singles.length + ' dây treo lẻ' : ''); }
+function drawX(cv, sc, z) {
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, p = pick(sc, z), lanes = lanesAt(sc, z);
+  const lo = Math.min(...p.cols, ...lanes) - 3, hi = Math.max(...p.cols, ...lanes) + 3, cxm = (lo + hi) / 2, s = Math.min((W - 30) / (hi - lo), (H - 40) / 9.6), X = m => W / 2 + (m - cxm) * s, gy = H - 18, Y = m => gy - m * s;
+  ctx.clearRect(0, 0, W, H); const sky = ctx.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, '#16263a'); sky.addColorStop(1, '#2a3f58'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, gy); ctx.fillStyle = '#3a3f46'; ctx.fillRect(0, gy, W, H - gy);
+  for (const x of lanes) { ctx.fillStyle = '#6a6358'; ctx.fillRect(X(x - 1.2), Y(0.12), 2.4 * s, 0.12 * s); ctx.fillStyle = '#9aa3ad'; for (const r of [-0.7175, 0.7175]) ctx.fillRect(X(x + r) - 1, Y(0.18), 2.4, 0.18 * s); }
+  for (const x of lanes) { ctx.fillStyle = 'rgba(180,215,255,.13)'; ctx.strokeStyle = 'rgba(180,215,255,.35)'; ctx.beginPath(); const l = X(x - TW), r = X(x + TW), t = Y(3.65), b = Y(0.35); ctx.moveTo(l, b); ctx.lineTo(l, Y(2.6)); ctx.quadraticCurveTo(l + 4, t, X(x), t); ctx.quadraticCurveTo(r - 4, t, r, Y(2.6)); ctx.lineTo(r, b); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  const col = (x, h) => { ctx.fillStyle = '#c9d2dd'; ctx.strokeStyle = '#6b7788'; ctx.lineWidth = 1.5; ctx.fillRect(X(x - CW / 2), Y(h), CW * s, h * s); ctx.strokeRect(X(x - CW / 2), Y(h), CW * s, h * s); };
+  const cat = x => { ctx.fillStyle = C.ins; ctx.fillRect(X(x) - 2, Y(YB), 4, 0.5 * s); ctx.strokeStyle = C.wire; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(x), Y(YB) + 0.5 * s); ctx.lineTo(X(x), Y(5.0)); ctx.stroke(); ctx.fillStyle = C.cw; ctx.beginPath(); ctx.arc(X(x), Y(5.0), 2.4, 0, 7); ctx.fill(); };
+  const truss = (xa, xb) => { ctx.fillStyle = 'rgba(141,154,171,.18)'; ctx.fillRect(X(xa), Y(YT), (xb - xa) * s, (YT - YB) * s); ctx.strokeStyle = C.steel; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(xa), Y(YT)); ctx.lineTo(X(xb), Y(YT)); ctx.moveTo(X(xa), Y(YB)); ctx.lineTo(X(xb), Y(YB)); ctx.stroke(); ctx.lineWidth = 1; ctx.beginPath(); const k = Math.max(2, Math.round((xb - xa) / 0.9)), w = (xb - xa) / k; for (let i = 0; i < k; i++) { const a = xa + i * w, b = a + w; if (i % 2 === 0) { ctx.moveTo(X(a), Y(YB)); ctx.lineTo(X(b), Y(YT)); } else { ctx.moveTo(X(a), Y(YT)); ctx.lineTo(X(b), Y(YB)); } } ctx.stroke(); };
+  const hang = (q) => { const xm = q.xm, e = Math.abs(q.xb - q.xa) / 2 - 0.35, yBar = 5.95, yP = 5.0, real = x => !q.real || q.real.includes(x), yBx = YT - 1;
+    ctx.fillStyle = '#8b94a1'; ctx.fillRect(X(xm - 0.6), Y(YT), 1.2 * s, s); ctx.fillRect(X(xm - 0.1), Y(yBx), 0.2 * s, (yBx - yP) * s);
+    const yU = YT - 1.15, ux = xm - 0.9; ctx.strokeStyle = C.arm; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(X(xm - 0.1), Y(yU)); ctx.lineTo(X(ux), Y(yU)); ctx.stroke(); ctx.fillStyle = C.ins; for (let i = 0; i < 4; i++) ctx.fillRect(X(xm - 0.2 - i * 0.16) - 2, Y(yU + 0.17), 4, 0.34 * s);
+    ctx.strokeStyle = C.arm; ctx.lineWidth = 2; ctx.beginPath(); for (const [x, sd] of [[Math.min(q.xa, q.xb), -1], [Math.max(q.xa, q.xb), 1]]) if (real(x)) { ctx.moveTo(X(xm), Y(yBar)); ctx.lineTo(X(xm + sd * e), Y(yBar)); ctx.moveTo(X(xm), Y(yP)); ctx.lineTo(X(xm + sd * e), Y(yBar)); } ctx.stroke();
+    for (const x of [q.xa, q.xb]) { if (!real(x)) continue; const sd = x < xm ? -1 : 1; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(X(xm + sd * e), Y(yBar)); ctx.quadraticCurveTo(X(x), Y(yBar + 0.1), X(x), Y(yP)); ctx.stroke(); ctx.fillStyle = C.cw; ctx.beginPath(); ctx.arc(X(x), Y(yP), 2.6, 0, 7); ctx.fill(); } };
+  const cant = (colx, lx) => { const sd = lx > colx ? 1 : -1, L = Math.abs(lx - colx), yA = 5.95, yU = 7.3, yF = 5.1, px = u => X(colx + sd * u), tw = 0.2 * s;
+    ctx.strokeStyle = C.arm; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(px(0.15), Y(yU)); ctx.lineTo(px(Math.min(1.6, L * 0.4)), Y(yU)); ctx.stroke(); ctx.fillStyle = C.ins; for (let i = 0; i < 4; i++) ctx.fillRect(px(Math.min(1.6, L * 0.4)) - 5, Y(yU - 0.12 - i * 0.16), 10, 0.1 * s);
+    ctx.fillStyle = C.arm; ctx.beginPath(); ctx.moveTo(px(0.15), Y(yA) - 1); ctx.lineTo(px(L - 0.1), Y(yA) - tw / 2); ctx.quadraticCurveTo(px(L + 0.08), Y(yA), px(L - 0.1), Y(yA) + tw / 2); ctx.lineTo(px(0.15), Y(yA) + 1); ctx.fill();
+    ctx.strokeStyle = C.arm; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px(0.15), Y(yF)); ctx.lineTo(px(L * 0.78), Y(yA)); ctx.stroke(); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(px(L - 0.1), Y(yA) + tw / 2); ctx.quadraticCurveTo(px(L + 0.12), Y(yA - 0.2), px(L), Y(5.0)); ctx.stroke(); ctx.fillStyle = C.cw; ctx.beginPath(); ctx.arc(px(L), Y(5.0), 2.6, 0, 7); ctx.fill(); };
+  if (p.kind === 'cant') { for (const [c, l] of p.arms) { col(c, 7.6); cant(c, l); } }
+  else { col(p.a, YT + 0.4); col(p.b, YT + 0.4); truss(p.a, p.b); for (const q of p.posts) hang(q); for (const x of p.singles) cat(x); }
+  return p;
+}
+function drawP(cv, sc, zsel) {
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, padL = 30, padR = 20, kx = (W - padL - padR) / (LEN + 20);
+  const all = []; for (let z = 0; z <= LEN; z += 5) all.push(...lanesAt(sc, z), ...pick(sc, z).cols);
+  const lo = Math.min(...all) - 2, hi = Math.max(...all) + 2, cy = (lo + hi) / 2, ky = Math.min((H - 30) / (hi - lo), 14), Xz = z => padL + z * kx, Yx = x => H / 2 + (x - cy) * ky;
+  ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#16263a'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(123,128,136,.5)'; ctx.fillRect(Xz(LEN), 0, W - Xz(LEN), H); ctx.fillStyle = '#9db3c9'; ctx.font = '12px system-ui'; ctx.fillText('sân ga →', Xz(LEN) + 6, 16); ctx.fillText('0 m', padL, H - 6); ctx.fillText('ga ở 300 m', Xz(LEN) - 70, H - 6);
+  for (let i = 0; i < sc.fin.length; i++) { ctx.strokeStyle = '#c0cad6'; ctx.lineWidth = 2; ctx.beginPath(); for (let z = 0; z <= LEN; z += 5) { const x = lanesAt(sc, z)[i]; z ? ctx.lineTo(Xz(z), Yx(x)) : ctx.moveTo(Xz(z), Yx(x)); } ctx.stroke(); }
+  for (let z = 0; z <= LEN; z += SPAN) { const p = pick(sc, z); ctx.strokeStyle = C.steel; ctx.fillStyle = '#e8eef5';
+    if (p.kind === 'cant') { ctx.lineWidth = 2; for (const [c, l] of p.arms) { ctx.beginPath(); ctx.moveTo(Xz(z), Yx(c)); ctx.lineTo(Xz(z), Yx(l)); ctx.stroke(); ctx.fillRect(Xz(z) - 3, Yx(c) - 3, 6, 6); } }
+    else { ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(Xz(z), Yx(p.a)); ctx.lineTo(Xz(z), Yx(p.b)); ctx.stroke(); ctx.fillRect(Xz(z) - 3, Yx(p.a) - 3, 6, 6); ctx.fillRect(Xz(z) - 3, Yx(p.b) - 3, 6, 6); ctx.fillStyle = '#39b79a'; for (const q of p.posts) { ctx.beginPath(); ctx.arc(Xz(z), Yx(q.xm), 4, 0, 7); ctx.fill(); } ctx.fillStyle = C.cw; for (const x of p.singles) { ctx.beginPath(); ctx.arc(Xz(z), Yx(x), 3, 0, 7); ctx.fill(); } }
+    ctx.fillStyle = '#9db3c9'; ctx.fillText(z, Xz(z) - 8, 14); }
+  ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(Xz(zsel), 0); ctx.lineTo(Xz(zsel), H); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#9db3c9'; ctx.fillText('ô vuông: cột · vạch: xà hoặc tay đòn · chấm xanh: trụ đôi · chấm cam: dây treo lẻ', padL, H - 20);
+}
+function render() {
+  const sc = SC[document.getElementById('sc').value], z = +document.getElementById('z').value; document.getElementById('zv').textContent = z;
+  drawP(document.getElementById('cp'), sc, z); const p = drawX(document.getElementById('cx'), sc, z);
+  document.getElementById('t').innerHTML = '<b>' + sig(p) + '</b> tại ' + z + ' m; làn riêng biệt: ' + p.m + '.';
+  const rows = []; let prev = null;
+  for (let q = 0; q <= LEN; q += 5) { const sg = sig(pick(sc, q)); if (sg !== prev) { rows.push([q, sg]); prev = sg; } }
+  document.getElementById('tab').innerHTML = '<table><tr><th>Từ (m)</th><th>Kiểu giá</th></tr>' + rows.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') + '</table>';
+}
+document.getElementById('sc').onchange = render; document.getElementById('z').oninput = render; render();
+</script></body></html>

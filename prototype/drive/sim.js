@@ -150,6 +150,29 @@
     const lo = Math.min(...heads), hi = Math.max(...heads), cols = kind === 'bracket' ? [xa] : kind === 'tunnel' ? [] : [xa, xb];
     return cols.filter(x => !(x > lo + 0.01 && x < hi - 0.01));
   }
+  // Bố cục giá đỡ dây điện theo các đường (heads = X của dây) và hai mép hành lang (xa, xb; cột phải nằm ngoài hai mép này, nên không bao giờ cắm vào đường ray hay sân ga). Xem docs/12 mục "Giá đỡ mới (27/11/2026)".
+  // o: { kind: kiểu từ supportAt ('tunnel' → giá trần hầm), inSt: đang ở vùng ga, noPair: không ghép cặp (nhánh/ngã rẽ) } → { type: 'cant' | 'gable' | 'truss' | 'tunnel', cols, arms, posts, singles, drops, m }
+  //  cant: mỗi đường một cột bên + tay đòn (ngoài ga, vùng ghi còn ≤ 2 đường riêng biệt, ga đơn đường); gable: hai thanh thép góc tù úp ngược (đường đôi trong ga, hai đường kề nhau);
+  //  truss: một xà dàn giữa hai cột ngoài (ga/vùng ghi từ 3 đường riêng biệt, hoặc đường đôi tách qua sân ga đảo); tunnel: không cột, giá treo cắm vào trần hầm.
+  //  posts: bộ treo đôi {xm, xa, xb, real?} (real: chỉ một bên khi là làn lẻ); singles: dây treo riêng từ xà; drops: trụ treo đơn trong hầm. [I: bố cục do người dùng chốt 27/11/2026]
+  const SUP_MERGE = 2.0, SUP_PAIR_MIN = 4.0, SUP_PAIR_MAX = 6.0, SUP_GABLE_MAX = 6.0;
+  function supportPlan(heads, xa, xb, o) {
+    o = o || {}; const hs = heads.slice().sort((p, q) => p - q), g = [];
+    for (const x of hs) { const l = g[g.length - 1]; if (l && x - l.x1 < SUP_MERGE) { l.x1 = x; l.x = (l.x0 + x) / 2; } else g.push({ x0: x, x1: x, x }); }      // các làn chồng nhau (chưa tách khỏi ghi) coi là một
+    const gx = g.map(q => q.x), m = gx.length, lo = Math.min(xa, xb), hi = Math.max(xa, xb), posts = [], singles = [], drops = [];
+    const pairUp = tunnel => { let i = 0; while (i < m) {
+      if (o.noPair) { singles.push(gx[i]); i++; continue; }      // đường nhánh/ngã rẽ vẽ riêng từng đường: không dùng chung bộ treo
+      if (i + 1 < m && gx[i + 1] - gx[i] >= SUP_PAIR_MIN && gx[i + 1] - gx[i] <= SUP_PAIR_MAX) { posts.push({ xm: (gx[i] + gx[i + 1]) / 2, xa: gx[i], xb: gx[i + 1] }); i += 2; }
+      else if (i + 1 < m && gx[i + 1] - gx[i] < SUP_PAIR_MIN) { singles.push(gx[i]); i++; }      // còn đang tách: mỗi đường một dây treo riêng
+      else { const l = gx[i]; if (tunnel) drops.push(l); else { const dir = i === 0 ? -1 : i === m - 1 ? 1 : (l - gx[i - 1] > gx[i + 1] - l ? -1 : 1); posts.push({ xm: l + dir * 2.15, xa: dir > 0 ? l : l + dir * 4.3, xb: dir > 0 ? l + dir * 4.3 : l, real: [l] }); } i++; } } };
+    if (o.kind === 'tunnel') { pairUp(true); return { type: 'tunnel', m, cols: [], arms: [], posts, singles, drops, lanes: gx }; }
+    const gap = m === 2 ? gx[1] - gx[0] : 0;
+    if (m === 1 || (m === 2 && !o.inSt)) {
+      const arms = m === 1 ? [[Math.abs(xa - gx[0]) <= Math.abs(xb - gx[0]) ? xa : xb, gx[0]]] : [[lo, gx[0]], [hi, gx[1]]];
+      return { type: 'cant', m, cols: arms.map(a => a[0]), arms, posts, singles, drops, lanes: gx }; }
+    if (m === 2 && gap <= SUP_GABLE_MAX) { posts.push({ xm: (gx[0] + gx[1]) / 2, xa: gx[0], xb: gx[1] }); return { type: 'gable', m, cols: [lo, hi], arms: [], posts, singles, drops, lanes: gx }; }
+    pairUp(false); return { type: 'truss', m, cols: [lo, hi], arms: [], posts, singles, drops, lanes: gx };
+  }
   // Đoạn đường trên nền đất (kết cấu 'g'; không phải cầu cạn, cầu, hầm, ga): tấm bê tông dưới ray và hàng rào thép hai bên, cách cột giá đỡ 1 m về phía ngoài, hở ở đường ngang (chỉ Yamagata, Akita). [I: quy ước thiết kế của game, không phải dữ liệu từng đoạn]
   const FENCE_H = 3.6, FENCE_OFF = 1.0, XING_GAP_KM = 0.0055, FENCE_XGAP = XING_GAP_KM * 1000;      // cao ngang tàu (N700 ≈ 3,65 m), cách cột 1 m, nửa chiều dài chỗ hở ở đường ngang (5,5 m)
   function slabAt(L, km, nearStation) { return !nearStation && structAt(L, km) === 'g'; }
@@ -1707,7 +1730,7 @@
     return { out, comfort: Math.round(comfort), atcPen, earlyPen: Math.round(earlyPen), ackPen, hornPen, wiperPen, lampPen, atcOffPen, warnPen, anxPen, firePen, deadPen, xingPen, netBonus, final, kwh: Math.round(T.kwh), regen: Math.round(T.regen), btMax: T.btMax || 0 };
   }
 
-  const api = { toggleReverse, swSync, swFlip, swIdx, swWait, fkOf, fkLanes, fkFollows, fkOwnOpp, trunkLanes, runJn, runCfg, runLane, runStep, leadDelta, runBefore, branchDeltas, branchLane0, ownPair, supportAt, supportColumns, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, atcMove, atcGo, ATC_NAMES, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
+  const api = { toggleReverse, swSync, swFlip, swIdx, swWait, fkOf, fkLanes, fkFollows, fkOwnOpp, trunkLanes, runJn, runCfg, runLane, runStep, leadDelta, runBefore, branchDeltas, branchLane0, ownPair, supportAt, supportColumns, supportPlan, wireAt, slabAt, fenceAt, FENCE_H, FENCE_OFF, FENCE_XGAP, mapX, joinState, joinBlock, joinGate, joinGeom, coupleOf, onShared, labelAt, vehAt, dupHidden, hudLabel, miniPairOf, injectQuake, passersAt, passDur, oppThruDur, oppThruZ, refreshOpposing, ATCN, INSPECT, SENSORS, makeMission, toggleMeasure, markDefect, measureQ, oppKey, trunkOff, xbOf, xbLanes, xbBprof, XB_ZB1, tAtKm, shareInfo, pickForeign, COUPLE_GAP, singleW, singleEff, oppHidden: (W, T) => singleEff(W, T.x) > 0.25, G, VEH, DIFF, WEATHER, LINE_META, NOTCH_MIN, NOTCH_MAX, notchName, rng, sOfKm, kmOfS, lineOf, biomeAt, gradeAt, gradeKm, inTunnel, structAt, curveAt, lampOn, needsLight, cycleLamp, toggleATC, atcMove, atcGo, ATC_NAMES, turnoutZones, divertsAt, sharesPlatformLane, switchPoints, stationDiverts, trainSeq, timeAt, makeTrip, fillPlan, catalogOf, pickLead, passers,
     createWorld, spawnAt, fgnEvent, createNetwork, inject, netTick, netScore, dispatch: D_, tick, step, allowedSpeed, plannedTime, autopilot, autoDepart, captainDoor, autoExtras, nextTarget, score, fmtT, allTrains, massOf, resistOf, tractiveOf,
     setPower, setBrake, coast, toggleCS, adjustCS, toggleWiper, honk, confirmATC, requestClose, ackOldest, announcePA, answerDecision, departBlock, departNow, handleCmd };
   if (typeof module !== 'undefined') module.exports = api; else root.Sim = api;

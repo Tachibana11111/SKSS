@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup giá đỡ dây điện</title>
+<style>
+:root{--bg:#0b0f14;--fg:#dbe6f2;--mut:#8aa0b5;--ln:#243447}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:14px 0 4px}p.n{color:var(--mut);margin:2px 0 8px}
+.bar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0;padding:8px 10px;background:#121a23;border:1px solid var(--ln);border-radius:8px}
+.bar label{color:var(--mut)}
+button,select{background:#1b2735;color:var(--fg);border:1px solid #3b516a;border-radius:6px;padding:4px 10px;font:inherit;cursor:pointer}
+button.on{background:#2a6fd6;border-color:#6fb0ff}
+canvas{display:block;width:100%;max-width:1040px;height:auto;border:1px solid var(--ln);border-radius:6px}
+.cap{color:var(--mut);margin:2px 0 10px}.cap b{color:var(--fg)}.bad{color:#ff8a7a}.ok{color:#7be0a0}
+ul{margin:4px 0;padding-left:20px}
+</style></head><body><main>
+<h1>Mockup: giá đỡ dây điện — ngoài ga và trong ga</h1>
+<p class="n">Nhìn từ phía trước dọc theo đường (mặt cắt ngang). Ảnh tham khảo: ngoài ga mỗi đường một cột bên có tay đòn riêng (ảnh 1, 2); trong ga là xà dàn giăng qua nhiều đường, cột đứng trên sân ga (ảnh 3, 4, 5). Số đo là giả định để dựng thử, chưa lấy từ nguồn [I].</p>
+<p class="n"><a href="catenary_supports_all.html" style="color:#6fb0ff">Trang 2 →</a> xem giá đỡ của mọi mã ga hiện có trong game (trước và sau sửa). · <a href="catenary_supports_throat.html" style="color:#6fb0ff">Trang 3 →</a> giá đỡ ở vùng ghi trước và sau ga.</p>
+<div class="bar">
+  <span>
+    <button data-s="open1">Ngoài ga · 1 đường</button>
+    <button data-s="open2" class="on">Ngoài ga · 2 đường</button>
+    <button data-s="tun1">Hầm · 1 đường</button>
+    <button data-s="tun2">Hầm · 2 đường</button>
+    <button data-s="st1">Ga đơn đường (sân ga một bên)</button>
+    <button data-s="st2">Ga 2 làn</button>
+    <button data-s="st3">Ga 3 làn</button>
+    <button data-s="st4">Ga 4 làn (2 làn thông qua ở giữa)</button>
+    <button data-s="st5">Ga 5 làn</button>
+    <button data-s="st6">Ga 6 làn</button>
+  </span>
+  <label>Khoảng cách hai làn kề nhau <input id="sp" type="range" min="4.3" max="7" step="0.1" value="4.3"> <b id="spv">4,3</b> m</label>
+  <label>Cột giữa hai bộ: <select id="mid"><option value="shared">một cột chung</option><option value="twin">hai cột sát nhau</option></select></label>
+  <label>Bề rộng sân ga <input id="pw" type="range" min="3" max="10" step="0.5" value="5"> <b id="pwv">5</b> m</label>
+  <label><input id="gh" type="checkbox" checked> bóng tàu (rộng 3,4 m, cao 3,65 m)</label>
+</div>
+<h2>Hiện tại</h2>
+<canvas id="c0" width="1040" height="330"></canvas><div class="cap" id="t0"></div>
+<h2>Đề xuất</h2>
+<canvas id="c1" width="1040" height="330"></canvas><div class="cap" id="t1"></div>
+<h2>Quy tắc đề xuất</h2>
+<ul>
+<li><b>Ngoài ga</b>: mỗi làn một cột bên ở phía ngoài (cách đầu dây 3,9 m như hiện nay) kèm một tay đòn với thanh chống; không có xà qua hai đường, giữa hai đường không có gì.</li>
+<li><b>Cột và dầm không cắm vào sân ga</b>: trong ga, cột ngoài đứng trên đất ngay ngoài mép ngoài sân ga (xà dài hơn theo bề rộng sân ga, chỉnh bằng thanh trượt); phía không có sân ga thì cách đầu dây 3,9 m như ngoài ga.</li>
+<li><b>Hầm</b>: không cột và không xà. Đường đôi dùng đúng bộ treo đôi (hộp xám + trụ + thanh ngang + hai thanh chéo + hai móc) <b>cắm thẳng vào đỉnh trần hầm</b>, thay cho hai thanh thép góc tù. Đường đơn dùng một trụ treo cắm vào trần ngay trên đường.</li>
+<li><b>Ga đơn đường</b> (1 làn, sân ga một bên): dùng đúng giá ngoài ga, cột ở phía không có sân ga để không vướng sân ga.</li>
+<li><b>Trong ga</b>: cứ <b>hai làn kề nhau</b> chung một xà dàn; giữa xà có hộp xám, thả một trụ xuống giữa hai đường, đáy trụ là thanh ngang đỡ bằng hai thanh chéo chữ V, hai đầu có móc rủ xuống dây của từng làn; bốn làn thì hai bộ, sáu làn ba bộ. Cột ngoài đứng trên sân ga. Làn lẻ còn lại (ga 3 làn) dùng cột bên và tay đòn như ngoài ga.</li>
+<li><b>Ga chỉ có đường đôi (hẹp)</b>: xà là <b>hai thanh thép góc tù úp ngược</b> như mái nhà (không phải mái che ga), đỉnh ở giữa, hai chân gắn vào hai cột ngoài; hộp xám và trụ thả xuống từ đỉnh.</li>
+<li><b>Ga có 3 (hoặc 5) làn giữa hai sân ga</b>: một xà dàn duy nhất như ga 4 làn, cặp làn nào cũng một bộ treo đôi; làn lẻ còn lại dùng <b>bộ treo đôi chỉ có một bên</b> (trụ ở chỗ làn thứ hai sẽ có, chỉ làm một thanh ngang, một thanh chéo và một móc).</li>
+<li><b>Ga 4 và 6 làn</b>: dùng xà dàn đan lưới như cũ, một xà duy nhất giữa hai cột ngoài, <b>không thêm cột hay dầm giữa các đường ray</b>; mỗi cặp làn một trụ thả xuống.</li>
+<li><b>Giữa hai bộ</b> (chỉ còn áp dụng cho ga lẻ làn, vd. 3 làn) (hai làn thông qua ở giữa) có hai cách: một cột chung cho cả hai xà, hoặc hai cột sát nhau. Dòng chữ dưới hình tính khoảng hở từ cột đến thân tàu; dưới 0,4 m thì không đạt, phải tăng khoảng cách hai làn hoặc chuyển sang cách còn lại.</li>
+<li><b>Phải đổi trong mã</b> (chưa làm): <code>supportAt</code> thêm kiểu <code>cant</code> (tay đòn riêng từng làn) và <code>twin</code> (xà đôi); <code>supportColumns</code> cho phép cột giữa hai bộ; <code>gantry()</code> trong cabview.js nhóm các làn theo cặp thay vì một xà cho cả hành lang; TopView và <code>scene.js</code> dùng cùng bảng. Hiện kiểu <code>cage</code> (ga nhiều làn) và <code>portal</code> (ngoài ga) sẽ bị thay.</li>
+</ul>
+</main>
+<script>
+const SC = {tun1:{n:1,st:false,tun:{hw:4.4,wall:3.0,crown:7.8}}, tun2:{n:2,st:false,tun:{hw:6.0,wall:3.4,crown:7.8}}, open1:{n:1,st:false}, open2:{n:2,st:false}, st1:{n:1,st:true,plat:'R'}, st2:{n:2,st:true}, st3:{n:3,st:true}, st4:{n:4,st:true}, st5:{n:5,st:true}, st6:{n:6,st:true}};
+let cur = 'open2';
+const $ = id => document.getElementById(id);
+const TW = 1.7, CW = 0.45;                        // nửa rộng thân tàu, bề rộng cột
+function lanesOf(n, d){ const a = []; for (let i = 0; i < n; i++) a.push((i - (n - 1) / 2) * d); return a; }
+function draw(cv, scene, d, mode, midMode, ghost){
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, lanes = lanesOf(scene.n, d), st = scene.st, PW = +$('pw').value, plat = scene.plat || 'B';
+  // cột KHÔNG cắm vào sân ga: cột đứng trên đất ngay ngoài mép ngoài của sân ga (cách mép 0,6 m); phía không có sân ga thì cách đầu dây 3,9 m như ngoài ga
+  const edgeL = st && plat !== 'R' ? lanes[0] - TW - 0.3 - PW - 0.6 : lanes[0] - 3.9, edgeR = st && plat !== 'L' ? lanes[lanes.length - 1] + TW + 0.3 + PW + 0.6 : lanes[lanes.length - 1] + 3.9;
+  const T = scene.tun, xmin = T ? -T.hw - 1.2 : edgeL - 3, xmax = T ? T.hw + 1.2 : edgeR + 3, sc = Math.min((W - 30) / (xmax - xmin), (H - 50) / 9.6);
+  const X = m => W / 2 + m * sc, gy = H - 22, Y = m => gy - m * sc, cx = (xmin + xmax) / 2; const Xc = m => X(m - 0 );
+  ctx.clearRect(0, 0, W, H);
+  const sky = ctx.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, '#16263a'); sky.addColorStop(1, '#2a3f58'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, gy);
+  const archY = x => T.wall + (T.crown - T.wall) * Math.sqrt(Math.max(0, 1 - (x / T.hw) * (x / T.hw)));
+  if (T) { ctx.fillStyle = '#2a3038'; ctx.fillRect(0, 0, W, gy); ctx.beginPath(); ctx.moveTo(X(-T.hw), Y(0)); ctx.lineTo(X(-T.hw), Y(T.wall)); for (let i = -40; i <= 40; i++) { const x = T.hw * i / 40; ctx.lineTo(X(x), Y(archY(x))); } ctx.lineTo(X(T.hw), Y(0)); ctx.closePath(); ctx.fillStyle = '#101a26'; ctx.fill(); ctx.strokeStyle = '#59677a'; ctx.lineWidth = 3; ctx.stroke(); }
+  const colors = { steel: '#8d9aab', dark: '#5c6878', ins: '#39b79a', wire: '#d8e2ee', cw: '#ffb454' };
+  // nền, sân ga
+  ctx.fillStyle = '#3a3f46'; ctx.fillRect(0, gy, W, H - gy);
+  ctx.fillStyle = '#5b5a55'; ctx.fillRect(X(lanes[0] - 2.6), gy - 0.35 * sc, (lanes[lanes.length - 1] - lanes[0] + 5.2) * sc, 0.35 * sc);
+  if (st) { const pl = lanes[0] - TW - 0.3, pr = lanes[lanes.length - 1] + TW + 0.3; ctx.fillStyle = '#7b8088';
+    const pp = scene.plat || 'B'; if (pp !== 'R') { ctx.fillRect(X(pl - PW), Y(1.25), PW * sc, 1.25 * sc); ctx.fillStyle = '#e8c547'; ctx.fillRect(X(pl) - 3, Y(1.25), 3, 3); ctx.fillStyle = '#7b8088'; }
+    if (pp !== 'L') { ctx.fillRect(X(pr), Y(1.25), PW * sc, 1.25 * sc); ctx.fillStyle = '#e8c547'; ctx.fillRect(X(pr), Y(1.25), 3, 3); } }
+  // ray
+  for (const x of lanes) { ctx.fillStyle = '#9aa3ad'; for (const r of [-0.7175, 0.7175]) ctx.fillRect(X(x + r) - 1, Y(0.18), 2.4, 0.18 * sc); ctx.fillStyle = '#6a6358'; ctx.fillRect(X(x - 1.2), Y(0.12), 2.4 * sc, 0.12 * sc); }
+  // bóng tàu
+  if (ghost) for (const x of lanes) { ctx.fillStyle = 'rgba(180,215,255,.16)'; ctx.strokeStyle = 'rgba(180,215,255,.4)'; ctx.beginPath(); const l = X(x - TW), r = X(x + TW), t = Y(3.65), b = Y(0.35); ctx.moveTo(l, b); ctx.lineTo(l, Y(2.6)); ctx.quadraticCurveTo(l + 4, t, X(x), t); ctx.quadraticCurveTo(r - 4, t, r, Y(2.6)); ctx.lineTo(r, b); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  // phần tử giá đỡ
+  const cols = [];                                  // vị trí cột để kiểm tra khoảng hở
+  // giá trong ga theo phác thảo: xà dàn giữa hai cột ngoài; ở GIỮA xà có hộp xám, từ đó thả một trụ xuống giữa hai đường (kèm giá cách điện nhỏ bên trái);
+  // đáy trụ có thanh ngang (cao 5,95 m) đỡ bằng hai thanh chéo hình chữ V từ đáy trụ lên hai đầu; mỗi đầu thanh có móc rủ xuống giữ dây dẫn điện của làn mình
+  const pairHang = (xm, xa, xb, yTop, realOnly) => {
+    yTop = yTop || YT; const yBx = yTop - 1.0;
+    const lo = Math.min(xa, xb), hi = Math.max(xa, xb), e = (hi - lo) / 2 - 0.35, yBar = 5.95, yP = 5.0, col = '#aab6c6';
+    ctx.fillStyle = '#8b94a1'; ctx.fillRect(X(xm - 0.6), Y(yTop), 1.2 * sc, 1.0 * sc);                         // hộp xám giữa xà
+    ctx.fillRect(X(xm - 0.1), Y(yBx), 0.2 * sc, (yBx - yP) * sc);                                                     // trụ thả xuống
+    { const yU = yTop - 1.15, ux = xm - 0.9;                                                                               // tay ngắn + chuỗi cách điện + dây phụ: giống giá ngoài ga
+      ctx.strokeStyle = '#aab6c6'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(X(xm - 0.1), Y(yU)); ctx.lineTo(X(ux), Y(yU)); ctx.stroke();   // chuỗi cách điện nằm ngang: các đĩa là vạch đứng dọc theo thanh
+      ctx.fillStyle = colors.ins; for (let i = 0; i < 4; i++) ctx.fillRect(X(xm - 0.2 - i * 0.16) - 2, Y(yU + 0.17), 4, 0.34 * sc); }
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); const real = x => !realOnly || realOnly.includes(x); for (const [x, s] of [[xa, -1], [xb, 1]]) if (real(x)) { ctx.moveTo(X(xm), Y(yBar)); ctx.lineTo(X(xm + s * e), Y(yBar)); ctx.moveTo(X(xm), Y(yP)); ctx.lineTo(X(xm + s * e), Y(yBar)); } ctx.stroke();   // thanh ngang + thanh chéo (chỉ phía có làn thật khi là bộ nửa)
+    for (const x of [xa, xb]) { if (!real(x)) continue; const s = x < xm ? -1 : 1; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(X(xm + s * e), Y(yBar)); ctx.quadraticCurveTo(X(x), Y(yBar + 0.1), X(x), Y(yP)); ctx.stroke(); ctx.fillStyle = colors.cw; ctx.beginPath(); ctx.arc(X(x), Y(yP), 2.6, 0, 7); ctx.fill(); }   // móc rủ + dây dẫn điện
+  };
+  const plainSt = st && mode === 'new';
+  const column = (x, h, plain) => { plain = plain || plainSt; if (plain) { cols.push(x); ctx.fillStyle = '#c9d2dd'; ctx.strokeStyle = '#6b7788'; ctx.lineWidth = 1.5; ctx.fillRect(X(x - CW / 2), Y(h), CW * sc, h * sc); ctx.strokeRect(X(x - CW / 2), Y(h), CW * sc, h * sc); return; } cols.push(x); ctx.fillStyle = colors.steel; ctx.fillRect(X(x - CW / 2), Y(h), CW * sc, h * sc - (st && (x < lanes[0] - TW || x > lanes[lanes.length - 1] + TW) ? 1.25 * sc : 0) + (st && (x < lanes[0] - TW || x > lanes[lanes.length - 1] + TW) ? 0 : 0));
+    ctx.strokeStyle = colors.dark; ctx.lineWidth = 1; ctx.beginPath(); const y0 = (st && (x < lanes[0] - TW || x > lanes[lanes.length - 1] + TW)) ? 1.25 : 0; for (let y = y0; y + 0.9 <= h; y += 0.9) { ctx.moveTo(X(x - CW / 2), Y(y)); ctx.lineTo(X(x + CW / 2), Y(y + 0.9)); ctx.moveTo(X(x + CW / 2), Y(y)); ctx.lineTo(X(x - CW / 2), Y(y + 0.9)); } ctx.stroke(); };
+  const truss = (xa, xb, yb, yt) => { ctx.fillStyle = 'rgba(141,154,171,.18)'; ctx.fillRect(X(xa), Y(yt), (xb - xa) * sc, (yt - yb) * sc);
+    ctx.strokeStyle = colors.steel; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(xa), Y(yt)); ctx.lineTo(X(xb), Y(yt)); ctx.moveTo(X(xa), Y(yb)); ctx.lineTo(X(xb), Y(yb)); ctx.stroke();
+    ctx.lineWidth = 1; ctx.beginPath(); const n = Math.max(2, Math.round((xb - xa) / 0.9)), w = (xb - xa) / n; for (let i = 0; i < n; i++) { const a = xa + i * w, b = a + w; if (i % 2 === 0) { ctx.moveTo(X(a), Y(yb)); ctx.lineTo(X(b), Y(yt)); } else { ctx.moveTo(X(a), Y(yt)); ctx.lineTo(X(b), Y(yb)); } } ctx.stroke(); };
+  // giá ngoài ga theo phác thảo: cột cao; tay trên mảnh, ngắn, treo một chuỗi cách điện (dây phụ); tay dưới dài, thon dần ra đầu tròn,
+  // có thanh chống chéo từ chân tay (hai thanh nối nhỏ) lên tay; đầu tay có móc rủ xuống giữ dây dẫn điện đúng tâm đường
+  const cant = (colx, lx) => {
+    const s = lx > colx ? 1 : -1, L = Math.abs(lx - colx), yA = 5.95, yU = 7.3, yF = 5.1, px = u => X(colx + s * u), col = '#aab6c6';
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(px(0.15), Y(yU)); ctx.lineTo(px(1.6), Y(yU)); ctx.stroke();                        // tay trên
+    ctx.fillStyle = colors.ins; for (let i = 0; i < 4; i++) ctx.fillRect(px(1.6) - 5, Y(yU - 0.12 - i * 0.16), 10, 0.1 * sc);
+    ctx.strokeStyle = colors.wire; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px(1.6), Y(yU - 0.12 - 3 * 0.16 - 0.1)); ctx.lineTo(px(1.6), Y(yU - 1.0)); ctx.stroke();
+    ctx.fillStyle = colors.wire; ctx.beginPath(); ctx.arc(px(1.6), Y(yU - 1.0), 2.4, 0, 7); ctx.fill();            // dây phụ (feeder)
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(px(0.15), Y(yA) - 1); const tw = 0.2 * sc;                    // tay dưới thon dần
+    ctx.lineTo(px(L - 0.1), Y(yA) - tw / 2); ctx.quadraticCurveTo(px(L + 0.08), Y(yA), px(L - 0.1), Y(yA) + tw / 2); ctx.lineTo(px(0.15), Y(yA) + 1); ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px(0.15), Y(yF)); ctx.lineTo(px(L * 0.78), Y(yA)); ctx.stroke();           // thanh chống chéo
+    ctx.lineWidth = 1.2; ctx.beginPath(); for (const u of [0.28, 0.6]) { const t = u / (L * 0.78), yy = yF + (yA - yF) * t; ctx.moveTo(px(u), Y(yA)); ctx.lineTo(px(u + 0.08), Y(yy)); } ctx.stroke();
+    ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(px(L - 0.1), Y(yA) + tw / 2); ctx.quadraticCurveTo(px(L + 0.12), Y(yA - 0.2), px(L), Y(5.0)); ctx.stroke();   // móc rủ
+    ctx.fillStyle = colors.cw; ctx.beginPath(); ctx.arc(px(L), Y(5.0), 2.6, 0, 7); ctx.fill(); };
+  const catenary = (x, yb) => {                     // cách điện treo, dây tải, dây dẫn điện, dây treo
+    ctx.fillStyle = colors.ins; ctx.fillRect(X(x) - 2, Y(yb), 4, 0.5 * sc); ctx.strokeStyle = '#0b3a30'; ctx.lineWidth = 1; ctx.beginPath(); for (let i = 1; i < 5; i++) { ctx.moveTo(X(x) - 2, Y(yb) + i * 0.1 * sc); ctx.lineTo(X(x) + 2, Y(yb) + i * 0.1 * sc); } ctx.stroke();
+    ctx.strokeStyle = colors.wire; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(x), Y(yb) + 0.5 * sc); ctx.lineTo(X(x), Y(5.0)); ctx.stroke();
+    ctx.fillStyle = colors.wire; ctx.beginPath(); ctx.arc(X(x), Y(yb - 0.5), 2.2, 0, 7); ctx.fill(); ctx.fillStyle = colors.cw; ctx.beginPath(); ctx.arc(X(x), Y(5.0), 2.4, 0, 7); ctx.fill(); };
+  const YB = 6.8, YT = 7.8, notes = [], roofSt = mode === 'new' && st && lanes.length === 2, evenSt = mode === 'new' && st && lanes.length >= 2, colH = roofSt ? 7.0 : YT + 0.4;
+  // đường đôi trong ga (hẹp): xà là HAI THANH THÉP GÓC TÙ ÚP NGƯỢC như mái nhà (không phải mái che ga), đỉnh ở giữa, hai chân gắn vào hai cột ngoài
+  const roof = (xa, xb) => {
+    const xm = (xa + xb) / 2, h = (xb - xa) / 2, drop = 0.8, yR = YT, yE = YT - drop;
+    for (const [dy, w, c] of [[0, 3.2, '#aab6c6'], [-0.13, 1.4, '#7e8a9a']]) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(X(xa), Y(yE + dy)); ctx.lineTo(X(xm), Y(yR + dy)); ctx.lineTo(X(xb), Y(yE + dy)); ctx.stroke(); }   // mỗi thanh là thép góc: cánh dày + cánh mỏng
+    ctx.strokeStyle = '#aab6c6'; ctx.lineWidth = 1.4; ctx.beginPath(); for (const s of [-1, 1]) { const xc = s < 0 ? xa : xb; ctx.moveTo(X(xc), Y(yE - 0.7)); ctx.lineTo(X(xc - s * h * 0.35), Y(yE + 0.8 * 0.35 - 0.0)); } ctx.stroke(); };   // chống chéo ở chân cột
+  if (T) {                                           // hầm: không cột, không xà; giá đôi cắm thẳng vào trần hầm
+    if (mode === 'now') { for (const x of lanes) { const yc = archY(x); ctx.fillStyle = '#8b94a1'; ctx.fillRect(X(x - 0.5), Y(yc), 1.0 * sc, 0.25 * sc); ctx.fillStyle = colors.ins; ctx.fillRect(X(x) - 2, Y(yc - 0.25), 4, 0.5 * sc); ctx.strokeStyle = colors.wire; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(x), Y(yc - 0.75)); ctx.lineTo(X(x), Y(5.0)); ctx.stroke(); ctx.fillStyle = colors.cw; ctx.beginPath(); ctx.arc(X(x), Y(5.0), 2.4, 0, 7); ctx.fill(); } notes.push('mỗi làn một dây treo riêng từ trần hầm, không có cột'); }
+    else if (lanes.length === 2) { pairHang(0, lanes[0], lanes[1], YT); notes.push('không cột, không thanh thép góc: một giá đôi (hộp xám + trụ) cắm thẳng vào đỉnh trần hầm'); }
+    else { const l = lanes[0], yc = archY(l), yU = yc - 0.2; ctx.fillStyle = '#8b94a1'; ctx.fillRect(X(l - 0.6), Y(yc), 1.2 * sc, 1.0 * sc); ctx.fillRect(X(l - 0.1), Y(yc - 1.0), 0.2 * sc, (yc - 1.0 - 5.0) * sc);
+      ctx.strokeStyle = '#aab6c6'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(X(l - 0.1), Y(yc - 1.15)); ctx.lineTo(X(l - 0.9), Y(yc - 1.15)); ctx.stroke(); ctx.fillStyle = colors.ins; for (let i = 0; i < 4; i++) ctx.fillRect(X(l - 0.2 - i * 0.16) - 2, Y(yc - 1.15 + 0.17), 4, 0.34 * sc);
+      ctx.strokeStyle = '#aab6c6'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(l), Y(5.0)); ctx.lineTo(X(l), Y(5.0)); ctx.stroke(); ctx.fillStyle = colors.cw; ctx.beginPath(); ctx.arc(X(l), Y(5.0), 2.6, 0, 7); ctx.fill(); notes.push('một giá treo cắm vào trần hầm ngay trên đường, trụ rủ thẳng xuống dây dẫn điện'); }
+  } else if (mode === 'now') {                       // một cổng/lồng cho cả hành lang
+    const xa = edgeL, xb = edgeR; column(xa, YT + 0.4); column(xb, YT + 0.4); truss(xa, xb, YB, YT); for (const x of lanes) catenary(x, YB);
+    notes.push(st ? 'cổng/lồng: một xà dàn dài ' + (xb - xa).toFixed(1).replace('.', ',') + ' m cho tất cả làn, chỉ có hai cột ngoài' : 'cổng: một xà qua cả hai đường, hai cột ngoài');
+  } else if (!st || lanes.length === 1) {            // ngoài ga (và ga đơn đường): mỗi đường một cột bên có tay đòn
+    for (const x of lanes) { const left = x < 0 || (lanes.length === 1 && scene.plat !== 'L'), cxx = left ? x - 3.9 : x + 3.9; column(cxx, 7.6, true); cant(cxx, x); }
+    notes.push(lanes.length === 1 ? 'một tay đòn riêng' + (st ? ', cột đặt ở phía KHÔNG có sân ga' : '') : 'mỗi đường một cột bên và một tay đòn riêng; giữa hai đường để trống');
+  } else if (evenSt) {                               // ga 2/4/6 làn: một xà duy nhất trải qua tất cả làn, chỉ có hai cột ngoài (không có cột giữa các đường); mỗi cặp làn một trụ thả xuống
+    const n = lanes.length, xa = edgeL, xb = edgeR;
+    column(xa, colH); column(xb, colH); if (roofSt) roof(xa, xb); else truss(xa, xb, YB, YT);
+    for (let i = 0; i + 1 < n; i += 2) { const mm = (lanes[i] + lanes[i + 1]) / 2; pairHang(mm, lanes[i], lanes[i + 1], YT); }
+    if (n % 2) { const l = lanes[n - 1], dd = n > 1 ? l - lanes[n - 2] : 4.3, mm = l + dd / 2; pairHang(mm, l, l + dd, YT, [l]); }      // bộ treo đôi chỉ có một bên: trụ đặt ở chỗ làn bạn sẽ có, chỉ làm thanh ngang, thanh chéo và móc phía làn thật
+    notes.push((roofSt ? 'hai thanh thép góc tù úp ngược' : 'một xà dàn đan lưới dài ' + (xb - xa).toFixed(1).replace('.', ',') + ' m') + ' giữa hai cột ngoài, ' + Math.ceil(n / 2) + ' trụ thả xuống (mỗi cặp làn một trụ' + (n % 2 ? ', làn lẻ một bộ treo đôi chỉ một bên' : '') + '); không có cột giữa các đường');
+  } else {                                           // trong ga lẻ làn: hai làn một xà
+    const n = lanes.length, groups = []; for (let i = 0; i + 1 < n; i += 2) groups.push([i, i + 1]); const lone = n % 2 ? n - 1 : -1, tw = midMode === 'twin';
+    const gaps = []; for (let g = 0; g < groups.length; g++) { const a = groups[g][0] ? (lanes[groups[g][0] - 1] + lanes[groups[g][0]]) / 2 : lanes[0] - 3.9; let b; const nx = groups[g][1] + 1; b = nx < n ? (lanes[groups[g][1]] + lanes[nx]) / 2 : lanes[n - 1] + 3.9; gaps.push([a, b]); }
+    const drawn = new Set();
+    gaps.forEach(([a, b], g) => { let xa = a, xb = b;
+      if (g > 0) { const m = a; if (tw) { xa = m + 0.3; if (!drawn.has('r' + g)) { column(m + 0.3, colH); drawn.add('r' + g); } } else if (!drawn.has('m' + g)) { column(m, colH); drawn.add('m' + g); } }
+      else column(a, colH);
+      const hasNext = g < gaps.length - 1 || lone >= 0;
+      if (g < gaps.length - 1 || lone >= 0) { const m = b; if (tw) { xb = m - 0.3; column(m - 0.3, colH); } else { column(m, colH); drawn.add('m' + (g + 1)); } } else column(b, colH);
+      if (roofSt) roof(Math.min(xa, xb), Math.max(xa, xb)); else truss(Math.min(xa, xb), Math.max(xa, xb), YB, YT); const ga = lanes[groups[g][0]], gb = lanes[groups[g][1]]; pairHang((ga + gb) / 2, ga, gb); });
+    if (lone >= 0) { const x = lanes[lone], cxx = x + 3.9; column(cxx, 7.6, true); cant(cxx, x); }
+    notes.push(groups.length + ' xà dàn đôi (mỗi xà hai làn)' + (lone >= 0 ? ' + 1 tay đòn cho làn lẻ' : '') + (groups.length > 1 ? (tw ? '; giữa các bộ là hai cột sát nhau' : '; giữa các bộ là một cột chung') : ''));
+  }
+  // khoảng hở cột – thân tàu
+  let worst = 9; for (const c of cols) for (const x of lanes) { const g = Math.abs(c - x) - CW / 2 - TW; if (g < worst) worst = g; }
+  // nhãn kích thước
+  ctx.fillStyle = '#9db3c9'; ctx.font = '12px system-ui'; ctx.textAlign = 'center'; ctx.fillText('dây dẫn điện 5,0 m · xà/tay đòn 6,8 m', W / 2, 16);
+  return { notes, worst };
+}
+function render(){
+  const sp = +$('sp').value, mid = $('mid').value, gh = $('gh').checked, sc = SC[cur]; $('spv').textContent = String(sp).replace('.', ','); $('pwv').textContent = String($('pw').value).replace('.', ',');
+  [['now', 0], ['new', 1]].forEach(([mode, i]) => { const r = draw($('c' + i), sc, sp, mode, mid, gh), ok = r.worst >= 0.4;
+    $('t' + i).innerHTML = '<b>' + r.notes.join('; ') + '</b>.' + (r.worst >= 9 ? '' : ' Khoảng hở nhỏ nhất từ cột đến thân tàu: <span class="' + (ok ? 'ok' : 'bad') + '">' + r.worst.toFixed(2).replace('.', ',') + ' m' + (ok ? '' : ' (không đạt, cần ≥ 0,4 m)') + '</span>'); });
+}
+document.querySelectorAll('button[data-s]').forEach(b => b.onclick = () => { cur = b.dataset.s; document.querySelectorAll('button[data-s]').forEach(x => x.classList.toggle('on', x === b)); render(); });
+['sp', 'mid', 'gh', 'pw'].forEach(id => $(id).oninput = render); render();
+</script></body></html>

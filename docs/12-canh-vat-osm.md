@@ -49,7 +49,24 @@ Nguồn đã đọc (chỉ dùng để chọn kiểu, không chép nguyên văn)
 - [電車線のビームたち (miiyarog.com)](https://miiyarog.com/train-line/): blog của người từng làm ở hãng phụ tùng; tên Vトラス, かご, 鋼管ビーム, 逆Vブラケット, 可動ブラケット. Là ý kiến cá nhân, tên do tác giả tự gọi.
 - [電車線設備の解説 (名泗架線工事)](https://meishikasen.co.jp/column/kasenkouji/1549): vai trò của ビーム/ブラケット, 可動ブラケット theo nhiệt độ.
 
-**Chưa có / hạn chế:** chưa có dữ liệu loại giá ở từng đoạn thật; chưa mô phỏng dây cứng trong hầm, cột đôi ở ga, cột đổi kiểu ở đoạn chuyển compound sang simple; khung cửa sổ hành khách (`winview.js`) vẫn dùng cột OSM.
+### Giá đỡ mới: tay đòn / thép góc tù / xà dàn + bộ treo đôi / trần hầm (27/11/2026)
+
+Bố cục do người dùng phác và chốt (mockup `docs/mockups/catenary_supports*.html`, 3 trang: các kiểu, mọi mã ga, vùng ghi). **Toàn bộ là [I]**: hình dáng từ phác thảo của người dùng và ảnh tham khảo (ảnh ngoài ga nhìn từ cầu vượt, ảnh ga Tokyo/Shin-Osaka), số đo là giả định. `Sim.supportPlan(heads, xa, xb, {kind, inSt})` (sim.js) chọn bố cục; `gantry` (cabview.js) chỉ vẽ theo kết quả. Kiểu cũ `supportAt` vẫn quyết chất liệu cột, kiểu dây treo, xà ống ở cầu cạn/cầu và xà sâu ở hành lang > 18 m.
+
+| Tình huống | Bố cục (`type`) |
+|---|---|
+| Ngoài ga, đường đơn, ga đơn đường, vùng ghi còn ≤ 2 đường riêng biệt | `cant`: mỗi đường một cột bên ở phía ngoài + tay đòn (tay trên mảnh treo chuỗi sứ đứng, tay dưới thon có thanh chống chéo và móc rủ xuống dây dẫn điện) |
+| Ga đường đôi, hai đường kề nhau (≤ 6 m) | `gable`: hai thanh thép góc tù úp ngược như mái nhà (không phải mái che ga) giữa hai cột ngoài, một bộ treo đôi ở đỉnh |
+| Ga/vùng ghi từ 3 đường riêng biệt, hoặc đường đôi tách qua sân ga đảo | `truss`: một xà dàn đan lưới giữa hai cột ngoài, **không cột giữa**; mỗi cặp làn kề nhau (4–6 m) một bộ treo đôi, làn lẻ một bộ một bên, làn còn đang tách (< 4 m) treo riêng |
+| Hầm | `tunnel`: không cột, bộ treo đôi (làn lẻ: một trụ) cắm thẳng vào trần hầm |
+
+- **Bộ treo đôi**: hộp xám ở xà, trụ thả xuống giữa hai đường, thanh ngang đỡ bằng hai thanh chéo chữ V, hai móc rủ xuống dây dẫn điện, chuỗi sứ nằm ngang ở một bên trụ.
+- **Cột không cắm vào ray hay sân ga**: cột nằm ngoài hai mép hành lang `xl/xr` (đã gồm sân ga + 0,4 m, thêm 1,0 m).
+- **Số dây (người dùng chốt 27/11/2026)**: tay đòn ngoài ga 2 dây (dây dẫn điện 5,2 m + dây treo 6,6 m, tay trên dài bằng 1/3 tay dưới, chuỗi sứ ở đầu tay trên nối với dây treo (dây treo dời theo về phía cột), móc ở đầu tay dưới nối với dây dẫn điện); ga đơn đường và làn lẻ trong ga 2 dây; **bộ treo đôi dùng chung (đường đôi trong ga, mỗi cặp làn trong ga nhiều làn, hầm đôi) 3 dây**: hai dây dẫn điện riêng và MỘT dây trên dùng chung ở đầu tay ngang cạnh trụ (chuỗi sứ nằm ngang), cách trụ 0,9 m (hầm: cao 6,1 m); hầm đơn 2 dây. Không vẽ dây phụ (5,9 m) nữa. Cách làm: `wire()` hỏi `planAt(z)` (cùng `Sim.supportPlan` với `gantry`) xem đường có nằm trong cặp không; đường thấp hơn của cặp vẽ dây dùng chung, đường kia bỏ dây treo riêng. Đường nhánh/ngã rẽ (`noPair`) không ghép cặp.
+- Các làn cách nhau < 2 m (chưa tách khỏi ghi) coi là một làn.
+- Test: mục 33b (13 trường hợp + 4800 bố cục ngẫu nhiên: cột không nằm giữa dây, mọi đường đều có chỗ treo).
+
+**Chưa có / hạn chế:** chưa có dữ liệu loại giá ở từng đoạn thật; chưa mô phỏng dây cứng trong hầm, cột đổi kiểu ở đoạn chuyển compound sang simple; khung cửa sổ hành khách (`winview.js`) vẫn dùng cột OSM.
 
 ## Mặt đầu/đuôi tàu ướm theo mũi tàu (2026-11-14)
 

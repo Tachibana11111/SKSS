@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Giá đỡ dây điện mọi mã ga</title>
+<style>
+:root{--bg:#0b0f14;--fg:#dbe6f2;--mut:#8aa0b5;--ln:#243447}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 4px}p.n{color:var(--mut);margin:2px 0 8px}a{color:#6fb0ff}
+.bar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0;padding:8px 10px;background:#121a23;border:1px solid var(--ln);border-radius:8px;position:sticky;top:0;z-index:5}
+.bar label{color:var(--mut)} input[type=text]{background:#1b2735;color:var(--fg);border:1px solid #3b516a;border-radius:6px;padding:4px 8px;font:inherit}
+.card{margin:18px 0;padding:10px 12px;border:1px solid var(--ln);border-radius:10px;background:#0f151d}
+.card h2{font-size:16px;margin:0}.card h2 small{color:var(--mut);font-weight:400}
+.nm{color:var(--mut);font-size:13px;margin:2px 0 6px}.lb{font-size:12px;color:var(--mut);margin:6px 0 2px}
+canvas{display:block;width:100%;max-width:1040px;height:auto;border:1px solid var(--ln);border-radius:6px}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:8px;border:1px solid #3b516a;color:var(--mut);margin-left:6px}
+.ds{color:var(--fg);font-size:13px}
+</style></head><body><main>
+<h1>Trang 2 · Giá đỡ dây điện của mọi mã ga trong game</h1>
+<p class="n"><a href="catenary_supports.html">← Trang 1 (các kiểu giá và quy tắc)</a>. Mỗi thẻ là một mã bố trí ga (<code>layout.js</code>, bảng <code>TOK</code>): <b>d/u</b> đường dừng xuống/lên, <b>D/U</b> đường thông qua, <b>P</b> sân ga. Tên ga lấy từ <code>data-lines.js</code>. Hình trên là <b>hiện tại</b> (mô phỏng: một cổng/lồng chung, đơn đường là tay đòn trơn), hình dưới là <b>sau sửa</b> theo quy tắc ở trang 1. Khoảng cách làn 4,3 m, qua sân ga đảo 10,7 m. Các số đo là giả định [I].</p>
+<div class="bar">
+  <label>Lọc <input id="q" type="text" placeholder="mã ga hoặc tên ga (vd. Omagari, 2-4-0, dPu)" size="36"></label>
+  <label>Bề rộng sân ga ngoài <input id="pw" type="range" min="3" max="10" step="0.5" value="5"> <b id="pwv">5</b> m</label>
+  <span id="cnt" style="color:var(--mut)"></span>
+</div>
+<div id="list"></div>
+</main>
+<script>
+const DATA = {"2-2-0": {"tok": "PduP", "names": ["Annaka-Haruna", "Atami", "Awara-Onsen", "Iiyama", "Isahaya", "Itoigawa", "Iwate-Numakunai", "Izumi", "Koiwai", "Komatsu", "Kurikoma-Kogen", "Kurobe-Unazuki-Onsen", "Kurume", "Mizusawa-Esashi", "Ninohe", "Sakudaira", "Sashimaki", "Sendai", "Shichinohe-Towada", "Shin-Hakodate-Hokuto", "Shin-Hanamaki", "Shin-Kobe", "Shin-Omura", "Shin-Omuta", "Shin-Takaoka", "Shin-Tamana", "Shin-Yatsushiro", "Takeo-Onsen", "Ueda", "Ureshino-Onsen"], "branch": false}, "2-2-1": {"tok": "PdDUuP", "names": ["Aioi", "Asa", "Echizen-Takefu", "Fukuyama", "Furukawa", "Hamamatsu", "Higashi-Hiroshima", "Honjo-Waseda", "Ichinoseki", "Jomo-Kogen", "Kagaonsen", "Kakegawa", "Mihara", "Mikawa-Anjo", "Nagaoka", "Nishi-Akashi", "Odawara", "Shin-Fuji", "Shin-Kurashiki", "Shin-Onomichi", "Shin-Shirakawa", "Shin-Yamaguchi", "Shizuoka", "Tokuyama", "Urasa", "Utsunomiya"], "branch": false}, "2-3-1": {"tok": "PdDUuPu", "names": ["Himeji", "Kumagaya", "Maibara", "Oyama", "Shin-Iwakuni", "Shin-Shimonoseki", "Shiroishi-Zao", "Toyohashi", "Tsubame-Sanjo"], "branch": false}, "2-3-1c": {"tok": "dPdDUuP", "names": ["Kitakami", "Koriyama", "Nasushiobara"], "branch": false}, "2-3-0": {"tok": "PduPu", "names": ["Akayu", "Kaminoyama-Onsen", "Murayama", "Shin-Minamata", "Shinjo", "Tendo", "Yonezawa"], "branch": false}, "2-4-0": {"tok": "dPduPu", "names": ["Hachinohe", "Hiroshima", "Joetsu-Myoko", "Kagoshima-Chuo", "Kanazawa", "Karuizawa", "Kokura", "Kumamoto", "Kyoto", "Morioka", "Nagano", "Nagasaki", "Nagoya", "Okayama", "Shin-Aomori", "Shin-Tosu", "Shin-Yokohama", "Shinagawa", "Toyama", "Tsuruga", "Ueno", "Yamagata"], "branch": false}, "2-4-0s": {"tok": "dPduPu", "names": ["Sendai"], "branch": false}, "2-4-1": {"tok": "dPdDUuPu", "names": ["Echigo-Yuzawa", "Gifu-Hashima"], "branch": false}, "2-4-1k": {"tok": "dPdDUuPu", "names": ["Takasaki"], "branch": false}, "2-4-1f": {"tok": "dPdDUuPu", "names": ["Fukushima"], "branch": false}, "1-2-1": {"tok": "DdPuU", "names": ["Mishima"], "branch": false}, "3-6-0": {"tok": "dPddPuuPu", "names": ["Hakata", "Omiya", "Tokyo"], "branch": false}, "5-8-0": {"tok": "PdPddPduPuuPu", "names": ["Shin-Osaka"], "branch": false}, "1-2-0": {"tok": "dPu", "names": ["Akabuchi", "Fukui", "Jinguji", "Kariwano", "Oishida", "Sakuranbo-Higashine", "Takahata"], "branch": false}, "1-2-0t": {"tok": "dPu", "names": ["Akita"], "branch": false}, "2-2-0w": {"tok": "PddP", "names": ["Omagari"], "branch": false}, "3-4-0": {"tok": "PdPduPu", "names": ["Niigata"], "branch": false}, "2-4-0t": {"tok": "dPddPu", "names": ["Tokyo"], "branch": false}, "2-3-0a": {"tok": "PdduP", "names": ["Okutsugaru-Imabetsu"], "branch": false}, "2-3-0b": {"tok": "PduuP", "names": ["Kikonai"], "branch": false}, "2-3-0c": {"tok": "dPduP", "names": ["Chikugo-Funagoya"], "branch": false}, "1-1-0": {"tok": "dP", "names": ["Kita-Omagari", "Shoden", "Yariminai"], "branch": false}, "2-2-1s": {"tok": "PDdP", "names": ["Jindai", "Ugo-Nagano", "Ugo-Yotsuya"], "branch": true}, "1-1-0m": {"tok": "Pd", "names": ["Harukiba", "Maegata", "Mineyoshikawa", "Obarino", "Uguisuno", "Yotsugoya"], "branch": false}, "1-3-1k": {"tok": "dPDd", "names": ["Kakunodate"], "branch": true}, "2-3-1t": {"tok": "PdDPd", "names": ["Tazawako"], "branch": true}, "2-3-1h": {"tok": "dPdDP", "names": ["Shizukuishi"], "branch": true}, "2-2-1o": {"tok": "PDPd", "names": ["Okama"], "branch": true}, "0-2-1s": {"tok": "dD", "names": ["Shidonai Jct."], "branch": true}, "0-2-1n": {"tok": "Dd", "names": ["Ochizawa Jct."], "branch": true}, "1-2-1n": {"tok": "PDd", "names": ["Ugo-Sakai"], "branch": true}, "1-2-1w": {"tok": "PDd", "names": ["Wada"], "branch": true}};
+const TW = 1.7, CW = 0.45, GAP = 4.3, ISL = 10.7, YB = 6.8, YT = 7.8;
+const C = { steel: '#8d9aab', dark: '#5c6878', ins: '#39b79a', wire: '#d8e2ee', cw: '#ffb454', arm: '#aab6c6' };
+function parse(tok) {
+  const lanes = [], pl = [], kinds = []; let x = 0, prevP = false, first = true, lastLane = null;
+  const ch = tok.split('');
+  const runs = []; let run = [];
+  ch.forEach((c, i) => {
+    if (c === 'P') { if (run.length) { runs.push(run); run = []; } prevP = true; return; }
+    if (!first) x += prevP ? ISL : GAP; first = false; prevP = false; lanes.push(x); kinds.push(c); run.push(lanes.length - 1);
+  });
+  if (run.length) runs.push(run);
+  return { lanes, kinds, runs, outerL: ch[0] === 'P', outerR: ch[ch.length - 1] === 'P' };
+}
+function draw(cv, tok, mode, PW) {
+  const g = parse(tok), lanes = g.lanes, n = lanes.length, ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  const l0 = lanes[0], l1 = lanes[n - 1];
+  const edgeL = g.outerL ? l0 - TW - 0.3 - PW - 0.6 : l0 - 3.9, edgeR = g.outerR ? l1 + TW + 0.3 + PW + 0.6 : l1 + 3.9;
+  const cxm = (edgeL + edgeR) / 2, sc = Math.min((W - 30) / (edgeR - edgeL + 6), (H - 40) / 9.6), X = m => W / 2 + (m - cxm) * sc, gy = H - 18, Y = m => gy - m * sc;
+  ctx.clearRect(0, 0, W, H);
+  const sky = ctx.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, '#16263a'); sky.addColorStop(1, '#2a3f58'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, gy);
+  ctx.fillStyle = '#3a3f46'; ctx.fillRect(0, gy, W, H - gy);
+  // sân ga: ngoài + đảo
+  const plats = []; if (g.outerL) plats.push([l0 - TW - 0.3 - PW, l0 - TW - 0.3]); if (g.outerR) plats.push([l1 + TW + 0.3, l1 + TW + 0.3 + PW]);
+  for (let i = 0; i + 1 < n; i++) if (lanes[i + 1] - lanes[i] > GAP + 0.5) plats.push([lanes[i] + TW + 0.3, lanes[i + 1] - TW - 0.3]);
+  for (const [a, b] of plats) { ctx.fillStyle = '#7b8088'; ctx.fillRect(X(a), Y(1.25), (b - a) * sc, 1.25 * sc); ctx.fillStyle = '#e8c547'; ctx.fillRect(X(a), Y(1.25), 3, 3); ctx.fillRect(X(b) - 3, Y(1.25), 3, 3); }
+  for (const x of lanes) { ctx.fillStyle = '#6a6358'; ctx.fillRect(X(x - 1.2), Y(0.12), 2.4 * sc, 0.12 * sc); ctx.fillStyle = '#9aa3ad'; for (const r of [-0.7175, 0.7175]) ctx.fillRect(X(x + r) - 1, Y(0.18), 2.4, 0.18 * sc); }
+  for (const x of lanes) { ctx.fillStyle = 'rgba(180,215,255,.14)'; ctx.strokeStyle = 'rgba(180,215,255,.35)'; ctx.beginPath(); const l = X(x - TW), r = X(x + TW), t = Y(3.65), b = Y(0.35); ctx.moveTo(l, b); ctx.lineTo(l, Y(2.6)); ctx.quadraticCurveTo(l + 4, t, X(x), t); ctx.quadraticCurveTo(r - 4, t, r, Y(2.6)); ctx.lineTo(r, b); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  const column = (x, h, plain) => { if (plain) { ctx.fillStyle = '#c9d2dd'; ctx.strokeStyle = '#6b7788'; ctx.lineWidth = 1.5; ctx.fillRect(X(x - CW / 2), Y(h), CW * sc, h * sc); ctx.strokeRect(X(x - CW / 2), Y(h), CW * sc, h * sc); return; }
+    ctx.fillStyle = C.steel; ctx.fillRect(X(x - CW / 2), Y(h), CW * sc, h * sc); ctx.strokeStyle = C.dark; ctx.lineWidth = 1; ctx.beginPath(); for (let y = 0; y + 0.9 <= h; y += 0.9) { ctx.moveTo(X(x - CW / 2), Y(y)); ctx.lineTo(X(x + CW / 2), Y(y + 0.9)); ctx.moveTo(X(x + CW / 2), Y(y)); ctx.lineTo(X(x - CW / 2), Y(y + 0.9)); } ctx.stroke(); };
+  const truss = (xa, xb) => { ctx.fillStyle = 'rgba(141,154,171,.18)'; ctx.fillRect(X(xa), Y(YT), (xb - xa) * sc, (YT - YB) * sc); ctx.strokeStyle = C.steel; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(xa), Y(YT)); ctx.lineTo(X(xb), Y(YT)); ctx.moveTo(X(xa), Y(YB)); ctx.lineTo(X(xb), Y(YB)); ctx.stroke();
+    ctx.lineWidth = 1; ctx.beginPath(); const k = Math.max(2, Math.round((xb - xa) / 0.9)), w = (xb - xa) / k; for (let i = 0; i < k; i++) { const a = xa + i * w, b = a + w; if (i % 2 === 0) { ctx.moveTo(X(a), Y(YB)); ctx.lineTo(X(b), Y(YT)); } else { ctx.moveTo(X(a), Y(YT)); ctx.lineTo(X(b), Y(YB)); } } ctx.stroke(); };
+  const catenary = x => { ctx.fillStyle = C.ins; ctx.fillRect(X(x) - 2, Y(YB), 4, 0.5 * sc); ctx.strokeStyle = C.wire; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(x), Y(YB) + 0.5 * sc); ctx.lineTo(X(x), Y(5.0)); ctx.stroke(); ctx.fillStyle = C.wire; ctx.beginPath(); ctx.arc(X(x), Y(YB - 0.5), 2.2, 0, 7); ctx.fill(); ctx.fillStyle = C.cw; ctx.beginPath(); ctx.arc(X(x), Y(5.0), 2.4, 0, 7); ctx.fill(); };
+  const gable = (xa, xb) => { const xm = (xa + xb) / 2, yE = YT - 0.8; for (const [dy, w, c] of [[0, 3.2, C.arm], [-0.13, 1.4, '#7e8a9a']]) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(X(xa), Y(yE + dy)); ctx.lineTo(X(xm), Y(YT + dy)); ctx.lineTo(X(xb), Y(yE + dy)); ctx.stroke(); }
+    ctx.strokeStyle = C.arm; ctx.lineWidth = 1.4; ctx.beginPath(); const h = (xb - xa) / 2; for (const s of [-1, 1]) { const xc = s < 0 ? xa : xb; ctx.moveTo(X(xc), Y(yE - 0.7)); ctx.lineTo(X(xc - s * h * 0.35), Y(yE + 0.28)); } ctx.stroke(); };
+  const pairHang = (xm, xa, xb, realOnly) => { const yBx = YT - 1.0, e = Math.abs(xb - xa) / 2 - 0.35, yBar = 5.95, yP = 5.0, real = x => !realOnly || realOnly.includes(x);
+    ctx.fillStyle = '#8b94a1'; ctx.fillRect(X(xm - 0.6), Y(YT), 1.2 * sc, 1.0 * sc); ctx.fillRect(X(xm - 0.1), Y(yBx), 0.2 * sc, (yBx - yP) * sc);
+    { const yU = YT - 1.15, ux = xm - 0.9; ctx.strokeStyle = C.arm; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(X(xm - 0.1), Y(yU)); ctx.lineTo(X(ux), Y(yU)); ctx.stroke(); ctx.fillStyle = C.ins; for (let i = 0; i < 4; i++) ctx.fillRect(X(xm - 0.2 - i * 0.16) - 2, Y(yU + 0.17), 4, 0.34 * sc); }
+    ctx.strokeStyle = C.arm; ctx.lineWidth = 2; ctx.beginPath(); for (const [x, s] of [[Math.min(xa, xb), -1], [Math.max(xa, xb), 1]]) if (real(x)) { ctx.moveTo(X(xm), Y(yBar)); ctx.lineTo(X(xm + s * e), Y(yBar)); ctx.moveTo(X(xm), Y(yP)); ctx.lineTo(X(xm + s * e), Y(yBar)); } ctx.stroke();
+    for (const x of [xa, xb]) { if (!real(x)) continue; const s = x < xm ? -1 : 1; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(X(xm + s * e), Y(yBar)); ctx.quadraticCurveTo(X(x), Y(yBar + 0.1), X(x), Y(yP)); ctx.stroke(); ctx.fillStyle = C.cw; ctx.beginPath(); ctx.arc(X(x), Y(yP), 2.6, 0, 7); ctx.fill(); } };
+  const cant = (colx, lx) => { const s = lx > colx ? 1 : -1, L = Math.abs(lx - colx), yA = 5.95, yU = 7.3, yF = 5.1, px = u => X(colx + s * u);
+    ctx.strokeStyle = C.arm; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(px(0.15), Y(yU)); ctx.lineTo(px(1.6), Y(yU)); ctx.stroke(); ctx.fillStyle = C.ins; for (let i = 0; i < 4; i++) ctx.fillRect(px(1.6) - 5, Y(yU - 0.12 - i * 0.16), 10, 0.1 * sc);
+    ctx.strokeStyle = C.wire; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px(1.6), Y(yU - 0.7)); ctx.lineTo(px(1.6), Y(yU - 1.0)); ctx.stroke(); ctx.fillStyle = C.wire; ctx.beginPath(); ctx.arc(px(1.6), Y(yU - 1.0), 2.4, 0, 7); ctx.fill();
+    const tw = 0.2 * sc; ctx.fillStyle = C.arm; ctx.beginPath(); ctx.moveTo(px(0.15), Y(yA) - 1); ctx.lineTo(px(L - 0.1), Y(yA) - tw / 2); ctx.quadraticCurveTo(px(L + 0.08), Y(yA), px(L - 0.1), Y(yA) + tw / 2); ctx.lineTo(px(0.15), Y(yA) + 1); ctx.fill();
+    ctx.strokeStyle = C.arm; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(px(0.15), Y(yF)); ctx.lineTo(px(L * 0.78), Y(yA)); ctx.stroke(); ctx.lineWidth = 1.2; ctx.beginPath(); for (const u of [0.28, 0.6]) { const t = u / (L * 0.78); ctx.moveTo(px(u), Y(yA)); ctx.lineTo(px(u + 0.08), Y(yF + (yA - yF) * t)); } ctx.stroke();
+    ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(px(L - 0.1), Y(yA) + tw / 2); ctx.quadraticCurveTo(px(L + 0.12), Y(yA - 0.2), px(L), Y(5.0)); ctx.stroke(); ctx.fillStyle = C.cw; ctx.beginPath(); ctx.arc(px(L), Y(5.0), 2.6, 0, 7); ctx.fill(); };
+  let desc = '';
+  if (mode === 'now') {
+    if (n === 1) { const px = l0 - 3.9; column(px, 7.4); ctx.strokeStyle = C.steel; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(X(px), Y(YB)); ctx.lineTo(X(l0), Y(YB)); ctx.stroke(); catenary(l0); desc = 'tay đòn trơn một cột bên (kiểu bracket)'; }
+    else { const xa = l0 - 3.9, xb = l1 + 3.9; column(xa, YT + 0.4); column(xb, YT + 0.4); truss(xa, xb); for (const x of lanes) catenary(x); desc = 'một cổng/lồng chung, ' + (xb - xa).toFixed(1).replace('.', ',') + ' m, mỗi làn một dây treo' + (g.outerL || g.outerR || n > 1 && lanes.some((x, i) => i && x - lanes[i - 1] > GAP + 0.5) ? ' (cột có thể rơi vào sân ga)' : ''); }
+  } else if (n === 1) {
+    const platSide = g.outerL ? 'L' : g.outerR ? 'R' : '', left = platSide !== 'L', px = left ? l0 - 3.9 : l0 + 3.9; column(px, 7.6, true); cant(px, l0); desc = 'giá ngoài ga: một cột bên' + (platSide ? ' ở phía không có sân ga' : '') + ', một tay đòn';
+  } else {
+    const single = g.runs.length === 1 && n === 2;
+    column(edgeL, single ? 7.0 : YT + 0.4, true); column(edgeR, single ? 7.0 : YT + 0.4, true);
+    if (single) gable(edgeL, edgeR); else truss(edgeL, edgeR);
+    let posts = 0, half = 0;
+    for (const run of g.runs) { let i = 0; for (; i + 1 < run.length; i += 2) { const a = lanes[run[i]], b = lanes[run[i + 1]]; pairHang((a + b) / 2, a, b); posts++; }
+      if (i < run.length) { const k = run[i], l = lanes[k], dir = (l <= cxm && run.length === 1) ? -1 : (run.length === 1 ? 1 : 1); const partner = l + dir * GAP; pairHang(l + dir * GAP / 2, dir < 0 ? partner : l, dir < 0 ? l : partner, [l]); posts++; half++; } }
+    desc = (single ? 'hai thanh thép góc tù úp ngược' : 'xà dàn đan lưới') + ' ' + (edgeR - edgeL).toFixed(1).replace('.', ',') + ' m giữa hai cột ngoài (không cắm vào sân ga, không cột giữa); ' + posts + ' trụ thả xuống' + (half ? ', trong đó ' + half + ' bộ treo đôi một bên' : '');
+  }
+  return desc;
+}
+const list = document.getElementById('list'), cards = [];
+const order = Object.keys(DATA).sort((a, b) => { const na = DATA[a].tok.replace(/P/g, '').length, nb = DATA[b].tok.replace(/P/g, '').length; return na - nb || a.localeCompare(b); });
+for (const code of order) { const d = DATA[code], div = document.createElement('div'); div.className = 'card'; div.dataset.q = (code + ' ' + d.tok + ' ' + d.names.join(' ')).toLowerCase();
+  div.innerHTML = '<h2>' + code + ' <small>· ' + d.tok + ' · ' + d.names.length + ' ga</small>' + (d.branch ? '<span class="tag">ga có đường nhánh (vẽ phần nhánh)</span>' : '') + '</h2><div class="nm">' + (d.names.slice(0, 14).join(', ') + (d.names.length > 14 ? ' … (+' + (d.names.length - 14) + ')' : '')) + '</div><div class="lb">Hiện tại</div><canvas width="1040" height="250"></canvas><div class="ds" data-k="n"></div><div class="lb">Sau sửa</div><canvas width="1040" height="250"></canvas><div class="ds" data-k="y"></div>';
+  list.appendChild(div); cards.push([code, d, div]); }
+function render() { const PW = +document.getElementById('pw').value, q = document.getElementById('q').value.trim().toLowerCase(); document.getElementById('pwv').textContent = String(PW).replace('.', ',');
+  let shown = 0; for (const [code, d, div] of cards) { const ok = !q || div.dataset.q.includes(q); div.style.display = ok ? '' : 'none'; if (!ok) continue; shown++; const cv = div.querySelectorAll('canvas'); div.querySelector('[data-k=n]').textContent = draw(cv[0], d.tok, 'now', PW); div.querySelector('[data-k=y]').textContent = draw(cv[1], d.tok, 'new', PW); }
+  document.getElementById('cnt').textContent = shown + ' / ' + cards.length + ' mã'; }
+document.getElementById('pw').oninput = render; document.getElementById('q').oninput = render; render();
+</script></body></html>

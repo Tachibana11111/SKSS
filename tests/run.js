@@ -1157,6 +1157,29 @@ if (section('33b. Giá đỡ dây điện trên cao: kiểu theo kết cấu, ch
   // không bao giờ có cột đứng giữa hai đường
   { let bad = 0, n = 0; for (const kind of ['portal', 'pipe', 'cage', 'bracket', 'tunnel']) for (const [xa, xb, heads] of [[5, -9.5, [0, -4.3]], [1.2, -5.5, [0, -4.3]], [20, -30, [0, -4.3, -10, -15, -22]], [1.2, -1.2, [0]], [-2, 2, [0, -4.3]], [-4, 4, [0, -4.3]]]) { const cols = Sim.supportColumns(kind, xa, xb, heads), lo = Math.min(...heads), hi = Math.max(...heads); for (const x of cols) { n++; if (x > lo + 0.01 && x < hi - 0.01) bad++; } }
     ok(bad === 0 && n > 20, 'không có cột giữa hai đường ở mọi kiểu giá (' + n + ' cột kiểm, ' + bad + ' sai)'); }
+  // bố cục giá mới (người dùng chốt 27/11/2026, docs/12): kiểu theo số đường riêng biệt; cột luôn nằm ngoài mép hành lang (không cắm vào ray hay sân ga); bộ treo đôi theo cặp làn
+  { const SP = Sim.supportPlan, why = [], chk = (c, m) => { if (!c) why.push(m); }, outside = (r, hs) => r.cols.every(x => x <= Math.min(...hs) - 0.01 || x >= Math.max(...hs) + 0.01);
+    let r = SP([0, -4.3], 3.9, -8.2, { kind: 'portal', inSt: false }); chk(r.type === 'cant' && r.arms.length === 2 && outside(r, [0, -4.3]), 'ngoài ga 2 đường: mỗi đường một tay đòn, cột ngoài');
+    r = SP([0], 3.9, -3.9, { kind: 'bracket', inSt: false }); chk(r.type === 'cant' && r.arms.length === 1, 'một đường: một tay đòn');
+    r = SP([0], 3.9, -3.9, { kind: 'portal', inSt: true }); chk(r.type === 'cant' && r.arms.length === 1, 'ga đơn đường: tay đòn');
+    r = SP([0, -4.3], 6, -10, { kind: 'portal', inSt: true }); chk(r.type === 'gable' && r.posts.length === 1 && r.cols.length === 2 && !r.posts[0].real, 'đường đôi trong ga: hai thanh thép góc tù + một bộ treo đôi');
+    r = SP([-6.45, -2.15, 2.15, 6.45], 12, -12, { kind: 'cage', inSt: true }); chk(r.type === 'truss' && r.posts.length === 2 && r.singles.length === 0 && r.cols.length === 2 && outside(r, [-6.45, 6.45]), 'ga 4 làn: một xà dàn, 2 bộ treo đôi, không cột giữa');
+    r = SP([-4.3, 0, 4.3], 10, -10, { kind: 'cage', inSt: true }); chk(r.type === 'truss' && r.posts.length === 2 && r.posts.filter(q => q.real).length === 1, 'ga 3 làn: một bộ đôi + một bộ treo đôi một bên');
+    r = SP([-8.6, -4.3, 0, 4.3, 8.6], 14, -14, { kind: 'cage', inSt: true }); chk(r.type === 'truss' && r.posts.length === 3 && r.posts.filter(q => q.real).length === 1, 'ga 5 làn: 2 bộ đôi + 1 bộ một bên');
+    r = SP([-5.35, 5.35], 9, -9, { kind: 'portal', inSt: true }); chk(r.type === 'truss' && r.posts.length === 2 && r.posts.every(q => q.real), 'hai làn tách qua sân ga đảo: xà dàn, hai bộ một bên');
+    r = SP([-2.15, -2.15, 2.15, 2.15], 6, -6, { kind: 'portal', inSt: false }); chk(r.type === 'cant' && r.m === 2, 'vùng ghi: các làn chưa tách coi là một → tay đòn');
+    r = SP([-2.15, -5, 2.15, 5], 9, -9, { kind: 'portal', inSt: false }); chk(r.type === 'truss' && r.m === 4 && r.singles.length === 1 && r.posts.length === 2, 'vùng ghi đang tách: ≥ 3 đường → xà dàn; làn gần nhau dưới 4 m treo riêng');
+    r = SP([-6.45, -2.15, 2.15, 6.45], 12, -12, { kind: 'cage', inSt: true, noPair: true }); chk(r.type === 'truss' && r.posts.length === 0 && r.singles.length === 4, 'đường nhánh/ngã rẽ (noPair): mỗi đường treo riêng, không bộ treo đôi dùng chung dây trên');
+    r = SP([0, -4.3], 3.9, -8.2, { kind: 'tunnel', inSt: false }); chk(r.type === 'tunnel' && r.posts.length === 1 && r.cols.length === 0, 'hầm đôi: một bộ treo đôi cắm trần, không cột');
+    r = SP([0], 3.9, -3.9, { kind: 'tunnel', inSt: false }); chk(r.type === 'tunnel' && r.drops.length === 1 && r.cols.length === 0, 'hầm đơn: một trụ treo');
+    // tính chất: mọi đường đều có chỗ treo; cột không nằm giữa các dây; mọi kiểu, bố trí ngẫu nhiên
+    let seed = 7, rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, bad = 0, total = 0;
+    for (let k = 0; k < 400; k++) { const n = 1 + Math.floor(rnd() * 6), hs = []; let x = -10 + rnd() * 6; for (let i = 0; i < n; i++) { hs.push(x); x += rnd() < 0.3 ? 8 + rnd() * 8 : 2.5 + rnd() * 3; }
+      for (const kind of ['portal', 'pipe', 'cage', 'tunnel']) for (const inSt of [false, true]) { const r = SP(hs, Math.max(...hs) + 3.9, Math.min(...hs) - 3.9, { kind, inSt }); total++;
+        const hung = hs.every(h => r.arms.some(a => Math.abs(a[1] - h) < 2.1) || r.posts.some(q => (q.real ? q.real : [q.xa, q.xb]).some(v => Math.abs(v - h) < 2.1)) || r.singles.some(v => Math.abs(v - h) < 2.1) || r.drops.some(v => Math.abs(v - h) < 2.1));
+        if (!outside(r, hs) || !hung) bad++; } }
+    chk(bad === 0, 'giá đỡ ngẫu nhiên: ' + bad + ' / ' + total + ' bố cục có cột nằm giữa dây hoặc có đường không được treo');
+    ok(why.length === 0, 'bố cục giá đỡ mới (tay đòn / thép góc tù / xà dàn + bộ treo đôi / trần hầm): ' + (why.length ? why.join('; ') : '13 trường hợp + 4800 ngẫu nhiên đạt'), why.join('; ')); }
   // vẽ khung nhìn buồng lái không lỗi trên mọi tuyến, cả hai chiều, mọi dạng đoạn (kể cả đường đơn của Akita/Yamagata)
   { global.hhmm = global.hhmm || (s => String(s)); global.CanvasRenderingContext2D = global.CanvasRenderingContext2D || function () { }; global.CanvasRenderingContext2D.prototype.roundRect = global.CanvasRenderingContext2D.prototype.roundRect || function () { };
     require(path.join(DRIVE, 'world.js')); require(path.join(DRIVE, 'strips.js')); require(path.join(DRIVE, 'cabview.js'));
