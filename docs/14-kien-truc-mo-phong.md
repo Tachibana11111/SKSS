@@ -152,7 +152,7 @@ Nguồn: `ou_1/030_01`, `tohoku/010_05` (配線略図.net); trang nghiên cứu 
 - **Dữ liệu:** `tools/build_struct.py` (`'福島': '2-4-1f'`, `JUNC['yam'] = (256.1, …)`: đường cong, đường ngang bắt đầu từ km 256,1), `tools/build_lines.py` (`XO`), `sim.js` (`junctions`, `SUP_SIMPLE_FROM.yam`).
 - **Hạn chế đã biết [?]:** (1) sơ đồ không ghi cao độ nên đường rìa nam cắt đồng mức; (2) đường 1435 mm từ ga tuyến thường Ou Line (đường mini thứ hai trong sơ đồ) không dựng; (3) tàu Tohoku khác chạy qua đoạn hội tụ không có bản vẽ riêng; (4) Fukushima chiều lên dùng khung quay 180°, hai ghi nối rìa vẽ cả hai rìa nhưng tàu của ta chỉ đi rìa nam.
 
-- **Chạy lùi (23/11/2026, chế độ nhà phát triển):** nút "Chạy lùi" thay nút Phát thanh (phím M) chỉ khi `devOK()`; `Sim.toggleReverse(T)` bật/tắt chỉ khi `T.v < 0,05` (tàu đứng hẳn) và `T.phase === 'run'`. `T.v` vẫn là độ lớn tốc độ nên lùi phải về 0 thì mới đổi lại chạy tiến được; chạy lùi: `T.x -= T.v·dt`, độ dốc đổi dấu, giới hạn tốc độ/ATC giữ như khi tiến, đuôi tàu dừng sát chắn cuối (đầu tuyến s = −440 m, Omagari khung ĐI là chắn sau lưng). Đồng hồ hiện chữ LÙI. Test 33p (6).
+- **Chạy lùi (23/11/2026, chế độ nhà phát triển):** nút "Chạy lùi" thay nút Phát thanh chỉ khi `devOK()` (từ 27/11/2026: nút nằm dưới đồng hồ tốc độ ở mọi chế độ, phím **B**); `Sim.toggleReverse(T)` bật/tắt chỉ khi `T.v < 0,05` (tàu đứng hẳn) và `T.phase === 'run'`. `T.v` vẫn là độ lớn tốc độ nên lùi phải về 0 thì mới đổi lại chạy tiến được; chạy lùi: `T.x -= T.v·dt`, độ dốc đổi dấu, giới hạn tốc độ/ATC giữ như khi tiến, đuôi tàu dừng sát chắn cuối (đầu tuyến s = −440 m, Omagari khung ĐI là chắn sau lưng). Đồng hồ hiện chữ LÙI. Test 33p (6).
 
 ## 8f. Ga Akita: ga cuối đầu cụt `1-2-0t` [D sơ đồ / I hình học] (22/11/2026)
 
@@ -210,13 +210,13 @@ Mockup: `docs/data/haisen/ou_cards.html`. Test: 33r (mục 1b2, 1e).
 - **Omagari – hạ tầng dư (27/11/2026):** khi ga Omagari nằm trong cửa sổ hạ tầng (`omOn`, tới ~3 km), làn thứ hai của ga (`tOth`, x = −4,3 m) không còn được tính vào bề rộng hành lang `xl/xr` (làn kia đã có `omOpp`), nên nền, hàng rào và cổng dây điện không còn rộng như ba đường quanh Omagari. `omOpp` (bề rộng theo làn kia, kẹp ±9,5 m) tắt dần về 0 khi làn kia cách > 20 m (hai đường đã tách hẳn), và làn kia ở xa có cổng đỡ dây riêng (trước đó dây treo lơ lửng và còn các thanh treo không dây ở hai đầu xà).
 - **Dây điện (`cabview.js`):** xà đỡ gom cả đường nhánh/đường tránh của ga (`heads`), và kiểu cột bên của đường đơn chỉ dùng khi các dây cách nhau < 2,5 m; trước đây ga trên đường đơn dùng cột bên chỉ đỡ đường chính nên dây nhánh treo lơ lửng (Akita và Yamagata).
 
-## 8l. Cần ATC 4 nấc, bỏ cần vẹt, phím B bản đồ (27/11/2026) [I: lựa chọn của game]
+## 8l. Cần ATC 4 nấc, bỏ cần vẹt, phím M bản đồ, phím B chạy lùi (27/11/2026) [I: lựa chọn của game]
 Mockup: `docs/mockups/atc_switch.html`. Test: mục 40 (`tests/run.js`).
 - **Bốn nấc (`T.atcMode`):** 3 BẬT (tự phanh khi vượt) · 2 CHỈ BÁO (vòng giới hạn + chuông `T.atcWarn`, KHÔNG tự phanh; thời gian vượt `T.warnBad` bị trừ `warnPen` = warnBad/2, tối đa 25) · 1 CHẠY CHẬM (trần cứng 30 km/h, `T.why = 'creep'`, tự phanh nếu vượt) · 0 CẮT (như trước: `T.atcOn = false`, phạt `atcOffPen`, phải xác nhận). `T.atcOn` vẫn là cờ "không phải CẮT" nên mã cũ giữ nguyên.
 - **Thao tác:** `Sim.atcMove(T, ±1)` (phím A hạ nấc, D tăng nấc; mỗi lần một nấc), `Sim.atcGo(T, i)` (bấm chuột vào nấc: đi một nấc về phía đó); xuống CẮT phải bấm lần nữa trong 4 s. Lệnh ghi lại: `atcmv`, `atcgo`; lệnh cũ `atcsw` (bật/cắt) vẫn phát lại được (`toggleATC`).
 - **Vùng ATC mất mã (`atcfault`):** nấc BẬT dừng trước vùng như trước; nấc CHẠY CHẬM được chạy qua ≤ 30 km/h. Tự lái tự chuyển CHẠY CHẬM từ 900 m trước vùng tới hết vùng rồi BẬT lại. (Chưa ép nấc bằng lệnh điều độ/động đất: để người chơi tự quyết.)
 - **Bỏ cần vẹt:** không còn `T.pan`, `togglePan`, nút CẦN VẸT, phím G. Đoạn cách điện đổi tần số giữ nguyên (kéo lực vào đoạn đó → hồ quang, mất lực 12 s; về N trước vạch). Lệnh `pan` trong bản ghi cũ bị bỏ qua.
-- **Giao diện:** `fullui.js: atcLever` (284×66 thay hai nút ATC + cần vẹt; chế độ tập trung dùng bản hẹp 120 px). **Phím B** (thay D) hoán đổi bản đồ toàn quốc ↔ buồng lái; bấm B lần nữa để về.
+- **Giao diện:** `fullui.js: atcLever` (284×66 thay hai nút ATC + cần vẹt; chế độ tập trung dùng bản hẹp 120 px). **Phím M** (thay D) hoán đổi bản đồ toàn quốc ↔ buồng lái; bấm M lần nữa để về. **Phím B** là chạy lùi (trước đó là M).
 
 ## 9. Điểm cứu hộ trong hầm Seikan (竜飛定点, 吉岡定点) [N/I]
 

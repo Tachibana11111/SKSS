@@ -1051,7 +1051,7 @@ if (section('39. Cần phanh mặc định EB, ga bị ngắt khi phanh, trưở
     ok(/k === 'w' \|\| k === 'W'\) doAct\('brake', 1\)/.test(idx) && /k === 'ArrowDown'\) doAct\('power', 1\)/.test(idx) && !/doAct\('coast'\)|doAct\('eb'\)|doAct\('door'\)/.test(idx.slice(idx.indexOf("addEventListener('keydown'"))), 'phím: W/S phanh, ↑/↓ ga; bỏ Space, Q, Enter'); }
 }
 
-if (section('40. Cần ATC 4 nấc (BẬT / CHỈ BÁO / CHẠY CHẬM 30 / CẮT), đã bỏ cần vẹt, phím B bản đồ')) {
+if (section('40. Cần ATC 4 nấc (BẬT / CHỈ BÁO / CHẠY CHẬM 30 / CẮT), đã bỏ cần vẹt, phím M bản đồ, B chạy lùi')) {
   const rec = find('tsk', 'Nozomi', 'down', 12, 16), trip = Sim.makeTrip('tsk', rec, 12, 16);
   const mkRun = () => { const W = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player; Sim.requestClose(T); let n = 0; while (T.door !== 'closed' && n++ < 2000) Sim.tick(W, 0.05, {}, false); Sim.setBrake(T, 0); Sim.setPower(T, 13); n = 0; while (T.phase !== 'run' && n++ < 400) Sim.tick(W, 0.05, {}, false); return { W, T }; };
   // 1) chuyển nấc
@@ -1081,7 +1081,7 @@ if (section('40. Cần ATC 4 nấc (BẬT / CHỈ BÁO / CHẠY CHẬM 30 / CẮ
     { const all = fu + idx, need = ['wideBtn', 'atcLever', 'tileBtn', 'lever', 'miniGauge', 'bigDial', 'drawTopBar', 'drawMissionPanel', 'drawViewIn', 'drawRadioFull', 'drawCabTip', 'drawTutEnd', 'tileView', 'panel', 'button', 'txt', 'wrapText'], miss = need.filter(n => !(all.includes('function ' + n + '(') || all.includes('const ' + n + ' =') || all.includes('let ' + n + ' =') || all.includes(', ' + n + ' = ') || all.includes('; ' + n + ' = ')));
       ok(miss.length === 0, 'fullui.js: mọi hàm vẽ mà drawFull gọi đều được định nghĩa (lần trước thiếu wideBtn làm cả bảng điều khiển không vẽ)', miss); }
     ok(/Tàu kiểm tra không chở khách, không cần đóng cửa/.test(idx) && /atcPen, warnPen, bandPen/.test(sm), 'tàu kiểm tra: lời nhắc đầu chuyến không còn nói đóng cửa; chấm điểm có phạt nấc CHỈ BÁO (không lách ATC bằng nấc CHỈ BÁO)');
-    ok(/k === 'a' \|\| k === 'A'\) doAct\('atcmv', -1\)/.test(idx) && /k === 'd' \|\| k === 'D'\) doAct\('atcmv', 1\)/.test(idx) && /k === 'b' \|\| k === 'B'\) && W && mode !== 'dispatch'\) \{ ui\.nat = !ui\.nat/.test(idx), 'phím: A hạ nấc, D tăng nấc, B hoán đổi bản đồ ↔ buồng lái'); }
+    ok(/k === 'a' \|\| k === 'A'\) doAct\('atcmv', -1\)/.test(idx) && /k === 'd' \|\| k === 'D'\) doAct\('atcmv', 1\)/.test(idx) && /k === 'm' \|\| k === 'M'\) && W && mode !== 'dispatch'\) \{ ui\.nat = !ui\.nat/.test(idx) && /else if \(k === 'b' \|\| k === 'B'\) doAct\('rev'\)/.test(idx), 'phím: A hạ nấc, D tăng nấc, M hoán đổi bản đồ ↔ buồng lái, B chạy lùi'); }
 }
 
 if (section('33a. Đoàn ghép Tohoku + mini và đường đơn: mẫu tàu sau ga tách, mũi tên ở ga ghép, tàu bị giữ đứng đúng ga, tách/ghép trong góc nhìn, phụ kiện sân ga')) {

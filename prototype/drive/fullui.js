@@ -255,7 +255,7 @@ function drawFull() {
   const others = VIEWS.filter(v => v !== ui.main), tileTag = (t, x, y, w) => { let fs = 14; ctx.font = fs + 'px system-ui'; while (fs > 10 && ctx.measureText(t).width > w - 20) { fs--; ctx.font = fs + 'px system-ui'; } const tw = Math.min(w, Math.ceil(ctx.measureText(t).width) + 20); ctx.fillStyle = 'rgba(0,0,0,.62)'; ctx.fillRect(x, y, tw, 26); txt(t, x + 10, y + 18, '#dcebf8', fs + 'px system-ui'); },      // nhãn hướng dẫn trên các ô phụ: chữ to hơn, rộng theo độ dài chữ của từng ngôn ngữ (thu nhỏ chữ nếu ô quá hẹp)
     slotLabel = (v, x, y, w) => { if (v === 'top' || v === 'winL' || v === 'winR') return; tileTag(VNAME[v] + _t(' · bấm để phóng to'), x, y, w); };
   // ô góc trên phải: bản đồ toàn quốc bám theo tàu ta; khi bản đồ toàn quốc đang là khung chính thì ô này hiện góc nhìn lái tàu hiện tại; bấm hoặc phím D để hoán đổi
-  const drawNatTile = () => { const [x, y, w, h] = ui.focus ? SLOT_NAT : SLOT_NATP; if (ui.focus) panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); tileView('nat', ui.nat ? ui.main : 'nat', x, y, w, h); tileTag((ui.nat ? VNAME[ui.main] : _t('BẢN ĐỒ TOÀN QUỐC')) + _t(' · bấm hoặc B để hoán đổi'), x, y, w); btns.push({ x, y, w, h, fn: () => { ui.nat = !ui.nat; } }); };
+  const drawNatTile = () => { const [x, y, w, h] = ui.focus ? SLOT_NAT : SLOT_NATP; if (ui.focus) panel(x - 4, y - 4, w + 8, h + 8, 'rgba(8,12,18,.85)'); tileView('nat', ui.nat ? ui.main : 'nat', x, y, w, h); tileTag((ui.nat ? VNAME[ui.main] : _t('BẢN ĐỒ TOÀN QUỐC')) + _t(' · bấm hoặc M để hoán đổi'), x, y, w); btns.push({ x, y, w, h, fn: () => { ui.nat = !ui.nat; } }); };
   if (!ui.nat && ui.focus) drawNatTile();
   // ---- điện đàm
   if (!ui.focus && ui.radio) drawRadioFull(16, 72, 496, 340);
@@ -288,7 +288,7 @@ function drawFull() {
   // đồng hồ tốc độ (lệch trái); bốn đồng hồ nhỏ xếp dọc bên phải; Tốc độ đều / Chạy lùi ngay dưới đồng hồ (rộng bằng đồng hồ). Mockup: docs/mockups/cab_panel.html
   panel(139 + GX, PY, 410, PH); bigDial(283 + GX, PY + 150, 125, blink);
   { const by = PY + 300, bh = 66, bw = ui.focus ? 119 : 121, bx = ui.focus ? 155 + GX + 129 : 283 + GX - 125;      // chế độ tập trung: nút ATC chiếm đầu hàng, hai nút này nằm kế bên
-    wideBtn(bx, by, bw, bh, _t('Tốc độ đều'), 'C', T.cs, '#2a8fa0', () => doAct('cs')); wideBtn(bx + bw + 8, by, bw, bh, _t('Chạy lùi'), 'M', !!T.rev, '#d64a4a', () => doAct('rev')); }
+    wideBtn(bx, by, bw, bh, _t('Tốc độ đều'), 'C', T.cs, '#2a8fa0', () => doAct('cs')); wideBtn(bx + bw + 8, by, bw, bh, _t('Chạy lùi'), 'B', !!T.rev, '#d64a4a', () => doAct('rev')); }
   if (!ui.focus) { const Ft = T.f >= 0 ? T.f * Sim.tractiveOf(T, T.v) : 0, amps = T.f >= 0 ? Ft * T.v / 25000 : -(Math.min(1.4, -T.f) / 1.4) * Math.min(500, T.v * 3.6 * 2.2), bar = (T.f < 0 ? Math.min(1.4, -T.f) / 1.4 : 0) * 5, tc = Math.min(1, Math.max(0, T.bt)) * 600, gx = 484 + GX, gy = i => PY + 40 + i * 94;
     miniGauge(gx, gy(0), 28, amps, -500, 900, _t('Dòng kéo'), Math.round(amps) + ' A', amps < 0 ? '#4cd68a' : '#4aa3ff', [-500, 0, 400, 900], true);
     miniGauge(gx, gy(1), 28, bar, 0, 5, _t('Áp phanh'), bar.toFixed(1) + ' bar', bar > 3.5 ? '#ff8a4a' : '#ffc247', [0, 2.5, 5], true);

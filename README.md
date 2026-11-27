@@ -56,12 +56,12 @@ Bảng đầy đủ nằm trong **Cài đặt → Phím tắt**.
 | C · [ ] | tốc độ không đổi · chỉnh ∓5 km/h |
 | A / D | cần ATC 4 nấc nằm ngang: A hạ nấc (BẬT → CHỈ BÁO → CHẠY CHẬM 30 → CẮT, xuống CẮT phải bấm A lần nữa trong 4 s), D tăng nấc; bấm chuột vào nấc cũng được |
 | V · L | gạt mưa · đèn pha |
-| Y / N · M | nhắc lại lệnh, chấp nhận / từ chối · chạy lùi (chỉ khi đã dừng hẳn) |
+| Y / N · B | nhắc lại lệnh, chấp nhận / từ chối · chạy lùi (chỉ khi đã dừng hẳn) |
 | K | (tàu kiểm tra) đánh dấu lỗi (đo tự chạy từ lúc rời ga) |
 | Tab · O | đổi khung nhìn · ẩn điện đàm |
 | , · . | cửa sổ hành khách bên trái · bên phải (bấm lại để về buồng lái) |
 | J | bật/tắt ù cabin máy bay (nút loa góc trên phải: bấm 1 lần xổ thanh âm lượng, bấm lần 2 tắt tiếng) |
-| B | hoán đổi nhanh giữa bản đồ toàn quốc và góc nhìn đang dùng (bấm B lần nữa để về buồng lái) (con lăn zoom, kéo di chuyển, bấm ga/tàu xem chi tiết; nút định vị về tàu ta) |
+| M | hoán đổi nhanh giữa bản đồ toàn quốc và góc nhìn đang dùng, bấm M lần nữa để về buồng lái (con lăn zoom, kéo di chuyển, bấm ga/tàu xem chi tiết; nút định vị về tàu ta) |
 | H | còi (game cũng tự bấm còi ở khu làm việc, ga không dừng, đường ngang, tàu đứng phía trước) |
 | P (hoặc Esc) · F9 · F11 | tạm dừng · chụp cảnh (ảnh PNG + tệp JSON dựng lại cảnh) · toàn màn hình |
 | 1 2 3 · T · R | tua ×1/×4/×16 (nút vuông ×N góc trên phải đổi vòng ×1 → ×4 → ×16) · tự lái · chạy lại |

@@ -1486,7 +1486,7 @@
     if (dKm <= (q.shindo - 3.5) * 60) {
       const delay = Math.min(60, dKm / 4), dur = 480 + (q.shindo >= 5 ? 300 : 0) + Math.round(dKm * 4);
       W.say('bad', _t('Động đất thật vừa xảy ra lúc {0}: {1} (M{2}, 震度 {3}), cách tàu khoảng {4} km. Chuẩn bị chịu rung.', hmOf(q.t), name, mag.toFixed(1), q.shindo, Math.round(dKm)));
-      W.events.push({ at: W.t + delay, done: false, abs: true, fire: w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Phát thanh trấn an hành khách (M).')); } });
+      W.events.push({ at: W.t + delay, done: false, abs: true, fire: w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Trưởng tàu sẽ phát thanh trấn an hành khách.')); } });
       return true;
     }
     const M = T.M, lo = Math.min(M[0].s, M[M.length - 1].s) - 3000, hi = Math.max(M[0].s, M[M.length - 1].s) + 3000; let best = null;
@@ -1527,7 +1527,7 @@
     if (!W.real && D.rare > 0 && hash01(W.seed || 1, 4242) < D.rare) {      // thiên tai/thời tiết đã có hiệu lực tại ga xuất phát: giữ tàu ở ga 5–15 phút (mưa ≥ 60 mm/h, gió ≥ 30 m/s hoặc động đất)
       const h = hash01(W.seed || 1, 4243), dur = 300 + Math.round(hash01(W.seed || 1, 4244) * 600), p0 = M[0].s, kind0 = h < 0.4 ? 'rain' : h < 0.75 ? 'wind' : 'eqk';
       (W.hazPlan = W.hazPlan || []).push({ kind: kind0, at: 0, dur, s: p0, r: 60, stop: kind0 !== 'eqk' });
-      if (kind0 === 'eqk') evAbs(0, w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Phát thanh trấn an hành khách (M).')); });
+      if (kind0 === 'eqk') evAbs(0, w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Trưởng tàu sẽ phát thanh trấn an hành khách.')); });
       else { W.zones.push({ s0: p0 - 3000, s1: p0 + 40000, v: 0, tA: 0, tB: dur, kind: kind0, hold: true, gate: true, label: kind0 === 'rain' ? _t('mưa ≥ 60 mm/h') : _t('gió ≥ 30 m/s') });
         evAbs(0, w => w.say('bad', (kind0 === 'rain' ? _t('Cục Khí tượng: mưa ≥ 60 mm/h ở khu vực ga xuất phát. Giữ tàu tại ga, chờ lệnh (~{0}).', fmtT(dur)) : _t('Cảnh báo gió ≥ 30 m/s ở khu vực ga xuất phát. Giữ tàu tại ga, chờ kiểm tra ray (~{0}).', fmtT(dur))) + ' ' + _t('Nhấn Y để nhắc lại lệnh.'), { ack: true })); }
     }
@@ -1545,7 +1545,7 @@
         ev(at, w => { w.zones.push({ s0: ss0, s1: ss1, v: 0, tA: w.t, tB: w.t + dur, kind: 'wind', hold: true, label: _t('gió ≥ 30 m/s') }); startHold(w, ss1, dur, 'wind'); w.say('bad', _t('Gió ≥ 30 m/s: DỪNG chạy. Về ga gần nhất, chờ kiểm tra ray (~{0}). Nhấn Y để nhắc lại lệnh.', fmtT(dur)), { ack: true }); });
       } else if (kind === 'eqk') {
         const at2 = Math.round(planT * (0.2 + rnd() * 0.6)), dur = 480 + rnd() * 600; (W.hazPlan = W.hazPlan || []).push({ kind: 'eqk', at: at2, dur, s: sAtTime(at2) });
-        ev(at2, w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Phát thanh trấn an hành khách (M).')); });
+        ev(at2, w => { w.eqkAt = w.t; w.eqkActive = true; w.eqkRelease = w.t + dur + 20; for (const X of allTrains(w)) X.cut = true; w.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên, chờ kiểm tra ray và dây điện. Trưởng tàu sẽ phát thanh trấn an hành khách.')); });
       } else if (kind === 'leadstop') {
         const d = 240 + rnd() * 420;
         ev(at, w => { w.leadHoldUntil = w.t + d; w.leadStopAt = w.t; w.say('warn', _t('Điều độ: tàu phía trước ({0}) dừng khẩn do hành khách bệnh, ~{1}. ATC sẽ giữ khoảng cách.', w.leadLabel, fmtT(d))); });
@@ -1580,11 +1580,11 @@
       } else if (kind === 'wire') {
         const dur = 1500 + rnd() * 1500;
         ev(at, w => { const T = w.player, s = T.x + sgn * 12000; w.wires.push({ s, tA: w.t, tB: w.t + dur }); w.zones.push({ s0: s - 1500, s1: s + 1500, v: 0, tA: w.t, tB: w.t + dur, kind: 'wire', hold: true, label: _t('dây điện hỏng') }); startHold(w, s + 1500, dur, 'wire');
-          w.say('bad', _t('SỰ CỐ DÂY ĐIỆN: dây điện võng ở phía trước, mất điện đoạn này. DỪNG chạy, về ga gần nhất, chờ khôi phục (~{0}). Phát thanh trấn an (M). Nhấn Y để nhắc lại lệnh.', fmtT(dur)), { ack: true }); });
+          w.say('bad', _t('SỰ CỐ DÂY ĐIỆN: dây điện võng ở phía trước, mất điện đoạn này. DỪNG chạy, về ga gần nhất, chờ khôi phục (~{0}). Trưởng tàu sẽ phát thanh trấn an. Nhấn Y để nhắc lại lệnh.', fmtT(dur)), { ack: true }); });
       } else if (kind === 'fire') {
         const doFire = w => { const car = 1 + Math.floor(rnd() * Math.max(1, w.player.veh.cars)); w.fireActive = true; w.fireEnd = w.t + 900; w.fireCar = car; const dur = 900 + rnd() * 600;
           startHold(w, 1e12, dur, 'fire'); w.faults.push({ car, kind: 'fire', text: _t('Toa {0}: báo cháy/khói', car), level: 'bad', t: w.t });
-          w.say('bad', _t('BÁO CHÁY toa {0}: nếu đang TRONG HẦM thì KHÔNG dừng, chạy ra khỏi hầm; ngoài hầm thì dừng ở ga gần nhất. Báo điều độ (Y) và phát thanh trấn an (M).', car), { ack: true }); };
+          w.say('bad', _t('BÁO CHÁY toa {0}: nếu đang TRONG HẦM thì KHÔNG dừng, chạy ra khỏi hầm; ngoài hầm thì dừng ở ga gần nhất. Báo điều độ (Y); trưởng tàu sẽ phát thanh trấn an.', car), { ack: true }); };
         ev(at, w => { // nếu sắp có hầm phía trước thì chờ tới khi tàu vào hầm
           const T = w.player; let target = null; for (const [k0, k1] of w.line.meta.tunnels) { if (k1 - k0 < 2.5) continue; const a = sOfKm(k0, w.dir, w.line.kmEnd), b = sOfKm(k1, w.dir, w.line.kmEnd), lo = Math.min(a, b), hi = Math.max(a, b); const ent = sgn > 0 ? lo : hi; if ((ent - T.x) * sgn > 3000 && (ent - T.x) * sgn < 40000 && (ent - lastS) * sgn < 0) { target = ent + sgn * 1500; break; } }
           if (target != null) { w.armedFire = { s: target, fn: doFire }; w.say('info', _t('Tàu sắp vào hầm. Hãy sẵn sàng.')); } else doFire(w); });
@@ -1626,7 +1626,7 @@
     else if (kind === 'workers') { const s = T.x + sgn * (o.ahead || 6000), s0 = Math.min(s, s + sgn * 3000), s1 = Math.max(s, s + sgn * 3000); W.workers.push({ s0, s1, checked: false, hornOK: false }); W.zones.push({ s0, s1, v: 230 / 3.6, tA: W.t, tB: W.t + 1500, kind: 'order', label: _t('nhân viên làm việc') }); W.say('warn', _t('Điều độ: có nhân viên làm việc cạnh đường phía trước. BẤM CÒI (H) khi tới gần. Nhấn Y để nhắc lại lệnh.'), { ack: true }); }
     else if (kind === 'hold') { const j = Math.min(M.length - 1, nextTarget(T)); const rel = W.t + (o.sec || 90) + 60; T.holds[j] = rel; W.say('warn', _t('Điều độ: giữ tàu tại {0} thêm {1} s. Nhấn Y để nhắc lại lệnh.', M[j].name, o.sec || 90), { ack: true }); }
     else if (kind === 'overtake') { W.decision = { t0: W.t, timeout: 40, text: _t('Điều độ đề nghị: cho tàu nhanh phía sau vượt. Chấp nhận giữ thêm 90 s?'), a: { label: _t('Chấp nhận (Y)'), fn: w2 => { w2.netScore += 3; w2.say('stop', _t('Đã chấp nhận. +3 điểm phối hợp.')); } }, b: { label: _t('Từ chối (N)'), fn: w2 => { w2.netScore -= 3; w2.say('warn', _t('Đã từ chối. −3 điểm phối hợp.')); } } }; W.say('warn', W.decision.text + _t('  [Y] chấp nhận · [N] từ chối (40 s).')); }
-    else if (kind === 'eqk') { W.eqkAt = W.t; W.eqkActive = true; W.eqkRelease = W.t + (o.sec || 300); for (const X of allTrains(W)) X.cut = true; W.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên. Phát thanh trấn an hành khách (M).')); }
+    else if (kind === 'eqk') { W.eqkAt = W.t; W.eqkActive = true; W.eqkRelease = W.t + (o.sec || 300); for (const X of allTrains(W)) X.cut = true; W.say('bad', _t('CẢNH BÁO ĐỘNG ĐẤT: cắt điện, tàu phanh khẩn cấp. Giữ nguyên. Trưởng tàu sẽ phát thanh trấn an hành khách.')); }
     else if (kind === 'wire') { const s = T.x + sgn * 12000; W.wires.push({ s, tA: W.t, tB: W.t + 1800 }); W.zones.push({ s0: s - 1500, s1: s + 1500, v: 0, tA: W.t, tB: W.t + 1800, kind: 'wire', hold: true, label: _t('dây điện hỏng') }); startHold(W, s + 1500, 1800, 'wire'); W.say('bad', _t('SỰ CỐ DÂY ĐIỆN: DỪNG chạy, về ga gần nhất, chờ khôi phục. Nhấn Y để nhắc lại lệnh.'), { ack: true }); }
     else if (kind === 'fire') { W.fireActive = true; W.fireEnd = W.t + 900; startHold(W, 1e12, 900, 'fire'); W.faults.push({ car: 6, kind: 'fire', text: _t('Toa 6: báo cháy/khói'), level: 'bad', t: W.t }); W.say('bad', _t('BÁO CHÁY toa 6: nếu trong hầm thì KHÔNG dừng, ra khỏi hầm rồi dừng ở ga gần nhất. Báo điều độ (Y).'), { ack: true }); }
     else if (kind === 'atcfault') { const ah = o.ahead || 5000, s = T.x + sgn * ah, dur = o.sec || 90, tB = W.t + ah / 55 + dur; W.zones.push({ s0: Math.min(s, s + sgn * 1500), s1: Math.max(s, s + sgn * 1500), v: 0, tA: W.t, tB, kind: 'atcfault', label: _t('ATC: tín hiệu 0') }); W.say('bad', _t('ATC báo TÍN HIỆU 0 phía trước ({0} mất mã hoặc tính lỗi: nguyên tắc fail-safe, không có tín hiệu thì coi là dừng). Dừng trước vùng và chờ điều độ (~{1} s), hoặc bấm A chuyển cần ATC sang CHẠY CHẬM để chạy qua vùng ≤ 30 km/h. Nhấn Y để nhắc lại lệnh.', ATCN[W.line.meta.atc] || 'ATC', Math.round(dur)), { ack: true }); }

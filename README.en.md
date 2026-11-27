@@ -18,7 +18,7 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 
 ## Features
 - **7 lines, 5 JR companies:** Tokaido–Sanyo–Kyushu, Tohoku–Hokkaido, Joetsu, Hokuriku, Nishi-Kyushu, plus the Yamagata and Akita mini-Shinkansen lines (including coupling and uncoupling at Tokyo, Fukushima and Morioka). **Real October 2026 timetables**, with train types from the N700/N700S, E5, E6, E7/W7, E8, H5, 800 and N700S-8000 to the 923 Doctor Yellow and E926 East i inspection trains.
-- **Realistic driving:** 13 power notches, 8 brake steps, ATC, cruise control, pantograph, wipers, headlights, frequency-change dead sections, passing loops and through tracks at stations, turnouts into the platforms, and trains ahead or passing through on the real timetable. On the single-track Akita/Yamagata lines your train stops to let oncoming trains pass (even at stations with no scheduled stop); a mini-Shinkansen waits for the Tohoku train to reach the station before coupling and never enters the junction area before it.
+- **Realistic driving:** 13 power notches, 8 brake steps, a 4-position ATC switch (ON / WARN ONLY / CREEP 30 / CUT), cruise control, wipers, headlights, frequency-change dead sections, passing loops and through tracks at stations, turnouts into the platforms, and trains ahead or passing through on the real timetable. On the single-track Akita/Yamagata lines your train stops to let oncoming trains pass (even at stations with no scheduled stop); a mini-Shinkansen waits for the Tohoku train to reach the station before coupling and never enters the junction area before it.
 - **A world that runs on the real timetable:** oncoming trains, trains standing at stations, trains passing through and the train ahead are all real trains from the timetable, shown exactly where the nationwide map puts them; held trains (earthquake, rain or wind, incident) stand completely still. Random incidents happen to **every train**, not just yours.
 - **Weather and random incidents (seeded):** rain (drops collect on the front and rear glass and the wipers clear them), snow, typhoon, earthquakes, fire in a tunnel, ill passengers, a vehicle stuck on a level crossing (only on Yamagata and Akita, the only lines with level crossings), dispatcher orders you must repeat back, extra stops to let a fast train overtake. 4 difficulty levels.
 - **Free mode:** adds an autopilot button and does not score the trip; on the nationwide map click a train and choose "Enter cab" to look into its cab (the Doctor Yellow and East i inspection trains too).
@@ -26,7 +26,7 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 - **Scenery:** built from OpenStreetMap data; train fronts and tails follow the real nose profile; many kinds of overhead-wire supports (steel portals, steel-pipe beams, かご beams, side poles with swing brackets, tunnel-ceiling hangers), never with a pole between two tracks; at-grade sections have a concrete slab under the rails and steel fences on both sides (open at the level crossings of Yamagata and Akita).
 - **Nationwide map** ([screenshot](#screenshots)): 47 prefectures with **every island in the data** (including the Northern Territories, drawn dashed), 10 line segments in Wikipedia colours, **every train running on the real timetable** plus weather and earthquakes; click a station or train for details, including the trains ahead and behind and their gaps.
 - **On-board announcements** spoken in Japanese, with subtitles (the Japanese interface shows a single subtitle line): next stop, connecting lines, which side the doors open, delays, incidents. The door side matches the platform track the train is routed to, even at stations with many tracks.
-- **Tutorial:** 4 step-by-step lessons (driving and stopping, equipment, incidents, pantograph and ATC). **Profile:** 14 achievements, best results, history and replays of past trips.
+- **Tutorial:** 4 step-by-step lessons (driving and stopping, equipment, incidents, the 4-position ATC switch and a stopped train ahead). **Profile:** 14 achievements, best results, history and replays of past trips.
 - **Sound:** running noise, wind, rain, horn, station ambience; airliner cabin hum (J); a **music player** in the menu with 21 Shinkansen station melodies.
 - **Multilingual:** English, 日本語 (station names in kanji, train names like のぞみ1号), Tiếng Việt.
 - Domain research notes are in [`docs/`](docs/00-progress.md) (Vietnamese), the simulation architecture in [`docs/14-kien-truc-mo-phong.md`](docs/14-kien-truc-mo-phong.md), game design in [`docs/10-thiet-ke-game.md`](docs/10-thiet-ke-game.md).
@@ -46,22 +46,22 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 - **Music player** (bottom left, menus only): play/pause, previous/next, one button cycling repeat all / repeat one / shuffle, track list, mute and volume, progress bar, collapsible; it plays through the embedded YouTube player (needs a connection) and starts automatically after your first click or key press.
 
 ## Controls
+The doors are closed by the **conductor**: at the first station about 10 seconds after the trip screen opens, at later stations according to the departure time; when the cars in the TIMS panel turn green the doors are closed. The conductor also makes a reassuring announcement automatically when the train stands for a long time between stations.
 The full table is in **Settings → Shortcuts**.
 
 | Key | Action |
 |---|---|
-| W / S | raise / lower the power lever (13 notches) |
-| ↓ / ↑ | apply / release the brake (release to 0 before power can be applied again) |
-| Space · Q | back to N · emergency brake |
-| Enter | close the doors; when the lamp lights, pull the lever to depart |
+| W / S | raise / lower the brake lever (N … B7, EB; at a station the brake is always at EB and must be lowered to N before the train can move) |
+| ↓ / ↑ | increase / decrease the power lever (N … P13). Braking while power is applied **cuts** the power (yellow stripes); to apply power again, bring the brake to N and then the power lever to N |
 | C · [ ] | cruise control · adjust ∓5 km/h |
-| A · G · V · L | ATC (press twice to cut out) · pantograph · wipers · headlights |
-| Y / N · M | repeat back an order, accept / decline · reassuring announcement |
+| A / D | the horizontal 4-position ATC switch: A lowers a position (ON → WARN ONLY → CREEP 30 → CUT; going down to CUT needs A pressed again within 4 s), D raises a position; clicking a position works too |
+| V · L | wipers · headlights |
+| Y / N · B | repeat back an order, accept / decline · reverse (only when fully stopped) |
 | K | (inspection train) mark a defect (measuring starts automatically when the train leaves) |
 | Tab · O | change view · hide the radio |
 | , · . | left · right passenger window (press again to return to the cab) |
 | J | airliner cabin hum on/off (speaker button, top right: one click opens the volume slider, a second click mutes) |
-| D | swap the nationwide map and the current view (wheel to zoom, drag to pan, click a station or train for details; the locate button returns to your train) |
+| M | swap the nationwide map and the current view; press M again to return to the cab (wheel to zoom, drag to pan, click a station or train for details; the locate button returns to your train) |
 | H | horn (the game also sounds it automatically for workers, non-stop stations, level crossings and a stopped train ahead) |
 | P (or Esc) · F9 · F11 | pause · snapshot (PNG plus a JSON file that rebuilds the scene) · fullscreen |
 | 1 2 3 · T · R | fast-forward ×1/×4/×16 (the square ×N button, top right, cycles ×1 → ×4 → ×16) · autopilot · restart |
