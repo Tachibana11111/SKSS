@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup cần ATC 4 nấc</title>
+<style>
+:root{--bg:#0b0f14;--fg:#dbe6f2;--mut:#8aa0b5;--ln:#243447}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;margin:24px 0 6px}
+p.n{color:var(--mut);margin:2px 0 8px}
+.bar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0;padding:8px 10px;background:#121a23;border:1px solid var(--ln);border-radius:8px}
+.bar label{color:var(--mut)}
+button{background:#1b2735;color:var(--fg);border:1px solid #3b516a;border-radius:6px;padding:4px 10px;font:inherit;cursor:pointer}
+button.on{background:#2a6fd6;border-color:#6fb0ff}
+canvas{display:block;width:100%;max-width:900px;height:auto;border:1px solid var(--ln);border-radius:6px;background:#070a0e}
+table{border-collapse:collapse;width:100%;margin:6px 0}th,td{border:1px solid var(--ln);padding:5px 8px;text-align:left;vertical-align:top}th{background:#121a23;color:var(--mut)}
+kbd{background:#1b2735;border:1px solid #3b516a;border-radius:4px;padding:0 5px}
+ul{margin:4px 0;padding-left:20px}
+</style></head><body><main>
+<h1>Mockup: cần ATC 4 nấc (thay nút ATC + nút cần vẹt)</h1>
+<p class="n">Vẽ đúng toạ độ canvas 1920×1080 (vùng bên phải của bảng điều khiển, y = 676…1080). Cần nằm ngang thay cho hai nút cũ <b>ATC</b> (1160, PY+300, 140×66) và <b>CẦN VẸT</b> (1308, PY+300, 136×66): chiếm cả hai chỗ, rộng 284 × 66. Kéo về tít bên PHẢI là BẬT. Dùng chuột (bấm vào nấc hoặc kéo tay nắm) hoặc phím <kbd>A</kbd> (sang trái, giảm bảo vệ) / <kbd>D</kbd> (sang phải, tăng bảo vệ).</p>
+<div class="bar"><label>Ngôn ngữ</label><span id="lg"></span><label>Thử</label><button id="demo">Mô phỏng đi qua các nấc</button><span id="msg" style="color:#ffc247"></span></div>
+<canvas id="cv" width="780" height="450" tabindex="0"></canvas>
+<p class="n">Bấm vào ảnh rồi dùng A / D. Đi sang CẮT phải qua nấc <b>CHẠY CHẬM</b> và xác nhận (bấm lần nữa trong 4 s; trong lúc chờ tay nắm nhấp nháy đỏ), như nút ATC hiện nay yêu cầu bấm hai lần.</p>
+
+<h2>Bốn nấc</h2>
+<table><tr><th>Nấc (trái → phải)</th><th>ATC làm gì</th><th>Khi nào dùng</th></tr>
+<tr><td><b>CẮT</b> (đỏ)</td><td>Không còn bảo vệ, ATC không phanh, không báo. Chấm điểm như "cắt ATC" hiện nay (phạt, giữ ≤ 30 km/h theo quy định).</td><td>Chỉ khi có lệnh điều độ</td></tr>
+<tr><td><b>CHẠY CHẬM 30</b> (cam)</td><td>Trần tốc độ cứng 30 km/h, tự phanh nếu vượt. Vòng ATC trên đồng hồ chuyển thành 30.</td><td>Mất mã tín hiệu, sau động đất, sự cố tín hiệu: điều độ yêu cầu chuyển nấc này</td></tr>
+<tr><td><b>CHỈ BÁO</b> (vàng)</td><td>Vẫn hiện vòng giới hạn và kêu chuông/đèn khi vượt, <b>không tự phanh</b>; người lái tự giữ tốc độ. Vượt giới hạn trừ điểm nặng hơn lỗi ATC phanh hộ.</td><td>Phanh tự động hỏng (điều độ cho phép), hoặc người chơi muốn tự chủ</td></tr>
+<tr><td><b>BẬT</b> (xanh)</td><td>Như hiện nay: tự phanh khi vượt vòng ATC.</td><td>Bình thường</td></tr></table>
+
+<h2>Những thay đổi kèm theo (nếu bạn duyệt mockup)</h2>
+<ul>
+<li><b>Bỏ cần vẹt:</b> bỏ nút CẦN VẸT và phím <kbd>G</kbd>, bỏ <code>T.pan</code>, <code>togglePan</code>, lệnh <code>pan</code> trong bản ghi (bản ghi cũ vẫn phát lại được: lệnh <code>pan</code> bị bỏ qua). Đoạn cách điện đổi tần số (Hokuriku) vẫn giữ: kéo lực vào đoạn đó thì hồ quang, máy cắt chính nhảy, mất lực 12 s; người lái phải về N trước vạch như hiện nay (không cần hạ cần vẹt). Bài hướng dẫn 4 bỏ hai bước hạ/nâng cần vẹt.</li>
+<li><b>Phím:</b> <kbd>A</kbd> / <kbd>D</kbd> thành phím cần ATC. <kbd>D</kbd> hiện đang hoán đổi bản đồ toàn quốc ↔ góc nhìn, <b>trùng phím</b>: cần bạn chọn phím mới cho việc đó (đã chọn <kbd>B</kbd>: bấm B để mở bản đồ toàn quốc, bấm B lần nữa để về buồng lái). Nút bấm trên màn hình giữ nguyên.</li>
+<li><b>Tín hiệu:</b> vùng ATC mất mã (tín hiệu 0): nấc BẬT phải dừng trước vùng; chuyển sang CHẠY CHẬM thì được chạy qua vùng ≤ 30 km/h. (Bản cài đặt không ép nấc bằng lệnh điều độ hay động đất.)</li>
+<li><b>Tự lái:</b> luôn dùng nấc BẬT; gặp lệnh chuyển nấc thì tự chuyển như người lái.</li>
+<li><b>Tài liệu:</b> README, bảng phím tắt trong game, tutorial, bản dịch Anh/Nhật, <code>docs/14</code>.</li>
+</ul>
+</main>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),OX=1140,PY=14,PH=376;
+const L={vi:{t:'CẦN ATC',n:['CẮT','CHẠY CHẬM 30','CHỈ BÁO','BẬT'],d:['không còn bảo vệ','trần 30 km/h, tự phanh','chuông, không tự phanh','tự phanh khi vượt'],k:'A: giảm · D: tăng',arm:'XÁC NHẬN CẮT? bấm lại trong 4 s',tile:'bản đồ nhỏ',lim:'vòng ATC'},
+en:{t:'ATC SWITCH',n:['CUT','CREEP 30','WARN ONLY','ON'],d:['no protection','30 km/h cap, auto brake','chime, no auto brake','auto brake on overspeed'],k:'A: lower · D: higher',arm:'CONFIRM CUT? press again within 4 s',tile:'minimap',lim:'ATC ring'},
+ja:{t:'ATC切替',n:['切','30 km/h','警報のみ','入'],d:['保護なし','30 km/h上限・自動ブレーキ','警報のみ・自動ブレーキなし','超過で自動ブレーキ'],k:'A:下げる · D:上げる',arm:'切にしますか？4秒以内にもう一度',tile:'小マップ',lim:'ATC円'}};
+const COL=['#c0392b','#e08a2f','#d9b32a','#1f9d63'];
+let lang='vi',pos=3,arm=-1e9,drag=false,demo=0;
+const lg=document.getElementById('lg');[['vi','Tiếng Việt'],['en','English'],['ja','日本語']].forEach(([k,t])=>{const b=document.createElement('button');b.textContent=t;b.className=k===lang?'on':'';b.onclick=()=>{lang=k;[...lg.children].forEach(c=>c.className='');b.className='on';draw()};lg.appendChild(b)});
+const F='system-ui,"Yu Gothic","Meiryo",sans-serif',txt=(t,x,y,c,f,al='left')=>{ctx.font=f.replace('system-ui',F);ctx.fillStyle=c;ctx.textAlign=al;ctx.fillText(String(t),x,y)};
+const BX=1160-OX,BY=PY+300,BW=284,BH=66,PAD=22,STEP=(BW-2*PAD)/3;       // 4 nấc: tâm tại BX+PAD+i*STEP
+const nx=i=>BX+PAD+i*STEP;
+function draw(){const t=L[lang];ctx.clearRect(0,0,780,450);ctx.fillStyle="#0b1117";ctx.fillRect(0,0,780,450);
+ ctx.fillStyle='#0d1319';ctx.beginPath();ctx.roundRect(1152-OX,PY,300,PH,8);ctx.fill();ctx.strokeStyle='#243447';ctx.stroke();
+ ctx.fillStyle='#16212d';ctx.fillRect(1160-OX,PY+10,284,280);txt(t.tile,1302-OX,PY+150,'#3b516a','16px system-ui','center');
+ ctx.fillStyle='#0f161d';ctx.beginPath();ctx.roundRect(1460-OX,PY,448,PH,8);ctx.fill();txt('(giữ nguyên)',1684-OX,PY+PH/2,'#3b516a','16px system-ui','center');
+ // cần ATC ngang
+ const armed=performance.now()-arm<4000,col=COL[pos];
+ ctx.fillStyle='#14202c';ctx.beginPath();ctx.roundRect(BX,BY,BW,BH,10);ctx.fill();ctx.strokeStyle=armed?'#ff7a6a':col;ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(BX,BY,BW,BH,10);ctx.stroke();
+ txt(t.t,BX+10,BY+16,'#9fb4c9','bold 11px system-ui');txt(t.k,BX+BW-10,BY+16,'#7f93a9','11px system-ui','right');
+ // đường ray + các nấc
+ const ty=BY+34;ctx.strokeStyle='#2a3b4f';ctx.lineWidth=6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(nx(0),ty);ctx.lineTo(nx(3),ty);ctx.stroke();
+ for(let i=0;i<4;i++){ctx.fillStyle=i===pos?COL[i]:'#3b516a';ctx.beginPath();ctx.arc(nx(i),ty,i===pos?0:4,0,7);ctx.fill();ctx.fillStyle=COL[i];ctx.fillRect(nx(i)-1,ty-10,2,4)}
+ // đoạn tô màu từ nấc phải tới tay nắm
+ ctx.strokeStyle=col;ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(nx(3),ty);ctx.lineTo(nx(pos),ty);ctx.stroke();
+ const kx=(drag&&dragX!==null)?Math.max(nx(0),Math.min(nx(3),dragX)):nx(pos),blink=armed&&Math.floor(performance.now()/250)%2===0;
+ ctx.fillStyle=blink?'#ff3b3b':col;ctx.beginPath();ctx.roundRect(kx-13,ty-13,26,26,6);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#fff';ctx.fillRect(kx-1.5,ty-7,3,14);
+ for(let i=0;i<4;i++){let f=9;ctx.font='bold '+f+'px '+F;while(f>7&&ctx.measureText(t.n[i]).width>STEP-2){f--;ctx.font='bold '+f+'px '+F}txt(t.n[i],nx(i),BY+BH-8,i===pos?'#fff':'#8aa0b5','bold '+f+'px system-ui','center')}
+ // mô tả trạng thái hiện tại
+ txt(armed?t.arm:t.n[pos]+' — '+t.d[pos],BX,BY+BH+22,armed?'#ff9a8a':col,'bold 13px system-ui');
+ // đồng hồ: dòng trạng thái ATC mô phỏng
+ const sx=1160-OX;ctx.fillStyle='#0b1117';ctx.fillRect(sx,PY+PH-26,284,0);
+ const ring=[ '—',30,'240+','240'][pos];txt(t.lim+': '+(pos===0?'—':pos===1?'30 km/h':'285 km/h'),BX,BY+BH+42,'#9fb4c9','12px system-ui');
+ requestAnimationFrame(draw)}
+let dragX=null;
+function setPos(n,viaKey){n=Math.max(0,Math.min(3,n));if(n===pos)return;if(n<pos&&pos===1&&n===0&&performance.now()-arm>=4000){arm=performance.now();msg('Bấm lần nữa trong 4 s để CẮT ATC');return}
+ pos=n;arm=-1e9;msg('')}
+const msg=s=>document.getElementById('msg').textContent=s;
+const xy=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+const near=x=>{let b=0;for(let i=1;i<4;i++)if(Math.abs(nx(i)-x)<Math.abs(nx(b)-x))b=i;return b};
+cv.onmousedown=e=>{const[x,y]=xy(e);if(x<BX||x>BX+BW||y<BY||y>BY+BH)return;drag=true;dragX=x;cv.focus()};
+addEventListener('mousemove',e=>{if(!drag)return;dragX=xy(e)[0]});
+addEventListener('mouseup',e=>{if(!drag)return;drag=false;const x=xy(e)[0];const n=near(x);dragX=null;
+ // kéo/bấm: đi từng nấc một (không nhảy cách nấc)
+ const step=n>pos?pos+1:n<pos?pos-1:pos;setPos(step)});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='a'){setPos(pos-1);e.preventDefault()}else if(k==='d'){setPos(pos+1);e.preventDefault()}});
+document.getElementById('demo').onclick=()=>{const seq=[2,1,0,0,1,2,3];let i=0;const go=()=>{if(i>=seq.length)return;if(seq[i]===0&&pos===1){setPos(0)}else{pos=seq[i]}i++;setTimeout(go,900)};pos=3;go()};
+requestAnimationFrame(draw);
+</script></body></html>

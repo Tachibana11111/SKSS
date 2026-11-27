@@ -18,7 +18,7 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 
 ## Có gì
 - **7 tuyến, 5 công ty JR:** Tokaido–Sanyo–Kyushu, Tohoku–Hokkaido, Joetsu, Hokuriku, Nishi-Kyushu và hai tuyến Mini-Shinkansen Yamagata, Akita (kể cả đoàn ghép/tách tại Tokyo, Fukushima, Morioka). **Lịch tàu thật tháng 10/2026**, đủ mẫu tàu từ N700/N700S, E5, E6, E7/W7, E8, H5, 800, N700S-8000 tới tàu kiểm tra 923 Doctor Yellow, E926 East i.
-- **Lái thật:** 13 nấc kéo, 8 nấc phanh, ATC, tốc độ không đổi, cần vẹt, gạt mưa, đèn pha, đoạn cách điện đổi tần số, đường tránh và đường thông qua ở ga, ghi ra/vào sân ga, tàu chạy trước và tàu thông qua theo lịch thật. Trên đường đơn Akita/Yamagata, tàu ta dừng tránh tàu ngược chiều (kể cả ở ga không có lịch dừng); tàu mini chờ đoàn Tohoku về ga rồi mới nối, không chạy vào đoạn ghi nối khi Tohoku chưa tới.
+- **Lái thật:** 13 nấc kéo, 8 nấc phanh, ATC 4 nấc (BẬT / CHỈ BÁO / CHẠY CHẬM 30 / CẮT), tốc độ không đổi, gạt mưa, đèn pha, đoạn cách điện đổi tần số, đường tránh và đường thông qua ở ga, ghi ra/vào sân ga, tàu chạy trước và tàu thông qua theo lịch thật. Trên đường đơn Akita/Yamagata, tàu ta dừng tránh tàu ngược chiều (kể cả ở ga không có lịch dừng); tàu mini chờ đoàn Tohoku về ga rồi mới nối, không chạy vào đoạn ghi nối khi Tohoku chưa tới.
 - **Thế giới chạy theo lịch thật:** tàu ngược chiều, tàu đỗ ở ga, tàu thông qua và tàu đi trước đều là tàu thật trong danh mục lịch, hiện đúng vị trí như bản đồ toàn quốc; tàu bị giữ (động đất, mưa gió, sự cố) đứng yên hẳn. Sự cố ngẫu nhiên xảy ra với **mọi tàu**, không riêng tàu bạn lái.
 - **Thời tiết và sự cố ngẫu nhiên (theo seed):** mưa (hạt mưa đọng trên kính trước và sau, gạt mưa lau đi), tuyết, bão, động đất, cháy trong hầm, hành khách bệnh, xe kẹt ở đường ngang (chỉ có ở Yamagata và Akita, hai tuyến duy nhất có đường ngang), lệnh điều độ phải nhắc lại, dừng nhường tàu nhanh. 4 độ khó.
 - **Chế độ tự do:** có nút tự lái, chuyến không tính điểm; trên bản đồ toàn quốc bấm một tàu rồi chọn "Vào buồng lái" để ngó buồng lái tàu đó (kể cả tàu kiểm tra Doctor Yellow, East i).
@@ -26,7 +26,7 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 - **Cảnh vật:** dựng từ dữ liệu OpenStreetMap; mặt đầu và đuôi tàu nghiêng theo hình dáng mũi tàu thật; giá đỡ dây điện nhiều kiểu (cổng thép, xà ống thép, xà かご, cột bên có tay đòn xoay, giá treo trần hầm), không đặt cột giữa hai đường; đoạn nền đất có tấm bê tông dưới ray và hàng rào thép hai bên (hở ở đường ngang của Yamagata, Akita).
 - **Bản đồ toàn quốc** ([ảnh](#ảnh-chụp)): 47 tỉnh với **mọi đảo có trong dữ liệu** (kể cả các đảo Lãnh thổ phương Bắc vẽ nét đứt), 10 đoạn tuyến theo màu Wikipedia, **mọi tàu chạy theo lịch thật** cùng thời tiết và động đất; bấm ga hoặc tàu để xem chi tiết, kể cả tàu phía trước/sau và khoảng cách.
 - **Phát thanh trên tàu bằng giọng tiếng Nhật**, kèm phụ đề (giao diện tiếng Nhật chỉ có một dòng phụ đề), báo ga kế tiếp, tuyến đổi tàu, cửa mở bên nào, trễ giờ, sự cố. Cửa mở đúng phía theo đường sân ga tàu được xếp vào, kể cả ga có nhiều đường.
-- **Học lái:** 4 bài từng bước (lái và dừng ga, thiết bị, sự cố, cần vẹt và ATC). **Hồ sơ:** 14 thành tích, kết quả tốt nhất, lịch sử, xem lại chuyến đã chơi.
+- **Học lái:** 4 bài từng bước (lái và dừng ga, thiết bị, sự cố, cần ATC 4 nấc và tàu đứng phía trước). **Hồ sơ:** 14 thành tích, kết quả tốt nhất, lịch sử, xem lại chuyến đã chơi.
 - **Âm thanh:** tiếng chạy, gió, mưa, còi, tiếng nền ga; ù cabin máy bay (J); **trình phát nhạc** ở menu với 21 giai điệu ga Shinkansen.
 - **Đa ngôn ngữ:** English, 日本語 (tên ga bằng chữ Hán, tên chuyến dạng のぞみ1号), Tiếng Việt.
 - Tài liệu nghiệp vụ ở [`docs/`](docs/00-progress.md), kiến trúc mô phỏng ở [`docs/14-kien-truc-mo-phong.md`](docs/14-kien-truc-mo-phong.md), thiết kế game ở [`docs/10-thiet-ke-game.md`](docs/10-thiet-ke-game.md).
@@ -54,13 +54,14 @@ Bảng đầy đủ nằm trong **Cài đặt → Phím tắt**.
 | W / S | nâng / hạ cần phanh (N … B7, EB; tàu đỗ ga luôn ở EB, phải hạ về N mới chạy) |
 | ↓ / ↑ | tăng / giảm cần ga (N … P13). Áp phanh khi đang kéo thì ga bị **ngắt** (sọc vàng); muốn kéo lại phải đưa phanh về N rồi cần ga về N |
 | C · [ ] | tốc độ không đổi · chỉnh ∓5 km/h |
-| A · G · V · L | ATC (bấm 2 lần để cắt) · cần vẹt · gạt mưa · đèn pha |
+| A / D | cần ATC 4 nấc nằm ngang: A hạ nấc (BẬT → CHỈ BÁO → CHẠY CHẬM 30 → CẮT, xuống CẮT phải bấm A lần nữa trong 4 s), D tăng nấc; bấm chuột vào nấc cũng được |
+| V · L | gạt mưa · đèn pha |
 | Y / N · M | nhắc lại lệnh, chấp nhận / từ chối · chạy lùi (chỉ khi đã dừng hẳn) |
 | K | (tàu kiểm tra) đánh dấu lỗi (đo tự chạy từ lúc rời ga) |
 | Tab · O | đổi khung nhìn · ẩn điện đàm |
 | , · . | cửa sổ hành khách bên trái · bên phải (bấm lại để về buồng lái) |
 | J | bật/tắt ù cabin máy bay (nút loa góc trên phải: bấm 1 lần xổ thanh âm lượng, bấm lần 2 tắt tiếng) |
-| D | hoán đổi nhanh giữa bản đồ toàn quốc và góc nhìn đang dùng (con lăn zoom, kéo di chuyển, bấm ga/tàu xem chi tiết; nút định vị về tàu ta) |
+| B | hoán đổi nhanh giữa bản đồ toàn quốc và góc nhìn đang dùng (bấm B lần nữa để về buồng lái) (con lăn zoom, kéo di chuyển, bấm ga/tàu xem chi tiết; nút định vị về tàu ta) |
 | H | còi (game cũng tự bấm còi ở khu làm việc, ga không dừng, đường ngang, tàu đứng phía trước) |
 | P (hoặc Esc) · F9 · F11 | tạm dừng · chụp cảnh (ảnh PNG + tệp JSON dựng lại cảnh) · toàn màn hình |
 | 1 2 3 · T · R | tua ×1/×4/×16 (nút vuông ×N góc trên phải đổi vòng ×1 → ×4 → ×16) · tự lái · chạy lại |

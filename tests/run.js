@@ -190,8 +190,8 @@ if (section('9. Hướng dẫn (bot làm theo từng bước)')) {
       if (li >= 1 && s === 0 && T.door === 'open') Sim.requestClose(T);
       if (li === 1) { if (s === 2) T.wiper = true; if (s === 4) T.wiper = false; if (s === 1 || s === 6) Sim.ackOldest(W); if (s === 5) for (const z of W.workers) if (!z.checked && T.x >= z.s0 - 600) Sim.honk(T); }
       if (li === 2) { if (s === 1 && W.decision) Sim.answerDecision(W, 'a'); if (s === 2 && T.cut) Sim.announcePA(T); if (s === 4) Sim.ackOldest(W); }
-      if (li === 3) { if (s === 1) { T.pan = false; } if (s === 2) T.pan = true; if (s === 3) { if (!S.st.off) T.atcOn = false; else T.atcOn = true; } if (s === 4 && W.lead) { if (W.lead.x - W.lead.veh.len - T.x < 1200) { Sim.setPower(T, 0); Sim.setBrake(T, 7); } else Sim.coast(T); } }
-      const manual = li === 0 && s <= 7; Sim.tick(W, 0.05, {}, !manual); Tutorial.update(W, T, now);
+      if (li === 3) { if (s === 1) { if (T.atcMode > 1) Sim.atcMove(T, -1); } if (s === 2) { if (T.atcMode < 3) Sim.atcMove(T, 1); } if (s === 3 && W.lead) { if (W.lead.x - W.lead.veh.len - T.x < 1200) { Sim.setPower(T, 0); Sim.setBrake(T, 7); } else Sim.coast(T); } }
+      const manual = (li === 0 && s <= 7) || (li === 3 && (s === 1 || s === 2)); Sim.tick(W, 0.05, {}, !manual); Tutorial.update(W, T, now);      // bài 4: hai bước chỉnh cần ATC do bot tự làm (tự lái sẽ ép nấc BẬT)
       if (T.finished) { for (let k = 0; k < 60; k++) { now += 50; Tutorial.update(W, T, now); } break; }
     }
     ok(S.step >= LS.steps.length, `bài ${li + 1}: bot hoàn thành mọi bước`, `${S.step}/${LS.steps.length}`);
@@ -297,9 +297,7 @@ if (section('15. Tuyến mới: đổi tần số, Seikan, tàu ghép, đường
   { const W = mk(), T = W.player; ok(W.dead.length === 3 && W.dead[0].hzA === 50 && W.dead[0].hzB === 60, 'hok xuống: đoạn đầu 50→60 Hz'); Sim.requestClose(T); let n = 0;
     while (n++ < 4000 && T.x < W.dead[0].s1 + 100) { Sim.tick(W, 0.05, {}, false); T.pw = 13; }
     ok(T.deadViol === 1 && T.vcbUntil > W.t - 12, 'kéo lực vào đoạn cách điện: hồ quang, mất lực 12 s', T.deadViol); }
-  { const W = mk(), T = W.player; Sim.requestClose(T); ok(T.pan === true, 'cần vẹt mặc định nâng'); let n = 0; while (n++ < 4000 && T.x < W.dead[0].s0 - 1000) { Sim.tick(W, 0.05, {}, false); T.pw = 13; }
-    Sim.togglePan(T); ok(T.pan === false, 'hạ cần vẹt'); while (n++ < 4000 && T.x < W.dead[0].s1 + 100) { T.pw = 13; Sim.tick(W, 0.05, {}, false); }
-    ok(T.deadViol === 0 && T.f <= 0, 'hạ cần vẹt: qua đoạn cách điện không lỗi, không có lực kéo', T.deadViol); }
+  { const W = mk(), T = W.player; ok(!('pan' in T) && !Sim.togglePan, 'đã bỏ cần vẹt (không còn T.pan, togglePan)'); }
   { const W = mk(), T = W.player; Sim.requestClose(T); let n = 0; while (n++ < 4000 && T.x < W.dead[0].s0 - 1000) { Sim.tick(W, 0.05, {}, false); T.pw = 13; }
     while (n++ < 4000 && T.x < W.dead[0].s1 + 100) { T.pw = 0; Sim.tick(W, 0.05, {}, false); }
     ok(T.deadViol === 0, 'về N trước đoạn cách điện: không lỗi'); }
@@ -498,7 +496,7 @@ if (section('19. Nhiệm vụ kiểm tra tự do (923 Doctor Yellow, E926 East i
   { const E = Sim.makeMission('toh', 0, 8, 'E926'), We = Sim.createWorld('toh', E, { diff: 'easy', seed: 1, lead: true, events: true }); ok(E && E.t0 > 0 && We.mission && We.player.veh.key === 'E926', 'E926 trên Tohoku cũng có nhiệm vụ tự do');
     ok(We.mission.keys.includes('contact') && !We.mission.keys.includes('ride'), 'East i: bộ cảm biến riêng (lực tiếp xúc cần vẹt, không có dao động toa)'); ok(W.mission.keys.includes('ride') && !W.mission.keys.includes('contact'), 'Doctor Yellow: bộ cảm biến riêng (dao động toa)');
     ok(We.mission.defects.every(d => We.mission.keys.includes(d.sensor)) && W.mission.defects.every(d => W.mission.keys.includes(d.sensor)), 'lỗi chỉ thuộc cảm biến mà tàu có');
-    const Wp = Sim.createWorld('toh', E, { diff: 'easy', seed: 2, lead: true, events: true }), Tp = Wp.player; Wp.mission.measure = true; Tp.phase = 'run'; Tp.started = true; Tp.v = 230 / 3.6; Tp.a = 0; ok(Sim.measureQ(Tp, 'contact') > 0.9 && Sim.measureQ(Tp, 'wire') > 0.9, 'đúng dải: đo được dây điện và lực tiếp xúc'); Tp.pan = false; ok(Sim.measureQ(Tp, 'contact') === 0 && Sim.measureQ(Tp, 'wire') === 0, 'hạ cần vẹt: không đo được dây điện / lực tiếp xúc'); Tp.pan = true; Tp.v = 100 / 3.6; ok(Sim.measureQ(Tp, 'track') === 0, 'dưới tốc độ đo: không đo ray'); }
+    const Wp = Sim.createWorld('toh', E, { diff: 'easy', seed: 2, lead: true, events: true }), Tp = Wp.player; Wp.mission.measure = true; Tp.phase = 'run'; Tp.started = true; Tp.v = 230 / 3.6; Tp.a = 0; ok(Sim.measureQ(Tp, 'contact') > 0.9 && Sim.measureQ(Tp, 'wire') > 0.9, 'đúng dải: đo được dây điện và lực tiếp xúc'); Tp.v = 100 / 3.6; ok(Sim.measureQ(Tp, 'track') === 0, 'dưới tốc độ đo: không đo ray'); }
   // nhiều chặng: Tokyo → Nagoya → Tokyo → Shizuoka; mỗi chặng một thế giới, đổi chiều ở ga giữa, giờ chặng sau nối tiếp chặng trước
   { const st = [0, 12, 0, 6], t1 = Sim.makeMission('tsk', st, 'T4', 0), t2 = Sim.makeMission('tsk', st, 'T4', 1, t1.t0 + 6700), t3 = Sim.makeMission('tsk', st, 'T4', 2, t2.t0 + 7000), tx = Sim.makeMission('tsk', st, 'T4', 3, 1);
     ok(t1.dir === 'down' && t2.dir === 'up' && t3.dir === 'down' && tx === null, 'nhiều chặng: chiều đổi theo thứ tự ga, chặng không tồn tại → null');
@@ -524,8 +522,8 @@ if (section('22. ATC theo hệ: tên hệ, tín hiệu 0 (mất mã), KS-ATC d�
   let tripL = null; for (const r of Sim.lineOf('tsk').trains.filter(t => t.t === 'Nozomi' && t.d === 'down' && t.s.some(e => e[0] === 0 && !e[3]) && t.s.some(e => e[0] === 12 && !e[3]))) { tripL = Sim.makeTrip('tsk', r, 0, 12); break; }
   const W = Sim.createWorld('tsk', tripL, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player; Sim.requestClose(T); let n = 0; while (!(T.started && T.phase === 'run' && T.v > 40) && n++ < 4e4) Sim.tick(W, 0.05, {}, true);
   Sim.inject(W, 'atcfault', { ahead: 6000, sec: 60 }); const zone = W.zones.find(z => z.kind === 'atcfault'); ok(!!zone && W.msgs.some(m => /TÍN HIỆU 0/.test(m.text)), 'inject atcfault tạo vùng tín hiệu 0 và thông báo');
-  let stopped = false, passed = false; n = 0; while (n++ < 12000 && !T.finished) { Sim.tick(W, 0.05, {}, true); if (T.v < 0.3 && W.t < zone.tB && T.x < zone.s0 + 40) stopped = true; if (T.x > zone.s0 + 60 && W.t < zone.tB) passed = true; if (stopped && W.t > zone.tB + 60) break; }
-  ok(stopped && !passed, 'tín hiệu 0: tàu dừng trước vùng, không chạy vào khi còn tín hiệu 0', [stopped, passed]);
+  let vmaxIn = 0, passed = false; n = 0; while (n++ < 12000 && !T.finished) { Sim.tick(W, 0.05, {}, true); if (T.x > zone.s0 + 5 && T.x < zone.s1 && W.t < zone.tB) vmaxIn = Math.max(vmaxIn, T.v * 3.6); if (T.x > zone.s1 + 60) { passed = true; break; } }
+  ok(passed && vmaxIn > 5 && vmaxIn <= 30 + 6 + 1, 'tín hiệu 0 (tự lái): chuyển cần ATC sang CHẠY CHẬM và chạy qua vùng ≤ 30 km/h (trần + dung sai ATC mức dễ), không phải dừng chờ', [passed, vmaxIn]);
   { let tr = null; for (const r of Sim.lineOf('nks').trains.filter(t => t.d === 'down')) { const st = r.s.filter(e => !e[3]); if (st.length >= 2) { tr = Sim.makeTrip('nks', r, st[0][0], st[1][0]); break; } }
     const W2 = Sim.createWorld('nks', tr, { diff: 'easy', seed: 1, lead: false, events: false }), T2 = W2.player; Sim.requestClose(T2); let m = 0; while (!T2.finished && m++ < 6e5) Sim.tick(W2, 0.05, {}, true);
     ok(T2.finished && !T2.failed && T2.results.length >= 1 && Math.abs(T2.results[T2.results.length - 1].err) < 30, 'KS-ATC: autopilot vẫn dừng đúng vạch với mẫu ba giai đoạn', T2.results.map(r => r.err)); }
@@ -1051,6 +1049,39 @@ if (section('39. Cần phanh mặc định EB, ga bị ngắt khi phanh, trưở
     ok(!/lampsL|doAct\('door'\)|doAct\('eb'\)|doAct\('coast'\)|Bất an hành khách|Nhiệt má phanh/.test(fu), 'không còn đèn báo, nút đóng cửa, phanh khẩn, về N, thanh bất an / nhiệt má phanh');
     ok((fu.match(/miniGauge\(gx,/g) || []).length === 4, 'bốn đồng hồ nhỏ xếp dọc');
     ok(/k === 'w' \|\| k === 'W'\) doAct\('brake', 1\)/.test(idx) && /k === 'ArrowDown'\) doAct\('power', 1\)/.test(idx) && !/doAct\('coast'\)|doAct\('eb'\)|doAct\('door'\)/.test(idx.slice(idx.indexOf("addEventListener('keydown'"))), 'phím: W/S phanh, ↑/↓ ga; bỏ Space, Q, Enter'); }
+}
+
+if (section('40. Cần ATC 4 nấc (BẬT / CHỈ BÁO / CHẠY CHẬM 30 / CẮT), đã bỏ cần vẹt, phím B bản đồ')) {
+  const rec = find('tsk', 'Nozomi', 'down', 12, 16), trip = Sim.makeTrip('tsk', rec, 12, 16);
+  const mkRun = () => { const W = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 1, lead: false, events: false }), T = W.player; Sim.requestClose(T); let n = 0; while (T.door !== 'closed' && n++ < 2000) Sim.tick(W, 0.05, {}, false); Sim.setBrake(T, 0); Sim.setPower(T, 13); n = 0; while (T.phase !== 'run' && n++ < 400) Sim.tick(W, 0.05, {}, false); return { W, T }; };
+  // 1) chuyển nấc
+  { const { W, T } = mkRun(); ok(T.atcMode === 3 && T.atcOn === true, 'ATC mặc định ở nấc BẬT (3)');
+    ok(Sim.atcMove(T, -1) === 2 && T.atcMode === 2 && T.atcOn === true, 'A một lần: CHỈ BÁO'); ok(Sim.atcMove(T, -1) === 1 && T.atcMode === 1, 'A lần hai: CHẠY CHẬM 30');
+    ok(Sim.atcMove(T, -1) === 'arm' && T.atcMode === 1, 'xuống CẮT: lần đầu chỉ chờ xác nhận'); W.t += 5; ok(Sim.atcMove(T, -1) === 'arm', 'quá 4 s thì phải xác nhận lại');
+    ok(Sim.atcMove(T, -1) === 0 && T.atcMode === 0 && T.atcOn === false, 'xác nhận trong 4 s: CẮT'); ok(Sim.atcMove(T, 1) === 1 && T.atcOn === true && Sim.atcMove(T, 1) === 2 && Sim.atcMove(T, 1) === 3, 'D: đi lần lượt 1, 2, 3 (không nhảy cách nấc)');
+    ok(Sim.atcMove(T, 1) === 3 && Sim.atcGo(T, 1) === 2 && Sim.atcGo(T, 0) === 1, 'bấm chuột vào nấc xa: đi một nấc về phía đó'); }
+  // 2) CHẠY CHẬM: trần 30 km/h, tự phanh
+  { const { W, T } = mkRun(); for (let i = 0; i < 4000 && T.v < 120 / 3.6; i++) Sim.tick(W, 0.05, {}, false); Sim.atcMove(T, -1); Sim.atcMove(T, -1); let n = 0; while (n++ < 6000 && !(T.v <= 31 / 3.6)) { Sim.setPower(T, 13); Sim.tick(W, 0.05, {}, false); }
+    ok(T.atcMode === 1 && T.v <= 31 / 3.6 + 0.2 && T.allowed <= 30 / 3.6 + 1e-6 && T.why === 'creep', 'CHẠY CHẬM: tàu bị ATC kìm xuống ≤ 30 km/h dù kéo hết cỡ', [T.v * 3.6, T.allowed * 3.6, T.why]); for (let i = 0; i < 400; i++) { Sim.setPower(T, 13); Sim.tick(W, 0.05, {}, false); } ok(T.v * 3.6 <= 30 + 6 + 2, 'CHẠY CHẬM: giữ quanh 30 km/h (trần + dung sai ATC mức dễ 6 km/h)', T.v * 3.6); }
+  // 3) CHỈ BÁO: chuông + trừ điểm, không tự phanh (so với nấc BẬT ở cùng tình huống: ATC phanh)
+  { const run = mode => { const { W, T } = mkRun(); W.zones.push({ s0: T.x - 100, s1: T.x + 30000, v: 100 / 3.6, tA: W.t, tB: W.t + 99999, kind: 'rain', label: 'test' }); T.v = 150 / 3.6; if (mode === 2) Sim.atcMove(T, -1); let warned = false; for (let i = 0; i < 200; i++) { Sim.setPower(T, 13); Sim.tick(W, 0.05, {}, false); if (T.atcWarn) warned = true; } return { W, T, warned }; };
+    const on = run(3), wr = run(2); ok(on.T.atcCount > 0 && on.T.v < 150 / 3.6 - 3, 'nấc BẬT (đối chứng): vượt giới hạn thì ATC phanh', [on.T.atcCount, on.T.v * 3.6]);
+    ok(wr.T.atcMode === 2 && !wr.T.atc && wr.T.atcCount === 0 && wr.T.v > wr.T.allowed && wr.warned && wr.T.warnBad > 1, 'CHỈ BÁO: vượt giới hạn thì kêu chuông (atcWarn), ATC KHÔNG phanh, ghi thời gian vượt', [wr.T.atc, wr.T.atcCount, wr.T.v * 3.6, wr.T.allowed * 3.6, wr.T.warnBad]);
+    const sc = Sim.score(wr.T, wr.W); ok(sc.warnPen > 0 && sc.warnPen <= 25, 'CHỈ BÁO: thời gian vượt giới hạn bị trừ điểm (warnPen)', sc.warnPen); wr.T.warnBad = 0; ok(Sim.score(wr.T, wr.W).warnPen === 0, 'không vượt thì không phạt'); }
+  // 4) vùng ATC mất mã: nấc BẬT dừng trước vùng; nấc CHẠY CHẬM được qua ≤ 30 km/h; tự lái tự chuyển
+  { const { W, T } = mkRun(); Sim.inject(W, 'atcfault', { ahead: 3000, sec: 600 }); const z = W.zones.find(q => q.kind === 'atcfault'); T.x = z.s0 - 600; T.v = 60 / 3.6; const a3 = Sim.allowedSpeed(T); Sim.atcMove(T, -1); Sim.atcMove(T, -1); const a1 = Sim.allowedSpeed(T);
+    ok(a1 > a3 + 3 / 3.6, 'vùng mất mã: nấc BẬT phải dừng hẳn trước vùng (mẫu phanh về 0), nấc CHẠY CHẬM chỉ cần giảm tới 30 km/h trước vùng', [a3 * 3.6, a1 * 3.6]);
+    T.x = z.s0 + 200; const inz = Sim.allowedSpeed(T); ok(inz <= 30 / 3.6 + 1e-6 && inz > 20 / 3.6, 'trong vùng mất mã ở nấc CHẠY CHẬM: được chạy 30 km/h (không đứng chết ở 0)', inz * 3.6);
+    const Wa = Sim.createWorld('tsk', trip, { diff: 'easy', seed: 1, lead: false, events: false }), Ta = Wa.player; Sim.inject(Wa, 'atcfault', { ahead: 3000, sec: 600 }); const za = Wa.zones.find(q => q.kind === 'atcfault'); let n = 0, mode1 = false, back = false; while (!Ta.finished && n++ < 4e5) { Sim.tick(Wa, 0.1, {}, true); if (Ta.atcMode === 1) mode1 = true; if (mode1 && Ta.atcMode === 3) { back = true; break; } }
+    ok(mode1 && back, 'tự lái: vào vùng mất mã thì chuyển CHẠY CHẬM, ra khỏi vùng thì BẬT lại', [mode1, back]); }
+  // 5) đã bỏ cần vẹt; giao diện và phím
+  { const fu = require('fs').readFileSync(path.join(DRIVE, 'fullui.js'), 'utf8'), idx = require('fs').readFileSync(path.join(DRIVE, 'index.html'), 'utf8'), sm = require('fs').readFileSync(path.join(DRIVE, 'sim.js'), 'utf8');
+    ok(!/panButton|CẦN VẸT|doAct\('pan'\)/.test(fu) && !/togglePan|T\.pan\b/.test(sm) && !/k === 'g' \|\| k === 'G'/.test(idx), 'đã bỏ nút cần vẹt, phím G, togglePan');
+    ok(/function atcLever/.test(fu) && /atcLever\(1160, PY \+ 300, 284, 66/.test(fu), 'cần ATC 4 nấc nằm ngang thay hai nút ATC + cần vẹt (284 × 66)');
+    { const all = fu + idx, need = ['wideBtn', 'atcLever', 'tileBtn', 'lever', 'miniGauge', 'bigDial', 'drawTopBar', 'drawMissionPanel', 'drawViewIn', 'drawRadioFull', 'drawCabTip', 'drawTutEnd', 'tileView', 'panel', 'button', 'txt', 'wrapText'], miss = need.filter(n => !(all.includes('function ' + n + '(') || all.includes('const ' + n + ' =') || all.includes('let ' + n + ' =') || all.includes(', ' + n + ' = ') || all.includes('; ' + n + ' = ')));
+      ok(miss.length === 0, 'fullui.js: mọi hàm vẽ mà drawFull gọi đều được định nghĩa (lần trước thiếu wideBtn làm cả bảng điều khiển không vẽ)', miss); }
+    ok(/Tàu kiểm tra không chở khách, không cần đóng cửa/.test(idx) && /atcPen, warnPen, bandPen/.test(sm), 'tàu kiểm tra: lời nhắc đầu chuyến không còn nói đóng cửa; chấm điểm có phạt nấc CHỈ BÁO (không lách ATC bằng nấc CHỈ BÁO)');
+    ok(/k === 'a' \|\| k === 'A'\) doAct\('atcmv', -1\)/.test(idx) && /k === 'd' \|\| k === 'D'\) doAct\('atcmv', 1\)/.test(idx) && /k === 'b' \|\| k === 'B'\) && W && mode !== 'dispatch'\) \{ ui\.nat = !ui\.nat/.test(idx), 'phím: A hạ nấc, D tăng nấc, B hoán đổi bản đồ ↔ buồng lái'); }
 }
 
 if (section('33a. Đoàn ghép Tohoku + mini và đường đơn: mẫu tàu sau ga tách, mũi tên ở ga ghép, tàu bị giữ đứng đúng ga, tách/ghép trong góc nhìn, phụ kiện sân ga')) {

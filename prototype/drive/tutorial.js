@@ -40,12 +40,11 @@
         { text: _t('Báo CHÁY ở toa 6: ngoài hầm thì dừng ở ga gần nhất (không phanh gấp giữa đường). Nhấn Y báo điều độ, rồi tiếp tục.'), hint: 'Y', onEnter: (W, T) => root.Sim.inject(W, 'fire'), check: (W, T) => (W.ackCount || 0) >= 1 },
         { text: _t('Dừng ở ga, chờ khi điều độ thả tàu, rồi hoàn thành chuyến.'), hint: '', check: (W, T) => T.finished }
       ] },
-    { id: 'power', title: _t('Bài 4 · Cần vẹt, ATC cắt/bật, tàu đứng phía trước'), line: 'tsk', from: 12, to: 16, diff: 'normal', weather: 'clear', seed: 14, lead: true,
+    { id: 'power', title: _t('Bài 4 · Cần ATC 4 nấc, tàu đứng phía trước'), line: 'tsk', from: 12, to: 16, diff: 'normal', weather: 'clear', seed: 14, lead: true,
       steps: [
         { text: _t('Chờ trưởng tàu đóng cửa, hạ phanh về N (S), khởi hành (↓), chạy tới khoảng 150 km/h.'), hint: 'S, ↓', check: (W, T) => T.v * 3.6 >= 150 },
-        { text: _t('Hạ CẦN VẸT (G) như khi qua đoạn cách điện (dead section): mất điện lưới nên không kéo và không hoàn năng được, tàu chỉ chạy đà.'), hint: 'G', check: (W, T) => T.pan === false },
-        { text: _t('Nâng cần vẹt lên lại (G) để có điện, rồi kéo lại tốc độ.'), hint: 'G', check: (W, T) => T.pan !== false },
-        { text: _t('ATC là lớp an toàn tự phanh. Nhấn A để CẮT ATC (chỉ khi ATC hỏng; tàu không còn ai phanh thay bạn), rồi nhấn A để BẬT lại.'), hint: 'A', init: st => { st.off = false; }, check: (W, T, st) => { if (T.atcOn === false) st.off = true; return st.off && T.atcOn !== false; } },
+        { text: _t('Cần ATC có 4 nấc, tít bên phải là BẬT (ATC tự phanh khi vượt). Nhấn A hai lần để hạ xuống CHẠY CHẬM: trần tốc độ 30 km/h, hãy giảm tốc cho kịp.'), hint: 'A A', check: (W, T) => T.atcMode === 1 },
+        { text: _t('Nhấn D hai lần để đưa cần ATC về BẬT. (Nấc CHỈ BÁO chỉ kêu chuông, không tự phanh; nấc CẮT ngoài cùng bên trái chỉ dùng khi có lệnh điều độ.)'), hint: 'D D', check: (W, T) => T.atcMode === 3 },
         { text: _t('Phía trước có tàu ĐỨNG trên đường chính. Điện đàm sẽ báo khoảng cách. Giảm tốc và dừng lại phía sau nó, cách ít nhất vài trăm mét. Va chạm là kết thúc chuyến (điểm 0).'), hint: 'W', onEnter: (W, T) => { if (W.lead) { W.lead.x = T.x + 3500; W.lead.v = 0; W.leadHoldUntil = 1e9; W.lead.cut = true; } }, check: (W, T) => !W.lead || (T.v < 0.5 && W.lead.x - W.lead.veh.len - T.x > 50), fail: (W, T) => T.collision },
       ] },
   ];
