@@ -837,7 +837,7 @@
   function singleEff(W, s) {
     const w = singleW(W, s); if (w <= 0) return 0; const Ly = root.Layout; let cov = 0;
     const solo = m => { const st = W.line.stations[m.i]; return !!(st && Ly.isSingle(st.lay)); };      // ga một đường (Kita-Omagari): không có đường ngược chiều thật nên vẫn là đường đơn
-    if (Ly && W.player) for (const m of W.player.M) { if (!solo(m)) cov = Math.max(cov, Ly.spread(s, m.s)); } else if (Ly && W.net) for (const m of (W.net.trains[0] ? W.net.trains[0].M : [])) { if (!solo(m)) cov = Math.max(cov, Ly.spread(s, m.s)); }
+    if (Ly && W.player) for (const m of W.player.M) { if (!solo(m)) cov = Math.max(cov, Ly.spread(s, m.s, (W.line.stations[m.i] || {}).lay, W.dir)); } else if (Ly && W.net) for (const m of (W.net.trains[0] ? W.net.trains[0].M : [])) { if (!solo(m)) cov = Math.max(cov, Ly.spread(s, m.s, (W.line.stations[m.i] || {}).lay, W.dir)); }
     return w * (1 - cov);
   }
   const worldXings = (L, dir) => (L.xings || []).map(k => ({ s: sOfKm(k, dir, L.kmEnd), blocked: false, until: 0, hit: false, cleared: false })).sort((a, b) => a.s - b.s);

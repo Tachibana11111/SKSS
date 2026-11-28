@@ -61,12 +61,12 @@
       const m = gs === m0.s ? m0 : Object.assign({}, m0, { s: gs }), key = W.lineId + ':' + m.i + ':' + W.dir + (W.termPick && W.termPick[m.i] !== undefined ? ':t' + W.termPick[m.i] : '');
       const st = stCache[key] || (stCache[key] = LAY.station(L.stations[m.i].lay || '2-2-0', W.dir, LAY.pickOf(L.stations[m.i], m.i, W)));
       sts.push({ m, i, gs, st, stopHere: !!(m.stop || T.forced === i || (i === T.k && T.phase !== 'end')) }); });
-    let lane = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop && !(W.lineId === 'yam' && q.st.code === LAY.FUK)) { const o = q.st.ours, w = LAY.laneW(o, sCam, q.gs, W.lineId === 'yam'); if (o.own ? w > 0 : true) lane += LAY.laneOf(o, sCam, q.gs, w, LAY.spread(sCam, q.gs), 1300, 720); }
+    let lane = 0; for (const q of sts) if (q.stopHere && !q.m.mainStop && !(W.lineId === 'yam' && q.st.code === LAY.FUK)) { const o = q.st.ours, w = LAY.laneW(o, sCam, q.gs, W.lineId === 'yam'); if (o.own ? w > 0 : true) lane += LAY.laneOf(o, sCam, q.gs, w, LAY.spread(sCam, q.gs, q.st.code, W.dir), 1300, 720); }
     for (const q of sts) if (q.st.detour && !(q.stopHere && !q.m.mainStop && !q.st.ours.main)) lane += LAY.detourX(q.st, sCam, q.gs);
     lane += S.runLane(W, sCam);      // ngã rẽ Akita chiều lên: tàu mini chạy làn ngược chiều tới ghi chéo 's' của Morioka
     if (xbOn && W.lineId === 'hok' && W.dir === 'up') {
       if (S.kmOfS(sCam, W.dir, L.kmEnd) >= XBK0) lane = S.xbLanes(W, sCam).B;
-      else { const qT = sts.find(q => q.st.code === LAY.TKS && !(q.stopHere && !q.m.mainStop)), o = qT && qT.st.tracks.find(t => t.tks === 5); if (o) lane += LAY.laneOf(o, sCam, qT.gs, LAY.trackW(o, sCam, qT.gs), LAY.spread(sCam, qT.gs), 1300, 720); }
+      else { const qT = sts.find(q => q.st.code === LAY.TKS && !(q.stopHere && !q.m.mainStop)), o = qT && qT.st.tracks.find(t => t.tks === 5); if (o) lane += LAY.laneOf(o, sCam, qT.gs, LAY.trackW(o, sCam, qT.gs), LAY.spread(sCam, qT.gs, qT.st.code, W.dir), 1300, 720); }
     }
     const stepC = S.runStep(W, sCam), out = Xm => side > 0 ? Xm + stepC - lane : lane - Xm - stepC;      // X mô hình (dương = trái) → khoảng cách ngang ra phía cửa sổ đang xem
 
@@ -247,7 +247,7 @@
           ctx.fillStyle = mixc([20, 22, 24], [96, 98, 100], lit); ctx.fillRect(x, Y(0.3 + dy, dd), 12.6, Math.max(2, 0.3 * f / dd)); ctx.fillStyle = mixc([30, 32, 36], [160, 164, 168], lit); ctx.fillRect(x, Y(0.2 + dy, dd), 12.6, Math.max(1, 0.05 * f / dd)); if (Math.floor(s / 50) !== Math.floor((s - 12) / 50)) { const xm = X(Math.floor(s / 50) * 50, dd), kk = f / dd; ctx.fillStyle = mixc([30, 32, 36], [150, 156, 160], lit); ctx.fillRect(xm - 0.1 * kk, Y(7.5 + dy, dd), 0.2 * kk, Y(dy, dd) - Y(7.5 + dy, dd)); } } } } }); }
     // khoảng cách ngang tới đường ngược chiều tại s (nở ra quanh ga như cabview/topview, không cố định ADJ)
     const fkJ = S.fkFollows(W) ? S.sOfKm(L.meta.junctions[S.fkOf(W)].km, W.dir, L.kmEnd) : null, fkSideS = s => fkJ !== null && (W.dir === 'down' ? s > fkJ : s < fkJ);      // phía đường Yamagata của ngã rẽ Fukushima
-    const oppOut = s => out(sts.reduce((x, q) => x + (q.st.opp - LAY.ADJ) * LAY.spread(s, q.m.s), LAY.ADJ) + (fkSideS(s) ? S.fkOwnOpp(W, s) - LAY.ADJ : 0));
+    const oppOut = s => out(sts.reduce((x, q) => x + (q.st.opp - LAY.ADJ) * LAY.spread(s, q.m.s, q.st.code, W.dir), LAY.ADJ) + (fkSideS(s) ? S.fkOwnOpp(W, s) - LAY.ADJ : 0));
     if (side < 0) for (const h of W.heldOpp || []) { const hv = S.VEH[h.key] || S.VEH.N700, sn = h.sC - hv.len / 2; if (sn > sCam + 220 || sn + hv.len < sCam - 220) continue; const dd = dep(Math.max(1.8, oppOut(h.sC)) - 1.45);
       items.push({ d: dd, fn: () => { if (hv.parts) { let off = 0; for (const pk of hv.parts) { const pv = S.VEH[pk]; trainSide(pk, sn + off, pv.len, true, dd, 0); off += pv.len + (hv.gap || 2.5); } } else trainSide(h.key, sn, hv.len, true, dd, 0); } }); }      // tàu ngược chiều bị giữ dừng giữa hai ga
     // tàu trên đường nhánh / đường khác: tàu nhánh vừa tách, phần đoàn đã tách ở lại, tàu chạy trước ở đường khác

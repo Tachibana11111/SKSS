@@ -36,7 +36,7 @@ for jp, en, km, lp in SANYO: tsk.append(dict(jp=jp, en=en, km=round(515.4 + km, 
 for jp, en, km, lp in KYUSHU: tsk.append(dict(jp=jp, en=en, km=round(515.4 + 553.7 + km, 1), loop=lp))
 toh = build_stations(TOH)
 NKS = [('武雄温泉','Takeo-Onsen',0.0,0),('嬉野温泉','Ureshino-Onsen',10.9,0),('新大村','Shin-Omura',32.2,0),('諫早','Isahaya',44.7,0),('長崎','Nagasaki',66.0,0)]   # km thực 実キロ từ Takeo-Onsen (営業キロ Nagasaki 69,6) [N: Wikipedia JP 西九州新幹線]
-YAM_MINI = [('笹木野','Sasakino',258.9,0),('庭坂','Niwasaka',262.0,0),('板谷','Itaya',276.3,0),('峠','Toge',279.6,0),('大沢','Osawa',283.9,0),('関根','Sekine',289.9,0),('米沢','Yonezawa',295.2,0),('高畠','Takahata',305.0,0),('赤湯','Akayu',311.2,0),('かみのやま温泉','Kaminoyama-Onsen',330.1,0),('山形','Yamagata',342.2,0),('天童','Tendo',355.5,0),
+YAM_MINI = [('笹木野','Sasakino',258.9,0),('庭坂','Niwasaka',262.0,0),('板谷','Itaya',276.3,0),('峠','Toge',279.6,0),('大沢','Osawa',283.9,0),('関根','Sekine',289.9,0),('米沢','Yonezawa',295.2,0),('置賜','Oitama',300.7,0),('高畠','Takahata',305.0,0),('赤湯','Akayu',311.2,0),('北赤湯信号場','Kita-Akayu Jct.',316.7,0),('中川','Nakagawa',319.5,0),('羽前中山','Uzen-Nakayama',323.4,0),('かみのやま温泉','Kaminoyama-Onsen',330.1,0),('山形','Yamagata',342.2,0),('天童','Tendo',355.5,0),
  ('さくらんぼ東根','Sakuranbo-Higashine',363.2,0),('村山','Murayama',368.6,0),('大石田','Oishida',382.0,0),('新庄','Shinjo',403.7,0)]       # km = 255.1 (Fukushima) + 営業キロ từ Fukushima [N: Wikipedia JP 山形新幹線]
 AKI_MINI = [('前潟','Maegata',499.9,0),('大釜','Okama',502.5,0),('小岩井','Koiwai',507.0,0),('雫石','Shizukuishi',512.5,0),('春木場','Harukiba',515.2,0),('赤渕','Akabuchi',518.5,0),('大地沢信号場','Ochizawa Jct.',525.0,0),('志度内信号場','Shidonai Jct.',530.9,0),('田沢湖','Tazawako',536.6,0),('刺巻','Sashimaki',540.9,0),('神代','Jindai',549.3,0),('生田','Shoden',551.8,0),('角館','Kakunodate',555.3,0),('鶯野','Uguisuno',558.1,0),('羽後長野','Ugo-Nagano',561.1,0),('鑓見内','Yariminai',564.4,0),('羽後四ツ屋','Ugo-Yotsuya',566.7,0),('北大曲','Kita-Omagari',568.5,0),('大曲','Omagari',572.1,0),('神宮寺','Jinguji',578.1,0),('刈和野','Kariwano',585.7,0),('峰吉川','Mineyoshikawa',590.5,0),('羽後境','Ugo-Sakai',597.0,0),('大張野','Obarino',605.1,0),('和田','Wada',610.5,0),('四ツ小屋','Yotsugoya',617.4,0),('秋田','Akita',623.8,0)]           # km = 496.5 (Morioka) + 営業キロ từ Morioka (16,0 / 40,1 / 58,8 / 75,6 / 127,3) [N: Wikipedia JP 秋田新幹線]
 def toh_upto(en): i = [x[1] for x in TOH].index(en); return TOH[:i + 1]
@@ -50,7 +50,7 @@ LINES = {'tsk': dict(id='tsk', name='Tokaido – Sanyo – Kyushu', stations=tsk
          'aki': dict(id='aki', name='Akita mini-Shinkansen (Tokyo – Akita)', stations=aki, kmEnd=aki[-1]['km'])}
 import build_struct
 build_struct.apply(LINES)
-SIG_JP = {'志度内信号場', '大地沢信号場'}      # tín hiệu trường (信号場): không phải ga hành khách, không có sân ga; tàu chỉ dừng khi cần tránh tàu (cửa không mở, không PA/melody)
+SIG_JP = {'志度内信号場', '大地沢信号場', '北赤湯信号場'}      # tín hiệu trường (信号場): không phải ga hành khách, không có sân ga; tàu chỉ dừng khi cần tránh tàu (cửa không mở, không PA/melody)
 for _ln in LINES.values():
     for _s in _ln['stations']:
         if _s['jp'] in SIG_JP: _s['sig'] = 1
@@ -79,6 +79,8 @@ for _lid in ('yam', 'aki'):
 XO['yam']['Fukushima'] = XO['toh']['Fukushima'] + [['a', 's', 1680], ['a', 'r', 1880]]
 # Yamagata (docs/data/haisen/yam_cards.html, đợt 1: Sasakino–Sekine, đoạn ĐƯỜNG ĐÔI Fukushima–Sekine): không có chữ X; ghi của đường tránh do mã bố cục lo
 for _n in ('Sasakino', 'Itaya', 'Toge', 'Osawa', 'Sekine'): XO['yam'][_n] = []
+# Yamagata đợt 2 (Yonezawa–Uzen-Nakayama, đoạn ĐƯỜNG ĐƠN): không có chữ X; ghi do mã bố cục (HIER / SPR) lo
+for _n in ('Yonezawa', 'Oitama', 'Takahata', 'Akayu', 'Kita-Akayu Jct.', 'Nakagawa', 'Uzen-Nakayama'): XO['yam'][_n] = []
 XO['yam']['Niwasaka'] = [['b', 'r', 20], ['a', 's', 40]]      # Niwasaka (2-3-0n, docs/data/haisen/niwasaka_plan.html): ghi trong nối đường xuống với đường vòng giữa ở hai đầu (r phía tây, s phía đông); đường chính lên đi vòng qua đường ngoài (Layout.DETC)
 XO['aki']['Maegata'] = []
 XO['aki']['Okama'] = []
@@ -117,7 +119,7 @@ TYPE = {'のぞみ': 'Nozomi', 'ひかり': 'Hikari', 'こだま': 'Kodama', '�
         'とき': 'Toki', 'たにがわ': 'Tanigawa', 'あさま': 'Asama', 'はくたか': 'Hakutaka', 'かがやき': 'Kagayaki', 'つるぎ': 'Tsurugi'}
 LINE_TYPES = {'tsk': {'Nozomi', 'Hikari', 'Kodama', 'Mizuho', 'Sakura', 'Tsubame', 'Kamome'}, 'toh': {'Hayabusa', 'Hayate', 'Yamabiko', 'Nasuno'},
               'jts': {'Toki', 'Tanigawa'}, 'hok': {'Asama', 'Hakutaka', 'Kagayaki', 'Tsurugi'}, 'nks': set(), 'yam': set(), 'aki': set()}
-MINI = {'笹木野', '庭坂', '板谷', '峠', '大沢', '関根', '志度内信号場', '大地沢信号場', '田沢湖', '雫石', '角館', '羽後四ツ屋', '北大曲', '大曲', '前潟', '大釜', '小岩井', '春木場', '赤渕', '刺巻', '神代', '生田', '鶯野', '羽後長野', '鑓見内', '神宮寺', '刈和野', '峰吉川', '羽後境', '大張野', '和田', '四ツ小屋', '秋田', '米沢', '高畠', '赤湯', 'かみのやま温泉', '山形', '天童', 'さくらんぼ東根', '村山', '大石田', '新庄'}   # ga trên phần mini-Shinkansen (Tsubasa / Komachi)
+MINI = {'笹木野', '庭坂', '板谷', '峠', '大沢', '関根', '置賜', '北赤湯信号場', '中川', '羽前中山', '志度内信号場', '大地沢信号場', '田沢湖', '雫石', '角館', '羽後四ツ屋', '北大曲', '大曲', '前潟', '大釜', '小岩井', '春木場', '赤渕', '刺巻', '神代', '生田', '鶯野', '羽後長野', '鑓見内', '神宮寺', '刈和野', '峰吉川', '羽後境', '大張野', '和田', '四ツ小屋', '秋田', '米沢', '高畠', '赤湯', 'かみのやま温泉', '山形', '天童', 'さくらんぼ東根', '村山', '大石田', '新庄'}   # ga trên phần mini-Shinkansen (Tsubasa / Komachi)
 
 def sec(s):
     h, m = s.split(':'); return int(h) * 3600 + int(m) * 60
