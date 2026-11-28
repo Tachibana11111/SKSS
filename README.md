@@ -2,7 +2,7 @@
 
 <img src="docs/screenshots/logo_vi.gif" alt="Logo Tân Cán Tuyến động" width="560">
 
-# Lái Shinkansen · Drive Shinkansen · 新幹線を運転
+# Lái Shinkansen
 
 **Tiếng Việt** · [English](README.en.md) · [日本語](README.ja.md)
 
@@ -38,7 +38,7 @@ Dự án sở thích, **không chính thức và không liên quan tới JR hay 
 
 ## Menu
 - **Màn hình chủ:** Lái tàu · Học lái · Hồ sơ · Cài đặt · Ghi công tài nguyên (và logo 5 công ty JR, bấm vào mở trang chính thức).
-- **Thiết lập chuyến đi:** hình đầu đoàn 2D của tàu đang chọn; tuyến, chiều, tàu, ga đi/đến, độ khó, thời tiết, seed; cùng một seed cho cùng một chuyến. Các chuyến Tohoku có cặp mini cùng số hiệu, cùng giờ, cùng ga dừng (56 chuyến: Hayabusa+Komachi, Yamabiko+Tsubasa) **luôn nối đoàn** từ Tokyo tới Morioka/Fukushima, kể cả khi sự cố ngẫu nhiên làm lịch linh hoạt.
+- **Thiết lập chuyến đi:** hình đầu đoàn 2D của tàu đang chọn; tuyến, chiều, tàu, ga đi/đến, độ khó, thời tiết; mỗi chuyến tự bốc một seed ngẫu nhiên (không cần chọn), "Chơi lại" dùng lại đúng seed đó nên cho cùng một chuyến. Các chuyến Tohoku có cặp mini cùng số hiệu, cùng giờ, cùng ga dừng (56 chuyến: Hayabusa+Komachi, Yamabiko+Tsubasa) **luôn nối đoàn** từ Tokyo tới Morioka/Fukushima, kể cả khi sự cố ngẫu nhiên làm lịch linh hoạt.
 - **Chế độ thực tế** (ô đánh dấu đầu cột bên phải): lấy **giờ Nhật Bản** (chỉ còn các chuyến chưa rời ga; hết chuyến thì chỉ còn tàu kiểm tra Doctor Yellow, East i), **thời tiết thật** (mưa, tuyết, gió giật theo giờ dọc tuyến, từ Open-Meteo) và **động đất thật** (P2PQuake: vài giờ qua thì chạy kiểm tra chậm quanh tâm chấn; trận xảy ra **trong lúc đang chơi** thì cắt điện nếu rung đủ mạnh tại tàu). Độ khó cố định Thường. Cần mạng khi bấm Bắt đầu và (cho động đất) trong lúc chơi; mất mạng thì dùng thời tiết ngẫu nhiên. Dữ liệu được chụp lại lúc bắt đầu và các trận động đất mới được ghi như thao tác, nên xem lại chuyến vẫn đúng.
 - **Chế độ tự do** (ô đánh dấu cạnh Chế độ thực tế): có nút tự lái; chuyến không tính điểm, không ghi thành tựu và không lưu vào lịch sử/kỷ lục. Trên bản đồ toàn quốc bấm một tàu rồi chọn "Vào buồng lái" để ngó buồng lái tàu đó (tàu đó chạy tự lái, các bộ điều khiển bị khóa); nút "Quay về tàu của bạn" đưa bạn về. Không chọn thì không có tự lái và chuyến được tính điểm.
 - **Tạm dừng (P hoặc Esc):** Tiếp tục · Cài đặt · Hồ sơ · Chụp cảnh (F9) · Chơi lại · Về menu chính.

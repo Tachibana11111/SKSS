@@ -203,7 +203,7 @@
     <label class="inl" id="devBox" title="Giống chế độ tự do, thêm: bấm một điểm bất kỳ trên bản đồ toàn quốc để dịch chuyển tàu tới đó (đứng yên, tốc độ 0). Tàu là tàu ma: các tàu khác và các ga không thấy, không dính sự cố ngẫu nhiên, không ảnh hưởng ATC của tàu khác và không bị tàu khác chặn."><input type="checkbox" id="dev"><span>Chế độ nhà phát triển</span></label>
     <label>Độ khó <select id="diff"></select></label>
     <label>Thời tiết <select id="weather"></select></label>
-    <label class="w2">Seed <span class="btns"><input id="seed" type="number" value="1"><button id="dice" title="Seed ngẫu nhiên" style="flex:none;width:36px"><span data-ic="dice" data-size="18"></span></button></span></label>
+    <input id="seed" type="hidden" value="1">
     </div>
     <span id="legBox" style="display:none"><label>Thêm chặng <select id="via"></select></label><div class="btns" style="margin-top:4px"><button id="viaAdd">Thêm</button><button id="viaClr">Xoá chặng</button></div><span id="viaList" style="color:#8aa0b5;font-size:12px"></span></span>
     <button id="start" class="go" style="width:100%">Bắt đầu / chạy lại (R)</button>
@@ -213,7 +213,7 @@
     <label>Thời lượng <select id="dSpan"><option value="3600">60 phút</option><option value="5400" selected>90 phút</option><option value="7200">120 phút</option></select></label>
     <label>Thời tiết <select id="dWeather"></select></label>
     <button id="dStart" class="go">Bắt đầu ca điều độ</button>
-    <span class="dim">Dùng chung ô Tuyến, Chiều, Độ khó, Seed ở trên.</span>
+    <span class="dim">Dùng chung ô Tuyến, Chiều, Độ khó ở trên.</span>
   </div>
   
   <div class="row" id="rowTut" style="display:none">
@@ -472,7 +472,7 @@ $('from').onchange = () => {
   if (typeof tpUpd === 'function' && $('mBoard')) tpUpd();      // đổi ga đi: bảng giờ cập nhật giờ khởi hành
 };
 $('to').addEventListener('change', () => { if (typeof tpUpd === 'function') tpUpd(); });      // đổi ga đến: bảng giờ đổi theo
-$('dice').onclick = () => { $('seed').value = Math.floor(Math.random() * 99999); };
+const newSeed = () => { $('seed').value = 1 + Math.floor(Math.random() * 99999); }; newSeed();      // seed ngầm ngẫu nhiên: vừa mở trang đã bốc, bốc lại sau mỗi lần bắt đầu chuyến
 // ---- chế độ thực tế: khoá Độ khó = Thường và ô Thời tiết (= dữ liệu thật); chỉ còn chuyến chưa rời ga theo giờ Nhật Bản (tàu kiểm tra luôn dùng được)
 let realPrev = null;
 function realUpd() {
@@ -655,7 +655,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) focus
 addEventListener('pointerdown', () => AUD.unlock()); addEventListener('keydown', () => AUD.unlock(), true);
 
 // ---- bắt đầu chuyến
-function curRecipe() { return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: realOn ? 'real' : $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, real: realOn && realSnap ? realSnap : undefined, free: $('free').checked || $('dev').checked || undefined, dev: $('dev').checked || undefined }; }
+function curRecipe() { newSeed(); return { via: legsExtra.slice(), leg: 0, lineId: $('line').value, recIdx: +$('train').value, from: +$('from').value, to: +$('to').value, diff: $('diff').value, weather: realOn ? 'real' : $('weather').value, seed: +$('seed').value || 1, lead: true, events: true, veh: $('vehSel').value || undefined, real: realOn && realSnap ? realSnap : undefined, free: $('free').checked || $('dev').checked || undefined, dev: $('dev').checked || undefined }; }
 function startDrive(r, opts) {
   opts = opts || {}; r = r || curRecipe(); const L = LINES[r.lineId], rec0 = r.rec || L.trains[r.recIdx], rec = r.veh && /^(E5|E7)$/.test(rec0.v) && Sim.VEH[r.veh] ? Object.assign({}, rec0, { v: r.veh, retro: 1 }) : rec0, trip = Sim.INSPECT[rec.v] ? Sim.makeMission(r.lineId, [r.from, r.to].concat(r.via || []), rec.v, r.leg || 0, r.carryT0) : Sim.makeTrip(r.lineId, rec, r.from, r.to);
   if (!trip) { alert(_t('Chọn ga đi/đến hợp lệ cho chuyến này.')); return false; }
@@ -680,7 +680,7 @@ function startLesson(i) {
 document.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => startLesson(+b.dataset.lesson));
 $('start').onclick = async () => { if (PV.busy()) { PV.skip(); return; } tutorialRun = false; realNote = ''; if (realOn && !(await realPrepare())) return; if (startDrive()) { await PV.go(); M.hide(); paused = false; if (realNote) W.say('warn', realNote); } };
 $('dStart').onclick = () => startDispatch();
-function startDispatch() { Dispatch.start({ lineId: $('line').value, dir: $('dir').value, diff: $('diff').value, seed: +$('seed').value || 1, weather: $('dWeather').value, t0: +$('dHour').value * 3600, span: +$('dSpan').value }); }
+function startDispatch() { newSeed(); Dispatch.start({ lineId: $('line').value, dir: $('dir').value, diff: $('diff').value, seed: +$('seed').value || 1, weather: $('dWeather').value, t0: +$('dHour').value * 3600, span: +$('dSpan').value }); }
 
 // ---- hành động của người lái (có ghi lại để xem lại)
 const act = {

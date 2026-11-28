@@ -2,7 +2,7 @@
 
 <img src="docs/screenshots/logo_en.gif" alt="SHINKANSEN animated logo" width="560">
 
-# Drive Shinkansen · 新幹線を運転 · Lái Shinkansen
+# Drive Shinkansen
 
 [Tiếng Việt](README.md) · **English** · [日本語](README.ja.md)
 
@@ -38,7 +38,7 @@ A hobby project, **unofficial and not affiliated with JR or any company mentione
 
 ## Menus
 - **Home screen:** Drive · Learn to drive · Profile · Settings · Asset credits (plus the logos of the five JR companies, each linking to its official site).
-- **Trip setup:** a 2D picture of the selected train's front cars; line, direction, train, from/to stations, difficulty, weather, seed; the same seed gives the same trip. Tohoku trains that have a mini-Shinkansen partner with the same number, time and stops (56 trips: Hayabusa+Komachi, Yamabiko+Tsubasa) **always run coupled** from Tokyo to Morioka/Fukushima, even when random incidents make the schedule flexible.
+- **Trip setup:** a 2D picture of the selected train's front cars; line, direction, train, from/to stations, difficulty, weather; each trip picks a random seed on its own (nothing to choose), and "Restart" reuses that seed, so it gives the same trip. Tohoku trains that have a mini-Shinkansen partner with the same number, time and stops (56 trips: Hayabusa+Komachi, Yamabiko+Tsubasa) **always run coupled** from Tokyo to Morioka/Fukushima, even when random incidents make the schedule flexible.
 - **Real-time mode** (the checkbox at the top of the right column): uses **Japan time** (only trains that have not yet left are listed; when none are left only the Doctor Yellow and East i inspection trains remain), **live weather** (rain, snow and wind gusts per hour along the line, from Open-Meteo) and **real earthquakes** (P2PQuake: those from the last few hours cause slow inspection running near the epicentre; one that strikes **while you play** cuts the power if the shaking is strong enough at your train). Difficulty is fixed to Normal. It needs a connection when you press Start (and, for earthquakes, while you play); offline it falls back to random weather. The data is snapshotted at the start and new earthquakes are recorded like your inputs, so replays stay exact.
 - **Free mode** (the checkbox next to Real-time mode): adds an autopilot button; the trip is not scored, earns no achievements and is not saved in the history or records. On the nationwide map click a train and choose "Enter cab" to look into its cab (it drives itself and its controls are locked); the "Return to your train" button brings you back. Leave it off for no autopilot and a scored trip.
 - **Pause (P or Esc):** Resume · Settings · Profile · Snapshot (F9) · Restart · Back to main menu.

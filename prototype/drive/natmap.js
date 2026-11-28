@@ -154,7 +154,7 @@
       btn(lx - 8, y2, sw, sh, _t('Tìm tàu…'), () => o.pick('train', { x: lx - 8, y: y2, w: Math.round(sw * U), h: Math.round(sh * U) }), true, '#2a6fd6', 12, 'search'); }
     txt(_t('Tuyến'), lx, ly - 4, dk ? '#8aa0b5' : '#445', 'bold 11px system-ui'); for (const sg of SEGS) { ctx.fillStyle = sg.col; ctx.fillRect(lx, ly + 6 * U, 22 * U, 5 * U); txt(I18N.lang === 'ja' && SEGJA[sg.key] || sg.name, lx + 30 * U, ly + 12 * U, dk ? '#e8eef5' : '#1b2633', '11px system-ui'); ly += rowH; }
     // ba nút vuông ở góc trên phải: định vị tàu của tôi · nền sáng/tối · đóng (D); biểu tượng vẽ bằng nét
-    const sq = 32, ss = Math.round(sq * U), ex = bx + bwU - ss, ey = y + 10, ic = (px, py, col, fn) => {
+    const sq = 32, ss = Math.round(sq * U), ex = x + w - ss - 10, ey = y + 10, ic = (px, py, col, fn) => {
       ctx.save(); ctx.translate(px + ss / 2, py + ss / 2); ctx.scale(U, U); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; ctx.lineCap = 'round'; fn(0, 0); ctx.restore(); };
     btn(ex, ey, sq, sq, '', () => { o.close(); }, true, '#7a2d2d', 13);
     ic(ex, ey, '#fff', (cx, cy) => { ctx.beginPath(); ctx.moveTo(cx - 7, cy - 7); ctx.lineTo(cx + 7, cy + 7); ctx.moveTo(cx + 7, cy - 7); ctx.lineTo(cx - 7, cy + 7); ctx.stroke(); });
