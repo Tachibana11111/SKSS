@@ -203,7 +203,7 @@ if (section('10. Bố trí ga, kết cấu tuyến, đường cong (layout.js)')
   for (const code of Object.keys(LAY.TOK)) for (const dir of ['down', 'up']) {
     const [f, l, t] = code.split('-').map(x => parseInt(x, 10)), st = LAY.station(code, dir, 1), tag = `${code} ${dir}`;
     ok(st.plats.length === f, `${tag}: đúng số sân`, st.plats.length);
-    const nv = st.tracks.filter(x => x.virt).length, rt = st.tracks.filter(x => !x.virt);      // đường ngược chiều ẢO của ga một đường (1-1-0) / ga tránh trên đường đơn (2-2-1s) không tính
+    const nv = st.tracks.filter(x => x.virt).length, rt = st.tracks.filter(x => !x.virt && !x.loop);      // đường ngược chiều ẢO của ga một đường (1-1-0) / ga tránh trên đường đơn (2-2-1s) không tính
     const sgl = LAY.isSingle(code), mu = LAY.MAINUP.has(code);
     ok(nv === (sgl ? 1 : 0), `${tag}: đường ảo chỉ ở mã đường đơn`, nv);
     ok(rt.length === (mu ? l : l + (t ? 2 : 0)), `${tag}: đúng số đường (kể cả thông qua)`, rt.length);
@@ -430,7 +430,7 @@ if (section('17. Ga: ghi riêng từng đường, tường bao, hồ sơ hình h
   const LAY = require(path.join(DRIVE, 'layout.js'));
   for (const code of Object.keys(LAY.TOK)) for (const dir of ['down', 'up']) {
     if (code === LAY.TKS || code === LAY.FUK || code === LAY.OMA) continue;      // Takasaki, Fukushima: hình học riêng theo sơ đồ, kiểm ở mục 33k / 33o; Omagari (2-2-0w): mạng đường riêng, kiểm ở mục 33q
-    const st = LAY.station(code, dir, 0), outer = st.tracks.filter(t => !t.main);
+    const st = LAY.station(code, dir, 0), outer = st.tracks.filter(t => !t.main && !t.loop);
     ok(outer.every(t => t.in0 !== undefined && t.len >= 40 && t.len <= 400), `${code} ${dir}: mọi đường ngoài có ghi riêng (in0/len)`);
     ok(outer.every(t => t.in0 - t.len >= 380), `${code} ${dir}: ghi cuối cùng xong trước khi vào sân ga (còn ≥ 380 m)`, outer.map(t => [t.in0, t.len]));
     ok(st.tracks.filter(t => t.main).every(t => LAY.trackW(t, 0, 0) === 1), `${code} ${dir}: đường chính luôn trọng số 1`);
@@ -459,7 +459,7 @@ if (section('18. Ga cuối: chọn đường có sân ga của cả hai nhóm, �
 }
 
 if (section('20. Cầu bộ hành trên cao theo cỡ ga')) {
-  const LAY = require(path.join(DRIVE, 'layout.js')), want = { '3-6-0': 3, '5-8-0': 3, '3-4-0': 3, '2-4-0': 2, '2-4-1': 2, '2-4-1k': 2, '2-4-1f': 2, '2-4-0t': 2, '2-4-0s': 2, '1-1-0': 0, '1-1-0m': 0, '2-2-1s': 1, '2-2-1o': 1, '0-2-1s': 0, '0-2-1n': 0, '1-3-1k': 0, '2-3-1t': 1, '2-3-1h': 1, '2-2-0': 1, '2-2-1': 1, '2-3-0': 1, '2-3-1': 1, '2-3-1c': 1, '2-3-0a': 1, '2-3-0b': 1, '2-3-0c': 1, '1-2-0': 0, '1-2-0t': 0, '2-2-0w': 1, '1-2-1': 0, '1-2-1n': 0, '1-2-1w': 0 };
+  const LAY = require(path.join(DRIVE, 'layout.js')), want = { '3-6-0': 3, '5-8-0': 3, '3-4-0': 3, '2-4-0': 2, '2-4-1': 2, '2-4-1k': 2, '2-4-1f': 2, '2-4-0t': 2, '2-4-0s': 2, '1-1-0': 0, '1-1-0m': 0, '2-2-1s': 1, '2-2-1o': 1, '0-2-1s': 0, '0-2-1n': 0, '1-3-1k': 0, '2-3-1t': 1, '2-3-0n': 1, '2-3-1h': 1, '2-2-0': 1, '2-2-1': 1, '2-3-0': 1, '2-3-1': 1, '2-3-1c': 1, '2-3-0a': 1, '2-3-0b': 1, '2-3-0c': 1, '1-2-0': 0, '1-2-0t': 0, '2-2-0w': 1, '1-2-1': 0, '1-2-1n': 0, '1-2-1w': 0 };
   for (const [code, n] of Object.entries(want)) ok(LAY.bridgeCountOf(code) === n, `cầu bộ hành ga ${code}: ${n} lối`, LAY.bridgeCountOf(code));
   ok(Object.keys(LAY.TOK).every(c => want[c] !== undefined), 'mọi mã bố trí có quy tắc cầu bộ hành');
   // Akita (22/11/2026): ga cuối đầu cụt 1-2-0t, sân ga 240 m, không chữ X; các mã khác giữ 420 m
@@ -1547,9 +1547,14 @@ if (section('33l. Tohoku Shinkansen dựng lại từ sơ đồ (Oyama – Shin-
     ok(Object.keys(LAY).every(e => byEn(e).lay === LAY[e]) && ['Nasushiobara', 'Koriyama', 'Kitakami'].every(e => byEn(e).loop === 1), 'mã bố trí Tohoku khớp token sơ đồ (chỉ Nasushiobara, Koriyama, Kitakami đổi sang 2-3-1c)', Object.keys(LAY).filter(e => byEn(e).lay !== LAY[e]));
     const sm = (c, d) => { const st = Ly.station(c, d, 0); return Ly.tokens(c, d) + '|' + st.tracks.length + '|' + st.plats.length + '|' + st.stops.length + '|' + (Ly.diverts(c, d, 0) ? 'rẽ' : 'thẳng'); };
     ok(Ly.tokens('2-3-1c', 'down') === 'dPdDUuP' && Ly.tokens('2-3-1c', 'up') === Ly.tokens('2-3-1', 'down') && Ly.tokens('2-3-1c', 'down') === Ly.tokens('2-3-1', 'up') && Ly.stopCount('2-3-1c', 'down') === 2 && Ly.stopCount('2-3-1c', 'up') === 1 && Ly.hasThrough('2-3-1c', 'down') && Ly.hasThrough('2-3-1c', 'up') && Ly.bridgeCountOf('2-3-1c') === Ly.bridgeCountOf('2-3-1'), '2-3-1c là ảnh gương của 2-3-1: chiều xuống giống 2-3-1 chiều lên và ngược lại, có đường thông qua', [sm('2-3-1c', 'down'), sm('2-3-1c', 'up')]); }
+  // 2-3-0n (Niwasaka): đường chính LÊN đi vòng qua đường ngoài phía nam suốt sân ga, đường vòng giữa ở lại (Layout.DETC, như Sendai nhưng đảo chiều/đảo bên)
+  { const Ly = window.Layout, dn = Ly.station('2-3-0n', 'down', 0, false), up = Ly.station('2-3-0n', 'up', 0, false), sen = Ly.station('2-4-0s', 'down', 0, false);
+    ok(!dn.detour && dn.oppDet && dn.oppDet.t.main === false && Math.abs(dn.oppDet.t.x) > Math.abs(dn.oppDet.main.x) && dn.tracks.some(t => t.loop && !t.main && Math.abs(t.x - dn.oppDet.main.x) < 0.01), 'Niwasaka chiều xuống: làn ngược chiều (đường chính lên) đi vòng qua đường ngoài, đường vòng giữa ở lại làm đường phụ');
+    ok(up.detour && !up.oppDet && up.detour.z0 < -420 && up.detour.zEnd > 20 && up.tracks.some(t => t.loop && !t.main), 'Niwasaka chiều lên: đường chính của ta đi vòng qua đường ngoài suốt chiều dài sân ga (-420…+20 m nằm trong đoạn vòng)');
+    ok(sen.detour && sen.detour.z0 === 60 && Ly.detourSpan('2-4-0s', 'down') && Ly.detourSpan('2-4-0s', 'down').z0 === 60 && Ly.detourSpan('2-3-0n', 'up') && !Ly.detourSpan('2-3-0n', 'down'), 'Sendai không đổi sau khi tổng quát hoá (DETC); Niwasaka chỉ giới hạn tốc độ chiều lên'); }
   // 3) yam và aki chạy chung trục Tohoku: cùng ga thì cùng xo
   { const Y = window.LINES.yam, A = window.LINES.aki; const sh = (LL, e) => JSON.stringify((LL.stations.find(x => x.en === e) || {}).xo);
-    ok(Y.stations.filter(s => s.xo !== undefined).map(s => s.en).join() === 'Oyama,Utsunomiya,Nasushiobara,Shin-Shirakawa,Koriyama,Fukushima' && A.stations.filter(s => s.xo !== undefined).map(s => s.en).join() === 'Oyama,Utsunomiya,Nasushiobara,Shin-Shirakawa,Koriyama,Fukushima,Shiroishi-Zao,Sendai,Furukawa,Kurikoma-Kogen,Ichinoseki,Mizusawa-Esashi,Kitakami,Shin-Hanamaki,Morioka,Maegata,Okama,Koiwai,Shizukuishi,Harukiba,Akabuchi,Ochizawa Jct.,Shidonai Jct.,Tazawako,Sashimaki,Jindai,Shoden,Kakunodate,Uguisuno,Ugo-Nagano,Yariminai,Ugo-Yotsuya,Kita-Omagari,Omagari,Jinguji,Kariwano,Mineyoshikawa,Ugo-Sakai,Obarino,Wada,Yotsugoya,Akita', 'yam có xo ở 6 ga Oyama – Fukushima, aki ở 15 ga Oyama – Morioka cộng 17 ga và tín hiệu trường đường đơn tuyến Tazawako, Omagari, 7 ga Omagari – Akita và Akita (xo rỗng: ga cụt/ga đường đơn, không chữ X; không có Tokyo, Ueno, Omiya, ga mini-Shinkansen khác)');
+    ok(Y.stations.filter(s => s.xo !== undefined).map(s => s.en).join() === 'Oyama,Utsunomiya,Nasushiobara,Shin-Shirakawa,Koriyama,Fukushima,Sasakino,Niwasaka,Itaya,Toge,Osawa,Sekine' && A.stations.filter(s => s.xo !== undefined).map(s => s.en).join() === 'Oyama,Utsunomiya,Nasushiobara,Shin-Shirakawa,Koriyama,Fukushima,Shiroishi-Zao,Sendai,Furukawa,Kurikoma-Kogen,Ichinoseki,Mizusawa-Esashi,Kitakami,Shin-Hanamaki,Morioka,Maegata,Okama,Koiwai,Shizukuishi,Harukiba,Akabuchi,Ochizawa Jct.,Shidonai Jct.,Tazawako,Sashimaki,Jindai,Shoden,Kakunodate,Uguisuno,Ugo-Nagano,Yariminai,Ugo-Yotsuya,Kita-Omagari,Omagari,Jinguji,Kariwano,Mineyoshikawa,Ugo-Sakai,Obarino,Wada,Yotsugoya,Akita', 'yam có xo ở 6 ga Oyama – Fukushima và 6 ga Sasakino – Sekine (xo rỗng; Niwasaka có hai ghi chéo r, s), aki ở 15 ga Oyama – Morioka cộng 17 ga và tín hiệu trường đường đơn tuyến Tazawako, Omagari, 7 ga Omagari – Akita và Akita (xo rỗng: ga cụt/ga đường đơn, không chữ X; không có Tokyo, Ueno, Omiya, ga mini-Shinkansen khác)');
     ok(Y.stations.filter(s => s.xo !== undefined && s.en !== 'Fukushima' && byEn(s.en)).every(s => sh(Y, s.en) === xo(s.en) && Y.stations.find(x => x.en === s.en).lay === byEn(s.en).lay) && A.stations.filter(s => s.xo !== undefined && byEn(s.en)).every(s => sh(A, s.en) === xo(s.en) && A.stations.find(x => x.en === s.en).lay === byEn(s.en).lay), 'ga chung trục Tohoku có xo và mã bố trí giống nhau ở toh, yam, aki'); }
   // 4) vị trí ghi chéo theo hai chiều và camera sau
   { const zs = (en, d, r) => Ly.xovers(byEn(en), d, r).map(x => x.kind + x.z).join();

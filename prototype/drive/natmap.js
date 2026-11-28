@@ -7,7 +7,7 @@
   const SEGS = [
     { key: 'tohoku', name: 'Tohoku', line: 'toh', a: 0, b: 22, col: '#41934c' }, { key: 'hokkaido', name: 'Hokkaido', line: 'toh', a: 22, b: 25, col: '#9ACD32' },
     { key: 'joetsu', name: 'Joetsu', line: 'jts', a: 2, b: 11, col: '#f58d79' }, { key: 'hokuriku', name: 'Hokuriku', line: 'hok', a: 5, b: 23, col: '#800080' },
-    { key: 'yamagata', name: 'Yamagata', line: 'yam', a: 8, b: 18, col: '#f36221' }, { key: 'akita', name: 'Akita', line: 'aki', a: 17, b: 999, col: '#ED4399' },
+    { key: 'yamagata', name: 'Yamagata', line: 'yam', a: 8, b: 999, col: '#f36221' }, { key: 'akita', name: 'Akita', line: 'aki', a: 17, b: 999, col: '#ED4399' },
     { key: 'tokaido', name: 'Tokaido', line: 'tsk', a: 0, b: 16, col: '#1153af' }, { key: 'sanyo', name: "San'yo", line: 'tsk', a: 16, b: 34, col: '#24197c' },
     { key: 'kyushu', name: 'Kyushu', line: 'tsk', a: 34, b: 45, col: '#FF69B4' }, { key: 'nishikyushu', name: 'Nishi-Kyushu', line: 'nks', a: 0, b: 4, col: '#E50012' }];
   const SHARED = { jts: [[0, 2, 'tohoku']], hok: [[0, 2, 'tohoku'], [2, 5, 'joetsu']], yam: [[0, 8, 'tohoku']], aki: [[0, 17, 'tohoku']] };      // đoạn đi chung: lấy màu tuyến cha
