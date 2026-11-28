@@ -2,8 +2,6 @@
 
 <img src="docs/screenshots/logo_en.gif" alt="SHINKANSEN animated logo" width="560">
 
-# Drive Shinkansen
-
 [Tiếng Việt](README.md) · **English** · [日本語](README.ja.md)
 
 A Shinkansen driving game covering the five JR companies that run it, playable entirely in the browser (HTML/JS, nothing to install).

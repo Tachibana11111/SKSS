@@ -2,8 +2,6 @@
 
 <img src="docs/screenshots/logo_ja.gif" alt="新幹線 アニメーションロゴ" width="560">
 
-# 新幹線を運転
-
 [Tiếng Việt](README.md) · [English](README.en.md) · **日本語**
 
 JR 5社が運行する新幹線を運転するゲームです。ブラウザだけで動作します(HTML/JS、インストール不要)。

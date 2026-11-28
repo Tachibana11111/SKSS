@@ -2,8 +2,6 @@
 
 <img src="docs/screenshots/logo_vi.gif" alt="Logo Tân Cán Tuyến động" width="560">
 
-# Lái Shinkansen
-
 **Tiếng Việt** · [English](README.en.md) · [日本語](README.ja.md)
 
 Game lái tàu Shinkansen của 5 công ty JR, chạy hoàn toàn trong trình duyệt (HTML/JS, không cần cài gì).
